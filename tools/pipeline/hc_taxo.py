@@ -5,7 +5,7 @@ import os;P=os.environ.get('P','hc')
 import json,sys,statistics as st
 from collections import Counter
 ep=int(sys.argv[1]);WJ=f'{P}{ep}_write.json';W=json.load(open(WJ))
-q1,q2=json.load(open(os.path.join(HERE,'taxo.json')))['q']
+_T=json.load(open(os.path.join(HERE,'taxo.json')));q1,q2=_T.get('q_by_work',{}).get(P.upper(),_T['q'])  # 작품별 3등분(없으면 전체 기준)
 RANK={'설정':0,'전경':1,'전신':2,'중경':3,'클로즈업':4,'디테일':5}
 def dist(seq):
     r=[RANK[s] for s in seq if s in RANK]
