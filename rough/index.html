@@ -213,6 +213,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .reader [data-letter]:focus-visible{outline:2px solid #2d71f7}
 .reader .cut-selected{outline:3px solid #2d71f7;outline-offset:-3px}
 .reader-top{max-width:720px;margin:0 auto;padding:32px 16px 8px}
+.h1sub{margin-left:8px;font-size:15px;font-weight:600;color:var(--t2);vertical-align:middle}
 .wtitle{display:block;width:100%;border:0;background:none;font-size:30px;font-weight:800;letter-spacing:-.02em;padding:0;outline:none}
 .toc{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 .toc a{padding:5px 10px;border-radius:14px;background:var(--bg);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--t1);text-decoration:none}
@@ -406,9 +407,9 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <button role="tab" data-view="chars" aria-selected="false"><b>1</b>캐릭터</button>
   <button role="tab" data-view="world" aria-selected="false"><b>2</b>세계관</button>
   <button role="tab" data-view="write" aria-selected="false"><b>3</b>씬</button>
-  <button role="tab" data-view="layout" aria-selected="false"><b>4</b>연출</button>
-  <button role="tab" data-view="nai" aria-selected="true"><b>5</b>NovelAI</button>
-  <button role="tab" data-view="webtoon" aria-selected="false"><b>6</b>웹툰 보기</button>
+  <button role="tab" data-view="layout" aria-selected="false"><b>4</b>콘티</button>
+  <button role="tab" data-view="nai" aria-selected="true"><b>5</b>작화</button>
+  <button role="tab" data-view="webtoon" aria-selected="false"><b>6</b>편집</button>
 </nav>
 
 <div class="view" id="v-chars" hidden>
@@ -463,7 +464,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   </aside>
   <main class="main">
     <h1>씬</h1>
-    <p class="desc">씬마다 컷을 적어요. 인물은 @이름으로 부르고, 다 적으면 연출을 확인해요.</p>
+    <p class="desc">씬마다 컷을 적어요. 인물은 @이름으로 부르고, 다 적으면 콘티를 확인해요.</p>
   <section>
     <div class="sh"><h2>등장인물</h2><span>캐릭터 페이지에서 만든 인물이에요</span></div>
     <div class="refsum" id="castsum"></div>
@@ -484,7 +485,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <dialog id="pdlg2" aria-labelledby="pd2t"><h3 id="pd2t">줄글 붙여넣기</h3><p>문장마다 컷으로 나눠 컷 칸에 채워요. 지금 컷은 바뀌어요.</p><textarea id="prosein" style="min-height:220px" placeholder="@에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다."></textarea><div class="acts"><button class="btn" data-act="prosecancel">닫기</button><button class="btn dark" data-act="prosego">컷으로 나누기</button></div></dialog>
   </section>
 
-    <div class="next"><span class="grow"></span><button class="btn dark big" data-view="layout">연출 보기 →</button></div>
+    <div class="next"><span class="grow"></span><button class="btn dark big" data-view="layout">콘티 보기 →</button></div>
   </main>
 </div>
 </div>
@@ -493,7 +494,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div class="page">
 <main class="main">
   <div class="scbar" data-scbar></div>
-  <h1>연출</h1>
+  <h1>콘티</h1>
   <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB 244묶음 중 가장 닮은 패턴으로 컷을 짰어요.</p>
 
   <section>
@@ -505,7 +506,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="sh"><h2>컷</h2><span>값을 누르면 바꿀 수 있어요 · <b style="color:var(--blue)">●</b> 직접 고른 값</span></div>
     <div class="tbl" id="tbl"></div>
   </section>
-  <div class="next"><button class="btn" data-view="write">← 씬으로</button><span class="grow"></span><button class="btn dark big" data-view="nai">NovelAI로 →</button></div>
+  <div class="next"><button class="btn" data-view="write">← 씬으로</button><span class="grow"></span><button class="btn dark big" data-view="nai">작화로 →</button></div>
 </main>
 
 <aside class="pv" aria-label="미리보기">
@@ -525,7 +526,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div class="view" id="v-nai">
 <div class="wrap">
   <div class="scbar" data-scbar></div>
-  <h1>NovelAI V4.5 시안</h1>
+  <h1>작화 <small class="h1sub">NovelAI V4.5 Full</small></h1>
   <p class="desc">NovelAI Diffusion V4.5 Full 기준이에요. 컷마다 기본 프롬프트, 캐릭터 프롬프트와 위치, 해상도, img2img 바탕 이미지, 레퍼런스를 칸별로 나눠 줘요.</p>
   <ol class="psteps"><li><b>1</b>화풍·인물 태그 확인</li><li><b>2</b>컷 카드의 칸을 NovelAI 같은 칸에 복사</li><li><b>3</b>바탕 PNG를 img2img로 올려 생성</li><li><b>4</b>생성 이미지를 컷에 등록</li></ol>
   <section style="margin-top:28px">
@@ -556,7 +557,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="toolbar"><span class="grow"></span><button class="btn" data-act="naimulti">이미지 여러 장 등록</button><button class="btn" data-act="naidown">txt 저장</button></div>
     <div class="pcards" id="ncards"></div>
   </section>
-  <div class="next"><button class="btn" data-view="layout">← 연출로</button><span class="grow"></span><button class="btn dark big" data-view="webtoon">웹툰 보기 →</button></div>
+  <div class="next"><button class="btn" data-view="layout">← 콘티로</button><span class="grow"></span><button class="btn dark big" data-view="webtoon">편집으로 →</button></div>
 </div>
 </div>
 
@@ -1464,7 +1465,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-act]')?.da
 renderCuts();renderChars();renderSceneList();
 mbox.addEventListener('mousedown',e=>{const b=e.target.closest('[data-mi]');if(b){e.preventDefault();pickMention(+b.dataset.mi)}});
 
-// ---------- 씬 · 완성 · 웹툰 보기 ----------
+// ---------- 씬 · 편집 ----------
 $('#sctitle').value=SCENES[SCUR].title||'';
 $('#sctitle').addEventListener('input',e=>{SCENES[SCUR].title=e.target.value;saveScenes();renderSceneList()});
 document.addEventListener('click',e=>{const t=e.target;
@@ -1889,7 +1890,7 @@ const rerenderCuts=()=>renderNai();
   el.addEventListener('dragover',e=>{const s=e.target.closest('[data-cutslot]');if(s){e.preventDefault();s.classList.add('over')}});
   el.addEventListener('dragleave',e=>{e.target.closest('[data-cutslot]')?.classList.remove('over')});
   el.addEventListener('drop',e=>{const s=e.target.closest('[data-cutslot]');if(!s)return;e.preventDefault();s.classList.remove('over');attachCuts(e.dataTransfer.files,+s.dataset.cutslot)});}
-// ---------- NovelAI V4.5 시안 ----------
+// ---------- 작화 (NovelAI V4.5) ----------
 const NAI=window.RoughNAI;
 const NAI_STYLE_DEF='webtoon, korean webtoon, soft shading, flat color, thin lineart, muted colors, watercolor (medium)';
 let NAISTYLE=NAI_STYLE_DEF;
