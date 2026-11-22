@@ -1,6 +1,6 @@
 # 식자·말풍선 분석 (녹빛 레퍼런스 54장)
 
-대상: `rough/references/green-midnight/` 39장 + `rough/references/creative/green-midnight-closeups/` 15장. 보류 중인 2장(7·8번)은 제외.
+대상: 당시 `rough/references/`에 있던 녹빛 레퍼런스 39장 + 클로즈업 15장(지금은 지우고 원본 컷 전체로 대체). 보류 중인 2장(7·8번)은 제외.
 수치는 화면 폭 690px 기준.
 
 ## 말풍선

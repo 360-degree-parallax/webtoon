@@ -829,7 +829,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script>
 const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const CRE_BASE='references/creative/green-midnight-closeups/',GAL_BASE='references/green-midnight/';
+const CUT_BASE='cuts/'; // 네이버 원본 컷 전체(권리자 허락, 비상업 공개)
 const LEN=[['짧게',.6],['보통',1],['길게',1.5],['아주 길게',2.2]];
 const lenWord=h=>h<.7?'짧게':h<1.2?'보통':h<2?'길게':'아주 길게';
 const NARR={'끝 정점':'마지막 컷에서 터지는 장면','중간 정점':'가운데서 터지고 가라앉는 장면','정점 선행':'처음부터 터지고 수습하는 장면','정점 연속':'계속 몰아치는 장면','무정점':'큰 고비 없이 흐르는 장면'};
@@ -2252,12 +2252,12 @@ $('#naistyle').value=NAISTYLE;
 $('#naistyle').addEventListener('input',e=>{NAISTYLE=e.target.value;try{localStorage.setItem('rough-nai-style',NAISTYLE)}catch(_){}clearTimeout(window._nst);window._nst=setTimeout(renderNai,300)});
 
 // ---------- 데이터베이스 ----------
-let DB=null,DBM={},dbSheet='컷표',dbLimit=200,dbSel=-1,dbF={work:'',ep:'',q:''};
+let DBBASE='cuts/',DB=null,DBM={},dbSheet='컷표',dbLimit=200,dbSel=-1,dbF={work:'',ep:'',q:''};
 const DB_ORDER=['작품 정보','컷표','장면','5컷 리듬','코드표','명경 1화 컷표','명경 1화 묶음','작업 방법'];
 const LONG=/내용|메모|원문|대사|의도|리듬 한 줄|설명|비고|상태|연출명 설명/;
 async function loadDB(){if(DB===null){$('#dbscroll').innerHTML='<p class="empty" style="padding:24px">불러오는 중</p>';
     for(const u of ['db/db.json','../cuts/db/db.json']){try{const r=await fetch(u);if(!r.ok)continue;DB=await r.json();break}catch(_){}}if(!DB)DB=false
-    try{const t=await (await fetch('../cuts/manifest.csv')).text();const L=t.replace(/^﻿/,'').trim().split('\n');const H=L.shift().split(',');const fi=H.indexOf('file');for(const l of L){const v=l.split(',');DBM[v[0]]=v[fi]}}catch(_){}}
+    try{let base='cuts/',r=await fetch(base+'manifest.csv');if(!r.ok){base='../cuts/';r=await fetch(base+'manifest.csv')}DBBASE=base;const t=await r.text();const L=t.replace(/^﻿/,'').trim().split('\n');const H=L.shift().split(',');const fi=H.indexOf('file');for(const l of L){const v=l.split(',');DBM[v[0]]=v[fi]}}catch(_){}}
   renderDB()}
 function dbImgId(sheet,cols,row){const g=n=>row[cols.indexOf(n)];
   if(cols.includes('컷ID'))return g('컷ID');if(sheet==='5컷 리듬')return String(g('컷 범위')||'').split('~')[0];if(sheet==='장면')return String(g('전환점 컷')||'').split(/[~,]/)[0].trim();return null}
@@ -2279,9 +2279,9 @@ function renderDBTable(){const t=DB[dbSheet],c=t.columns,rows=dbRows();const sho
   $('#dbcount').textContent=`${rows.length}행`;
   const cell=(v,col)=>{if(v===null||v===undefined)return'<td></td>';const s=String(v);return LONG.test(col)?`<td class="long" title="${esc(s)}">${esc(s.length>90?s.slice(0,90)+'…':s)}</td>`:`<td>${esc(s)}</td>`};
   $('#dbscroll').innerHTML=`<table class="db"><thead><tr>${showImg?'<th></th>':''}${c.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,dbLimit).map(([r,i])=>{const id=dbImgId(dbSheet,c,r);
-    return `<tr data-i="${i}"${i===dbSel?' class="on"':''}>${showImg?`<td>${DBM[id]?`<img loading="lazy" src="../cuts/${DBM[id]}" alt="">`:''}</td>`:''}${r.map((v,k)=>cell(v,c[k])).join('')}</tr>`}).join('')}</tbody></table>`+(rows.length>dbLimit?`<button class="more" data-act="dbmore">${rows.length-dbLimit}행 더 보기</button>`:'')}
+    return `<tr data-i="${i}"${i===dbSel?' class="on"':''}>${showImg?`<td>${DBM[id]?`<img loading="lazy" src="${DBBASE}${DBM[id]}" alt="">`:''}</td>`:''}${r.map((v,k)=>cell(v,c[k])).join('')}</tr>`}).join('')}</tbody></table>`+(rows.length>dbLimit?`<button class="more" data-act="dbmore">${rows.length-dbLimit}행 더 보기</button>`:'')}
 function renderDBSide(i){const t=DB[dbSheet],c=t.columns,r=t.rows[i];const id=dbImgId(dbSheet,c,r);
-  $('#dbside').innerHTML=(DBM[id]?`<img src="../cuts/${DBM[id]}" alt="${esc(id)}">`:'')+`<dl>${c.map((h,k)=>r[k]===null||r[k]===undefined||r[k]===''?'':`<dt>${esc(h)}</dt><dd>${esc(r[k])}</dd>`).join('')}</dl>`}
+  $('#dbside').innerHTML=(DBM[id]?`<img src="${DBBASE}${DBM[id]}" alt="${esc(id)}">`:'')+`<dl>${c.map((h,k)=>r[k]===null||r[k]===undefined||r[k]===''?'':`<dt>${esc(h)}</dt><dd>${esc(r[k])}</dd>`).join('')}</dl>`}
 $('#dbtabs').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b)return;dbSheet=b.dataset.s;dbLimit=200;dbSel=-1;dbF={work:dbF.work,ep:'',q:''};renderDB();$('#dbside').innerHTML='<p class="empty" style="padding:0">행을 누르면 자세히 보여요</p>'});
 $('#dbfilter').addEventListener('input',e=>{const f=e.target.dataset.f;if(!f)return;dbF[f]=e.target.value;if(f==='work')dbF.ep='';dbLimit=200;if(f==='q'){clearTimeout(renderDB.t);renderDB.t=setTimeout(renderDBTable,200)}else renderDB()});
 $('#dbscroll').addEventListener('click',e=>{const tr=e.target.closest('tr[data-i]');if(tr){dbSel=+tr.dataset.i;document.querySelectorAll('table.db tr.on').forEach(x=>x.classList.remove('on'));tr.classList.add('on');renderDBSide(dbSel)}
@@ -2290,11 +2290,10 @@ try{const v=localStorage.getItem('rough-view');setTimeout(()=>showView(v||'nai')
 
 Promise.all([
   fetch('patterns.json').then(r=>r.json()),
-  fetch(GAL_BASE+'index.json').then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})),
-  fetch(CRE_BASE+'index.json').then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})),
-]).then(([pt,gal,cre])=>{
+  fetch(CUT_BASE+'index.json').then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})),
+]).then(([pt,cuts])=>{
   PATS=pt.patterns;
-  REFS=[...gal.items.map(g=>({...g,kind:'color',src:GAL_BASE+g.file,label:`컬러 러프 ${g.shot}·${g.angle}`})),...cre.items.map(g=>({...g,kind:'cre',src:CRE_BASE+g.file,label:`창작 ${g.composition}`}))];
+  REFS=cuts.items.map(g=>({...g,kind:'cut',src:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}`}));
   compute(true)}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 </script>
 </body>
