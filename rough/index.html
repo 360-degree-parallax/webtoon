@@ -529,6 +529,16 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 #plan-fixed-warning:not(:empty){padding:9px 12px;border-radius:7px;background:#fff0de;color:#69390c;overflow-wrap:anywhere}
 #plan-output:empty,#plan-fixed-warning:empty{display:none}
 @media(max-width:540px){.plan-grid{grid-template-columns:1fr}.plan-length{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.materials [hidden]{display:none}
+.materials input[type=search],.materials select{width:100%;min-width:0;margin:5px 0 8px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--t1)}
+.materials .sfx-variants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:8px 0}
+.sfx-variants button{min-height:60px;display:grid;place-items:center;gap:3px;border:1px solid var(--line);border-radius:6px;padding:4px;color:var(--t1)}
+.sfx-variants button[aria-pressed=true],[data-material-line][aria-pressed=true]{background:var(--blue-soft);border-color:var(--blue)}
+.sfx-variants img{width:100%;height:33px;object-fit:contain;background:#f4efea;border-radius:3px}
+.sfx-variants small{margin:0;font-size:11px}
+.materials .material-status{min-height:1em;margin:7px 0;font-size:12px;color:var(--t2)}
+#reader[data-material-mode]{cursor:crosshair;touch-action:none}
+#reader[data-material-mode] [data-letter]{cursor:crosshair}
 </style>
 </head>
 <body>
@@ -801,6 +811,26 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       <div class="prop"><span>프레임</span><button class="btn sm" id="wframereset">크기·모양 초기화</button></div>
       <div class="prop"><span>식자</span><button class="btn sm" id="wletterreset">이 컷 식자 배치·스타일 초기화</button></div>
     </section>
+    <section class="insp materials" id="wmaterials" hidden>
+      <div class="insp-h"><span>소재</span></div>
+      <div id="wmaterial-variants" class="sfx-variants" hidden></div>
+      <input type="file" id="wmaterial-zip" accept=".zip,application/zip" hidden>
+      <button class="btn sm" id="wmaterial-import">효과음 ZIP 불러오기</button>
+      <button class="btn sm" type="button" id="wmaterial-remove-sfx" hidden>추가한 효과음 삭제</button>
+      <details id="wmaterial-search" hidden>
+        <summary>효과음 검색</summary>
+        <input id="wmaterial-query" type="search" aria-label="효과음 검색" placeholder="또각, 두근, 발걸음">
+        <label><input id="wmaterial-starred" type="checkbox"> 즐겨찾기만</label>
+        <select id="wmaterial-result" aria-label="효과음 선택"></select>
+        <div class="prop"><button class="btn sm" id="wmaterial-add">컷에 넣기</button><button class="btn sm" id="wmaterial-fav" aria-pressed="false">☆ 즐겨찾기</button></div>
+      </details>
+      <div class="prop"><button class="btn sm" data-material-line="focus" aria-pressed="false">집중선</button><button class="btn sm" data-material-line="speed" aria-pressed="false">속도선</button></div>
+      <div id="wmaterial-line-edit" hidden>
+        <div class="prop"><select id="wmaterial-line-kind" aria-label="편집할 효과선"><option value="focus">집중선</option><option value="speed">속도선</option></select><input id="wmaterial-color" type="color" aria-label="효과선 색"><button class="btn sm" id="wmaterial-delete">삭제</button></div>
+        <label class="prop"><span>밀도</span><input id="wmaterial-density" type="range" min="12" max="90" step="1"></label>
+      </div>
+      <p id="wmaterial-status" class="material-status" role="status"></p>
+    </section>
     <small class="insp-foot">컷을 고르면 테두리에 손잡이가 생겨요. 변을 끌면 크기, 꼭짓점을 끌면 칸 모양(사선)이 바뀌어요. 칸 위에서 Ctrl(⌘)+휠이나 핀치로 그림을 확대하고, 확대한 그림은 끌어서 옮겨요. 컷 사이 손잡이로 간격을 바꾸고, 두 번 클릭하면 기본 간격으로 돌아가요.</small>
   </aside>
 </div>
@@ -840,6 +870,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script src="prompt.js"></script>
 <script src="nai.js"></script>
 <script src="sfx.js"></script>
+<script src="materials.js"></script>
 <script>
 const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1146,12 +1177,15 @@ function captionSVG(t,p,box,first,edit){
     return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#86c99c" stroke="#2f5a3a" stroke-width="${2*k}"/><rect x="${x+4*k}" y="${y+4*k}" width="${w-8*k}" height="${h-8*k}" fill="none" stroke="#2f5a3a" stroke-width="${1*k}" opacity=".6"/>`+
       leaf(x,y,1)+leaf(x+w,y,-1)+leaf(x,y+h,1)+leaf(x+w,y+h,-1)+txt('#1d2a20')}
   return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(196,182,170,.93)" stroke="#3a332e" stroke-width="${1.6*k}"/>`+txt('#2a241f')}
-function soundEffectSVG(text,box,side,index){
-  const art=window.RoughSoundEffects?.match(text);
-  const x=box.x+box.w*(index%2?.5:side==='left'?.67:.33);
-  const y=Math.min(box.y+box.h*.83,box.y+box.h*(.61+index*.12));
+function soundEffectSVG(text,box,side,index,position){
+  const variant=position?.materialVariant||'A';
+  const art=window.RoughMaterials.image(window.RoughMaterials.find(text),variant)||window.RoughSoundEffects?.match(text);
+  const x=box.x+box.w*(variant==='D'||index%2?.5:side==='left'?.67:.33);
+  const gap=box.before??0;
+  const y=variant==='D'?box.y-gap/2+(gap<15?12:0):Math.min(box.y+box.h*.83,box.y+box.h*(.61+index*.12));
   if(art){
-    const ratio=Math.min(box.w*.27/art.width,box.h*.29/art.height,160/art.height);
+    const ratio=variant==='D'?Math.min(box.w*.15/art.width,Math.max(18,gap*.48)/art.height,49/art.height):
+      Math.min(box.w*.27/art.width,box.h*.29/art.height,160/art.height);
     const w=(art.width*ratio).toFixed(2),h=(art.height*ratio).toFixed(2);
     return `<image x="${x-w/2}" y="${y-h/2}" width="${w}" height="${h}" href="${art.src}"/>`;
   }
@@ -1167,7 +1201,7 @@ function soundEffectSVG(text,box,side,index){
   }).join('');
   return `<g transform="translate(${x} ${y}) rotate(-12)" font-family="Pretendard, Noto Sans KR, sans-serif" font-weight="900" font-size="${size}" text-anchor="middle" dominant-baseline="central">${letters}</g>`;
 }
-function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);let o='';
+function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key||p.act);let o='';
   const add=(key,label,source,draw)=>{
     const pos=positions?.[key],text=pos?.text??source;
     const move=Number.isFinite(pos?.x)&&Number.isFinite(pos?.y)?` transform="translate(${pos.x} ${pos.y})"`:'';
@@ -1176,7 +1210,8 @@ function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);l
     const svg=draw(text,pos);
     o+=move||access?`<g${move}${access}>${svg}</g>`:svg;
   };
-  (p.sfx||[]).forEach((text,n)=>add('effect-'+n,'효과음',text,value=>soundEffectSVG(value,box,p.side,n)));
+  (p.sfx||[]).forEach((text,n)=>add('effect-'+n,'효과음',text,(value,pos)=>soundEffectSVG(value,box,p.side,n,pos)));
+  extras.forEach((item,n)=>add('material-'+item.id,'효과음',item.text,(value,pos)=>soundEffectSVG(value,box,p.side,n+(p.sfx?.length||0),pos)));
   if(p.caption)add('caption','나레이션',p.caption,(value,pos)=>captionSVG(value,p,box,idx===0,pos));
   const ds=(p.dialogs||[]).filter(d=>d.text);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
   ds.forEach((d,n)=>{
@@ -1253,7 +1288,7 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
 function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false}={}){let y=40,o='',gaps='',backgrounds='';const multi=panels.length>1;
-  let prev=null,handles='';
+  let prev=null,handles='',tightGaps='';
   panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
     // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
     if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const u=im?null:underlay(p);
@@ -1273,7 +1308,8 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g clip-path="url(#${pre}${i})"><g data-art${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
-      (clean?'':letterSVG(rough?{...p,dialogs:[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame},i,edit?.letters,interactive))+`</g>`;
+      (!clean&&edit?.materialLines?`<g clip-path="url(#${pre}${i})" pointer-events="none">${Object.values(edit.materialLines).map(effect=>window.RoughMaterials.lineEffect(effect,{x:bx,y,w:bw,h},rngL((p.key||p.act)+effect.kind))).join('')}</g>`:'')+
+      (clean?'':letterSVG(rough?{...p,dialogs:[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame,before:prev?.[1]??40},i,edit?.letters,interactive,edit?.materialSounds))+`</g>`;
     if(interactive)handles+=frameHandles(pts||box,slot,i);
     const base=defaultPageGap(p),size=edit?.gap??base;
     y+=h;
@@ -1282,10 +1318,13 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
       const end=next?pageBackground(edits[cutSlot(next,i+1)]):PAGE_WHITE;
       backgrounds+=`<g data-bg-panel="${i}"><rect y="${i?y-h:0}" width="${W}" height="${h+(i?0:40)}" fill="${background}"/>${transitionSVG(background,end,edit?.transition,`${pre}bg-${i}`,y,size)}</g>`;
     }
-    if(interactive&&i<panels.length-1)gaps+=gapMarkup(y,size,base,slot,i);
+    if(interactive&&i<panels.length-1){
+      const gap=gapMarkup(y,size,base,slot,i);
+      if(size<20)tightGaps+=gap;else gaps+=gap;
+    }
     prev=[slot,size];y+=size;
   });
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${o}${gaps}${handles}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${gaps}${o}${tightGaps}${handles}</svg>`;
 }
 // 칸 안 그림 확대·이동(피그마 이미지 크롭처럼): 칸 가운데 기준 배율 s, 이동 dx·dy
 function zoomTf(z,bx,y,bw,h){if(!z||!(z.s>1))return'';const cx=bx+bw/2,cy=y+h/2;
@@ -1734,7 +1773,7 @@ document.addEventListener('click',e=>{const t=e.target;
   const mv=t.closest('[data-scmove]');if(mv){switchScene(SCUR+(+mv.dataset.scmove));return}
   const a=t.closest('[data-act]')?.dataset.act;
   if(a==='addscene'){saveScenes();SCENES.push({id:'s'+Date.now(),title:'',cuts:[''],pageEdits:[]});switchScene(SCENES.length-1);$('#sctitle').focus()}
-  if(a==='wsave')saveWebtoon()});
+  if(a==='wsave')saveWebtoon().catch(()=>{$('#wst').textContent='소재 또는 이미지를 불러오지 못했어요. 다시 저장해 주세요.'})});
 document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switchScene(+e.target.value)});
 let WMODE='final';
 try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 러프'}catch(_){$('#wtitle').value='제목 없는 작품'}
@@ -1827,6 +1866,7 @@ $('#wbgreset').addEventListener('click',()=>{
 });
 $('#wedit').addEventListener('click',e=>{
   pageEditing=!pageEditing;
+  if(!pageEditing)armMaterialLine('');
   e.currentTarget.setAttribute('aria-pressed',!pageEditing);
   e.currentTarget.textContent=pageEditing?'미리보기':'편집으로';
   $('#v-webtoon').classList.toggle('preview',!pageEditing);
@@ -1869,7 +1909,7 @@ function selectLetter(letter){
   if(!letter)return;
   letter.classList.add(art?'balloon-selected':'letter-selected');
   const edit=letterPosition(letter);
-  const effect=letter.dataset.letter.startsWith('effect-');
+  const effect=isEffectLetter(letter);
   $('#wlettertextlabel').textContent=caption?'나레이션 문구':effect?'효과음 문구':'말풍선 문구';
   letterMemo.value=letter.dataset.letterText||'';
   letterMemo.setCustomValidity('');
@@ -1880,7 +1920,7 @@ function selectLetter(letter){
 letterTextForm.addEventListener('submit',e=>{
   e.preventDefault();
   if(!selectedLetter)return;
-  const effect=selectedLetter.dataset.letter.startsWith('effect-');
+  const effect=isEffectLetter(selectedLetter);
   const text=effect?letterMemo.value.trim().replace(/\s+/g,' '):letterMemo.value.trim();
   if(!text){
     letterMemo.setCustomValidity('문구를 입력해 주세요.');
@@ -1889,6 +1929,7 @@ letterTextForm.addEventListener('submit',e=>{
   }
   saveLetter(selectedLetter,{text});
   renderWebtoon();
+  if(effect)refreshPageMaterials();
 });
 letterMemo.addEventListener('input',()=>letterMemo.setCustomValidity(''));
 letterMemo.addEventListener('keydown',e=>{
@@ -1897,8 +1938,10 @@ letterMemo.addEventListener('keydown',e=>{
 letterOriginal.addEventListener('click',()=>{
   const edit=selectedLetter&&pageSettings()?.letters?.[selectedLetter.dataset.letter];
   if(typeof edit?.text!=='string')return;
+  const effect=isEffectLetter(selectedLetter);
   delete edit.text;
   saveScenes();renderWebtoon();
+  if(effect)refreshPageMaterials();
 });
 const balloonStyle=$('#wballoonstyle'),balloonLinked=$('#wballoonlinked'),balloonTailToggle=$('#wballoontail');
 const styleOptions=styles=>styles.map(([key,label],i)=>`<option value="${key}">${i+1}. ${label}</option>`).join('');
@@ -2006,9 +2049,11 @@ pageReader.addEventListener('dblclick',e=>{
   const layout=gapLayout(gap);
   resizeGap(layout,Number(gap.dataset.gapBase));
   saveGap(layout,true);
+  if(hasLeadSounds())renderWebtoon();
 });
 pageReader.addEventListener('pointerdown',e=>{
-  if(!pageEditing||e.button!==0||pageDrag||gapDrag||tailDrag||frameDrag||artDrag)return;
+  if(!pageEditing||e.button!==0||pageDrag||gapDrag||tailDrag||frameDrag||artDrag||materialDrag)return;
+  if(materialMode){startMaterialLine(e);return}
   const gap=e.target.closest('[data-page-gap]');
   if(gap){
     if(e.pointerType!=='touch'||e.target.closest('.gap-grip'))startGapDrag(gap,e);
@@ -2056,6 +2101,7 @@ pageReader.addEventListener('pointermove',e=>{
   moveLetter(letter,pageDrag.position);
 });
 pageReader.addEventListener('pointerup',e=>{
+  if(materialDrag?.id===e.pointerId){finishMaterialLine(e);return}
   if(frameDrag?.id===e.pointerId){saveFrame();return}
   if(artDrag?.id===e.pointerId){const g=artDrag.group;artDrag=null;saveZoom(g);return}
   if(tailDrag?.id===e.pointerId){
@@ -2064,8 +2110,10 @@ pageReader.addEventListener('pointerup',e=>{
     return;
   }
   if(gapDrag?.id===e.pointerId){
-    if(Number(gapDrag.gap.dataset.gapSize)!==gapDrag.size)saveGap(gapDrag);
+    const changed=Number(gapDrag.gap.dataset.gapSize)!==gapDrag.size;
+    if(changed)saveGap(gapDrag);
     gapDrag=null;
+    if(changed&&hasLeadSounds())renderWebtoon();
     return;
   }
   if(pageDrag?.id!==e.pointerId)return;
@@ -2073,6 +2121,7 @@ pageReader.addEventListener('pointerup',e=>{
   pageDrag=null;
 });
 pageReader.addEventListener('lostpointercapture',e=>{
+  if(materialDrag?.id===e.pointerId){materialDrag=null;return}
   if(frameDrag?.id===e.pointerId){showFrame(frameDrag.group,frameDrag.f0);frameDrag=null;return}
   if(artDrag?.id===e.pointerId){setZoom(artDrag.group,artDrag.z0);artDrag=null;return}
   if(tailDrag?.id===e.pointerId){
@@ -2098,6 +2147,7 @@ pageReader.addEventListener('keydown',e=>{
       e.preventDefault();
       resizeGap(layout,clampGap(value));
       saveGap(layout,e.key==='Escape');
+      if(hasLeadSounds()){renderWebtoon();document.querySelector('#ws-'+layout.key.split(':')[0]+' [data-page-gap="'+gap.dataset.pageGap+'"]')?.focus({preventScroll:true})}
     }
     return;
   }
@@ -2189,6 +2239,7 @@ $('#wzoomreset').addEventListener('click',()=>{const g=selGroup();if(!g)return;s
 $('#wframereset').addEventListener('click',()=>{if(!pageSelection)return;const set=pageSettings();if(set){delete set.frame;delete set.quad}saveScenes();renderWebtoon()});
 function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
 async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 만드는 중');
+  await loadPageMaterials();
   const items=[];for(let i=0;i<SCENES.length;i++){const ps=scenePanels(i);if(!ps.length)continue;const art=sceneArt(i,ps,`x${i}_`);
     items.push({i,im:await loadImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(art.svg))})}
   if(!items.length){st('저장할 컷이 없어요');return}
@@ -2205,10 +2256,195 @@ function editTree(){const el=$('#wtoc');if(!el)return;const groups=[...pageReade
   el.innerHTML=SCENES.map((sc,i)=>{const ps=scenePanels(i),gs=by[i]||[];
     return `<a class="tsc" href="#ws-${i}" data-toc="${i}">${esc(sceneLabel(sc,i))}</a>`+gs.map(g=>{const k=pageKey(g),p=ps[+g.dataset.p]||{};const has=!!cutImg(i,+g.dataset.p,p);
       return `<button class="tcut" data-tcut="${esc(k)}" aria-current="${k===pageSelection}"><i class="${has?'on':''}" title="${has?'이미지 등록됨':'러프'}"></i>${+g.dataset.p+1}컷<small>${esc(p.shot||'')}</small></button>`}).join('')}).join('')}
+const isEffectLetter=letter=>/^(?:effect|material)-/.test(letter.dataset.letter);
+const materialCatalog=window.RoughMaterials;
+const materialSearch=$('#wmaterial-search'),materialQuery=$('#wmaterial-query');
+const materialResult=$('#wmaterial-result'),materialVariants=$('#wmaterial-variants');
+let materialMode='',materialDrag=null,materialRows=[],materialRefresh=0;
+let materialFavorites;
+try{materialFavorites=new Set(JSON.parse(localStorage.getItem('rough-material-favorites')||'[]'))}
+catch{materialFavorites=new Set()}
+const materialStatus=message=>{$('#wmaterial-status').textContent=message};
+const materialLabel={A:'흰 테두리',B:'계단형',C:'가는 펜선',D:'컷 전 선행음'};
+function hasLeadSounds(){
+  return SCENES.some(sc=>sc.pageEdits.some(edit=>Object.values(edit?.letters||{}).some(item=>item.materialVariant==='D')));
+}
+async function loadPageMaterials(){
+  materialRows=await materialCatalog.ready();
+  const used=new Map();
+  SCENES.forEach((sc,scene)=>{
+    scenePanels(scene).forEach((p,i)=>{
+      const edit=sc.pageEdits[cutSlot(p,i)],add=(word,key)=>{
+        const entry=materialCatalog.find(edit?.letters?.[key]?.text??word);
+        if(entry)used.set(entry.id,entry);
+      };
+      p.sfx?.forEach((word,n)=>add(word,'effect-'+n));
+      edit?.materialSounds?.forEach(item=>add(item.text,'material-'+item.id));
+    });
+  });
+  await Promise.all([...used.values()].map(materialCatalog.load));
+}
+function refreshPageMaterials(){
+  const ticket=++materialRefresh;
+  loadPageMaterials().then(()=>{
+    if(ticket!==materialRefresh||VIEW!=='webtoon')return;
+    filterMaterials();
+    if(!(materialDrag||frameDrag||artDrag||pageDrag||gapDrag||tailDrag)&&PATS.length)renderWebtoon();
+    else refreshSelectedMaterial();
+  }).catch(()=>materialStatus('소재를 불러오지 못했어요. 다시 편집 탭을 열어 주세요.'));
+}
+function filterMaterials(){
+  const query=materialQuery.value.normalize('NFKC').trim();
+  const previous=materialResult.value;
+  const starred=$('#wmaterial-starred').checked;
+  const choices=materialRows.filter(row=>(!starred||materialFavorites.has(row.id))&&
+    (!query||row.word.normalize('NFKC').includes(query)||row.category.includes(query)));
+  materialResult.replaceChildren(...choices.map(row=>new Option(row.word+' · '+row.category,row.id)));
+  if(choices.some(row=>row.id===previous))materialResult.value=previous;
+  refreshMaterialFavorite();
+}
+function refreshMaterialFavorite(){
+  const id=materialResult.value,star=materialFavorites.has(id),button=$('#wmaterial-fav');
+  button.setAttribute('aria-pressed',star);
+  button.textContent=star?'★ 즐겨찾기':'☆ 즐겨찾기';
+  button.disabled=!id;
+  $('#wmaterial-add').disabled=!id;
+}
+$('#wmaterial-import').addEventListener('click',()=>$('#wmaterial-zip').click());
+$('#wmaterial-zip').addEventListener('change',async e=>{
+  const file=e.target.files[0];
+  e.target.value='';
+  if(!file)return;
+  const button=$('#wmaterial-import');button.disabled=true;
+  materialStatus('효과음 ZIP을 읽는 중이에요.');
+  try{
+    materialRows=await materialCatalog.install(file);
+    await loadPageMaterials();
+    if(VIEW==='webtoon'){filterMaterials();renderWebtoon();materialSearch.open=true}
+    materialStatus(materialRows.length+'개 효과음을 불러왔어요.');
+  }catch(error){materialStatus(error?.message||'효과음 ZIP을 불러오지 못했어요.')}
+  finally{button.disabled=false}
+});
+materialQuery.addEventListener('input',filterMaterials);
+$('#wmaterial-starred').addEventListener('change',filterMaterials);
+materialResult.addEventListener('change',refreshMaterialFavorite);
+$('#wmaterial-fav').addEventListener('click',()=>{
+  const id=materialResult.value;if(!id)return;
+  if(materialFavorites.has(id))materialFavorites.delete(id);else materialFavorites.add(id);
+  try{localStorage.setItem('rough-material-favorites',JSON.stringify([...materialFavorites]))}catch{}
+  filterMaterials();
+});
+$('#wmaterial-add').addEventListener('click',async()=>{
+  const entry=materialCatalog.entry(materialResult.value),key=pageSelection;
+  if(!entry||!key)return;
+  try{await materialCatalog.load(entry)}catch{materialStatus('효과음 이미지를 불러오지 못했어요.');return}
+  if(VIEW!=='webtoon'||pageSelection!==key||!pageEditing)return;
+  const settings=pageSettings(true,key);
+  const id=crypto.randomUUID();
+  (settings.materialSounds||=[]).push({id,text:entry.word});
+  saveScenes();renderWebtoon();
+  const letter=pageReader.querySelector('[data-letter="material-'+id+'"]');
+  if(letter)selectLetter(letter);
+  materialStatus(entry.word+' 효과음을 넣었어요.');
+});
+async function refreshSelectedMaterial(){
+  const selected=selectedLetter;
+  materialVariants.hidden=true;
+  $('#wmaterial-remove-sfx').hidden=!selected?.dataset.letter.startsWith('material-');
+  if(!selected||!isEffectLetter(selected))return;
+  try{
+    if(!materialRows.length)materialRows=await materialCatalog.ready();
+    if(selected!==selectedLetter)return;
+    const entry=materialCatalog.find(selected.dataset.letterText);
+    if(!entry)return;
+    await materialCatalog.load(entry);
+    if(selected!==selectedLetter)return;
+    const current=letterPosition(selected).materialVariant||'A';
+    materialVariants.innerHTML=materialCatalog.variants.map(v=>{
+      const art=materialCatalog.image(entry,v);
+      return `<button class="btn sm" type="button" data-material-variant="${v}" aria-pressed="${current===v}"><img src="${art.src}" alt=""><small>${v} · ${materialLabel[v]}</small></button>`;
+    }).join('');
+    materialVariants.hidden=false;
+  }catch{materialStatus('시안 이미지를 불러오지 못했어요.')}
+}
+materialVariants.addEventListener('click',e=>{
+  const variant=e.target.closest('[data-material-variant]')?.dataset.materialVariant;
+  if(!variant||!selectedLetter||!isEffectLetter(selectedLetter))return;
+  saveLetter(selectedLetter,{materialVariant:variant});
+  renderWebtoon();
+  materialStatus(variant==='D'?'효과음을 컷 앞 여백에 넣었어요.':'효과음 시안을 바꿨어요.');
+});
+$('#wmaterial-remove-sfx').addEventListener('click',()=>{
+  const key=selectedLetter?.dataset.letter,settings=pageSelection&&pageSettings();
+  if(!key?.startsWith('material-')||!settings?.materialSounds)return;
+  settings.materialSounds=settings.materialSounds.filter(item=>'material-'+item.id!==key);
+  if(settings.letters)delete settings.letters[key];
+  selectLetter(null);saveScenes();renderWebtoon();
+});
+function armMaterialLine(kind){
+  materialMode=kind;
+  if(kind)pageReader.dataset.materialMode=kind;else delete pageReader.dataset.materialMode;
+  document.querySelectorAll('[data-material-line]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.materialLine===kind)));
+  materialStatus(kind==='focus'?'컷 안에서 강조할 지점을 누르세요.':kind==='speed'?'컷 안에서 움직임 방향으로 드래그하세요.':'');
+  if(kind&&matchMedia('(max-width:760px)').matches){
+    $('#wtools').classList.remove('open');$('#wsheet').setAttribute('aria-expanded','false');
+  }
+}
+document.querySelectorAll('[data-material-line]').forEach(button=>button.addEventListener('click',()=>{
+  const kind=button.dataset.materialLine;
+  armMaterialLine(materialMode===kind?'':kind);
+}));
+function startMaterialLine(e){
+  const group=e.target.closest('[data-slot-index]');
+  if(!group)return;
+  const frame=JSON.parse(group.dataset.frame),point=pagePoint(group,e);
+  if(point.x<frame.x||point.x>frame.x+frame.w||point.y<frame.y||point.y>frame.y+frame.h)return;
+  e.preventDefault();
+  selectPageCut(group);selectLetter(null);
+  materialDrag={id:e.pointerId,group,frame,point,kind:materialMode};
+  pageReader.setPointerCapture(e.pointerId);
+}
+function finishMaterialLine(e){
+  const {group,frame,point,kind}=materialDrag;
+  materialDrag=null;
+  const end=pagePoint(group,e),dx=end.x-point.x,dy=end.y-point.y;
+  if(kind==='speed'&&Math.hypot(dx,dy)<8){materialStatus('방향을 표시할 만큼 더 길게 끌어 주세요.');return}
+  const settings=pageSettings(true,pageKey(group));
+  const lines=(settings.materialLines||={}),current=lines[kind];
+  lines[kind]={kind,x:(point.x-frame.x)/frame.w,y:(point.y-frame.y)/frame.h,
+    angle:Math.atan2(dy,dx),color:current?.color||'#27211e',density:current?.density||50};
+  $('#wmaterial-line-kind').value=kind;
+  saveScenes();armMaterialLine('');renderWebtoon();
+  materialStatus(kind==='focus'?'집중선을 넣었어요.':'속도선을 넣었어요.');
+}
+function showMaterialLine(){
+  const lines=pageSelection&&pageSettings()?.materialLines;
+  const existing=Object.keys(lines||{}),select=$('#wmaterial-line-kind');
+  $('#wmaterial-line-edit').hidden=!existing.length;
+  if(!existing.length)return;
+  [...select.options].forEach(o=>o.disabled=!existing.includes(o.value));
+  if(!existing.includes(select.value))select.value=existing[0];
+  $('#wmaterial-color').value=lines[select.value].color;
+  $('#wmaterial-density').value=lines[select.value].density;
+}
+$('#wmaterial-line-kind').addEventListener('change',showMaterialLine);
+for(const prop of ['color','density']){
+  $('#wmaterial-'+prop).addEventListener('change',e=>{
+    const kind=$('#wmaterial-line-kind').value,line=pageSelection&&pageSettings()?.materialLines?.[kind];
+    if(!line)return;
+    line[prop]=prop==='density'?Number(e.target.value):e.target.value;
+    saveScenes();renderWebtoon();
+  });
+}
+$('#wmaterial-delete').addEventListener('click',()=>{
+  const lines=pageSelection&&pageSettings()?.materialLines;if(!lines)return;
+  delete lines[$('#wmaterial-line-kind').value];saveScenes();renderWebtoon();
+});
 function inspector(){const L=!!selectedLetter,C=!!pageSelection;$('#wsec-letter').hidden=!L;$('#wsec-cut').hidden=!C;$('#wempty').hidden=L;
+  $('#wmaterials').hidden=!pageEditing||!C;materialSearch.hidden=!C||!materialRows.length;showMaterialLine();
   $('#wsheett').textContent=L?`속성 · ${$('#wlettertextlabel').textContent.replace(' 문구','')}`:C?`속성 · ${pageCut.selectedOptions[0]?.textContent||'컷'}`:'속성';if(L&&matchMedia('(max-width:760px)').matches){$('#wtools').classList.add('open');$('#wsheet').setAttribute('aria-expanded','true')}
   document.querySelectorAll('#wtoc .tcut').forEach(b=>b.setAttribute('aria-current',b.dataset.tcut===pageSelection))}
-{const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);inspector();return r}}
+{const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);inspector();refreshSelectedMaterial();return r}}
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);inspector();return r}}
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);editTree();inspector();return r}}
 $('#wsheet').addEventListener('click',()=>{const o=$('#wtools').classList.toggle('open');$('#wsheet').setAttribute('aria-expanded',o)});
@@ -2231,6 +2467,7 @@ $('#wredo').addEventListener('click',()=>{if(!REDO.length)return;UNDO.push(edSta
 document.addEventListener('keydown',e=>{if(typeof VIEW==='undefined'||VIEW!=='webtoon')return;const typing=e.target.closest('input,textarea,select,[contenteditable]');
   if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==='z'&&!typing){e.preventDefault();(e.shiftKey?$('#wredo'):$('#wundo')).click();return}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'&&!typing){e.preventDefault();$('#wredo').click();return}
+  if(e.key==='Escape'&&materialMode){armMaterialLine('');return}
   if(e.key==='Escape'&&!typing&&selectedLetter){selectLetter(null);document.activeElement?.blur?.()}});
 
 // ---------- 보기 전환 ----------
@@ -2239,7 +2476,8 @@ function showView(v){if(!['chars','world','plan','write','layout','nai','webtoon
   ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=v!=='layout';$('#gDb').setAttribute('aria-pressed',v==='db');
-  if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons()}
+  if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons();refreshPageMaterials()}
+  if(v!=='webtoon'&&materialMode)armMaterialLine('');
   if(v==='plan')openComposition();
   if(v==='nai')renderNai();if(v==='db')loadDB();
   scrollTo(0,0);try{localStorage.setItem('rough-view',v)}catch(_){}}
@@ -2413,7 +2651,7 @@ Promise.all([
   PATS=pt.patterns;
   // 그림 위주 컷만 레퍼런스로(말풍선 위주·덜 차지·여러 칸 섞인 컷은 자동 판정으로 제외)
   REFS=cuts.items.filter(g=>g.fit==='ok'||g.fixed).map(g=>({...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}${g.fixed?' · 수정본':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));
-  compute(true)}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
+  compute(true);if(VIEW==='webtoon')refreshPageMaterials()}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 </script>
 </body>
 </html>
