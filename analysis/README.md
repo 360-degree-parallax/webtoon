@@ -36,3 +36,5 @@ DB 시트 「작업 방법」 시트의 단계와 같은 순서입니다.
 
 - `narrative-*.csv`는 작품별 컷 서술과 앞뒤 흐름을 담습니다.
 - `detail/`은 구도, 여백, 명암, 효과와 검수 정보를 담습니다.
+
+러프 툴의 DB 화면은 `rough/db/db.json`의 컷표를 읽습니다. 시트에서 DB를 다시 내보내거나 분석 CSV를 갱신한 뒤에는 `python3 tools/merge_cut_context.py`를 실행해 컷 ID에 맞춰 상세 열을 붙입니다.
