@@ -190,7 +190,14 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scside .refsum{gap:6px;font-size:13px}.scside .refsum .btn{display:none}
 .scside .bgcards .slot{width:120px}.scside .bgcards .drop{width:120px;height:80px}
 .insp-note{margin:0;font-size:12px;color:var(--t3);line-height:1.5}
-.insp-h .link{font-size:12px;font-weight:600;color:var(--blue,#2d71f7);letter-spacing:0}
+.insp-h .link{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:0;text-decoration:none;opacity:.8}.insp-h .link:hover{color:var(--t1);opacity:1;text-decoration:underline}
+.castgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.castbox{display:flex;align-items:center;gap:8px;min-width:0;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.castbox.off{opacity:.55}
+.castbox .av{width:30px;height:30px;border-radius:15px;flex:none;overflow:hidden;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700}
+.castbox .av img{width:100%;height:100%;object-fit:cover;object-position:top}
+.castbox .cb{display:grid;min-width:0}.castbox b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.castbox small{font-size:11px;color:var(--t3);white-space:nowrap}
+.scside .sugg{margin-top:6px}
 .syntax{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;margin:0;font-size:12px}.syntax dt{color:var(--t1)}.syntax dd{margin:0;color:var(--t2)}
 .syntax code,.syntax kbd{font-family:inherit;font-weight:600;background:var(--surface);border-radius:5px;padding:1px 5px}
 @media(max-width:1100px){.scgrid{grid-template-columns:200px minmax(0,1fr)}.scside{display:none}.scenes.edleft{display:block}}
@@ -650,7 +657,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <dialog id="pdlg2" aria-labelledby="pd2t"><h3 id="pd2t">줄글 붙여넣기</h3><p>문장마다 컷으로 나눠 컷 칸에 채워요. 지금 컷은 바뀌어요.</p><textarea id="prosein" style="min-height:220px" placeholder="@에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다."></textarea><div class="acts"><button class="btn" data-act="prosecancel">닫기</button><button class="btn dark" data-act="prosego">컷으로 나누기</button></div></dialog>
   </main>
   <aside class="scside" aria-label="씬 정보">
-    <section class="insp"><div class="insp-h"><span>등장인물</span><button class="link" data-view="chars">편집</button></div><div class="refsum" id="castsum"></div><div class="sugg" id="sugg"></div></section>
+    <section class="insp"><div class="insp-h"><span>등장인물</span><button class="link" data-view="chars">편집</button></div><div class="castgrid" id="castsum"></div><div class="sugg" id="sugg"></div></section>
     <section class="insp"><div class="insp-h"><span>세계관</span><button class="link" data-view="world">편집</button></div><div class="refsum" id="worldsum"></div></section>
     <section class="insp"><div class="insp-h"><span>배경·분위기</span></div><p class="insp-note">장소 이미지는 색과 분위기로 쓰여요. 이름이 글에 나오면 그 묶음에 연결돼요.</p><div class="bgcards" id="bgs"></div></section>
     <section class="insp"><div class="insp-h"><span>쓰는 법</span></div>
@@ -1385,9 +1392,8 @@ function renderChars(){
 function renderSugg(){const have=new Set(CHARS.map(c=>c.name.trim()));
   const found=[...new Set(RE.parseCuts(CUTS,engineChars()).map(b=>b.who))].filter(n=>n&&!have.has(n)&&!NOTP.test(n));
   $('#sugg').innerHTML=found.length?`글에서 찾은 인물 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
-function renderCastSum(){const el=$('#castsum');if(!el)return;
-  el.innerHTML=CHARS.filter(c=>c.name.trim()).map(c=>{const n=c.name.trim(),im=IMG.char[n];return `<span class="av" title="${esc(n)}" style="${im?'':`background:${avBg(n)}`}">${im?`<img src="${im.src}" alt="${esc(n)}">`:esc(n.slice(0,1))}</span>`}).join('')+
-    `<span>${CHARS.filter(c=>c.name.trim()).map(c=>'@'+esc(c.name.trim())).join(' ')||'아직 인물이 없어요'}</span><button class="btn" data-view="chars">캐릭터 페이지에서 편집</button>`}
+function renderCastSum(){const el=$('#castsum');if(!el)return;const cs=CHARS.filter(c=>c.name.trim());
+  el.innerHTML=cs.length?cs.map(c=>{const n=c.name.trim(),im=IMG.char[n],st=charStat(n);return `<div class="castbox${st.cuts?'':' off'}" title="${esc(c.look||n)}"><span class="av" style="${im?'':`background:${avBg(n)}`}">${im?`<img src="${im.src}" alt="">`:esc(n.slice(0,1))}</span><span class="cb"><b>${esc(n)}</b><small>${st.cuts?`${st.cuts}컷 · 대사 ${st.lines}`:'이 씬에 없음'}</small></span></div>`}).join(''):'<p class="insp-note">아직 인물이 없어요</p>'}
 // ---------- 캐릭터 보관함: 작품과 상관없이 이 브라우저에 남는 캐릭터 목록 ----------
 // 작품의 인물은 보관함 항목의 복사본이고 c.lib로 연결된다. 고쳐도 보관함은 그대로이고, '보관함에 저장'을 눌러야 갱신된다.
 let LIB=[];try{LIB=JSON.parse(localStorage.getItem('rough-lib')||'[]')}catch(_){LIB=[]}
