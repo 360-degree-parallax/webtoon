@@ -529,6 +529,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       </form>
     </dialog>
 <script src="engine.js"></script>
+<script src="lettering.js"></script>
 <script src="prompt.js"></script>
 <script src="nai.js"></script>
 <script>
@@ -644,19 +645,21 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   else if(p.shot==='클로즈업'){const r=Math.min(w,h)*.4;o+=head(x+w*.5+j(w*.15),y+h*.55,r)}
   else if(p.shot==='디테일'){const r=Math.min(w,h)*.35;o+=`<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${r*1.3}" ry="${r*.8}" stroke="${st}" stroke-width="3" fill="none"/>`+C(x+w/2,y+h/2,r*.35,3)}
   else{for(let i=0;i<20;i++){const a=i/20*Math.PI*2;o+=L(x+w/2+Math.cos(a)*w*.15,y+h/2+Math.sin(a)*h*.15,x+w/2+Math.cos(a)*w,y+h/2+Math.sin(a)*h,1)}o+=head(x+w/2,y+h/2,Math.min(w,h)*.2)}
-  if(p.said){const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;o+=`<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`}
   return o}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false){let y=40,o='';const ws=W-60;
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false){let y=40,o='',clearY=12;const ws=W-60;
   panels.forEach((p,i)=>{const im=imgs&&imgs[i];const h=Math.round(im&&im.w?ws*im.h/im.w:p.h*ws);const on=i===sel;const u=im?null:underlay(p);
-    let art=im?`<image href="${im.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel(clean?{...p,said:''}:p,30,y,ws,h,i);
+    const lettering=clean?{above:0,below:0,markup:''}:RoughLettering.panel(p,ws,h);
+    y=Math.max(y,clearY+lettering.above);
+    let art=im?`<image href="${im.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel(p,30,y,ws,h,i);
     if(u){art=`<image href="${u.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
     const c=!clean&&!im&&p.who&&charRef(p.who);
     o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${on?'#2d71f7':'#222'}" stroke-width="${on?6:3}"/><clipPath id="${pre}${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
       (nums?`<circle cx="52" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
-      ((clean?[]:p.sfx||[]).map((x,k)=>`<text x="${30+ws-24}" y="${y+h-24-k*52}" font-size="${Math.min(54,Math.max(30,h*.16))}" font-weight="900" text-anchor="end" fill="#111" stroke="#fff" stroke-width="6" paint-order="stroke" transform="rotate(-8 ${30+ws-24} ${y+h-24-k*52})">${esc(x)}</text>`).join(''))+
-      (!clean&&p.caption?`<rect x="76" y="${y+8}" width="${Math.min(ws-200,24+p.caption.length*17)}" height="30" fill="#fff" stroke="#222" stroke-width="2"/><text x="88" y="${y+29}" font-size="16" fill="#222">${esc(p.caption.slice(0,24))}</text>`:'')+
+      (lettering.markup?`<g transform="translate(30 ${y})">${lettering.markup}</g>`:'')+
       (c?`<rect x="42" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="62" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="76" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+`</g>`;
+    clearY=y+h+lettering.below+12;
     y+=h+Math.round(p.gap*ws)+16});
+  y=Math.max(y,clearY);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
 }
 function render(){state.svg=renderSVG(state.panels,state.sel);$('#preview').innerHTML=state.svg}
