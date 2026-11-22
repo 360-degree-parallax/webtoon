@@ -1,0 +1,12 @@
+# 원본 이미지와 작품 내용 데이터는 올리지 않음
+data/
+work/
+*.png
+*.jpg
+*.jpeg
+*.xlsx
+*_seg.json
+*_notes.txt
+*_write.json
+cuts.json
+__pycache__/
