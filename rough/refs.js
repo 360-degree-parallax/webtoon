@@ -50,7 +50,7 @@ function render(){if(panel.hidden)return;if(!Object.keys(REF_PICK).length){panel
   ${pickedRef?detail(pickedRef,!!p):''}
   <div class="rf-count">${list.length.toLocaleString()}컷${TEXT?'':' · 내용 검색 준비 중'}</div>
   <div class="rf-grid">${list.slice(0,shown).map(r=>`<button class="rf-item${r.source_cut===picked?' on':''}${cur&&cur.source_cut===r.source_cut?' cur':''}" data-ref-id="${r.source_cut}" draggable="true" title="${esc(r.source_cut+' · '+r.shot+'·'+r.angle+(TEXT?.[r.source_cut]?.text?' · '+TEXT[r.source_cut].text:''))}">
-    <img loading="lazy" decoding="async" src="${r.src}" alt="" draggable="false"><span>${r.source_cut.slice(3)} · ${esc(r.shot)}</span>${r.fit!=='ok'&&!r.fixed?'<i>제외</i>':''}</button>`).join('')}</div>
+    <img loading="lazy" decoding="async" src="${r.fixed?r.src:(r.thumb||cutThumb(r.source_cut)||r.src)}" onerror="this.onerror=null;this.src='${r.src}'" alt="" draggable="false"><span>${r.source_cut.slice(3)} · ${esc(r.shot)}</span>${r.fit!=='ok'&&!r.fixed?'<i>제외</i>':''}</button>`).join('')}</div>
   ${list.length>shown?`<button class="btn sm rf-more" data-act="rfmore">더 보기 (${(list.length-shown).toLocaleString()})</button>`:''}`;
 }
 function detail(r,canApply){const t=TEXT?.[r.source_cut];

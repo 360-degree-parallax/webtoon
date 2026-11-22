@@ -28,7 +28,7 @@ function render(){const es=entries(),total=es.reduce((a,e)=>a+e.n,0)||1;
       <p class="dict-desc">${esc(e.desc||'')}</p>${e.rule?`<p class="dict-rule"><b>판정</b> ${esc(e.rule)}</p>`:''}
       <div class="dict-stats">${e.byWork.length?`<div><b>작품별</b>${e.byWork.map(([w,n])=>`<span class="wk">${esc(w)} <i style="width:${Math.max(3,Math.round(n/e.n*60))}px"></i> ${n}</span>`).join('')}</div>`:''}
         ${[['템포',e.tempo],['감정 곡선',e.curve],['주된 전환',e.trans]].filter(([,v])=>v.length).map(([k,v])=>`<div><b>${k}</b>${v.map(([x,n])=>`${esc(x)} <small>${n}</small>`).join(' · ')}</div>`).join('')}</div>
-      ${e.ex.length?`<div class="dict-ex">${e.ex.map(x=>`<figure><div class="dict-strip">${cutsOf(x.range).map(id=>DBM[id]?`<img loading="lazy" src="${DBBASE}${DBM[id]}" alt="${id}" title="${id}">`:'').join('')}</div>
+      ${e.ex.length?`<div class="dict-ex">${e.ex.map(x=>`<figure><div class="dict-strip">${cutsOf(x.range).map(id=>DBM[id]?`<img loading="lazy" src="${cutThumb(id)}" onerror="this.onerror=null;this.src='${DBBASE}${DBM[id]}'" alt="${id}" title="${id}">`:'').join('')}</div>
         <figcaption><b>${esc(x.work)} ${esc(x.ep)}화 · ${esc(x.id)}</b><span>${esc(x.flow||'')}${x.vng?` · VNG ${esc(x.vng)}`:''}</span>${x.why?`<p>${esc(x.why)}</p>`:''}</figcaption></figure>`).join('')}</div>`:'<p class="dict-none">이 조건에서 쓰인 묶음이 없어요</p>'}
     </article>`).join('')}</div>`;
   $('#dbside').innerHTML='<p class="empty" style="padding:0">연출명마다 실제 작품에서 쓴 5컷 묶음을 보여 줘요. 콘티 화면의 연출명을 눌러도 여기로 와요.</p>';

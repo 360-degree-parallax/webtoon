@@ -30,6 +30,15 @@ pip install pillow numpy opencv-python-headless openpyxl
 | 10. 컷 이미지 | `P=md python3 hc_cuts.py 8` | `rough/cuts/MD/08/*.jpg`, `index.json`·`manifest.csv` 갱신, 칸·말풍선 판정 |
 | 11. DB용 파일 | `P=md python3 hmulti.py 7 8 9 10` | `md7_8_9_10_imp.xlsx` (시트에 가져오기용) |
 
+### 컷을 추가한 뒤 (저장소 루트에서)
+
+| 명령 | 결과 |
+|---|---|
+| `python3 tools/build_thumbs.py` | 새 컷의 목록용 WebP 썸네일(`rough/cuts/thumbs/`) |
+| `python3 tools/build_index_min.py` | 처음 열 때 받는 압축 컷 목록(`rough/cuts/index.min.json`) |
+| DB 사본 갱신 후 `python3 tools/build_patterns.py` | 콘티 엔진 패턴(`rough/patterns.json`) |
+| DB 사본 갱신 후 `python3 tools/build_nai_stats.py` | 작화 태그 근거표(`rough/nai-stats.js`) |
+
 `notes/`에 있는 판정 파일은 작업 폴더에 같은 이름이 없으면 자동으로 읽는다. 그래서 다시 만들 때는 1·2·7~10단계만 하면 된다.
 `hc_cuts.py`는 기본으로 저장소의 `rough/cuts/`에 쓴다(`ROUGH_CUTS`로 바꿀 수 있음).
 

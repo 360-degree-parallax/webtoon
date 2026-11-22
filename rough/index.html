@@ -964,6 +964,16 @@ const PART={narr:'서사 형태',curve:'감정 곡선',goal:'연출 목적',vng:
 let PATS=[],REFS=[],REF_ALL=0,CUTMETA={};
 // 편집 화면에서 직접 고른 레퍼런스(pageEdits[컷].ref = 원본 컷 ID). 말풍선 많은 컷도 직접 고르면 씀
 let REF_PICK={};
+// 컷 경로는 ID에서 계산(DN-01-001 → DN/01/DN-01-001.jpg). 목록에는 WebP 썸네일
+const cutFile=id=>/^[A-Z]{2}-\d{2}-\d{3}$/.test(id||'')?`${id.slice(0,2)}/${id.slice(3,5)}/${id}.jpg`:null;
+const cutThumb=id=>{const f=cutFile(id);return f?'cuts/thumbs/'+f.replace(/\.jpg$/,'.webp'):null};
+// 처음 열 때 받는 컷 목록: index.min.json(열 단위·필요한 필드만) → 객체로 펼침. 없으면 index.json
+async function loadCutIndex(){
+  try{const r=await fetch(CUT_BASE+'index.min.json');if(r.ok){const m=await r.json();
+    return {note:m.note,items:m.rows.map(row=>{const o={};m.cols.forEach((k,i)=>{if(row[i]!==undefined&&row[i]!==null)o[k]=row[i]});
+      o.source_cut=o.id;o.file=cutFile(o.id);o.work=m.works[o.id.slice(0,2)];o.thumb=cutThumb(o.id);delete o.id;return o})}}}catch(_){}
+  try{const r=await fetch(CUT_BASE+'index.json');if(r.ok)return r.json()}catch(_){}
+  return {items:[]}}
 function pickRef(c,edits,i){const id=edits?.[cutSlot(c,i)]?.ref;return (id&&REF_PICK[id])||RE.suggestRef(c,REFS)}
 const locks={};              // 문장(key) → {shot, ang, h}
 const state={an:[],ranks:[],pick:[],panels:[],sel:-1,svg:''};
@@ -2708,7 +2718,7 @@ const DB_ORDER=['작품 정보','컷표','장면','5컷 리듬','코드표','명
 const LONG=/내용|메모|원문|대사|의도|리듬 한 줄|설명|비고|상태|연출명 설명/;
 async function loadDB(){if(DB===null){$('#dbscroll').innerHTML='<p class="empty" style="padding:24px">불러오는 중</p>';
     for(const u of ['db/db.json','../cuts/db/db.json']){try{const r=await fetch(u);if(!r.ok)continue;DB=await r.json();break}catch(_){}}if(!DB)DB=false
-    try{let base='cuts/',r=await fetch(base+'manifest.csv');if(!r.ok){base='../cuts/';r=await fetch(base+'manifest.csv')}DBBASE=base;const t=await r.text();const L=t.replace(/^﻿/,'').trim().split('\n');const H=L.shift().split(',');const fi=H.indexOf('file');for(const l of L){const v=l.split(',');DBM[v[0]]=v[fi]}}catch(_){}}
+    DBBASE='cuts/';DBM=new Proxy({},{get:(_,id)=>typeof id==='string'?cutFile(id):undefined});}
   renderDB()}
 function dbImgId(sheet,cols,row){const g=n=>row[cols.indexOf(n)];
   if(cols.includes('컷ID'))return g('컷ID');if(sheet==='5컷 리듬')return String(g('컷 범위')||'').split('~')[0];if(sheet==='장면')return String(g('전환점 컷')||'').split(/[~,]/)[0].trim();return null}
@@ -2730,7 +2740,7 @@ function renderDBTable(){const t=DB[dbSheet],c=t.columns,rows=dbRows();const sho
   $('#dbcount').textContent=`${rows.length}행`;
   const cell=(v,col)=>{if(v===null||v===undefined)return'<td></td>';const s=String(v);return LONG.test(col)?`<td class="long" title="${esc(s)}">${esc(s.length>90?s.slice(0,90)+'…':s)}</td>`:`<td>${esc(s)}</td>`};
   $('#dbscroll').innerHTML=`<table class="db"><thead><tr>${showImg?'<th></th>':''}${c.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,dbLimit).map(([r,i])=>{const id=dbImgId(dbSheet,c,r);
-    return `<tr data-i="${i}"${i===dbSel?' class="on"':''}>${showImg?`<td>${DBM[id]?`<img loading="lazy" src="${DBBASE}${DBM[id]}" alt="">`:''}</td>`:''}${r.map((v,k)=>cell(v,c[k])).join('')}</tr>`}).join('')}</tbody></table>`+(rows.length>dbLimit?`<button class="more" data-act="dbmore">${rows.length-dbLimit}행 더 보기</button>`:'')}
+    return `<tr data-i="${i}"${i===dbSel?' class="on"':''}>${showImg?`<td>${DBM[id]?`<img loading="lazy" src="${cutThumb(id)}" onerror="this.onerror=null;this.src='${DBBASE}${DBM[id]}'" alt="">`:''}</td>`:''}${r.map((v,k)=>cell(v,c[k])).join('')}</tr>`}).join('')}</tbody></table>`+(rows.length>dbLimit?`<button class="more" data-act="dbmore">${rows.length-dbLimit}행 더 보기</button>`:'')}
 function renderDBSide(i){const t=DB[dbSheet],c=t.columns,r=t.rows[i];const id=dbImgId(dbSheet,c,r);
   const cm=CUTMETA[id],FIT={ok:'그림 위주 · 레퍼런스로 씀',partial:'말풍선 위주·그림이 덜 차지 · 레퍼런스 제외',multi:'여러 칸 섞임·잘림 · 레퍼런스 제외'};
   $('#dbside').innerHTML=(cm?`<div class="dbpair"><figure><img src="${CUT_BASE}${cm.file}" alt="${esc(id)} 원본"><figcaption>원본 · cuts/</figcaption></figure>${cm.fixed?`<figure><img src="${FIX_BASE}${cm.fixed}" alt="${esc(id)} 수정본"><figcaption>피그마 수정본 · cuts-fixed/</figcaption></figure>`:''}</div><p class="dbmeta">칸 모양 <b>${cm.frame==='slant'?'사선':'사각'}</b> · ${cm.fixed?'피그마 수정본 · 레퍼런스로 씀':FIT[cm.fit]||''}</p>`:DBM[id]?`<img src="${DBBASE}${DBM[id]}" alt="${esc(id)}">`:'')+`<dl>${c.map((h,k)=>r[k]===null||r[k]===undefined||r[k]===''?'':`<dt>${esc(h)}</dt><dd>${esc(r[k])}</dd>`).join('')}</dl>`}
@@ -2742,7 +2752,7 @@ try{const v=localStorage.getItem('rough-view');setTimeout(()=>showView(v||'write
 
 Promise.all([
   fetch('patterns.json').then(r=>r.json()),
-  fetch(CUT_BASE+'index.json').then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})),
+  loadCutIndex(),
 ]).then(([pt,cuts])=>{
   PATS=pt.patterns;{const el=document.getElementById('patcount');if(el)el.textContent=PATS.length.toLocaleString()}
   // 그림 위주 컷만 레퍼런스로(말풍선 위주·덜 차지·여러 칸 섞인 컷은 자동 판정으로 제외)
