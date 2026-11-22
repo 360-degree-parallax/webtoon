@@ -197,6 +197,11 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .reader .balloon-selected .balloon-art{outline:1px dashed #2d71f7;outline-offset:4px}
 .balloon-swatch{display:inline-flex;width:36px;height:36px;border-radius:5px;background:#fff}
 .balloon-swatch svg{width:100%;height:100%}
+#wlettertextform{display:flex;align-items:flex-end;flex-wrap:wrap;gap:6px;margin-top:8px}
+#wlettertextform[hidden]{display:none}
+#wlettertextform label{display:flex;flex:1 0 168px;min-width:0;flex-direction:column;gap:3px;font-size:13px}
+#wlettermemo{width:100%;min-height:52px;max-height:140px;padding:7px 9px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--t1);font:inherit}
+.reader .letter-selected{outline:1px dashed #2d71f7;outline-offset:3px}
 .page-editor input[type="range"]{width:120px;vertical-align:middle}
 .reader [data-letter]:active{cursor:grabbing}
 .reader [data-letter]:focus-visible{outline:2px solid #2d71f7}
@@ -545,13 +550,18 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div id="wtools" class="page-editor" hidden>
   <div class="toolbar">
     <label>편집할 컷 <select id="wcut"></select></label>
-    <button class="btn" id="wletterreset">식자 편집 초기화</button>
+    <button class="btn" id="wletterreset">식자 배치·스타일 초기화</button>
   </div>
   <div class="background-controls" id="wbackground" hidden>
     <label>배경색 <input id="wbgcolor" type="color" value="#ffffff"></label>
     <button class="btn" id="wbgreset">배경 초기화</button>
     <div class="bg-presets" id="wbgpresets" role="group" aria-label="컷 아래 전환 질감"></div>
   </div>
+  <form id="wlettertextform" hidden>
+    <label><span id="wlettertextlabel">문구</span><textarea id="wlettermemo" rows="2" required></textarea></label>
+    <button class="btn dark" type="submit" id="wletterapply">문구 적용</button>
+    <button class="btn" type="button" id="wletteroriginal">작성 문구 복원</button>
+  </form>
   <div class="toolbar" id="wballoonstyletools" hidden>
     <span class="balloon-swatch" id="wballoonswatch" aria-hidden="true"></span>
     <label>식자 형태 <select id="wballoonstyle"></select></label>
@@ -562,7 +572,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <label>말풍선 크기 <input id="wballoonsize" type="range" min="50" max="200" step="1" value="100"> <output id="wballoonvalue">100%</output></label>
     <button class="btn" id="wballoonreset">크기·꼬리 초기화</button>
   </div>
-  <small>컷 사이 손잡이를 위아래로 끌어 간격을 조절하세요. 두 번 클릭하면 기본 간격으로 돌아가요. 말풍선을 선택하면 꼬리 끝점과 크기를 조절할 수 있어요.</small>
+  <small>컷 사이 손잡이를 위아래로 끌어 간격을 조절하세요. 두 번 클릭하면 기본 간격으로 돌아가요. 말풍선·나레이션·효과음을 선택하면 문구를 수정할 수 있어요.</small>
 </div>
 <div class="reader" id="reader"></div>
 </div>
@@ -745,6 +755,9 @@ const LT={ink:'#2a2622',paper:'#fbf8f1',text:'#24201c'};
 const rngL=seed=>{let h=2166136261;for(const ch of String(seed))h=Math.imul(h^ch.charCodeAt(0),16777619);return()=>((h=Math.imul(h^(h>>>15),2246822507)^Math.imul(h^(h>>>13),3266489909))>>>0)/4294967296};
 function wrapKo(t,max){const words=String(t).trim().split(/\s+/);const out=[];let cur='';for(const w of words){if(!cur)cur=w;else if((cur+' '+w).length<=max)cur+=' '+w;else{out.push(cur);cur=w}}if(cur)out.push(cur);
   return out.flatMap(l=>l.length>max+3?l.match(new RegExp(`.{1,${max}}`,'g')):[l])}
+function wrapLetter(text,width,edited){
+  return edited?text.split(/\r?\n/).flatMap(line=>line.trim()?wrapKo(line,width):['']):wrapKo(text,width);
+}
 function balloonKind(d,p){const n=d.note||'',t=d.text||'';
   if(/속으로|생각|독백|마음속/.test(n))return'thought';
   if(/작게|속삭|조용히|혼잣말|중얼/.test(n)||/^[.…·\s]+$/.test(t))return'small';
@@ -866,14 +879,18 @@ function balloonTip(meta,offset){
 function tailTransform(end){return `translate(${end.x} ${end.y})`}
 function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(edit?.style);
   const kind=preset?'normal':balloonKind(d,p),small=kind==='small',k=box.w/630;
-  const punch=(d.text||'').length<=6&&p.i>=2&&kind!=='small';const fs=(small?16:punch?26:21)*k,lh=fs*1.4;
+  const punch=(d.text||'').length<=6&&p.i>=2&&kind!=='small';
   const linked=!!(preset&&CAN_LINK.has(preset[0])&&edit?.linked&&Array.from(d.text.trim()).length>1);
   const showTail=edit?.showTail??(!preset||linked);
-  const lines=wrapKo(d.text||'',small?10:9);
+  const edited=typeof edit?.text==='string';
+  const lines=wrapLetter(d.text||'',small?10:9,edited);
   const midpoint=Math.ceil(lines.length/2);
-  const groups=!linked?[preset?lines:lines.slice(0,5)]:lines.length>1?
+  const groups=!linked?[preset||edited?lines:lines.slice(0,5)]:lines.length>1?
     [lines.slice(0,midpoint),lines.slice(midpoint)]:[lines[0].slice(0,Math.ceil(lines[0].length/2)),lines[0].slice(Math.ceil(lines[0].length/2))].map(line=>[line]);
-  const tw=Math.max(...groups.flat().map(l=>l.length))*fs*.98,th=Math.max(...groups.map(l=>l.length))*lh;
+  const rows=Math.max(...groups.map(group=>group.length));
+  const nominal=(small?16:punch?26:21)*k;
+  const fs=edited?Math.min(nominal,box.h*.5/(rows*1.4+2.6)):nominal,lh=fs*1.4;
+  const tw=Math.max(...groups.flat().map(l=>l.length))*fs*.98,th=rows*lh;
   const rx=Math.max(tw/2+fs*1.5,fs*3.2);
   const aspect=preset?.[0]==='narration'?1.32:1.13;
   const ry=Math.max(th/2+fs*1.3,fs*2.2,preset?rx/aspect:0);
@@ -906,7 +923,11 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
   const tailArt=interactive?`<g data-tail-art>${tail.svg}</g>`:tail.svg;
   return `<g${data} transform="${balloonTransform(meta,scale)}">${body+tailArt+cover+text+suffix}</g>`;
 }
-function captionSVG(t,p,box,first,edit){const k=box.w/630,fs=19*k,lines=wrapKo(t,16).slice(0,3),lh=fs*1.5;const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
+function captionSVG(t,p,box,first,edit){
+  const k=box.w/630,edited=typeof edit?.text==='string';
+  const wrapped=wrapLetter(t,16,edited),lines=edited?wrapped:wrapped.slice(0,3);
+  const fs=edited?Math.min(19*k,box.h*.48/(lines.length*1.5+1.6)):19*k,lh=fs*1.5;
+  const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
   const style=/그날|이후|후|전|밤|아침|저녁|년|일 뒤|며칠|다음 날|그때/.test(t)&&(first||p.role==='설정'||p.role==='전환')?'deco':(p.vng==='R'||p.shot==='효과 배경')?'plain':'box';
   const w=tw+fs*2.6,h=th+fs*1.6,x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06);
   const txt=(fill,extra='')=>lines.map((l,n)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+fs*.8+lh*(n+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" text-anchor="middle" fill="${fill}"${extra}>${esc(l)}</text>`).join('');
@@ -938,18 +959,19 @@ function soundEffectSVG(text,box,side,index){
   return `<g transform="translate(${x} ${y}) rotate(-12)" font-family="Pretendard, Noto Sans KR, sans-serif" font-weight="900" font-size="${size}" text-anchor="middle" dominant-baseline="central">${letters}</g>`;
 }
 function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);let o='';
-  const add=(key,label,svg)=>{
-    const pos=positions?.[key];
+  const add=(key,label,source,draw)=>{
+    const pos=positions?.[key],text=pos?.text??source;
     const move=Number.isFinite(pos?.x)&&Number.isFinite(pos?.y)?` transform="translate(${pos.x} ${pos.y})"`:'';
-    const access=interactive?` data-letter="${key}" tabindex="0" aria-label="${esc(label)}"`:'';
+    const attrText=esc(text).replace(/\n/g,'&#10;');
+    const access=interactive?` data-letter="${key}" data-letter-text="${attrText}" tabindex="0" aria-label="${label} ${attrText}"`:'';
+    const svg=draw(text,pos);
     o+=move||access?`<g${move}${access}>${svg}</g>`:svg;
   };
-  (p.sfx||[]).forEach((text,n)=>add('effect-'+n,'효과음 '+text,soundEffectSVG(text,box,p.side,n)));
-  if(p.caption)add('caption','나레이션 '+p.caption,captionSVG(p.caption,p,box,idx===0,positions?.caption));
-  const ds=(p.dialogs||[]).filter(d=>d.text).slice(0,3);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
+  (p.sfx||[]).forEach((text,n)=>add('effect-'+n,'효과음',text,value=>soundEffectSVG(value,box,p.side,n)));
+  if(p.caption)add('caption','나레이션',p.caption,(value,pos)=>captionSVG(value,p,box,idx===0,pos));
+  const ds=(p.dialogs||[]).filter(d=>d.text);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
   ds.forEach((d,n)=>{
-    const key='dialog-'+n;
-    add(key,'말풍선 '+d.text,balloonSVG(d,p,box,n,R,positions?.[key],interactive));
+    add('dialog-'+n,'말풍선',d.text,(value,pos)=>balloonSVG({...d,text:value},p,box,n,R,pos,interactive));
   });
   return o;
 }
@@ -1352,7 +1374,7 @@ function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerH
 }
 $('#wtoc').addEventListener('click',e=>{const a=e.target.closest('[data-toc]');if(!a)return;e.preventDefault();document.getElementById('ws-'+a.dataset.toc)?.scrollIntoView({behavior:'smooth'})});
 const pageReader=$('#reader'),pageCut=$('#wcut');
-let gapDrag=null,tailDrag=null,selectedBalloon=null;
+let gapDrag=null,tailDrag=null,selectedLetter=null;
 function pageKey(group){return group.closest('section').dataset.pageScene+':'+group.dataset.slotIndex}
 function pageSettings(create=false,key=pageSelection){
   const [scene,slot]=key.split(':').map(Number);
@@ -1361,8 +1383,8 @@ function pageSettings(create=false,key=pageSelection){
   return edits[slot];
 }
 function refreshPageTools(){
-  const previous=selectedBalloon&&{key:pageKey(selectedBalloon.closest('[data-slot-index]')),letter:selectedBalloon.dataset.letter};
-  selectBalloon(null);
+  const previous=selectedLetter&&{key:pageKey(selectedLetter.closest('[data-slot-index]')),letter:selectedLetter.dataset.letter};
+  selectLetter(null);
   $('#wtools').hidden=!pageEditing;
   if(!pageEditing)return;
   const groups=[...pageReader.querySelectorAll('[data-slot-index]')];
@@ -1370,10 +1392,10 @@ function refreshPageTools(){
     `씬 ${Number(group.closest('section').dataset.pageScene)+1} · ${Number(group.dataset.p)+1}컷`,pageKey(group))));
   const group=groups.find(group=>pageKey(group)===pageSelection)||groups[0];
   selectPageCut(group);
-  if(group&&previous?.key===pageKey(group))selectBalloon(group.querySelector(`[data-letter="${previous.letter}"]`));
+  if(group&&previous?.key===pageKey(group))selectLetter(group.querySelector(`[data-letter="${previous.letter}"]`));
 }
 function selectPageCut(group){
-  if(selectedBalloon?.closest('[data-slot-index]')!==group)selectBalloon(null);
+  if(selectedLetter?.closest('[data-slot-index]')!==group)selectLetter(null);
   const buttons=[pageCut,$('#wletterreset')];
   buttons.forEach(el=>el.disabled=!group);
   $('#wbackground').hidden=!group;
@@ -1426,7 +1448,11 @@ pageCut.addEventListener('change',()=>{
 $('#wletterreset').addEventListener('click',()=>{
   if(!pageSelection)return;
   const settings=pageSettings();
-  if(settings)delete settings.letters;
+  if(settings?.letters){
+    settings.letters=Object.fromEntries(Object.entries(settings.letters)
+      .filter(([,entry])=>typeof entry?.text==='string')
+      .map(([key,{text}])=>[key,{text}]));
+  }
   saveScenes();renderWebtoon();
 });
 function letterPosition(letter){return {x:0,y:0,...pageSettings()?.letters?.[letter.dataset.letter]}}
@@ -1438,19 +1464,50 @@ function saveLetter(letter,position){
 }
 function pagePoint(svg,e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse())}
 const balloonSize=$('#wballoonsize'),balloonValue=$('#wballoonvalue');
-function selectBalloon(letter){
+const letterTextForm=$('#wlettertextform'),letterMemo=$('#wlettermemo'),letterOriginal=$('#wletteroriginal');
+function selectLetter(letter){
+  if(selectedLetter===letter)return;
+  selectedLetter?.classList.remove('balloon-selected','letter-selected');
+  selectedLetter=letter||null;
   const art=letter?.querySelector('[data-balloon]');
-  selectedBalloon?.classList.remove('balloon-selected');
   const caption=letter?.dataset.letter==='caption';
-  selectedBalloon=art||caption?letter:null;
   $('#wballoon').hidden=!art;
-  $('#wballoonstyletools').hidden=!selectedBalloon;
-  if(!selectedBalloon)return;
-  letter.classList.add('balloon-selected');
+  $('#wballoonstyletools').hidden=!art&&!caption;
+  letterTextForm.hidden=!letter;
+  if(!letter)return;
+  letter.classList.add(art?'balloon-selected':'letter-selected');
   const edit=letterPosition(letter);
-  showBalloonStyle(edit,caption,art);
+  const effect=letter.dataset.letter.startsWith('effect-');
+  $('#wlettertextlabel').textContent=caption?'나레이션 문구':effect?'효과음 문구':'말풍선 문구';
+  letterMemo.value=letter.dataset.letterText||'';
+  letterMemo.setCustomValidity('');
+  letterOriginal.disabled=typeof edit.text!=='string';
+  if(art||caption)showBalloonStyle(edit,caption,art);
   if(art)showBalloonSize(edit.scale||1);
 }
+letterTextForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  if(!selectedLetter)return;
+  const effect=selectedLetter.dataset.letter.startsWith('effect-');
+  const text=effect?letterMemo.value.trim().replace(/\s+/g,' '):letterMemo.value.trim();
+  if(!text){
+    letterMemo.setCustomValidity('문구를 입력해 주세요.');
+    letterMemo.reportValidity();
+    return;
+  }
+  saveLetter(selectedLetter,{text});
+  renderWebtoon();
+});
+letterMemo.addEventListener('input',()=>letterMemo.setCustomValidity(''));
+letterMemo.addEventListener('keydown',e=>{
+  if(!e.isComposing&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();letterTextForm.requestSubmit()}
+});
+letterOriginal.addEventListener('click',()=>{
+  const edit=selectedLetter&&pageSettings()?.letters?.[selectedLetter.dataset.letter];
+  if(typeof edit?.text!=='string')return;
+  delete edit.text;
+  saveScenes();renderWebtoon();
+});
 const balloonStyle=$('#wballoonstyle'),balloonLinked=$('#wballoonlinked'),balloonTailToggle=$('#wballoontail');
 const styleOptions=styles=>styles.map(([key,label],i)=>`<option value="${key}">${i+1}. ${label}</option>`).join('');
 function showBalloonStyle(edit,caption,art){
@@ -1468,8 +1525,8 @@ function showBalloonStyle(edit,caption,art){
   $('#wballoonswatch').innerHTML=preset?`<svg viewBox="-29 -29 58 58">${presetBalloon(preset,0,0,extent,extent,.85,rngL(preset[0]),balloonLinked.checked).body}</svg>`:'';
 }
 function updateBalloonStyle(edit){
-  if(!selectedBalloon)return;
-  saveLetter(selectedBalloon,edit);
+  if(!selectedLetter)return;
+  saveLetter(selectedLetter,edit);
   renderWebtoon();
   const input=edit.style?balloonStyle:'linked' in edit?balloonLinked:balloonTailToggle;
   input.focus({preventScroll:true});
@@ -1487,20 +1544,20 @@ function showTail(art,meta,offset){
   art.querySelector('[data-tail-handle]')?.setAttribute('transform',tailTransform(tail.end));
 }
 balloonSize.addEventListener('input',()=>{
-  if(!selectedBalloon)return;
+  if(!selectedLetter?.querySelector('[data-balloon]'))return;
   const scale=Number(balloonSize.value)/100;
-  const art=selectedBalloon.querySelector('[data-balloon]');
+  const art=selectedLetter.querySelector('[data-balloon]');
   art.setAttribute('transform',balloonTransform(JSON.parse(art.dataset.balloon),scale));
   showBalloonSize(scale);
-  saveLetter(selectedBalloon,{scale});
+  saveLetter(selectedLetter,{scale});
 });
 $('#wballoonreset').addEventListener('click',()=>{
-  if(!selectedBalloon)return;
-  const art=selectedBalloon.querySelector('[data-balloon]'),meta=JSON.parse(art.dataset.balloon);
+  if(!selectedLetter)return;
+  const art=selectedLetter.querySelector('[data-balloon]'),meta=JSON.parse(art.dataset.balloon);
   art.setAttribute('transform',balloonTransform(meta,1));
   showTail(art,meta,null);
   showBalloonSize(1);
-  saveLetter(selectedBalloon,{scale:1,tail:null});
+  saveLetter(selectedLetter,{scale:1,tail:null});
 });
 function startTailDrag(letter,art,e){
   const meta=JSON.parse(art.dataset.balloon),initial=letterPosition(letter).tail;
@@ -1511,7 +1568,7 @@ pageReader.addEventListener('focusin',e=>{
   const letter=e.target.closest('[data-letter]');
   if(!pageEditing||!letter)return;
   selectPageCut(letter.closest('[data-slot-index]'));
-  selectBalloon(letter);
+  selectLetter(letter);
 });
 function gapLayout(gap){
   const svg=gap.ownerSVGElement,index=Number(gap.dataset.pageGap);
@@ -1569,7 +1626,7 @@ pageReader.addEventListener('pointerdown',e=>{
   if(!group)return;
   selectPageCut(group);
   const letter=e.target.closest('[data-letter]');
-  selectBalloon(letter);
+  selectLetter(letter);
   if(!letter)return;
   e.preventDefault();
   const handle=e.target.closest('[data-tail-handle]');
