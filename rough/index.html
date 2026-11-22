@@ -176,6 +176,55 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scbar b{color:var(--t1);font-weight:700}
 .scbar .ib{width:32px;height:32px}
 .scbar select{height:32px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);padding:0 8px;font-size:14px;font-weight:600;max-width:60vw}
+#v-webtoon{background:var(--surface)}
+.edtop{position:sticky;top:104px;z-index:15;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;height:52px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line)}
+.edtop-l{display:flex;align-items:center;gap:10px;min-width:0}.edcrumb{font-size:15px}
+.edsave{font-size:12px;color:var(--t3);white-space:nowrap}.edsave.on{color:var(--t2)}
+.edtop-r{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.edtop .ib{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;font-size:18px;color:var(--t2)}.edtop .ib:hover:not(:disabled){background:var(--hover);color:var(--t1)}.edtop .ib:disabled{opacity:.35}
+.edtop #wedit[aria-pressed=true]{background:var(--dark);color:var(--ondark)}
+.edst{display:block;text-align:center;font-size:12px;min-height:0}
+.edgrid{display:grid;grid-template-columns:240px minmax(0,1fr) 300px;align-items:start}
+.edleft,.edright{position:sticky;top:156px;max-height:calc(100vh - 156px);overflow:auto;padding:16px}
+.edleft{border-right:1px solid var(--line);background:var(--bg);min-height:calc(100vh - 156px)}
+#wtools.edright{position:sticky;top:156px;z-index:5;border:0;border-left:1px solid var(--line);background:var(--bg);min-height:calc(100vh - 156px);max-width:none;margin:0;border-radius:0;padding:16px}
+.edhead{font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.04em;margin:0 0 8px 6px}
+.edtree{display:grid;gap:1px}
+.edtree .tsc{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:6px;font-size:13px;font-weight:700;color:var(--t1);text-decoration:none}
+.edtree .tsc:hover,.edtree .tcut:hover{background:var(--hover)}
+.edtree .tcut{display:flex;align-items:center;gap:8px;width:100%;padding:5px 8px 5px 22px;border-radius:6px;font-size:13px;color:var(--t2);text-align:left}
+.edtree .tcut[aria-current=true]{background:var(--blue-soft,#eaf1ff);color:var(--t1);font-weight:600}
+.edtree .tcut i{width:6px;height:6px;border-radius:3px;background:var(--line2);flex:none}.edtree .tcut i.on{background:#16a34a}
+.edtree .tcut small{margin-left:auto;font-size:11px;color:var(--t3)}
+.edcanvas{min-width:0;padding:8px 24px 0}
+.edcanvas .reader-top{padding:28px 0 4px;max-width:690px}
+#v-webtoon.preview .edgrid{grid-template-columns:240px minmax(0,1fr) 0}
+#v-webtoon.preview .edright{display:none}
+.insp-empty{display:grid;gap:4px;padding:8px 4px;color:var(--t2);font-size:13px}.insp-empty b{color:var(--t1);font-size:14px}
+.insp-empty .keys{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:14px 0 0;font-size:12px}.insp-empty dt{font-weight:700;color:var(--t1)}.insp-empty dd{margin:0}
+.insp{display:grid;gap:10px;padding:4px 0 16px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.insp-h{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.04em}
+.insp-h select{max-width:170px;height:30px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--t1);font-size:13px}
+.prop{display:flex;align-items:center;gap:8px;min-height:32px;font-size:13px}
+.prop>span:first-child{width:56px;flex:none;color:var(--t2)}
+.prop.col{align-items:flex-start;flex-direction:column}.prop.col>span:first-child{width:auto}
+.prop select{flex:1;min-width:0;height:32px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--t1);font-size:13px}
+.prop input[type=range]{flex:1}
+.prop .grow{flex:1}
+.insp textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px;line-height:1.55;resize:vertical}
+.btn.sm{height:30px;padding:0 10px;font-size:12px}
+.btn kbd{font:inherit;font-size:10px;opacity:.7;margin-left:4px}
+.insp-foot{display:block;color:var(--t3);font-size:12px;line-height:1.5}
+#wtools .background-controls{display:grid;gap:8px;margin:0}
+#wtools .background-controls .prop{display:flex}#wtools .background-controls .prop.col{display:flex;flex-direction:column}
+.sheet-h{display:none}
+@media(max-width:1100px){.edgrid{grid-template-columns:minmax(0,1fr) 280px}.edleft{display:none}#v-webtoon.preview .edgrid{grid-template-columns:minmax(0,1fr) 0}}
+@media(max-width:760px){.edtop{grid-template-columns:1fr auto;height:auto;padding:8px 12px;top:104px}.edtop-c{grid-column:1/-1;grid-row:2}.edgrid{grid-template-columns:1fr}.edcanvas{padding:0}
+  #wtools.edright{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:52px;min-height:0;overflow:hidden;z-index:30;border-left:0;border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08);padding:0 16px 16px;transition:max-height .2s}
+  #wtools.edright.open{max-height:60vh;overflow:auto}
+  .sheet-h{display:flex;align-items:center;justify-content:space-between;width:100%;height:52px;font-size:14px;font-weight:700;color:var(--t1);position:sticky;top:0;background:var(--bg);z-index:1}
+  .sheet-h::after{content:"▲";font-size:11px;color:var(--t3)}#wtools.open .sheet-h::after{content:"▼"}
+  .edcanvas .reader-top{padding:20px 16px 4px}.edcanvas{padding-bottom:64px}}
 .page-editor{position:sticky;top:104px;z-index:10;max-width:690px;margin:0 auto;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
 .page-editor[hidden],.page-editor [hidden]{display:none}
 .page-editor .toolbar{margin-top:0}
@@ -635,40 +684,56 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 </div>
 
 <div class="view" id="v-webtoon" hidden>
-<div class="reader-top">
-  <input class="wtitle" id="wtitle" aria-label="작품 제목" placeholder="작품 제목">
-  <p class="desc" id="wstat"></p>
-  <div class="toolbar"><div class="seg3" id="wmode"><button data-m="final" aria-pressed="true">완성본</button><button data-m="rough" aria-pressed="false">러프</button></div><span class="status" id="wst"></span><span class="grow"></span><button class="btn" id="wedit" aria-pressed="false" aria-controls="wtools">배치 편집</button><button class="btn dark" data-act="wsave">이미지 저장</button></div>
-  <nav class="toc" id="wtoc" aria-label="씬 목차"></nav>
+<div class="edtop">
+  <div class="edtop-l"><b class="edcrumb">편집</b><span class="edsave" id="edsave" aria-live="polite">자동 저장</span></div>
+  <div class="edtop-c"><div class="seg3" id="wmode"><button data-m="final" aria-pressed="true">완성본</button><button data-m="rough" aria-pressed="false">러프</button></div></div>
+  <div class="edtop-r"><button class="ib" id="wundo" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="ib" id="wredo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button class="btn" id="wedit" aria-pressed="false" aria-controls="wtools">미리보기</button><button class="btn dark" data-act="wsave">이미지 저장</button></div>
 </div>
-<div id="wtools" class="page-editor" hidden>
-  <div class="toolbar">
-    <label>편집할 컷 <select id="wcut"></select></label>
-    <button class="btn" id="wletterreset">식자 배치·스타일 초기화</button>
-  </div>
-  <div class="background-controls" id="wbackground" hidden>
-    <label>배경색 <input id="wbgcolor" type="color" value="#ffffff"></label>
-    <button class="btn" id="wbgreset">배경 초기화</button>
-    <div class="bg-presets" id="wbgpresets" role="group" aria-label="컷 아래 전환 질감"></div>
-  </div>
-  <form id="wlettertextform" hidden>
-    <label><span id="wlettertextlabel">문구</span><textarea id="wlettermemo" rows="2" required></textarea></label>
-    <button class="btn dark" type="submit" id="wletterapply">문구 적용</button>
-    <button class="btn" type="button" id="wletteroriginal">작성 문구 복원</button>
-  </form>
-  <div class="toolbar" id="wballoonstyletools" hidden>
-    <span class="balloon-swatch" id="wballoonswatch" aria-hidden="true"></span>
-    <label>식자 형태 <select id="wballoonstyle"></select></label>
-    <label id="wballoonlinklabel" hidden><input id="wballoonlinked" type="checkbox"> 두 칸 연결</label>
-    <label id="wballoontaillabel" hidden><input id="wballoontail" type="checkbox"> 꼬리 표시</label>
-  </div>
-  <div class="toolbar" id="wballoon" hidden>
-    <label>말풍선 크기 <input id="wballoonsize" type="range" min="50" max="200" step="1" value="100"> <output id="wballoonvalue">100%</output></label>
-    <button class="btn" id="wballoonreset">크기·꼬리 초기화</button>
-  </div>
-  <small>컷 사이 손잡이를 위아래로 끌어 간격을 조절하세요. 두 번 클릭하면 기본 간격으로 돌아가요. 말풍선·나레이션·효과음을 선택하면 문구를 수정할 수 있어요.</small>
+<span class="status edst" id="wst"></span>
+<div class="edgrid">
+  <aside class="edleft" aria-label="목차">
+    <div class="edhead">목차</div>
+    <nav class="edtree" id="wtoc" aria-label="씬·컷 목차"></nav>
+  </aside>
+  <main class="edcanvas">
+    <div class="reader-top">
+      <input class="wtitle" id="wtitle" aria-label="작품 제목" placeholder="제목 없음">
+      <p class="desc" id="wstat"></p>
+    </div>
+    <div class="reader" id="reader"></div>
+  </main>
+  <aside id="wtools" class="page-editor edright" aria-label="속성">
+    <button type="button" class="sheet-h" id="wsheet" aria-expanded="false"><span id="wsheett">속성</span></button>
+    <div class="insp-empty" id="wempty"><b>컷이나 식자를 눌러 보세요</b><span>선택한 것의 속성이 여기 나와요.</span>
+      <dl class="keys"><dt>드래그</dt><dd>식자 옮기기 · 컷 사이 손잡이로 간격</dd><dt>방향키</dt><dd>선택한 식자 1px 이동 (Shift 10px)</dd><dt>Ctrl+Z</dt><dd>실행 취소</dd><dt>Esc</dt><dd>선택 해제</dd></dl></div>
+    <section class="insp" id="wsec-letter" hidden>
+      <form id="wlettertextform" hidden>
+        <div class="insp-h"><span id="wlettertextlabel">문구</span></div>
+        <textarea id="wlettermemo" rows="3" required aria-label="문구"></textarea>
+        <div class="prop"><button class="btn sm" type="button" id="wletteroriginal">작성 문구로</button><span class="grow"></span><button class="btn dark sm" type="submit" id="wletterapply">적용 <kbd>Ctrl+Enter</kbd></button></div>
+      </form>
+      <div id="wballoonstyletools" hidden>
+        <div class="prop"><span>형태</span><span class="balloon-swatch" id="wballoonswatch" aria-hidden="true"></span><select id="wballoonstyle" aria-label="식자 형태"></select></div>
+        <label class="prop" id="wballoonlinklabel" hidden><span>연결</span><input id="wballoonlinked" type="checkbox"> 두 칸 연결</label>
+        <label class="prop" id="wballoontaillabel" hidden><span>꼬리</span><input id="wballoontail" type="checkbox"> 꼬리 표시</label>
+      </div>
+      <div id="wballoon" hidden>
+        <div class="prop"><span>크기</span><input id="wballoonsize" type="range" min="50" max="200" step="1" value="100" aria-label="말풍선 크기"><output id="wballoonvalue">100%</output></div>
+        <div class="prop"><span></span><button class="btn sm" id="wballoonreset">크기·꼬리 초기화</button></div>
+      </div>
+    </section>
+    <section class="insp" id="wsec-cut" hidden>
+      <div class="insp-h"><span>컷</span><select id="wcut" aria-label="편집할 컷"></select></div>
+      <div class="background-controls" id="wbackground" hidden>
+        <div class="prop"><span>배경색</span><input id="wbgcolor" type="color" value="#ffffff" aria-label="배경색"></div>
+        <div class="prop col"><span>아래 전환 질감</span><div class="bg-presets" id="wbgpresets" role="group" aria-label="컷 아래 전환 질감"></div></div>
+        <div class="prop"><span></span><button class="btn sm" id="wbgreset">배경 초기화</button></div>
+      </div>
+      <div class="prop"><span>식자</span><button class="btn sm" id="wletterreset">이 컷 식자 배치·스타일 초기화</button></div>
+    </section>
+    <small class="insp-foot">컷 사이 손잡이를 위아래로 끌면 간격이 바뀌고, 두 번 클릭하면 기본 간격으로 돌아가요.</small>
+  </aside>
 </div>
-<div class="reader" id="reader"></div>
 </div>
 
 <div class="view" id="v-db" hidden>
@@ -1562,7 +1627,7 @@ function sceneArt(i,ps,pre,interactive=false){
   return {kind:n?(n===ps.length?'img':'mix'):'rough',n,
     svg:renderSVG(ps,-1,pre,false,imgs,false,{edits:SCENES[i].pageEdits,interactive})};
 }
-let pageEditing=false,pageSelection='',pageDrag=null;
+let pageEditing=true,pageSelection='',pageDrag=null;
 const ART_LABEL={img:'',mix:'일부 러프',rough:'러프'};
 function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
@@ -1638,8 +1703,9 @@ $('#wbgreset').addEventListener('click',()=>{
 });
 $('#wedit').addEventListener('click',e=>{
   pageEditing=!pageEditing;
-  e.currentTarget.setAttribute('aria-pressed',pageEditing);
-  e.currentTarget.textContent=pageEditing?'편집 완료':'배치 편집';
+  e.currentTarget.setAttribute('aria-pressed',!pageEditing);
+  e.currentTarget.textContent=pageEditing?'미리보기':'편집으로';
+  $('#v-webtoon').classList.toggle('preview',!pageEditing);
   renderWebtoon();
 });
 pageCut.addEventListener('change',()=>{
@@ -1931,13 +1997,47 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
   const base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
   if(total<=30000){await draw(items,`${base}.png`);st('이미지로 저장했어요')}else{for(const x of items)await draw([x],`${base}-씬${x.i+1}.png`);st(`길어서 씬별 ${items.length}장으로 저장했어요`)}}
 
+// ---------- 편집 화면 보강: 목차 트리 · 속성 패널 · 실행 취소 · 자동 저장 표시 (포스타입·노션 에디터 참고) ----------
+function editTree(){const el=$('#wtoc');if(!el)return;const groups=[...pageReader.querySelectorAll('[data-slot-index]')];const by={};
+  groups.forEach(g=>{const sc=+g.closest('section').dataset.pageScene;(by[sc]||=[]).push(g)});
+  el.innerHTML=SCENES.map((sc,i)=>{const ps=scenePanels(i),gs=by[i]||[];
+    return `<a class="tsc" href="#ws-${i}" data-toc="${i}">${esc(sceneLabel(sc,i))}</a>`+gs.map(g=>{const k=pageKey(g),p=ps[+g.dataset.p]||{};const has=!!cutImg(i,+g.dataset.p,p);
+      return `<button class="tcut" data-tcut="${esc(k)}" aria-current="${k===pageSelection}"><i class="${has?'on':''}" title="${has?'이미지 등록됨':'러프'}"></i>${+g.dataset.p+1}컷<small>${esc(p.shot||'')}</small></button>`}).join('')}).join('')}
+function inspector(){const L=!!selectedLetter,C=!!pageSelection;$('#wsec-letter').hidden=!L;$('#wsec-cut').hidden=!C;$('#wempty').hidden=L;
+  $('#wsheett').textContent=L?`속성 · ${$('#wlettertextlabel').textContent.replace(' 문구','')}`:C?`속성 · ${pageCut.selectedOptions[0]?.textContent||'컷'}`:'속성';if(L&&matchMedia('(max-width:760px)').matches){$('#wtools').classList.add('open');$('#wsheet').setAttribute('aria-expanded','true')}
+  document.querySelectorAll('#wtoc .tcut').forEach(b=>b.setAttribute('aria-current',b.dataset.tcut===pageSelection))}
+{const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);inspector();return r}}
+{const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);inspector();return r}}
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);editTree();inspector();return r}}
+$('#wsheet').addEventListener('click',()=>{const o=$('#wtools').classList.toggle('open');$('#wsheet').setAttribute('aria-expanded',o)});
+$('#wtoc').addEventListener('click',e=>{const b=e.target.closest('[data-tcut]');if(!b)return;e.preventDefault();pageCut.value=b.dataset.tcut;pageCut.dispatchEvent(new Event('change'))});
+// 실행 취소: 편집 화면에서 저장될 때마다 이전 상태(씬별 pageEdits)를 쌓음. 연속 드래그는 0.6초 단위로 묶음
+const UNDO=[],REDO=[];let edSnap=null,edLast=0,edRestoring=false,edSavedAt=0;
+const edState=()=>JSON.stringify(SCENES.map(sc=>sc.pageEdits||[]));
+function edButtons(){$('#wundo').disabled=!UNDO.length;$('#wredo').disabled=!REDO.length}
+function edRestore(json){edRestoring=true;const arr=JSON.parse(json);SCENES.forEach((sc,i)=>sc.pageEdits=arr[i]||[]);saveScenes();edRestoring=false;edSnap=json;renderWebtoon();edButtons()}
+{const _ss=saveScenes;saveScenes=function(...a){
+  if(typeof VIEW!=='undefined'&&VIEW==='webtoon'&&!edRestoring){const cur=edState();
+    if(edSnap!==null&&cur!==edSnap){const now=Date.now();if(now-edLast>600||!UNDO.length)UNDO.push(edSnap);if(UNDO.length>100)UNDO.shift();REDO.length=0;edLast=now;edSavedAt=now;edSaveLabel()}
+    edSnap=cur;edButtons()}
+  return _ss(...a)}}
+function edSaveLabel(){const el=$('#edsave');if(!el)return;if(!edSavedAt){el.textContent='자동 저장';el.classList.remove('on');return}
+  const s=Math.round((Date.now()-edSavedAt)/1000);el.textContent=s<5?'저장됨 · 방금':s<60?`저장됨 · ${s}초 전`:`저장됨 · ${Math.round(s/60)}분 전`;el.classList.add('on')}
+setInterval(edSaveLabel,5000);
+$('#wundo').addEventListener('click',()=>{if(!UNDO.length)return;REDO.push(edState());edRestore(UNDO.pop())});
+$('#wredo').addEventListener('click',()=>{if(!REDO.length)return;UNDO.push(edState());edRestore(REDO.pop())});
+document.addEventListener('keydown',e=>{if(typeof VIEW==='undefined'||VIEW!=='webtoon')return;const typing=e.target.closest('input,textarea,select,[contenteditable]');
+  if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==='z'&&!typing){e.preventDefault();(e.shiftKey?$('#wredo'):$('#wundo')).click();return}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'&&!typing){e.preventDefault();$('#wredo').click();return}
+  if(e.key==='Escape'&&!typing&&selectedLetter){selectLetter(null);document.activeElement?.blur?.()}});
+
 // ---------- 보기 전환 ----------
 let VIEW='nai';
 function showView(v){if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='nai';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
   ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=v!=='layout';$('#gDb').setAttribute('aria-pressed',v==='db');
-  if(v==='webtoon')renderWebtoon();
+  if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons()}
   if(v==='plan')openComposition();
   if(v==='nai')renderNai();if(v==='db')loadDB();
   scrollTo(0,0);try{localStorage.setItem('rough-view',v)}catch(_){}}
