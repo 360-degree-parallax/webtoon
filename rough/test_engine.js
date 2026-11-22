@@ -58,6 +58,13 @@ for (const chars of [[], [{ name: '민수' }, { name: '지아', aliases: ['지�
   for (const [got, want] of checks) { ptot++; if (got === want) pok++; else console.log('  멘션 X', JSON.stringify(got), '≠', JSON.stringify(want)); }
 }
 ptot++; if (R.mentions('@준이 웃었다', [{ name: '준' }])[0].name === '준') pok++; else console.log('  멘션 X @준이');
+// 컷별 입력: [식자], @인물 "(지시)대사", 나머지 행동
+{
+  const cuts = ['비가 그친 저녁, 저택 복도.\n[그날 밤, 저택]', '발소리에 @준 놀라 돌아본다.\n@준 "(놀라서)에드가?"', '@에드가 대답 대신 @준의 손목을 붙잡는다.', '@준 "(작게, 떨리며)응…"\n[두근]'];
+  const b = R.analyzeCuts(cuts, [{ name: '에드가' }, { name: '준' }])[0].beats;
+  const checks = [[b.length, 4], [b.map(x => x.who).join(','), ',준,에드가,준'], [b[0].caption, '그날 밤, 저택'], [b[0].role, '설정'], [b[1].said, '에드가?'], [b[1].dialogs[0].note, '놀라서'], [b[1].emo, '놀람'], [b[3].caption, '두근'], [b[3].dialogs[0].who, '준']];
+  for (const [got, want] of checks) { ptot++; if (got === want) pok++; else console.log('  컷 입력 X', JSON.stringify(got), '≠', JSON.stringify(want)); }
+}
 console.log(`줄글 파싱 ${pok}/${ptot}`);
 
 let ok = 0, total = 0;

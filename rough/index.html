@@ -148,6 +148,17 @@ dialog p{margin:0 0 12px;font-size:13px;color:var(--t2)}
 dialog textarea{min-height:360px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.6}
 dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 
+/* cut list */
+.guide2{font-size:13px;color:var(--t2);margin:-4px 0 10px;line-height:1.7}
+.guide2 code{font-family:inherit;font-weight:600;color:var(--t1);background:var(--surface);border-radius:6px;padding:1px 6px}
+.cutlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.cutlist li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start}
+.cutlist .cn{width:28px;height:28px;margin-top:8px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.cutlist textarea{min-height:0;height:auto;padding:9px 12px;font-size:15px;line-height:1.7;overflow:hidden;resize:none}
+.cutlist .tools{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.cutlist .tools button{width:28px;height:24px;border-radius:6px;color:var(--t3);font-size:14px}
+.cutlist .tools button:hover{background:var(--hover);color:var(--t1)}
+.tr .cap{display:inline-block;margin-top:3px;font-size:12px;color:var(--t2);border:1px solid var(--line2);border-radius:4px;padding:0 5px}
 /* characters */
 .chars{display:grid;gap:10px}
 .chr{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;grid-template-columns:minmax(90px,140px) minmax(0,1fr) auto auto;gap:8px 10px;align-items:center}
@@ -279,9 +290,10 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
   <section>
     <div class="sh"><h2>장면</h2><span id="count"></span></div>
-    <textarea id="beats" aria-label="장면" spellcheck="false" placeholder="예: @에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다.">비가 그친 저녁, 저택 복도는 촛불만 흔들리고 있었다. @에드가는 긴 복도 끝에서 천천히 걸어왔다. 발소리를 들은 @준이 놀라 돌아보며 "에드가?" 하고 불렀다.
-@에드가는 대답 대신 @준의 손목을 붙잡았다. @준의 얼굴이 순식간에 붉어졌다. 잠시 침묵이 흐른 뒤, @에드가가 희미하게 웃으며 말했다. "같이 가자."</textarea>
-    <div class="under"><span>인물은 <code>@이름</code>으로 불러요(@를 치면 목록이 떠요) · 줄글은 문장마다 컷 · 또는 한 줄에 한 컷 <code>인물 | 행동</code> · 대사는 <code>"따옴표"</code> · 7컷 넘으면 5컷씩 묶음</span><button class="link" data-act="clear">지우기</button></div>
+    <div class="guide2"><code>[식자]</code> 내레이션·효과 글자 · <code>@인물 "(감정·연기)대사"</code> 대사 · 나머지는 행동 묘사 · <code>@</code>를 치면 인물 목록</div>
+    <ol class="cutlist" id="cutlist"></ol>
+    <div class="toolbar" style="margin-top:10px"><button class="btn" data-act="addcut">+ 컷 추가</button><button class="btn" data-act="prose">줄글 붙여넣기</button><span class="grow"></span><button class="link" data-act="clear">모두 지우기</button></div>
+    <dialog id="pdlg2" aria-labelledby="pd2t"><h3 id="pd2t">줄글 붙여넣기</h3><p>문장마다 컷으로 나눠 컷 칸에 채워요. 지금 컷은 바뀌어요.</p><textarea id="prosein" style="min-height:220px" placeholder="@에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다."></textarea><div class="acts"><button class="btn" data-act="prosecancel">닫기</button><button class="btn dark" data-act="prosego">컷으로 나누기</button></div></dialog>
   </section>
 
   <section>
@@ -366,13 +378,13 @@ const lenWord=h=>h<.7?'짧게':h<1.2?'보통':h<2?'길게':'아주 길게';
 const NARR={'끝 정점':'마지막 컷에서 터지는 장면','중간 정점':'가운데서 터지고 가라앉는 장면','정점 선행':'처음부터 터지고 수습하는 장면','정점 연속':'계속 몰아치는 장면','무정점':'큰 고비 없이 흐르는 장면'};
 const CURVE={'상승':'감정이 점점 올라가요','하강':'감정이 점점 가라앉아요','산형':'감정이 올랐다 내려와요','골형':'가라앉았다 다시 올라요','평탄':'감정이 고르게 이어져요'};
 const PART={narr:'서사 형태',curve:'감정 곡선',goal:'연출 목적',vng:'VNG 순서',count:'컷 수',trans:'컷 전환',tempo:'템포',dist:'거리 흐름',emo:'감정'};
-let PATS=[],REFS=[],CUTS=null;
+let PATS=[],REFS=[];
 const locks={};              // 문장(key) → {shot, ang, h}
 const state={an:[],ranks:[],pick:[],panels:[],sel:-1,svg:''};
 
 // ---------- compute ----------
 function compute(resetPick){
-  state.an=RE.analyze($('#beats').value,engineChars());
+  state.an=RE.analyzeCuts(CUTS,engineChars());
   if(resetPick||state.pick.length!==state.an.length)state.pick=state.an.map(()=>0);
   state.ranks=state.an.map(a=>RE.rank(a,PATS,12));
   state.panels=[];
@@ -407,7 +419,7 @@ function renderTable(){
     const v=(f,label,why)=>`<div><button class="val${c.lock[f]!==undefined?' lock':''}" data-f="${f}" data-i="${i}" title="${esc(why)}">${esc(label)}</button><div class="why">${esc(why)}</div></div>`;
     return `<div class="tr${i===state.sel?' on':''}" data-i="${i}">
       <button class="n" data-sel="${i}" aria-label="${i+1}번 컷 선택">${i+1}</button>
-      <div class="beat" data-sel="${i}"><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`].filter(Boolean).join(' · '))}</small></div>
+      <div class="beat" data-sel="${i}"><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`].filter(Boolean).join(' · '))}</small>${c.caption?`<span class="cap">${esc(c.caption)}</span>`:''}</div>
       <div><span class="vng"><em class="${c.vng}">${c.vng}</em>${esc(c.role)}</span><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.roleWhy||'')}</div></div>
       <div><span style="font-size:14px;font-weight:600">${esc(c.emo)}</span><div class="dots${P?' P':''}">${[1,2,3].map(k=>`<i class="${c.i>=k?'on':''}"></i>`).join('')}</div><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.emoWhy||'')}</div></div>
       ${v('shot',c.shot,c.lock.shot!==undefined?'직접 고름':c.why.shot.slice(1).join(' · ')||c.why.shot[0])}
@@ -437,11 +449,11 @@ $('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');
 function reveal(){const g=$(`#preview [data-p="${state.sel}"]`),c=$('#canvas');if(!g)return;const gr=g.getBoundingClientRect(),cr=c.getBoundingClientRect();if(gr.top<cr.top||gr.bottom>cr.bottom-90)c.scrollBy({top:gr.top-cr.top-20,behavior:'smooth'})}
 
 // ---------- actions ----------
-let tmr;$('#beats').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(()=>{compute(true);renderSlots()},350)});
+let tmr;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
 function download(name,href){const a=document.createElement('a');a.href=href;a.download=name;a.click()}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
-  if(a==='clear'){$('#beats').value='';$('#beats').focus();compute(true)}
+  if(a==='clear'){CUTS=[''];saveCuts();renderCuts();compute(true);document.querySelector('.cutin')?.focus()}
   else if(a==='next'||a==='prev'){state.pick=state.pick.map((v,i)=>{const n=state.ranks[i].length;return (v+(a==='next'?1:-1)+n)%n});compute(false);toast(`${state.pick[0]+1}번째로 닮은 패턴으로 바꿨어요`)}
   else if(a==='svg'&&state.svg){download('rough.svg',URL.createObjectURL(new Blob([state.svg],{type:'image/svg+xml'})));toast('SVG로 저장했어요')}
   else if(a==='png'&&state.svg){const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.width*2;c.height=img.height*2;const g=c.getContext('2d');g.scale(2,2);g.fillStyle='#fff';g.fillRect(0,0,img.width,img.height);g.drawImage(img,0,0);download('rough.png',c.toDataURL('image/png'))};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(state.svg);toast('PNG로 저장했어요')}});
@@ -478,6 +490,7 @@ function render(){let y=40,o='';const ws=W-60;
     const c=p.who&&charRef(p.who);
     o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#2d71f7':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${art}</g>`+
       `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`+
+      (p.caption?`<rect x="76" y="${y+8}" width="${Math.min(ws-200,24+p.caption.length*17)}" height="30" fill="#fff" stroke="#222" stroke-width="2"/><text x="88" y="${y+29}" font-size="16" fill="#222">${esc(p.caption.slice(0,24))}</text>`:'')+
       (c?`<rect x="42" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="62" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="76" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+`</g>`;
     y+=h+Math.round(p.gap*ws)+16});
   state.svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
@@ -503,7 +516,7 @@ function underlay(p){if(!showUnder)return null;
   if(p.shot==='클로즈업'){const c=p.who&&IMG.char[p.who];if(c)return{src:c.src,op:.32}}
   if(['설정','전경','전신','중경','효과 배경'].includes(p.shot)){const sc=sceneFor(p);if(sc)return{src:sc.src,op:p.shot==='설정'||p.shot==='전경'?.38:.22}}
   return null}
-function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parse($('#beats').value,engineChars()).map(b=>b.who).filter(Boolean)])]}
+function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parseCuts(CUTS,engineChars()).map(b=>b.who).filter(Boolean)])]}
 function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
   <div class="nm">${kind==='scene'&&ref?`<input value="${esc(ref.name)}" data-rename="${esc(key)}" aria-label="장면 이름">`:esc(label)}</div>${ref?`<div class="pal">${ref.palette.map(c=>`<i style="background:${c}" title="${c}"></i>`).join('')}</div>`:''}</div>`}
 function renderSlots(){const ns=names();const extra=Object.keys(IMG.char).filter(n=>!ns.includes(n));
@@ -563,8 +576,8 @@ function renderChars(){
     <button class="x" data-del="${i}" aria-label="${esc(c.name)} 삭제">×</button>
     <textarea data-k="look" placeholder="외형: 머리 모양·색, 눈, 체격, 옷차림, 특징" aria-label="외형">${esc(c.look||'')}</textarea></div>`).join(''):'<p class="empty" style="padding:4px 0">인물을 추가하면 줄글에서도 정확하게 인물을 찾아요. 비워두면 반복되는 이름을 추정해요.</p>';
   renderSugg()}
-function renderSugg(){const have=new Set(CHARS.map(c=>c.name.trim()));const txt=$('#beats').value;
-  const found=[...new Set([...RE.guessNames(RE.sentences(txt)),...RE.parse(txt,engineChars()).map(b=>b.who)])].filter(n=>n&&!have.has(n)&&!NOTP.test(n));
+function renderSugg(){const have=new Set(CHARS.map(c=>c.name.trim()));
+  const found=[...new Set(RE.parseCuts(CUTS,engineChars()).map(b=>b.who))].filter(n=>n&&!have.has(n)&&!NOTP.test(n));
   $('#sugg').innerHTML=found.length?`인물 칸에 없는 이름 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
 let ctmr;
 $('#chars').addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;const i=+e.target.closest('.chr').dataset.i;CHARS[i][k]=e.target.value;saveChars();clearTimeout(ctmr);ctmr=setTimeout(()=>{compute(false);renderSugg();renderSlots()},400)});
@@ -572,8 +585,6 @@ $('#chars').addEventListener('click',e=>{const b=e.target.closest('[data-body]')
   const d=e.target.closest('[data-del]');if(d){CHARS.splice(+d.dataset.del,1);saveChars();renderChars();compute(false);renderSlots()}});
 $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderChars();compute(false);renderSlots()});
 document.addEventListener('click',e=>{if(e.target.closest('[data-act="addchar"]')){CHARS.push({name:'',aliases:'',body:'female',look:''});renderChars();const ins=document.querySelectorAll('#chars .nm');ins[ins.length-1]?.focus()}});
-$('#beats').addEventListener('input',()=>{clearTimeout(renderSugg.t);renderSugg.t=setTimeout(renderSugg,500)});
-renderChars();
 
 // ---------- @ 자동완성 ----------
 const mbox=document.createElement('div');mbox.className='menu';mbox.id='mbox';mbox.setAttribute('role','listbox');mbox.hidden=true;document.body.appendChild(mbox);
@@ -583,21 +594,40 @@ function caretXY(ta,pos){const cs=getComputedStyle(ta),d=document.createElement(
   Object.assign(d.style,{position:'absolute',visibility:'hidden',whiteSpace:'pre-wrap',wordWrap:'break-word',width:ta.clientWidth+'px',left:'-9999px',top:'0'});
   d.textContent=ta.value.slice(0,pos);const sp=document.createElement('span');sp.textContent='​';d.appendChild(sp);document.body.appendChild(d);
   const r=ta.getBoundingClientRect(),x=r.left+sp.offsetLeft,y=r.top+sp.offsetTop-ta.scrollTop+parseFloat(cs.lineHeight||20);d.remove();return [x,y]}
-function mentionQuery(){const ta=$('#beats');if(ta.selectionStart!==ta.selectionEnd)return null;const pos=ta.selectionStart;const m=ta.value.slice(0,pos).match(/(^|[^가-힣A-Za-z0-9_])@([가-힣A-Za-z0-9_]*)$/);return m?{q:m[2],start:pos-m[2].length-1,pos}:null}
+let TA=null;
+function mentionQuery(){const ta=TA;if(!ta)return null;if(ta.selectionStart!==ta.selectionEnd)return null;const pos=ta.selectionStart;const m=ta.value.slice(0,pos).match(/(^|[^가-힣A-Za-z0-9_])@([가-힣A-Za-z0-9_]*)$/);return m?{q:m[2],start:pos-m[2].length-1,pos}:null}
 function showMbox(){const mq=mentionQuery();const all=CHARS.map(c=>c.name.trim()).filter(Boolean);
   mList=mq?all.filter(n=>n.startsWith(mq.q)&&n!==mq.q):[];if(!mList.length){mbox.hidden=true;return}
   mStart=mq.start;mSel=Math.min(mSel,mList.length-1);
   mbox.innerHTML=mList.map((n,i)=>`<button role="option" data-mi="${i}" aria-checked="${i===mSel}">@${esc(n)}<small>${esc(CHARS.find(c=>c.name.trim()===n)?.body==='male'?'남자':'여자')}</small></button>`).join('');
-  mbox.hidden=false;const [x,y]=caretXY($('#beats'),mq.pos);mbox.style.left=Math.min(innerWidth-mbox.offsetWidth-8,x+scrollX)+'px';mbox.style.top=(y+scrollY+4)+'px'}
-function pickMention(i){const ta=$('#beats');const name=mList[i];if(!name)return;const pos=ta.selectionStart;
-  ta.value=ta.value.slice(0,mStart)+'@'+name+ta.value.slice(pos);const c=mStart+name.length+1;ta.setSelectionRange(c,c);ta.focus();mbox.hidden=true;ta.dispatchEvent(new Event('input'))}
-$('#beats').addEventListener('input',()=>{mSel=0;showMbox()});
-$('#beats').addEventListener('click',showMbox);
-$('#beats').addEventListener('keydown',e=>{if(mbox.hidden)return;
-  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();mSel=(mSel+(e.key==='ArrowDown'?1:-1)+mList.length)%mList.length;showMbox()}
-  else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();pickMention(mSel)}
-  else if(e.key==='Escape'){mbox.hidden=true}});
-$('#beats').addEventListener('blur',()=>setTimeout(()=>{mbox.hidden=true},150));
+  mbox.hidden=false;const [x,y]=caretXY(TA,mq.pos);mbox.style.left=Math.min(innerWidth-mbox.offsetWidth-8,x+scrollX)+'px';mbox.style.top=(y+scrollY+4)+'px'}
+function pickMention(i){const ta=TA;const name=mList[i];if(!name)return;const pos=ta.selectionStart;
+  ta.value=ta.value.slice(0,mStart)+'@'+name+ta.value.slice(pos);const c=mStart+name.length+1;ta.setSelectionRange(c,c);ta.focus();mbox.hidden=true;ta.dispatchEvent(new Event('input',{bubbles:true}))}
+// 컷 칸 (컷별 입력)
+const DEFAULT_CUTS=['비가 그친 저녁, 저택 복도. 촛불만 흔들린다.\n[그날 밤, 저택]','@에드가 복도 끝에서 천천히 걸어온다.','발소리에 @준 놀라 돌아본다.\n@준 "(놀라서)에드가?"','@에드가 대답 대신 @준의 손목을 붙잡는다.','@준의 얼굴이 순식간에 붉어진다.\n[두근]','@에드가 희미하게 웃는다.\n@에드가 "(낮게, 다정하게)같이 가자."'];
+let CUTS;try{CUTS=JSON.parse(localStorage.getItem('rough-cuts')||'null')||DEFAULT_CUTS.slice()}catch(_){CUTS=DEFAULT_CUTS.slice()}
+function saveCuts(){try{localStorage.setItem('rough-cuts',JSON.stringify(CUTS))}catch(_){}}
+function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
+function renderCuts(){if(!CUTS.length)CUTS=[''];
+  $('#cutlist').innerHTML=CUTS.map((c,i)=>`<li data-i="${i}"><span class="cn">${i+1}</span><textarea class="cutin" rows="1" spellcheck="false" aria-label="${i+1}번 컷" placeholder="${i?'행동 묘사 / @인물 &quot;(감정)대사&quot; / [식자]':'예: @에드가 복도 끝에서 걸어온다.'}">${esc(c)}</textarea><span class="tools"><button data-cut="up" aria-label="위로" title="위로">↑</button><button data-cut="down" aria-label="아래로" title="아래로">↓</button><button data-cut="del" aria-label="삭제" title="삭제">×</button></span></li>`).join('');
+  document.querySelectorAll('.cutin').forEach(grow)}
+const cutChanged=()=>{saveCuts();clearTimeout(tmr);tmr=setTimeout(()=>{compute(true);renderSlots();renderSugg()},350)};
+$('#cutlist').addEventListener('input',e=>{const t=e.target.closest('.cutin');if(!t)return;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);cutChanged();mSel=0;showMbox()});
+$('#cutlist').addEventListener('focusin',e=>{const t=e.target.closest('.cutin');if(t)TA=t});
+$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cut]');if(e.target.closest('.cutin'))showMbox();if(!b)return;const i=+b.closest('li').dataset.i,k=b.dataset.cut;
+  if(k==='del'){CUTS.splice(i,1)}else{const j=k==='up'?i-1:i+1;if(j<0||j>=CUTS.length)return;[CUTS[i],CUTS[j]]=[CUTS[j],CUTS[i]]}
+  renderCuts();cutChanged()});
+$('#cutlist').addEventListener('keydown',e=>{const t=e.target.closest('.cutin');if(!t)return;
+  if(!mbox.hidden){if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();mSel=(mSel+(e.key==='ArrowDown'?1:-1)+mList.length)%mList.length;showMbox()}
+    else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();pickMention(mSel)}else if(e.key==='Escape'){mbox.hidden=true}return}
+  if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();const i=+t.closest('li').dataset.i;CUTS.splice(i+1,0,'');renderCuts();cutChanged();document.querySelectorAll('.cutin')[i+1]?.focus()}});
+$('#cutlist').addEventListener('focusout',()=>setTimeout(()=>{mbox.hidden=true},150));
+document.addEventListener('click',e=>{const a=e.target.closest('[data-act]')?.dataset.act;if(!a)return;
+  if(a==='addcut'){CUTS.push('');renderCuts();saveCuts();const l=document.querySelectorAll('.cutin');l[l.length-1]?.focus()}
+  if(a==='prose'){$('#prosein').value='';$('#pdlg2').showModal()}
+  if(a==='prosecancel')$('#pdlg2').close();
+  if(a==='prosego'){const c=RE.proseToCuts($('#prosein').value,engineChars()).filter(x=>x.trim());if(c.length){CUTS=c;renderCuts();cutChanged();toast(`${c.length}컷으로 나눴어요`)}$('#pdlg2').close()}});
+renderCuts();renderChars();
 mbox.addEventListener('mousedown',e=>{const b=e.target.closest('[data-mi]');if(b){e.preventDefault();pickMention(+b.dataset.mi)}});
 
 // ---------- 보기 전환 ----------

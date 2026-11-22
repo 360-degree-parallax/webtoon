@@ -134,6 +134,7 @@ export class Director {
     for (const { c, y: yy, h, p } of imgs) {
       g.drawImage(c, 30, yy); g.lineWidth = 3; g.strokeStyle = '#111'; g.strokeRect(30, yy, ws, h);
       if (p.said) balloon(g, 30, yy, ws, h, p.said);
+      if (p.caption) caption(g, 30, yy, ws, p.caption);
     }
     return out;
   }
@@ -228,4 +229,11 @@ function balloon(g, x, y, w, h, text) {
   g.beginPath(); g.moveTo(bx + tw * .3, by + bh - 6); g.lineTo(bx + tw * .18, by + bh + 22); g.lineTo(bx + tw * .45, by + bh - 4); g.fill(); g.stroke();
   g.beginPath(); g.ellipse(bx + tw / 2, by + bh / 2, tw / 2, bh / 2, 0, 0, Math.PI * 2); g.fill(); g.stroke();
   g.fillStyle = '#111'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, bx + tw / 2, by + bh / 2 + 1);
+}
+
+function caption(g, x, y, w, text) {
+  const t = text.slice(0, 26); g.font = '500 17px Pretendard, "Apple SD Gothic Neo", sans-serif';
+  const tw = Math.min(w * .6, g.measureText(t).width + 24);
+  g.fillStyle = '#fff'; g.strokeStyle = '#111'; g.lineWidth = 2; g.fillRect(x + 12, y + 12, tw, 32); g.strokeRect(x + 12, y + 12, tw, 32);
+  g.fillStyle = '#111'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(t, x + 24, y + 29);
 }

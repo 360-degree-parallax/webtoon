@@ -120,6 +120,48 @@
     }
     return beats;
   }
+  // 컷별 입력: 컷마다 한 칸. 칸 안에서
+  //   [식자]            → 식자(내레이션·효과 글자)
+  //   @인물 "(지시)대사"  → 대사 (괄호 안은 연기·감정 지시)
+  //   그 밖의 줄         → 행동 묘사
+  function parseCut(text, chars, idx) {
+    const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const actions = [], captions = [], dialogs = [];
+    for (const l of lines) {
+      let m;
+      if ((m = l.match(/^\[(.+)\]$/))) { captions.push(m[1].trim()); continue; }
+      if ((m = l.match(/^(?:@([^\s"“]+)\s*)?["“](.*)["”]\s*[.!?…]*$/))) {
+        const who = m[1] ? (mentions('@' + m[1], chars)[0] || {}).name || m[1] : '';
+        let body = m[2].trim(), note = '';
+        const n = body.match(/^\(([^)]*)\)\s*(.*)$/); if (n) { note = n[1].trim(); body = n[2].trim(); }
+        dialogs.push({ who, note, text: body }); continue;
+      }
+      actions.push(l);
+    }
+    const actText = actions.join(' ');
+    let who = actText ? findWho(actText, chars) : null;
+    if (!who && dialogs.length) who = dialogs.find(d => d.who)?.who || null;
+    for (const d of dialogs) if (!d.who) d.who = who || '';
+    const said = dialogs.map(d => d.text).filter(Boolean).join(' / ');
+    const cue = [actText, ...dialogs.map(d => d.note), ...dialogs.map(d => d.text), ...captions].filter(Boolean).join(' ');
+    const act = actText.replace(/@/g, '') || (dialogs[0] ? `${dialogs[0].who ? dialogs[0].who + ' ' : ''}대사` : captions[0] || '');
+    const rcue = [actText, ...dialogs.map(d => d.note), said ? `"${said}"` : ''].filter(Boolean).join(' ').replace(/@/g, '');
+    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), dialogs, cue: cue.replace(/@/g, ''), rcue };
+  }
+  function parseCuts(cuts, chars) {
+    const named = chars && chars.length ? chars.slice() : [];
+    for (const c of cuts) for (const m of mentions(c, named)) if (!named.some(x => x.name === m.name)) named.push({ name: m.name });
+    return cuts.map((c, i) => parseCut(c, named, i)).filter(b => b.line.trim());
+  }
+  // 줄글을 컷 칸 글로 나눈다 (줄글 붙여넣기용)
+  function proseToCuts(text, chars) {
+    return parse(text, chars).map(b => {
+      const out = [];
+      const act = b.act.trim(); if (act) out.push(b.prose ? b.line.replace(/["“][^"”]*["”]\s*(하고|라고|하며|라며)?/g, ' ').replace(/\s+/g, ' ').trim() : (b.who ? '@' + b.who + ' ' : '') + act);
+      if (b.said) out.push(`${b.who ? '@' + b.who + ' ' : ''}"${b.said}"`);
+      return out.join('\n');
+    });
+  }
   function parse(text, chars) {
     const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
     const piped = lines.filter(l => l.includes('|')).length;
@@ -136,7 +178,7 @@
   // ---------- 2. 감정·강도 ----------
   const longest = (s, ws) => ws.filter(w => s.includes(w)).sort((a, b) => b.length - a.length)[0] || null;
   function feel(b) {
-    const s = ' ' + b.act + ' ';
+    const s = ' ' + (b.cue || b.act) + ' ';
     let emo = '평온', i = b.said ? 1 : 0, why = b.said ? '대사' : '특별한 감정 낱말 없음', hit = null;
     for (const [e, base, ws] of LEX) {
       const w = longest(s, ws);
@@ -156,7 +198,7 @@
 
   // ---------- 3. 역할 ----------
   function roleOf(b, idx, prev) {
-    const s = ' ' + b.act + ' ';
+    const s = ' ' + (b.rcue || b.act) + ' ';
     let w;
     if ((w = has(s, TRANS))) return ['전환', `전환어 '${w}'`];
     if (idx === 0 && !b.said && ((w = has(s, PLACE)) || (w = has(s, SETV)))) return ['설정', `첫 컷 · 장소/등장 '${w.trim()}'`];
@@ -263,6 +305,7 @@
   }
 
   function analyze(text, chars) { return chunk(parse(text, chars)).map(analyzeChunk); }
+  function analyzeCuts(cuts, chars) { return chunk(parseCuts(cuts, chars)).map(analyzeChunk); }
 
   // ---------- 6. 패턴 검색 ----------
   function lev(a, b) {
@@ -337,7 +380,7 @@
       if (b.vng === 'P') { gap *= 1.6; why.gap.push('정점 뒤 숨 고르기'); }
       if (an.beats[k + 1]?.role === '전환') { gap *= 1.8; why.gap.push('다음 컷이 장면 전환'); }
       gap = +clamp(gap, 0.08, 1.2).toFixed(2);
-      return { who: b.who, act: b.act, said: b.said, key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
+      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', dialogs: b.dialogs || [], key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
     });
   }
 
@@ -353,5 +396,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, parse, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
