@@ -365,6 +365,7 @@
       const ow = has(b.act, OBJ);
       if (b.role === '설정' && RANK[shot] > 1) { shot = has(' ' + b.act + ' ', PLACE) ? '설정' : '전경'; why.shot.push('장소를 먼저 보여줘서 넓게'); }
       if (b.vng === 'P' && ['놀람', '분노', '설렘', '긴장', '당황', '쓸쓸'].includes(b.emo) && RANK[shot] < 4) { shot = '클로즈업'; why.shot.push(`정점의 ${b.emo}이라 얼굴로 당김`); }
+      if (b.said && b.role !== '설정' && (shot === '설정' || shot === '전경')) { shot = b.vng === 'R' || b.i <= 1 ? '중경' : '클로즈업'; why.shot.push('대사 컷은 인물이 읽히게 당김'); }
       const hw = has(b.act, HAND);
       if (hw && b.vng !== 'P' && RANK[shot] < 5) { shot = '디테일'; why.shot.push(`손 동작 '${hw}'은 인서트로`); }
       if (ow && (b.role === '공개' || (b.vng === 'P' && an.goal === '정보 강조'))) { shot = '디테일'; why.shot.push(`핵심 소품 '${ow}'`); }
