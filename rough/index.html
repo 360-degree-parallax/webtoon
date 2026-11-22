@@ -123,6 +123,14 @@ textarea:focus{border-color:var(--t1)}
 @media(max-width:900px){.page{grid-template-columns:1fr}.pv{position:relative;height:auto;padding-top:0}.canvas{max-height:80vh}}
 @media(max-width:640px){.page{padding:0 16px}.gnb{padding:0 12px}.wordmark span,.gnb .btn:not(.dark){display:none}.tr.head{display:none}.tr{grid-template-columns:28px 1fr 1fr;row-gap:6px}.tr .beat{grid-column:2/-1}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.image-settings{margin:20px 0}
+.image-settings summary{cursor:pointer;color:var(--t2);font-weight:600}
+.image-settings label{display:block;color:var(--t2);margin:12px 0 6px;font-size:14px}
+.image-settings input{width:100%;min-height:40px;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;background:var(--surface)}
+.image-actions{display:flex;flex-wrap:wrap;gap:8px}
+.image-actions .btn:disabled{opacity:.5;cursor:wait}
+.image-status{margin:4px 0 0;color:var(--t2);font-size:13px}
+.image-status:empty{display:none}
 </style>
 </head>
 <body>
@@ -147,7 +155,7 @@ textarea:focus{border-color:var(--t1)}
 에드가 | 준의 손목을 잡음
 준 | 얼굴이 붉어짐
 에드가 | "같이 가자" 미소</textarea>
-    <div class="under"><span>한 줄에 한 컷 · <code>인물 | 행동</code> · 대사는 <code>"따옴표"</code> · 7줄 넘으면 5줄씩 묶음</span><button class="link" data-act="clear">지우기</button></div>
+    <div class="under"><span>한 줄에 한 컷 · <code>인물 | 행동</code> · 대사는 <code>"따옴표"</code> · 7줄 넘으면 5줄씩 묶음</span><div><button class="link" id="loadExample">명경도령 예시</button> · <button class="link" data-act="clear">지우기</button></div></div>
   </section>
 
   <section>
@@ -157,6 +165,12 @@ textarea:focus{border-color:var(--t1)}
 
   <section>
     <div class="sh"><h2>컷</h2><span>값을 누르면 바꿀 수 있어요 · <b style="color:var(--blue)">●</b> 직접 고른 값</span></div>
+    <details class="image-settings">
+      <summary>이미지 생성 설정</summary>
+      <div class="field"><label for="imageStyle">장면 공통 묘사</label><input type="text" id="imageStyle" maxlength="800" placeholder="공간, 의상, 팔레트, 선의 느낌"></div>
+      <div class="field"><label for="imageReference">캐릭터 참고 이미지 (선택)</label><input id="imageReference" type="file" accept="image/png,image/jpeg,image/webp"></div>
+    </details>
+    <div id="panelImage"></div>
     <div class="tbl" id="tbl"></div>
   </section>
 </main>
@@ -177,6 +191,7 @@ textarea:focus{border-color:var(--t1)}
 <div class="toast" id="toast" role="status"></div>
 
 <script src="engine.js"></script>
+<script src="panel-image.js"></script>
 <script>
 const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -195,12 +210,16 @@ function compute(resetPick){
   state.an=RE.analyze($('#beats').value);
   if(resetPick||state.pick.length!==state.an.length)state.pick=state.an.map(()=>0);
   state.ranks=state.an.map(a=>RE.rank(a,PATS,12));
+  const previous=state.panels;
   state.panels=[];
   state.an.forEach((a,ci)=>{const r=state.ranks[ci][state.pick[ci]];if(!r)return;
-    RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);state.panels.push(c)})});
+    RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);
+      const old=previous[state.panels.length];
+      c.imageWork=old?.key===c.key?old.imageWork:{};
+      state.panels.push(c)})});
   if(state.sel>=state.panels.length)state.sel=-1;
   const n=state.panels.length;$('#count').textContent=n?`${n}컷 · ${state.an.length}묶음`:'';$('#pvsize').textContent=n?`${n}컷`:'';
-  renderReading();renderTable();render();
+  renderReading();renderTable();renderImageControls();render();
   $('#pname').textContent=state.ranks.length?state.ranks.map((r,i)=>`${state.pick[i]+1}/${r.length}`).join(' · ')+'안':'—'}
 
 // ---------- reading ----------
@@ -227,7 +246,7 @@ function renderTable(){
     const v=(f,label,why)=>`<div><button class="val${c.lock[f]!==undefined?' lock':''}" data-f="${f}" data-i="${i}" title="${esc(why)}">${esc(label)}</button><div class="why">${esc(why)}</div></div>`;
     return `<div class="tr${i===state.sel?' on':''}" data-i="${i}">
       <button class="n" data-sel="${i}" aria-label="${i+1}번 컷 선택">${i+1}</button>
-      <div class="beat" data-sel="${i}"><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`].filter(Boolean).join(' · '))}</small></div>
+      <div class="beat" data-sel="${i}"><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`,c.imageWork.image&&'컬러 러프'].filter(Boolean).join(' · '))}</small></div>
       <div><span class="vng"><em class="${c.vng}">${c.vng}</em>${esc(c.role)}</span><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.roleWhy||'')}</div></div>
       <div><span style="font-size:14px;font-weight:600">${esc(c.emo)}</span><div class="dots${P?' P':''}">${[1,2,3].map(k=>`<i class="${c.i>=k?'on':''}"></i>`).join('')}</div><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.emoWhy||'')}</div></div>
       ${v('shot',c.shot,c.lock.shot!==undefined?'직접 고름':c.why.shot.slice(1).join(' · ')||c.why.shot[0])}
@@ -250,21 +269,63 @@ document.addEventListener('click',e=>{if(!e.target.closest('#menu')&&!e.target.c
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 
 $('#tbl').addEventListener('click',e=>{const v=e.target.closest('.val');if(v){e.stopPropagation();state.sel=+v.dataset.i;markSel();openMenu(v);return}
-  const t=e.target.closest('[data-ref]');if(t){const c=state.panels[+t.dataset.ref];const L=locks[c.key]||(locks[c.key]={});Object.assign(L,{shot:c.ref.shot,ang:c.ref.angle,h:c.ref.h_ratio});state.sel=+t.dataset.ref;compute(false);toast(`${state.sel+1}번 컷에 ${c.ref.label} 구도를 입혔어요`);return}
+  const t=e.target.closest('[data-ref]');if(t){const c=state.panels[+t.dataset.ref];const L=locks[c.key]||(locks[c.key]={});Object.assign(L,{shot:c.ref.shot,ang:c.ref.angle,h:Math.min(3,Math.max(.4,c.ref.h_ratio)),composition:c.ref.composition||''});state.sel=+t.dataset.ref;compute(false);toast(`${state.sel+1}번 컷에 ${c.ref.label} 구도를 입혔어요`);return}
   const s=e.target.closest('[data-sel]');if(s){state.sel=+s.dataset.sel;markSel();reveal()}});
-function markSel(){document.querySelectorAll('.tr[data-i]').forEach(r=>r.classList.toggle('on',+r.dataset.i===state.sel));render()}
+function markSel(){renderImageControls();document.querySelectorAll('.tr[data-i]').forEach(r=>r.classList.toggle('on',+r.dataset.i===state.sel));render()}
 $('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(!g)return;state.sel=+g.dataset.p;markSel();document.querySelector(`.tr[data-i="${state.sel}"]`)?.scrollIntoView({block:'center',behavior:'smooth'})});
 function reveal(){const g=$(`#preview [data-p="${state.sel}"]`),c=$('#canvas');if(!g)return;const gr=g.getBoundingClientRect(),cr=c.getBoundingClientRect();if(gr.top<cr.top||gr.bottom>cr.bottom-90)c.scrollBy({top:gr.top-cr.top-20,behavior:'smooth'})}
 
 // ---------- actions ----------
 let tmr;$('#beats').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(()=>compute(true),350)});
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
-function download(name,href){const a=document.createElement('a');a.href=href;a.download=name;a.click()}
+function download(name,blob){
+  const url=URL.createObjectURL(blob);
+  const link=Object.assign(document.createElement('a'),{href:url,download:name});
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function exportPng(){
+  const buttons=[...document.querySelectorAll('[data-act="png"]')];
+  for(const button of buttons)button.disabled=true;
+  const url=URL.createObjectURL(new Blob([state.svg],{type:'image/svg+xml'}));
+  try{
+    const image=new Image();
+    image.src=url;
+    await image.decode();
+    const scale=Math.min(2,Math.min(16000/image.height,Math.sqrt(16000000/(image.width*image.height))));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.round(image.width*scale);
+    canvas.height=Math.round(image.height*scale);
+    const context=canvas.getContext('2d');
+    context.drawImage(image,0,0,canvas.width,canvas.height);
+    const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!png)throw new Error();
+    download('rough.png',png);
+    toast('PNG로 저장했어요');
+  }catch{
+    toast('PNG로 저장하지 못했어요. SVG 저장을 시도해주세요.');
+  }finally{
+    URL.revokeObjectURL(url);
+    for(const button of buttons)button.disabled=false;
+  }
+}
+
+
+
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   if(a==='clear'){$('#beats').value='';$('#beats').focus();compute(true)}
   else if(a==='next'||a==='prev'){state.pick=state.pick.map((v,i)=>{const n=state.ranks[i].length;return (v+(a==='next'?1:-1)+n)%n});compute(false);toast(`${state.pick[0]+1}번째로 닮은 패턴으로 바꿨어요`)}
-  else if(a==='svg'&&state.svg){download('rough.svg',URL.createObjectURL(new Blob([state.svg],{type:'image/svg+xml'})));toast('SVG로 저장했어요')}
-  else if(a==='png'&&state.svg){const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.width*2;c.height=img.height*2;const g=c.getContext('2d');g.scale(2,2);g.fillStyle='#fff';g.fillRect(0,0,img.width,img.height);g.drawImage(img,0,0);download('rough.png',c.toDataURL('image/png'))};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(state.svg);toast('PNG로 저장했어요')}});
+  else if(a==='generate-image'&&state.panels[state.sel])generatePanelImage(state.panels[state.sel],state.sel)
+  else if(a==='remove-image'&&state.panels[state.sel]){
+    const work=state.panels[state.sel].imageWork;
+    delete work.image;
+    delete work.error;
+    renderImageControls();
+    renderTable();
+    render();
+  }
+  else if(a==='svg'&&state.svg){download('rough.svg',new Blob([state.svg],{type:'image/svg+xml'}));toast('SVG로 저장했어요')}
+  else if(a==='png'&&state.svg)exportPng()});
 const THEMES=['','light','dark'];
 try{const t=localStorage.getItem('rough-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
 $('#theme').onclick=()=>{const cur=document.documentElement.dataset.theme||'';const nx=THEMES[(THEMES.indexOf(cur)+1)%3];if(nx)document.documentElement.dataset.theme=nx;else delete document.documentElement.dataset.theme;try{localStorage.setItem('rough-theme',nx)}catch(_){}toast(nx===''?'시스템 테마':nx==='light'?'라이트 테마':'다크 테마')};
@@ -289,16 +350,63 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   else if(p.shot==='클로즈업'){const r=Math.min(w,h)*.4;o+=head(x+w*.5+j(w*.15),y+h*.55,r)}
   else if(p.shot==='디테일'){const r=Math.min(w,h)*.35;o+=`<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${r*1.3}" ry="${r*.8}" stroke="${st}" stroke-width="3" fill="none"/>`+C(x+w/2,y+h/2,r*.35,3)}
   else{for(let i=0;i<20;i++){const a=i/20*Math.PI*2;o+=L(x+w/2+Math.cos(a)*w*.15,y+h/2+Math.sin(a)*h*.15,x+w/2+Math.cos(a)*w,y+h/2+Math.sin(a)*h,1)}o+=head(x+w/2,y+h/2,Math.min(w,h)*.2)}
-  if(p.said){const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;o+=`<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`}
   return o}
-function render(){let y=40,o='';const ws=W-60;
-  state.panels.forEach((p,i)=>{const h=Math.round(p.h*ws);const sel=i===state.sel;
-    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#2d71f7':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${drawPanel(p,30,y,ws,h,i)}</g>`+
-      `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text></g>`;
-    y+=h+Math.round(p.gap*ws)+16});
-  state.svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif">${o}</svg>`;
-  $('#preview').innerHTML=state.svg}
+function drawLettering(p,x,y,w){
+  if(!p.said)return '';
+  const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;
+  return `<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`;
+}
+function roughSvg(w,h,content){
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" font-family="Pretendard,system-ui,sans-serif">${content}</svg>`;
+}
+function render(){
+  let y=40,art='',guides='';
+  const x=30,w=W-2*x;
+  state.panels.forEach((p,i)=>{
+    const h=Math.round(p.h*w),selected=i===state.sel;
+    const picture=p.imageWork.image
+      ? `<image href="${esc(p.imageWork.image.src)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`
+      : drawPanel(p,x,y,w,h,i);
+    const frame=`<rect x="${x}" y="${y}" width="${w}" height="${h}"`;
+    art+=`<g data-p="${i}"><clipPath id="c${i}">${frame}/></clipPath><g clip-path="url(#c${i})">${picture}${drawLettering(p,x,y,w)}</g>${frame} fill="transparent" stroke="#222" stroke-width="3"/></g>`;
+    guides+=`<g data-p="${i}">${selected?`${frame} fill="none" stroke="#2d71f7" stroke-width="6" pointer-events="none"/>`:''}<circle cx="52" cy="${y+22}" r="16" fill="${selected?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text></g>`;
+    y+=h+Math.round(p.gap*w)+16;
+  });
+  const background='<rect width="100%" height="100%" fill="white"/>';
+  state.svg=roughSvg(W,y+24,background+art);
+  $('#preview').innerHTML=roughSvg(W,y+24,art+guides);
+}
 
+
+$('#loadExample').onclick=()=>{
+  $('#beats').value=[
+    '상담객 | 비 내리는 밤, 어두운 상담방 문을 열고 들어선다.',
+    '명경도령 | 거울을 닦던 은발의 여우 도령이 시선만 든다. "거기 앉아."',
+    '명경도령 | 손끝으로 오래된 청동 거울을 상담객 쪽으로 돌린다.',
+    '상담객 | 거울을 들여다보다 표정이 조금 풀린다.',
+    '명경도령 | 모른 척 시선을 피하며 따뜻한 찻잔을 밀어준다.',
+  ].join('\n');
+  $('#imageStyle').value='옛 한옥의 상담방. 먹빛과 낮은 청록 바탕에 등불의 호박색. 거친 펜선과 넓은 색면. 명경도령은 은발에 짙은 녹색 도포를 입은 성인 남성. 상담객은 검은 머리를 낮게 묶은 성인 여성.';
+  if(PATS.length)compute(true);
+};
+function renderImageControls(){
+  const p=state.panels[state.sel];
+  if(!p){
+    $('#panelImage').innerHTML='<p class="image-status">컷을 선택하면 이미지 생성 버튼이 나와요.</p>';
+    return;
+  }
+  const work=p.imageWork;
+  $('#panelImage').innerHTML=`<div class="image-actions">
+    <button class="btn dark" data-act="generate-image" ${work.pending?'disabled':''}>${state.sel+1}번 컷 · ${work.pending?'생성 중…':work.image?'이미지 재생성':'이미지 생성'}</button>
+    ${work.image?`<button class="btn" data-act="remove-image" ${work.pending?'disabled':''}>스케치로 돌아가기</button>`:''}
+  </div><p class="image-status" id="imageStatus" role="status">${esc(imageStatus(p))}</p>`;
+}
+function updateImageStatus(){
+  const status=$('#imageStatus');
+  if(status)status.textContent=imageStatus(state.panels[state.sel]);
+}
+$('#imageStyle').addEventListener('input',updateImageStatus);
+$('#imageReference').addEventListener('change',updateImageStatus);
 
 // ---------- data ----------
 Promise.all([

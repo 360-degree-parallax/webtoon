@@ -37,3 +37,23 @@ python3 cutlink.py GM-03-045
 ## 상태
 - 분석: 두 작품 1~7화 완료 (1,497컷, 244묶음)
 - 러프 툴: v1. 선택 없이 연산으로 러프 생성, 결과물(그림) 형태는 개발 중
+
+### 컷 색 러프 생성
+
+기본 생성 서버는 같은 컴퓨터에서 실행 중인 **ComfyUI**입니다. [공식 FLUX.2 Klein 4B 가이드](https://docs.comfy.org/tutorials/flux/flux-2-klein)의 Distilled Image Edit에 쓰는 모델 파일 세 개를 ComfyUI에 설치해주세요.
+
+| ComfyUI 폴더 | 모델 파일 |
+| --- | --- |
+| `models/diffusion_models/` | `flux-2-klein-4b-fp8.safetensors` |
+| `models/text_encoders/` | `qwen_3_4b.safetensors` |
+| `models/vae/` | `flux2-vae.safetensors` |
+
+ComfyUI의 주소가 `http://127.0.0.1:8188`이면, ComfyUI를 켠 상태에서 `python3 rough/serve.py`를 실행합니다. 예를 들어 ComfyUI가 8000번 포트에서 열린다면 러프 툴에는 다른 포트를 지정합니다.
+
+```bash
+COMFYUI_PORT=8000 python3 rough/serve.py --port 8001
+```
+
+**컷**에서 컷을 선택하고 **이미지 생성**을 누릅니다. 장면 공통 묘사와 캐릭터 참고 이미지는 선택 사항입니다. 스케치와 참고 이미지는 ComfyUI의 로컬 입력 폴더에 저장됩니다. 결과는 열린 러프 툴 탭에 유지되므로 PNG 또는 SVG로 저장해주세요.
+
+Cloudflare 설정을 이미 마쳤다면 `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`이 있는 터미널에서 `ROUGH_IMAGE_PROVIDER=cloudflare python3 rough/serve.py`로 실행할 수 있습니다.
