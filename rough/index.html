@@ -553,6 +553,7 @@ function compute(resetPick){
   state.panels=[];
   state.an.forEach((a,ci)=>{const r=state.ranks[ci][state.pick[ci]];if(!r)return;
     RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);state.panels.push(c)})});
+  state.panels.forEach((c,i)=>c.side=i%2?'left':'right');
   if(state.sel>=state.panels.length)state.sel=-1;
   const n=state.panels.length;$('#count').textContent=n?`${n}컷 · ${state.an.length}묶음`:'';$('#pvsize').textContent=n?`${n}컷`:'';
   renderReading();renderTable();render();
@@ -646,19 +647,25 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   else if(p.shot==='디테일'){const r=Math.min(w,h)*.35;o+=`<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${r*1.3}" ry="${r*.8}" stroke="${st}" stroke-width="3" fill="none"/>`+C(x+w/2,y+h/2,r*.35,3)}
   else{for(let i=0;i<20;i++){const a=i/20*Math.PI*2;o+=L(x+w/2+Math.cos(a)*w*.15,y+h/2+Math.sin(a)*h*.15,x+w/2+Math.cos(a)*w,y+h/2+Math.sin(a)*h,1)}o+=head(x+w/2,y+h/2,Math.min(w,h)*.2)}
   return o}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false){let y=40,o='',clearY=12;const ws=W-60;
-  panels.forEach((p,i)=>{const im=imgs&&imgs[i];const h=Math.round(im&&im.w?ws*im.h/im.w:p.h*ws);const on=i===sel;const u=im?null:underlay(p);
-    const lettering=clean?{above:0,below:0,markup:''}:RoughLettering.panel(p,ws,h);
-    y=Math.max(y,clearY+lettering.above);
-    let art=im?`<image href="${im.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel(p,30,y,ws,h,i);
-    if(u){art=`<image href="${u.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
-    const c=!clean&&!im&&p.who&&charRef(p.who);
-    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${on?'#2d71f7':'#222'}" stroke-width="${on?6:3}"/><clipPath id="${pre}${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
-      (nums?`<circle cx="52" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
-      (lettering.markup?`<g transform="translate(30 ${y})">${lettering.markup}</g>`:'')+
-      (c?`<rect x="42" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="62" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="76" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+`</g>`;
-    clearY=y+h+lettering.below+12;
-    y+=h+Math.round(p.gap*ws)+16});
+// 패널 배치: 여러 컷을 이어 그릴 때 설정·효과 배경 컷은 좌우 끝까지(테두리 없음), 디테일 인서트는 좁게 번갈아
+function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true};
+  if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
+  if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
+  return{x:30,w:ws,frame:true}}
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false){let y=40,o='',clearY=12;const multi=panels.length>1;
+  panels.forEach((p,i)=>{const im=imgs&&imgs[i];const B=panelBox(p,i,multi),bx=B.x,bw=B.w;const h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);const on=i===sel;const u=im?null:underlay(p);
+    const lettering=clean?null:RoughLettering.panel(p,bw,h,i===0);
+    if(lettering)y=Math.max(y,clearY+lettering.above);
+    let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel(p,bx,y,bw,h,i);
+    if(u){art=`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
+    const c=!clean&&!im&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame?`stroke="#222" stroke-width="3"`:'stroke="none"';
+    o+=`<g data-p="${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
+      (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
+      (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
+      (lettering?.markup?`<g transform="translate(${bx} ${y})">${lettering.markup}</g>`:'')+`</g>`;
+    // 간격: 중요도 단계는 유지하되 화면에서는 압축(최대 약 360px)
+    clearY=y+h+(lettering?.below||0)+12;
+    y+=h+Math.round(p.gap*(W-60)*.45)+24});
   y=Math.max(y,clearY);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
 }
@@ -933,7 +940,7 @@ try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정�
 $('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
 $('#wmode').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;WMODE=b.dataset.m;document.querySelectorAll('#wmode button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderWebtoon()});
 function scenePanels(i){if(i===SCUR)return state.panels;const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
-  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);out.push(c)})});return out}
+  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
 // 완성본: 등록한 컷 이미지를 쓰고, 없는 컷은 러프
 function sceneArt(i,ps,pre){if(WMODE!=='final')return{kind:'rough',svg:renderSVG(ps,-1,pre,false)};
   const imgs=ps.map((p,k)=>cutImg(i,k,p)||null),n=imgs.filter(Boolean).length;
