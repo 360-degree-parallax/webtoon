@@ -155,11 +155,17 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .wgrid{display:grid;grid-template-columns:240px minmax(0,780px);gap:40px;max-width:1120px;margin:0 auto;padding:0 40px}
 .scenes{position:sticky;top:104px;align-self:start;padding:32px 0;max-height:calc(100vh - 104px);overflow:auto}
 .scenes ol{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:4px}
-.scenes li button{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;width:100%;padding:10px;border-radius:8px;text-align:left;font-size:14px}
-.scenes li button:hover{background:var(--hover)}
-.scenes li button[aria-current=true]{background:var(--blue-soft)}
+.scenes li{position:relative;min-width:0}
+.scenes li:has(.scene-delete) button[data-scene]{padding-right:43px}
+.scenes .scene-delete{position:absolute;right:7px;top:50%;translate:0 -50%;display:grid;place-items:center;width:30px;height:32px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--t2);cursor:pointer}
+.scenes .scene-delete::before{content:"";width:10px;height:1.5px;border-radius:2px;background:currentColor}
+.scenes .scene-delete:hover{color:#a53039;background:#fbeaec}
+.scenes .scene-delete:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.scenes li button[data-scene]{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;width:100%;padding:10px;border-radius:8px;text-align:left;font-size:14px}
+.scenes li button[data-scene]:hover{background:var(--hover)}
+.scenes li button[data-scene][aria-current=true]{background:var(--blue-soft)}
 .scenes li .sn{width:24px;height:24px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:12px;font-weight:700}
-.scenes li button[aria-current=true] .sn{background:var(--dark);color:var(--ondark);border-color:transparent}
+.scenes li button[data-scene][aria-current=true] .sn{background:var(--dark);color:var(--ondark);border-color:transparent}
 .scenes li .st{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .scenes li small{color:var(--t2);font-size:12px}
 .scenes li .tag3{font-size:11px;font-weight:700;color:var(--blue)}
@@ -216,7 +222,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .reader .scn span{white-space:nowrap}
 .reader section > svg,.reader img{display:block;width:100%;height:auto}
 .reader .empty{padding:60px 20px;text-align:center;color:#8a8f98}
-@media(max-width:900px){.wgrid{grid-template-columns:1fr;padding:0 24px;gap:0}.scenes{position:static;max-height:none;padding:20px 0 0}.scenes ol{display:flex;overflow-x:auto;gap:6px}.scenes li button{grid-template-columns:22px auto;white-space:nowrap}.scenes li small{display:none}}
+@media(max-width:900px){.wgrid{grid-template-columns:1fr;padding:0 24px;gap:0}.scenes{position:static;max-height:none;padding:20px 0 0}.scenes ol{display:flex;overflow-x:auto;gap:6px}.scenes li{flex:none;max-width:100%}.scenes li button[data-scene]{grid-template-columns:22px auto;white-space:nowrap}.scenes li small{display:none}}
 @media(max-width:640px){.wgrid{padding:0 16px}.next{flex-wrap:wrap}.next .big{flex:1}.wtitle{font-size:24px}}
 /* cut list */
 .guide2{font-size:13px;color:var(--t2);margin:-4px 0 10px;line-height:1.7}
@@ -391,7 +397,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
 <nav class="topnav" role="tablist" aria-label="보기">
   <button role="tab" data-view="chars" aria-selected="false"><b>1</b>캐릭터</button>
-  <button role="tab" data-view="write" aria-selected="false"><b>2</b>작성</button>
+  <button role="tab" data-view="write" aria-selected="false"><b>2</b>씬</button>
   <button role="tab" data-view="layout" aria-selected="false"><b>3</b>연출</button>
   <button role="tab" data-view="nai" aria-selected="true"><b>4</b>NovelAI</button>
   <button role="tab" data-view="webtoon" aria-selected="false"><b>5</b>웹툰 보기</button>
@@ -412,7 +418,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="libgrid" id="libgrid"></div>
     <input type="file" id="libfile" accept="application/json,.json" hidden>
   </section>
-  <div class="next"><span class="grow"></span><button class="btn dark big" data-view="write">작성으로 →</button></div>
+  <div class="next"><span class="grow"></span><button class="btn dark big" data-view="write">씬으로 →</button></div>
 </div>
 </div>
 
@@ -424,7 +430,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <button class="btn" data-act="addscene" style="width:100%">+ 씬 추가</button>
   </aside>
   <main class="main">
-    <h1>작성</h1>
+    <h1>씬</h1>
     <p class="desc">씬마다 컷을 적어요. 인물은 @이름으로 부르고, 다 적으면 연출을 확인해요.</p>
   <section>
     <div class="sh"><h2>등장인물</h2><span>캐릭터 페이지에서 만든 인물이에요</span></div>
@@ -445,7 +451,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <dialog id="pdlg2" aria-labelledby="pd2t"><h3 id="pd2t">줄글 붙여넣기</h3><p>문장마다 컷으로 나눠 컷 칸에 채워요. 지금 컷은 바뀌어요.</p><textarea id="prosein" style="min-height:220px" placeholder="@에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다."></textarea><div class="acts"><button class="btn" data-act="prosecancel">닫기</button><button class="btn dark" data-act="prosego">컷으로 나누기</button></div></dialog>
   </section>
 
-    <div class="next"><button class="btn" data-act="delscene">이 씬 삭제</button><span class="grow"></span><button class="btn dark big" data-view="layout">연출 보기 →</button></div>
+    <div class="next"><span class="grow"></span><button class="btn dark big" data-view="layout">연출 보기 →</button></div>
   </main>
 </div>
 </div>
@@ -466,7 +472,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="sh"><h2>컷</h2><span>값을 누르면 바꿀 수 있어요 · <b style="color:var(--blue)">●</b> 직접 고른 값</span></div>
     <div class="tbl" id="tbl"></div>
   </section>
-  <div class="next"><button class="btn" data-view="write">← 작성으로</button><span class="grow"></span><button class="btn dark big" data-view="nai">NovelAI로 →</button></div>
+  <div class="next"><button class="btn" data-view="write">← 씬으로</button><span class="grow"></span><button class="btn dark big" data-view="nai">NovelAI로 →</button></div>
 </main>
 
 <aside class="pv" aria-label="미리보기">
@@ -499,11 +505,11 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="naichars" id="naichars"></div>
   </section>
   <section>
-    <div class="sh"><h2>레퍼런스</h2><span>인물·배경 이미지는 작성 단계에서 등록해요</span></div>
+    <div class="sh"><h2>레퍼런스</h2><span>인물·배경 이미지는 씬 단계에서 등록해요</span></div>
     <div class="naiterms" id="nairefs"></div>
   </section>
   <section>
-    <div class="sh"><h2>캐릭터·장면 이미지</h2><span>인물·배경 이미지는 작성 단계에서 관리해요</span></div>
+    <div class="sh"><h2>캐릭터·장면 이미지</h2><span>인물·배경 이미지는 씬 단계에서 관리해요</span></div>
     <div class="refsum" id="refsum"></div>
   </section>
   <section>
@@ -1055,7 +1061,7 @@ function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':'
 function renderBgs(){$('#bgs').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,r,r.name,false)).join('')+slotHTML('scene','__new',null,'배경 추가',false)}
 function renderRefSum(){const ns=CHARS.map(c=>c.name.trim()).filter(Boolean);const el=$('#refsum');if(!el)return;
   el.innerHTML=ns.map(n=>`<span class="av" title="${esc(n)}${IMG.char[n]?'':' · 이미지 없음'}" style="${IMG.char[n]?'':`background:${avBg(n)}`}">${IMG.char[n]?`<img src="${IMG.char[n].src}" alt="${esc(n)}">`:esc(n.slice(0,1))}</span>`).join('')+
-    `<span>인물 이미지 ${ns.filter(n=>IMG.char[n]).length}/${ns.length} · 배경 ${IMG.scene.length}장</span><button class="btn" data-view="write">작성에서 편집</button>`}
+    `<span>인물 이미지 ${ns.filter(n=>IMG.char[n]).length}/${ns.length} · 배경 ${IMG.scene.length}장</span><button class="btn" data-view="write">씬에서 편집</button>`}
 function renderSlotsLite(){renderBgs();renderRefSum();renderCastSum();$('#under').hidden=false}
 function renderSlots(){renderChars();renderSlotsLite()}
 async function attach(file,slot){if(!file||!file.type.startsWith('image/'))return;const im=await shrink(file);
@@ -1265,12 +1271,28 @@ function saveScenes(){SCENES[SCUR].cuts=CUTS;try{localStorage.setItem('rough-sce
 function cutEdits(){const edits=SCENES[SCUR].pageEdits;edits.length=CUTS.length;return edits}
 function saveCuts(){saveScenes();renderSceneList()}
 function sceneLabel(sc,i){return `씬 ${i+1} · ${sc.title||'제목 없는 씬'}`}
-function renderSceneList(){$('#scenelist').innerHTML=SCENES.map((sc,i)=>`<li><button data-scene="${i}" aria-current="${i===SCUR}"><span class="sn">${i+1}</span><span style="min-width:0"><span class="st">${esc(sc.title||'제목 없는 씬')}</span><br><small>${sc.cuts.filter(c=>c.trim()).length}컷</small></span></button></li>`).join('');
+function renderSceneList(){
+  const canDelete=SCENES.length>1;
+  $('#scenelist').innerHTML=SCENES.map((sc,i)=>`<li><button data-scene="${i}" aria-current="${i===SCUR}"><span class="sn">${i+1}</span><span style="min-width:0"><span class="st">${esc(sc.title||'제목 없는 씬')}</span><br><small>${sc.cuts.filter(c=>c.trim()).length}컷</small></span></button>${canDelete?`<button class="scene-delete" type="button" data-scene-delete="${i}" aria-label="${esc(sceneLabel(sc,i))} 삭제" title="씬 삭제"></button>`:''}</li>`).join('');
   $('#scount').textContent=`${SCENES.length}개`;
   document.querySelectorAll('[data-scbar]').forEach(el=>el.innerHTML=`<button class="ib" data-scmove="-1" aria-label="이전 씬"${SCUR?'':' disabled'}>‹</button><select data-scsel aria-label="씬 고르기">${SCENES.map((sc,i)=>`<option value="${i}"${i===SCUR?' selected':''}>${esc(sceneLabel(sc,i))}</option>`).join('')}</select><button class="ib" data-scmove="1" aria-label="다음 씬"${SCUR<SCENES.length-1?'':' disabled'}>›</button><span>${SCENES[SCUR].cuts.filter(c=>c.trim()).length}컷</span>`);
 }
 function switchScene(i){if(i<0||i>=SCENES.length)return;saveScenes();SCUR=i;CUTS=SCENES[i].cuts;saveScenes();
   $('#sctitle').value=SCENES[i].title||'';renderCuts();renderSceneList();state.sel=-1;compute(true);renderSlots();renderSugg();
+}
+function deleteScene(index){
+  const scene=SCENES[index];
+  if(SCENES.length<=1||!scene)return;
+  if(!confirm(`${sceneLabel(scene,index)}을(를) 삭제할까요?`))return;
+  saveScenes();
+  const active=SCENES[SCUR];
+  SCENES.splice(index,1);
+  const remainingIndex=SCENES.indexOf(active);
+  SCUR=remainingIndex>=0?remainingIndex:Math.min(index,SCENES.length-1);
+  CUTS=SCENES[SCUR].cuts;
+  switchScene(SCUR);
+  document.querySelector(`#scenelist [data-scene="${SCUR}"]`)?.focus({preventScroll:true});
+  toast('씬을 삭제했어요');
 }
 function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
 function renderCuts(){if(!CUTS.length)CUTS=[''];
@@ -1300,11 +1322,11 @@ mbox.addEventListener('mousedown',e=>{const b=e.target.closest('[data-mi]');if(b
 $('#sctitle').value=SCENES[SCUR].title||'';
 $('#sctitle').addEventListener('input',e=>{SCENES[SCUR].title=e.target.value;saveScenes();renderSceneList()});
 document.addEventListener('click',e=>{const t=e.target;
+  const remove=t.closest('[data-scene-delete]');if(remove){deleteScene(Number(remove.dataset.sceneDelete));return}
   const sb=t.closest('[data-scene]');if(sb){switchScene(+sb.dataset.scene);return}
   const mv=t.closest('[data-scmove]');if(mv){switchScene(SCUR+(+mv.dataset.scmove));return}
   const a=t.closest('[data-act]')?.dataset.act;
   if(a==='addscene'){saveScenes();SCENES.push({id:'s'+Date.now(),title:'',cuts:[''],pageEdits:[]});switchScene(SCENES.length-1);$('#sctitle').focus()}
-  if(a==='delscene'){if(SCENES.length<2){toast('씬이 하나뿐이라 지울 수 없어요');return}if(!confirm(`${sceneLabel(SCENES[SCUR],SCUR)}을(를) 지울까요?`))return;SCENES.splice(SCUR,1);SCUR=Math.max(0,SCUR-1);CUTS=SCENES[SCUR].cuts;switchScene(SCUR);toast('씬을 지웠어요')}
   if(a==='wsave')saveWebtoon()});
 document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switchScene(+e.target.value)});
 let WMODE='final';
@@ -1758,7 +1780,7 @@ function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$
   $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="write">작성에서 이미지 등록</button>`;
   const ai=ainFor();$('#naiview').hidden=!ai;document.querySelectorAll('#naiview button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===NAIVIEW));
   if(ai&&!naiBusy)$('#naist').textContent=ai.stale?'글이나 태그가 바뀌었어요. 다시 다듬으면 반영돼요':`다듬은 결과 · ${new Date(ai.at).toLocaleString()}`;
-  if(!ps.length){$('#ncards').innerHTML='<p class="empty">작성 단계에서 컷을 적어주세요.</p>';$('#naicount').textContent='';return}
+  if(!ps.length){$('#ncards').innerHTML='<p class="empty">씬 단계에서 컷을 적어주세요.</p>';$('#naicount').textContent='';return}
   $('#naicount').textContent=`이미지 ${cutCount(SCUR,ps)}/${ps.length}컷 등록 · 칸마다 복사 버튼`;
   const blk=(t,sub,txt)=>`<div class="nf"><header><h4>${t}${sub?`<small>${sub}</small>`:''}</h4><button class="btn" data-act="ncopy">복사</button></header><pre>${esc(txt)}</pre></div>`;
   $('#ncards').innerHTML=naiCuts().map(({p,i,o})=>{const im=cutImg(SCUR,i,p),S=o.settings;
