@@ -12,8 +12,8 @@
   const LEX = [
     ['놀람', 2, ['놀라', '놀란', '놀람', '놀랐', '깜짝', '화들짝', '흠칫', '소스라치', '기겁', '헉', '허억', '경악', '충격', '눈이 커', '눈을 크게', '눈이 휘둥그', '동공', '얼어붙', '입을 벌', '입이 떡', '숨을 들이', '뒤로 물러', '설마', '뭐?', '어?!']],
     ['분노', 2, ['화를', '화가', '화내', '화난', '버럭', '격분', '분노', '분해', '소리치', '소리쳤', '소리 지', '고함', '노려', '째려', '쏘아보', '주먹으로', '주먹을 휘', '때리', '때렸', '따귀', '뺨을 때', '멱살', '이를 악', '이를 갈', '으르렁', '성질', '짜증', '핏대', '씩씩', '밀쳐', '밀친', '내던', '집어던', '걷어차', '닥쳐', '꺼져', '용서 못']],
-    ['긴장', 2, ['긴장', '숨죽', '숨을 죽', '숨을 참', '마른침', '침을 삼', '멈칫', '다가온', '다가오', '칼을 겨', '칼끝', '총구', '겨누', '위협', '식은땀', '손에 땀', '정적', '침묵이', '조여', '노크', '발소리', '인기척', '삐걱', '덜컥', '어둠 속', '그림자가', '경계', '주위를 살', '엿보', '몰래', '숨어', '쫓기', '쫓아', '도망', '포위', '심각']],
-    ['설렘', 2, ['붉어', '붉힌', '빨개', '귀가 빨', '얼굴이 달아', '두근', '설레', '심장이', '손을 잡', '손목을 잡', '깍지', '눈이 마주', '입맞', '키스', '안기', '껴안', '끌어안', '수줍', '부끄러', '쑥스', '시선을 피', '눈을 피', '숨결', '이마를 맞', '반하', '첫눈에', '가까이 다가']],
+    ['긴장', 2, ['긴장', '숨죽', '숨을 죽', '숨을 참', '마른침', '침을 삼', '멈칫', '다가온', '다가오', '칼을 겨', '칼끝', '총구', '겨누', '위협', '식은땀', '손에 땀', '조여', '경계', '주위를 살', '엿보', '몰래', '숨어', '쫓기', '쫓아', '도망', '포위', '심각']],
+    ['설렘', 2, ['붉어', '붉힌', '빨개', '귀가 빨', '얼굴이 달아', '두근', '설레', '심장이', '손을 잡', '손목을 잡', '손목을 붙잡', '손을 붙잡', '깍지', '눈이 마주', '입맞', '키스', '안기', '껴안', '끌어안', '수줍', '부끄러', '쑥스', '시선을 피', '눈을 피', '숨결', '이마를 맞', '반하', '첫눈에', '가까이 다가']],
     ['당황', 2, ['당황', '허둥', '어버버', '얼버무', '진땀', '말을 더듬', '말끝을 흐', '어쩔 줄', '횡설수설', '우왕좌왕', '머쓱', '난처', '곤란', '식겁', '허겁지겁', '아차', '들켰', '변명', '손사래', '버벅']],
     ['쓸쓸', 2, ['눈물', '울음', '운다', '울었', '울며', '우는', '흐느', '쓸쓸', '외로', '혼자 남', '뒷모습', '떠나간', '떠난다', '떠남', '이별', '그리워', '그리움', '공허', '허전', '고개를 떨', '어깨가 처', '한숨', '쓴웃음', '텅 빈', '빈자리', '체념', '무너지', '무너진', '주저앉', '슬픔', '슬퍼', '서글']],
     ['결의', 2, ['결심', '다짐', '각오', '주먹을 쥐', '주먹을 꽉', '일어선', '일어섬', '맹세', '반드시', '이를 꽉', '눈빛이 바뀌', '결연', '단호', '앞으로 나서', '검을 뽑', '칼을 뽑', '마음먹', '포기하지', '지켜낼', '지킬게', '해낼']],
@@ -23,6 +23,8 @@
     ['냉담', 1, ['차갑', '무시', '외면', '냉정', '돌아선', '돌아섬', '돌아서', '무표정', '시큰둥', '냉랭', '싸늘', '쌀쌀', '비웃', '코웃음', '시선도 주지', '등을 돌', '무심', '건조하게', '귀찮', '됐어']],
     ['회상', 1, ['예전', '그때', '기억', '회상', '어린 시절', '옛날', '과거', '추억', '떠올', '아련', '그 시절', '처음 만난', '꿈에서']],
     ['개그', 1, ['ㅋ', '엉뚱', '꽈당', '황당', '넘어진', '넘어짐', '삐짐', '삐졌', '투덜', '데굴', '허당', '멍때', '꼬르륵', '콧물', '째릿', '뾰로통', '우당탕', '헤벌쭉', '덜렁', '엥?']],
+    // 분위기 단서: 인물 감정 낱말이 함께 있으면 그쪽을 따른다(같은 강도·길이면 앞쪽 항목 우선)
+    ['긴장', 1, ['정적', '침묵이', '노크', '발소리', '인기척', '삐걱', '덜컥', '어둠 속', '그림자가', '침묵', '정적이']],
     ['평온', 0, ['평화', '고요', '잔잔', '나른', '햇살', '산책', '차를 마', '한가', '여유', '졸음', '기지개', '조용히']],
   ];
   // 강약: 강하게 +1, 약하게 -1 (감정 낱말이 있으면 최소 1)
@@ -38,14 +40,75 @@
   const has = (s, ws) => ws.find(w => s.includes(w)) || null;
 
   // ---------- 1. 파싱 ----------
-  function parse(text) {
-    return String(text || '').split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+  // 두 형식을 받는다: 한 줄 한 컷 `인물 | 행동 "대사"`, 또는 줄글(문장 단위로 컷을 나눔).
+  // chars: [{name, aliases:[]}] — 줄글에서 인물을 찾는 기준. 비어 있으면 조사가 붙어 반복되는 이름을 추정한다.
+  const QO = '"“「『', QC = '"”」』';
+  const CONT = ['하고', '라고', '하며', '라며', '하자', '라는', '하는', '고 ', '며 ', '이라'];
+  function sentences(text) {
+    const out = []; let cur = '', inQ = false;
+    const push = () => { const t = cur.trim(); if (t) out.push(t); cur = ''; };
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i]; cur += ch;
+      if (ch === '\n') { push(); continue; }
+      if (!inQ && QO.includes(ch) && !(ch === '"' && inQ)) { inQ = true; continue; }
+      if (inQ && QC.includes(ch)) {
+        inQ = false;
+        const prev = text[i - 1] || '', rest = text.slice(i + 1).replace(/^\s+/, '');
+        if (/[.!?…~]/.test(prev) && !CONT.some(c => rest.startsWith(c))) push();
+        continue;
+      }
+      if (!inQ && /[.!?…]/.test(ch) && !/[.!?…"”」』]/.test(text[i + 1] || '') && (/\s/.test(text[i + 1] || ' ') || i === text.length - 1)) push();
+    }
+    push(); return out;
+  }
+  const PART_S = '(은|는|이|가|도|께서)', PART_O = '(의|을|를|에게|한테|와|과|께)';
+  const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function guessNames(sents) {
+    const cnt = {};
+    for (const t of sents) for (const m of t.replace(/["“][^"”]*["”]/g, ' ').matchAll(/(?:^|[\s,])([가-힣]{1,4}?)(?:은|는|이|가|의|을|를|에게)(?=[\s,.]|$)/g)) cnt[m[1]] = (cnt[m[1]] || 0) + 1;
+    const stop = /^(그|그녀|그것|이것|저것|우리|나|너|자신|사람|누구|무엇|얼굴|목소리|순간|잠시|침묵|복도|방|문|손|눈|발소리|대답|저녁|아침|밤|비|바람|하늘|모두|서로|둘|한참|뒤)$/;
+    return Object.entries(cnt).filter(([n, c]) => c >= 2 && !stop.test(n)).sort((a, b) => b[1] - a[1]).map(([n]) => n).slice(0, 6);
+  }
+  function findWho(t, chars) {
+    const body = t.replace(/["“][^"”]*["”]/g, ' ');
+    let subj = null, poss = null, si = 1e9, pi = 1e9;
+    for (const c of chars) for (const n of [c.name, ...(c.aliases || [])].filter(Boolean)) {
+      const ms = new RegExp('(^|[^가-힣])' + escRe(n) + PART_S + '(?=[^가-힣]|$)').exec(body);
+      if (ms && ms.index < si) { si = ms.index; subj = c.name; }
+      const mp = new RegExp('(^|[^가-힣])' + escRe(n) + '의(?=[^가-힣]|$)').exec(body);
+      if (mp && mp.index < pi) { pi = mp.index; poss = c.name; }
+    }
+    return subj || (poss && !/(손목|손|팔|어깨)을/.test(body) ? poss : null);
+  }
+  function parseProse(text, chars) {
+    const sents = sentences(text);
+    const list = chars && chars.length ? chars : guessNames(sents).map(name => ({ name }));
+    const beats = []; let last = '';
+    for (const t of sents) {
+      const said = (t.match(/["“]([^"”]+)["”]/) || [])[1] || '';
+      const onlyQuote = /^["“][^"”]*["”][.!?…]*$/.test(t);
+      const who = findWho(t, list);
+      const act = t.replace(/["“][^"”]*["”]\s*(하고|라고|하며|라며)?/g, ' ').replace(/\s+/g, ' ').trim();
+      const prev = beats[beats.length - 1];
+      if (onlyQuote && prev && !prev.said) { prev.said = said; prev.line += ' ' + t; prev.key = prev.line; continue; }
+      if (!who && !said && prev && !prev.who && beats.length === 1) { prev.act += ' ' + act; prev.line += ' ' + t; prev.key = prev.line; continue; }
+      const w = who || (onlyQuote ? last : '');
+      if (w) last = w;
+      beats.push({ line: t, who: w, act: act || t, said, key: t, prose: true });
+    }
+    return beats;
+  }
+  function parse(text, chars) {
+    const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const piped = lines.filter(l => l.includes('|')).length;
+    if (lines.length && piped >= Math.ceil(lines.length / 2)) return lines.map(line => {
       const parts = line.split('|');
       const who = parts.length > 1 ? parts[0].trim() : '';
       const act = (parts.length > 1 ? parts.slice(1).join('|') : parts[0]).trim();
       const said = (act.match(/["“]([^"”]+)["”]/) || [])[1] || '';
       return { line, who, act, said, key: line };
     });
+    return parseProse(String(text || ''), chars);
   }
 
   // ---------- 2. 감정·강도 ----------
@@ -177,7 +240,7 @@
     return { beats, peaks, narr, narrWhy, curve, trans, goal, goalWhy, tempo, dist, vng: vng.join('→') };
   }
 
-  function analyze(text) { return chunk(parse(text)).map(analyzeChunk); }
+  function analyze(text, chars) { return chunk(parse(text, chars)).map(analyzeChunk); }
 
   // ---------- 6. 패턴 검색 ----------
   function lev(a, b) {
@@ -268,5 +331,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, parse, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, parse, sentences, guessNames, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));

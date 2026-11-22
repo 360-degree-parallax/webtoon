@@ -147,6 +147,17 @@ dialog p{margin:0 0 12px;font-size:13px;color:var(--t2)}
 dialog textarea{min-height:360px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.6}
 dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 
+/* characters */
+.chars{display:grid;gap:10px}
+.chr{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;grid-template-columns:minmax(90px,140px) minmax(0,1fr) auto auto;gap:8px 10px;align-items:center}
+.chr input{height:34px;padding:0 10px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);font-size:14px;min-width:0}
+.chr input.nm{font-weight:700}
+.chr textarea{grid-column:1/-1;min-height:0;height:58px;padding:8px 10px;font-size:14px;line-height:1.6}
+.chr .x{width:30px;height:30px;border-radius:8px;color:var(--t3);font-size:18px}
+.chr .x:hover{background:var(--hover);color:var(--t1)}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:13px;color:var(--t2)}
+.sugg button{height:30px;padding:0 10px;border:1px dashed var(--line2);border-radius:15px;font-size:13px;font-weight:600;color:var(--t1)}
+@media(max-width:640px){.chr{grid-template-columns:minmax(0,1fr) auto}.chr .al{grid-column:1/-1;grid-row:2}.chr .seg3{grid-column:1;grid-row:3;justify-self:start}.chr .x{grid-column:2;grid-row:1}}
 /* top tabs */
 .topnav{position:sticky;top:56px;z-index:19;display:flex;gap:4px;padding:0 24px;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto}
 .topnav button{height:48px;padding:0 14px;font-size:15px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
@@ -259,13 +270,17 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB 244묶음 중 가장 닮은 패턴으로 컷을 짜요.</p>
 
   <section>
+    <div class="sh"><h2>인물</h2><span>이름·다른 호칭으로 장면 글에서 인물을 찾아요 · 외형은 프롬프트에, 체형은 3D에 쓰여요</span></div>
+    <div class="chars" id="chars"></div>
+    <div class="sugg" id="sugg"></div>
+    <div class="toolbar" style="margin-top:10px"><button class="btn" data-act="addchar">+ 인물 추가</button></div>
+  </section>
+
+  <section>
     <div class="sh"><h2>장면</h2><span id="count"></span></div>
-    <textarea id="beats" aria-label="장면" spellcheck="false" placeholder="에드가 | 복도 끝에서 걸어옴">에드가 | 복도 끝에서 걸어옴
-준 | 놀라 돌아봄 "에드가?"
-에드가 | 준의 손목을 잡음
-준 | 얼굴이 붉어짐
-에드가 | "같이 가자" 미소</textarea>
-    <div class="under"><span>한 줄에 한 컷 · <code>인물 | 행동</code> · 대사는 <code>"따옴표"</code> · 7줄 넘으면 5줄씩 묶음</span><button class="link" data-act="clear">지우기</button></div>
+    <textarea id="beats" aria-label="장면" spellcheck="false" placeholder="줄글로 써도 되고, 한 줄에 한 컷씩 인물 | 행동 &quot;대사&quot; 로 써도 돼요.">비가 그친 저녁, 저택 복도는 촛불만 흔들리고 있었다. 에드가는 긴 복도 끝에서 천천히 걸어왔다. 발소리를 들은 준이 놀라 돌아보며 "에드가?" 하고 불렀다.
+에드가는 대답 대신 준의 손목을 붙잡았다. 준의 얼굴이 순식간에 붉어졌다. 잠시 침묵이 흐른 뒤, 에드가가 희미하게 웃으며 말했다. "같이 가자."</textarea>
+    <div class="under"><span>줄글은 문장마다 컷으로 나눠요 · 또는 한 줄에 한 컷 <code>인물 | 행동</code> · 대사는 <code>"따옴표"</code> · 7컷 넘으면 5컷씩 묶음</span><button class="link" data-act="clear">지우기</button></div>
   </section>
 
   <section>
@@ -356,7 +371,7 @@ const state={an:[],ranks:[],pick:[],panels:[],sel:-1,svg:''};
 
 // ---------- compute ----------
 function compute(resetPick){
-  state.an=RE.analyze($('#beats').value);
+  state.an=RE.analyze($('#beats').value,engineChars());
   if(resetPick||state.pick.length!==state.an.length)state.pick=state.an.map(()=>0);
   state.ranks=state.an.map(a=>RE.rank(a,PATS,12));
   state.panels=[];
@@ -487,7 +502,7 @@ function underlay(p){if(!showUnder)return null;
   if(p.shot==='클로즈업'){const c=p.who&&IMG.char[p.who];if(c)return{src:c.src,op:.32}}
   if(['설정','전경','전신','중경','효과 배경'].includes(p.shot)){const sc=sceneFor(p);if(sc)return{src:sc.src,op:p.shot==='설정'||p.shot==='전경'?.38:.22}}
   return null}
-function names(){return [...new Set(RE.parse($('#beats').value).map(b=>b.who).filter(Boolean))]}
+function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parse($('#beats').value,engineChars()).map(b=>b.who).filter(Boolean)])]}
 function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
   <div class="nm">${kind==='scene'&&ref?`<input value="${esc(ref.name)}" data-rename="${esc(key)}" aria-label="장면 이름">`:esc(label)}</div>${ref?`<div class="pal">${ref.palette.map(c=>`<i style="background:${c}" title="${c}"></i>`).join('')}</div>`:''}</div>`}
 function renderSlots(){const ns=names();const extra=Object.keys(IMG.char).filter(n=>!ns.includes(n));
@@ -522,7 +537,7 @@ const EN_ANG={아이레벨:'eye level',하이앵글:'high angle',로우앵글:'l
 const EN_EMO={놀람:'surprised',분노:'angry',긴장:'tense',설렘:'flustered, blushing',당황:'embarrassed, flustered',쓸쓸:'lonely, sorrowful',결의:'determined',다정:'tender, gentle',기쁨:'joyful',의아:'puzzled',냉담:'cold, indifferent',회상:'nostalgic flashback mood',개그:'comedic, chibi expression',평온:'calm'};
 const EN_INT=['','slightly ','','intensely '];
 function prompts(){return state.panels.map((p,i)=>{const sc=sceneFor(p),c=p.who&&IMG.char[p.who];const ar=`100:${Math.round(p.h*100)}`;
-  const desc=[EN_SHOT[p.shot],EN_ANG[p.ang],p.who?`character "${p.who}"`:'',`${EN_INT[p.i]||''}${EN_EMO[p.emo]||''}`.trim(),`action: ${p.act.replace(/["“”]/g,'')}`,'korean webtoon panel, clean lineart',sc?`color palette ${sc.palette.slice(0,4).join(' ')}`:''].filter(Boolean).join(', ');
+  const desc=[EN_SHOT[p.shot],EN_ANG[p.ang],p.who?`character "${p.who}"${(CHARS.find(c=>c.name===p.who)?.look||'').trim()?` (${CHARS.find(c=>c.name===p.who).look.trim().replace(/\s+/g,' ')})`:''}`:'',`${EN_INT[p.i]||''}${EN_EMO[p.emo]||''}`.trim(),`action: ${p.act.replace(/["“”]/g,'')}`,'korean webtoon panel, clean lineart',sc?`color palette ${sc.palette.slice(0,4).join(' ')}`:''].filter(Boolean).join(', ');
   const flags=[c?`--oref <${p.who} 캐릭터 이미지 링크> --ow 100`:'',sc?`--sref <${sc.name} 장면 이미지 링크>`:'',`--ar ${ar}`].filter(Boolean).join(' ');
   return `[${i+1}] ${p.who?p.who+' · ':''}${p.act}  (${p.shot}·${p.ang}·${p.emo} ${p.i}${p.vng==='P'?'·정점':''})\n${desc} ${flags}`}).join('\n\n')}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
@@ -530,6 +545,34 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   else if(a==='pdown'){download('rough-prompts.txt',URL.createObjectURL(new Blob([prompts()],{type:'text/plain'})));toast('txt로 저장했어요')}});
 
 // ---------- data ----------
+
+
+// ---------- 인물 설정 ----------
+const NOTP=/하늘|거리|배경|풍경|장소|정원|복도|방$|집$|도시|건물|골목|숲|바다|교실/;
+let CHARS=[];
+const DEFAULT_CHARS=[{name:'에드가',aliases:'',body:'male',look:'금발 짧은 머리, 초록 눈, 검은 연미복과 흰 장갑을 낀 하인'},{name:'준',aliases:'',body:'female',look:'밤색 머리를 하나로 묶은 하녀, 갈색 눈, 앞치마 차림'}];
+try{const v=localStorage.getItem('rough-chars');CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){CHARS=DEFAULT_CHARS.map(c=>({...c}))}
+function saveChars(){try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}}
+function engineChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
+function renderChars(){
+  $('#chars').innerHTML=CHARS.length?CHARS.map((c,i)=>`<div class="chr" data-i="${i}">
+    <input class="nm" data-k="name" value="${esc(c.name)}" placeholder="이름" aria-label="이름">
+    <input class="al" data-k="aliases" value="${esc(c.aliases||'')}" placeholder="다른 호칭 (쉼표로) 예: 준이, 준 씨" aria-label="다른 호칭">
+    <div class="seg3">${[['female','여자'],['male','남자']].map(([v,l])=>`<button data-body="${v}" aria-pressed="${c.body===v}">${l}</button>`).join('')}</div>
+    <button class="x" data-del="${i}" aria-label="${esc(c.name)} 삭제">×</button>
+    <textarea data-k="look" placeholder="외형: 머리 모양·색, 눈, 체격, 옷차림, 특징" aria-label="외형">${esc(c.look||'')}</textarea></div>`).join(''):'<p class="empty" style="padding:4px 0">인물을 추가하면 줄글에서도 정확하게 인물을 찾아요. 비워두면 반복되는 이름을 추정해요.</p>';
+  renderSugg()}
+function renderSugg(){const have=new Set(CHARS.map(c=>c.name.trim()));const txt=$('#beats').value;
+  const found=[...new Set([...RE.guessNames(RE.sentences(txt)),...RE.parse(txt,engineChars()).map(b=>b.who)])].filter(n=>n&&!have.has(n)&&!NOTP.test(n));
+  $('#sugg').innerHTML=found.length?`장면에서 찾은 이름 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
+let ctmr;
+$('#chars').addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;const i=+e.target.closest('.chr').dataset.i;CHARS[i][k]=e.target.value;saveChars();clearTimeout(ctmr);ctmr=setTimeout(()=>{compute(false);renderSugg();renderSlots()},400)});
+$('#chars').addEventListener('click',e=>{const b=e.target.closest('[data-body]');if(b){const i=+b.closest('.chr').dataset.i;CHARS[i].body=b.dataset.body;saveChars();renderChars();dirty3d=true;return}
+  const d=e.target.closest('[data-del]');if(d){CHARS.splice(+d.dataset.del,1);saveChars();renderChars();compute(false);renderSlots()}});
+$('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderChars();compute(false);renderSlots()});
+document.addEventListener('click',e=>{if(e.target.closest('[data-act="addchar"]')){CHARS.push({name:'',aliases:'',body:'female',look:''});renderChars();const ins=document.querySelectorAll('#chars .nm');ins[ins.length-1]?.focus()}});
+$('#beats').addEventListener('input',()=>{clearTimeout(renderSugg.t);renderSugg.t=setTimeout(renderSugg,500)});
+renderChars();
 
 // ---------- 보기 전환 ----------
 let VIEW='layout',dirty3d=true;
@@ -547,13 +590,14 @@ function renderPrompts(){const arr=state.panels.length?prompts().split('\n\n'):[
   $('#pcards').innerHTML=arr.length?arr.map(t=>{const [h,...r]=t.split('\n');return `<div class="pcard"><header><h3>${esc(h)}</h3><button class="btn" data-act="pcopy1">복사</button></header><pre>${esc(r.join('\n'))}</pre></div>`}).join(''):'<p class="empty">컷 배치 탭에서 장면을 적어주세요.</p>'}
 
 // ---------- 3D 시안 ----------
-let D3=null,last3d=null,CAST={};const NOTP=/하늘|거리|배경|풍경|장소|정원|복도|방$|집$|도시|건물|골목|숲|바다|교실/;
+let D3=null,last3d=null,CAST={};
 try{CAST=JSON.parse(localStorage.getItem('rough-cast')||'{}')}catch(_){}
 function castNames(){return [...new Set(state.panels.map(p=>p.who).filter(Boolean))]}
 function renderCast(){const ns=castNames();let k=Object.values(CAST).filter(v=>v!=='none').length;
+  for(const n of ns){const c=CHARS.find(x=>x.name===n);if(c)CAST[n]=c.body}
   for(const n of ns)if(!CAST[n])CAST[n]=NOTP.test(n)?'none':(k++%2?'male':'female');
   $('#cast').innerHTML=ns.length?ns.map(n=>`<div class="crow"><b>${esc(n)}</b><div class="seg3" data-n="${esc(n)}">${[['female','여자'],['male','남자'],['none','인물 아님']].map(([v,l])=>`<button data-v="${v}" aria-pressed="${CAST[n]===v}">${l}</button>`).join('')}</div></div>`).join(''):'<p class="empty" style="padding:16px">장면 글에 인물 이름을 적으면 배역이 생겨요.</p>'}
-$('#cast').addEventListener('click',e=>{const b=e.target.closest('.seg3 button');if(!b)return;CAST[b.parentNode.dataset.n]=b.dataset.v;try{localStorage.setItem('rough-cast',JSON.stringify(CAST))}catch(_){}renderCast();dirty3d=true});
+$('#cast').addEventListener('click',e=>{const b=e.target.closest('.seg3 button');if(!b)return;const cn=b.parentNode.dataset.n,cc=CHARS.find(x=>x.name===cn);if(cc&&b.dataset.v!=='none'){cc.body=b.dataset.v;saveChars();renderChars()}CAST[cn]=b.dataset.v;try{localStorage.setItem('rough-cast',JSON.stringify(CAST))}catch(_){}renderCast();dirty3d=true});
 function renderC3(){$('#c3list').innerHTML=state.panels.map((p,i)=>`<div><span>${i+1}</span><span>${esc(p.act.replace(/["“][^"”]*["”]/,'').trim()||p.act)}<br><small>${esc([p.who,p.emo+' '+p.i].filter(Boolean).join(' · '))}</small></span><small>${esc(p.shot)} · ${esc(p.ang)}</small></div>`).join('')}
 let busy3d=false;
 async function draw3d(){if(busy3d||!state.panels.length)return;busy3d=true;const st=t=>$('#st3').textContent=t;

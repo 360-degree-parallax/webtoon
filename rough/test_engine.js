@@ -20,7 +20,7 @@ const CASES = [
 const FEEL = [
   ['준 | 화들짝 놀라 뒤로 물러남', '놀람', 2], ['준 | 살짝 놀람', '놀람', 1],
   ['카메론 | 버럭 "닥쳐!"', '분노', 3], ['카메론 | 이를 갈며 노려봄', '분노', 2],
-  ['에드가 | 마른침을 삼키며 문고리를 잡음', '긴장', 2], ['에드가 | 어둠 속에서 발소리가 들림', '긴장', 2],
+  ['에드가 | 마른침을 삼키며 문고리를 잡음', '긴장', 2], ['에드가 | 어둠 속에서 발소리가 들림', '긴장', 1],
   ['준 | 귀가 빨개져 시선을 피함', '설렘', 2], ['준 | 에드가와 깍지를 낌', '설렘', 2],
   ['준 | 머쓱하게 손사래를 침', '당황', 2], ['준 | 말끝을 흐리며 변명함', '당황', 2],
   ['준 | 빈자리를 보며 한숨', '쓸쓸', 2], ['준 | 펑펑 운다', '쓸쓸', 3],
@@ -40,6 +40,17 @@ for (const [line, emo, i] of FEEL) {
   if (b.emo === emo && b.i === i) fok++; else fbad.push(`${line} → ${b.emo} ${b.i} (기대 ${emo} ${i}, ${b.emoWhy})`);
 }
 console.log(`감정 사전 ${fok}/${FEEL.length}` + (fbad.length ? '\n  ' + fbad.join('\n  ') : ''));
+
+// 줄글 → 컷: 문장 나누기·인물 찾기·대사 붙이기
+const PROSE = `비가 그친 저녁, 저택 복도는 촛불만 흔들리고 있었다. 에드가는 긴 복도 끝에서 천천히 걸어왔다. 발소리를 들은 준이 놀라 돌아보며 "에드가?" 하고 불렀다.
+에드가는 대답 대신 준의 손목을 붙잡았다. 준의 얼굴이 순식간에 붉어졌다. 잠시 침묵이 흐른 뒤, 에드가가 희미하게 웃으며 말했다. "같이 가자."`;
+let pok = 0, ptot = 0;
+for (const chars of [[{ name: '에드가' }, { name: '준' }], []]) {
+  const b = R.analyze(PROSE, chars)[0].beats;
+  const checks = [[b.length, 6], [b.map(x => x.who).join(','), ',에드가,준,에드가,준,에드가'], [b[2].said, '에드가?'], [b[5].said, '같이 가자.'], [b[2].emo, '놀람'], [b[4].emo, '설렘']];
+  for (const [got, want] of checks) { ptot++; if (got === want) pok++; else console.log('  줄글 X', JSON.stringify(got), '≠', JSON.stringify(want)); }
+}
+console.log(`줄글 파싱 ${pok}/${ptot}`);
 
 let ok = 0, total = 0;
 for (const c of CASES) {
@@ -66,4 +77,4 @@ for (const c of CASES) {
   }
 }
 console.log(`컷 배치 범위 검사 ${runs}컷 중 벗어남 ${bad}`);
-process.exit(ok === total && bad === 0 && fok === FEEL.length ? 0 : 1);
+process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot ? 0 : 1);
