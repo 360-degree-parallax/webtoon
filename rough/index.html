@@ -2,306 +2,341 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>러프 만들기</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>러프 메이커</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
   color-scheme:light dark;
-  --bg:light-dark(#ffffff,#17171c);
-  --band:light-dark(#f2f4f6,#101013);
-  --sheet:light-dark(#ffffff,#202027);
-  --g900:light-dark(#191f28,#ffffff);
-  --g800:light-dark(#333d4b,#e4e4e5);
-  --g700:light-dark(#4e5968,#c3c3c6);
-  --g600:light-dark(#6b7684,#9e9ea4);
-  --g500:light-dark(#8b95a1,#7e7e87);
-  --g400:light-dark(#b0b8c1,#62626d);
-  --g200:light-dark(#e5e8eb,#3a3a44);
-  --g100:light-dark(#f2f4f6,#2c2c35);
-  --press:light-dark(#f2f4f6,#26262d);
-  --blue:#3182f6;--blue-press:#1b64da;
-  --blue50:light-dark(#e8f3ff,#1d2c44);
-  --bluetext:light-dark(#1b64da,#6aa9ff);
-  --ease:cubic-bezier(.2,.8,.2,1);
+  --bg:light-dark(#ffffff,#16181c);
+  --surface:light-dark(#f6f8fa,#1e2126);
+  --t1:light-dark(rgba(22,29,39,.88),rgba(255,255,255,.88));
+  --t2:light-dark(rgba(19,30,44,.61),rgba(255,255,255,.58));
+  --t3:light-dark(rgba(19,30,44,.40),rgba(255,255,255,.36));
+  --line:light-dark(rgba(2,34,76,.09),rgba(255,255,255,.10));
+  --line2:light-dark(rgba(2,34,76,.16),rgba(255,255,255,.18));
+  --hover:light-dark(rgba(5,39,84,.05),rgba(255,255,255,.06));
+  --dark:light-dark(#333840,#e9ebee);
+  --ondark:light-dark(#ffffff,#16181c);
+  --blue:#2d71f7;
+  --blue-soft:light-dark(#eaf1ff,#1c2a45);
 }
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
-*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--g900);font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;-webkit-font-smoothing:antialiased;word-break:keep-all;letter-spacing:-.01em}
-button,input,textarea{font:inherit;color:inherit;letter-spacing:inherit}
-button{cursor:pointer}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--t1);font:500 15px/1.6 "Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo",system-ui,sans-serif;-webkit-font-smoothing:antialiased;word-break:keep-all}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 [hidden]{display:none!important}
+svg.i{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-/* nav */
-.nav{position:sticky;top:0;z-index:5;height:56px;display:flex;align-items:center;padding:0 max(8px,calc(50% - 528px));background:var(--bg)}
-.back{width:44px;height:44px;border:0;background:none;border-radius:12px;display:grid;place-items:center;color:var(--g900)}
-.back:active{background:var(--press)}
-.navtitle{flex:1;font-size:17px;font-weight:600;padding-left:16px}
-.back:not([hidden])+.navtitle{padding-left:4px}
-.stepno{font-size:15px;font-weight:500;color:var(--g500);padding-right:16px;font-variant-numeric:tabular-nums}
+/* GNB */
+.gnb{position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;gap:4px;padding:0 24px 0 12px;background:var(--bg);border-bottom:1px solid var(--line)}
+.ib{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;color:var(--t1)}
+.ib:hover{background:var(--hover)}
+.wordmark{margin-left:12px;font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--t1)}
+.wordmark span{font-weight:500;color:var(--t2);font-size:14px;margin-left:10px;letter-spacing:0}
+.gnb .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--line2);background:var(--bg);font-size:15px;font-weight:600;color:var(--t1);white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn.dark{background:var(--dark);border-color:transparent;color:var(--ondark)}
+.btn.dark:hover{filter:brightness(1.12)}
 
-main{max-width:480px;margin:0 auto;padding-bottom:140px}
-main.wide{max-width:1040px}
-.screen.enter{animation:enter .4s var(--ease)}
-@keyframes enter{from{opacity:0;transform:translateX(20px)}}
+/* shell */
+.shell{display:grid;grid-template-columns:264px minmax(0,1fr)}
+.side{position:sticky;top:56px;height:calc(100vh - 56px);overflow:auto;padding:12px;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.navi{display:flex;align-items:center;gap:24px;width:100%;height:40px;padding:0 13px;border-radius:8px;font-size:15px;font-weight:500;color:var(--t1);text-align:left}
+.navi:hover{background:var(--hover)}
+.navi.on{background:var(--hover);font-weight:600}
+.navi .cnt{margin-left:auto;font-size:13px;font-weight:500;color:var(--t2);font-variant-numeric:tabular-nums}
+.navi .lbl{white-space:nowrap}
+.divider{height:1px;background:var(--line);margin:12px 0}
+.sidehead{padding:4px 13px 8px;font-size:13px;font-weight:600;color:var(--t2)}
+.theme{margin-top:auto;padding:16px 12px 8px}
+.theme label{display:block;font-size:14px;color:var(--t1);margin-bottom:8px}
+select{width:100%;height:40px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--bg)}
+.shell.rail{grid-template-columns:72px minmax(0,1fr)}
+.rail .side{padding:12px 4px;align-items:center}
+.rail .navi{flex-direction:column;justify-content:center;gap:4px;height:68px;padding:0;font-size:10px;font-weight:500}
+.rail .navi .cnt,.rail .sidehead,.rail .theme,.rail .divider{display:none}
 
-/* hero */
-.hero{padding:16px 24px 32px}
-.hero h1{margin:0;font-size:26px;line-height:1.42;font-weight:700;letter-spacing:-.025em;color:var(--g900)}
-.hero p{margin:8px 0 0;font-size:17px;line-height:1.55;color:var(--g600)}
+/* work area */
+.work{display:grid;grid-template-columns:minmax(0,640px) minmax(360px,1fr);gap:48px;padding:0 48px;max-width:1240px}
+.panel{padding:40px 0 120px}
+.crumb{font-size:14px;color:var(--t2);margin:0 0 8px}
+.panel h1{margin:0;font-size:28px;line-height:1.4;font-weight:700;letter-spacing:-.02em}
+.panel .desc{margin:8px 0 0;font-size:15px;color:var(--t2)}
+.sect{margin-top:32px}
 
-/* step 1 */
-.pad{padding:0 24px}
-textarea{display:block;width:100%;min-height:236px;border:0;border-radius:16px;background:var(--g100);padding:16px 18px;font-size:17px;line-height:1.8;color:var(--g900);resize:none;outline:none;box-shadow:inset 0 0 0 2px transparent;transition:box-shadow .2s}
-textarea:focus{box-shadow:inset 0 0 0 2px var(--blue)}
-textarea::placeholder{color:var(--g400)}
-.meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:0 4px;font-size:15px;color:var(--g500);font-variant-numeric:tabular-nums}
-.textbtn{border:0;background:none;padding:6px 0;font-size:15px;font-weight:600;color:var(--bluetext)}
-.info{margin:32px 24px 0;padding:20px;border-radius:16px;background:var(--band)}
-.info b{display:block;font-size:15px;font-weight:600;color:var(--g800);margin-bottom:8px}
-.info ul{margin:0;padding:0;list-style:none}
-.info li{font-size:15px;line-height:1.7;color:var(--g600);padding-left:14px;position:relative}
-.info li::before{content:"";position:absolute;left:2px;top:.8em;width:4px;height:4px;border-radius:50%;background:var(--g400)}
-.info code{font-family:inherit;font-weight:600;color:var(--g800)}
+textarea{display:block;width:100%;min-height:320px;padding:16px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);font-size:16px;font-weight:400;line-height:1.85;resize:vertical;outline:none}
+textarea:focus{border-color:var(--t1)}
+.under{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;color:var(--t2)}
+.guide{margin-top:32px;border-top:1px solid var(--line);padding-top:24px}
+.guide h3,.group h3{margin:0 0 12px;font-size:16px;font-weight:600}
+.guide dl{display:grid;grid-template-columns:120px 1fr;gap:10px 16px;margin:0;font-size:14px}
+.guide dt{color:var(--t2)}.guide dd{margin:0}
+.guide code{font-family:inherit;font-weight:600;background:var(--surface);border-radius:6px;padding:2px 8px}
+.link{font-size:13px;font-weight:600;color:var(--t2);text-decoration:underline;text-underline-offset:3px}
 
-/* list rows */
-.list{list-style:none;margin:0;padding:0 8px}
-.row{display:flex;align-items:center;gap:16px;width:100%;padding:16px;border:0;border-radius:16px;background:none;text-align:left;transition:background .15s,transform .15s var(--ease)}
-.row:active{background:var(--press);transform:scale(.985)}
-@media(hover:hover){.row:hover{background:var(--press)}}
-.tx{flex:1;min-width:0}
-.t{font-size:17px;line-height:1.45;font-weight:500;color:var(--g800)}
-.s{font-size:15px;line-height:1.45;color:var(--g500);margin-top:2px}
-.v{flex:none;font-size:17px;font-weight:600;color:var(--bluetext)}
-.v.none{color:var(--g500);font-weight:500}
-.chev{flex:none;color:var(--g400)}
-.num{flex:none;width:36px;height:36px;border-radius:50%;background:var(--blue50);color:var(--bluetext);display:grid;place-items:center;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
-.row.on .num{background:var(--blue);color:#fff}
+.group{padding:24px 0;border-bottom:1px solid var(--line)}
+.group:last-child{border-bottom:0}
+.group h3 em{font-style:normal;font-weight:500;color:var(--t2);font-size:14px;margin-left:8px}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.chip{display:flex;flex-direction:column;align-items:flex-start;padding:12px 14px;border:1px solid var(--line2);border-radius:8px;text-align:left;background:var(--bg);transition:background .12s}
+.chip:hover{background:var(--hover)}
+.chip b{font-size:15px;font-weight:600}
+.chip small{font-size:13px;color:var(--t2);margin-top:2px}
+.chip[aria-pressed=true]{border-color:var(--t1);box-shadow:inset 0 0 0 1px var(--t1)}
 
-/* sections */
-.band{height:16px;background:var(--band);margin:32px 0 8px}
-.sh{margin:0;padding:16px 24px 4px;font-size:20px;line-height:1.4;font-weight:700;color:var(--g900)}
-.shsub{margin:0;padding:0 24px 8px;font-size:15px;color:var(--g600)}
-.irow{display:flex;justify-content:space-between;gap:16px;padding:12px 24px;font-size:17px;line-height:1.45}
-.irow span{color:var(--g600);white-space:nowrap}
-.irow b{font-weight:600;color:var(--g800);text-align:right}
-.chunk{padding:16px 24px 0;font-size:15px;font-weight:600;color:var(--bluetext)}
+/* cuts */
+.cutrow{display:grid;grid-template-columns:28px minmax(0,1fr);gap:16px;padding:20px 8px;margin:0 -8px;border-bottom:1px solid var(--line);border-radius:8px;cursor:pointer}
+.cutrow:hover{background:var(--hover)}
+.cutrow.on{background:none;cursor:default}
+.n{width:28px;height:28px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.cutrow.on .n{background:var(--dark);border-color:transparent;color:var(--ondark)}
+.ct{font-size:16px;font-weight:600;line-height:1.5}
+.cm{font-size:14px;color:var(--t2);margin-top:2px}
+.ed{margin-top:16px;display:grid;gap:16px}
+.ed .lb{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--t2);margin-bottom:8px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{height:34px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;font-size:14px;font-weight:500;background:var(--bg)}
+.pill:hover{background:var(--hover)}
+.pill[aria-pressed=true]{background:var(--dark);border-color:transparent;color:var(--ondark);font-weight:600}
+input[type=range]{width:100%;margin:0;accent-color:var(--dark)}
+.ed .go{justify-self:start;font-size:13px;font-weight:600;color:var(--blue)}
 
-/* result */
-.preview{margin:0 24px;padding:16px;border-radius:20px;background:var(--band);max-height:62vh;overflow:auto;overscroll-behavior:contain}
-.preview svg{display:block;width:100%;max-width:440px;height:auto;margin:0 auto;background:#fff;border-radius:8px;cursor:pointer}
-.hscroll{display:flex;gap:10px;overflow-x:auto;padding:4px 24px 8px;scroll-snap-type:x mandatory;scrollbar-width:none}
-.hscroll::-webkit-scrollbar{display:none}
-.hscroll figure{margin:0;flex:none;width:112px;scroll-snap-align:start}
-.hscroll img{display:block;width:112px;height:150px;object-fit:cover;object-position:top;border-radius:12px;background:var(--g100)}
-.hscroll figcaption{margin-top:6px;font-size:13px;line-height:1.4;color:var(--g600)}
-.note{margin:0;padding:4px 24px;font-size:15px;line-height:1.6;color:var(--g500)}
-@media(min-width:1024px){
-  .result{display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:48px;align-items:start;padding:0 24px}
-  .rleft{position:sticky;top:56px}
-  .rleft .hero{padding-left:0}
-  .preview{margin:0;max-height:calc(100vh - 240px)}
-  .rright .band.first{display:none}
-  .rright{padding-top:24px}
-}
+/* refs */
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin-top:24px}
+.tab{height:48px;font-size:16px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--t2)}
+.tab[aria-selected=true]{color:var(--t1);border-color:var(--t1)}
+.target{display:flex;align-items:center;gap:8px;margin:20px 0 16px;font-size:14px;color:var(--t2)}
+.target b{color:var(--t1);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 12px}
+.card{cursor:pointer;position:relative;margin:0}
+.card img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top;border-radius:8px;background:var(--surface);border:1px solid var(--line);transition:transform .15s}
+.grid{align-items:start}.card.cre img{aspect-ratio:auto;object-fit:initial}
+.card:hover img{transform:translateY(-2px)}
+.card figcaption{margin-top:8px;font-size:14px;font-weight:600;line-height:1.4}
+.card figcaption small{display:block;font-size:13px;font-weight:500;color:var(--t2)}
+.badge{position:absolute;top:8px;left:8px;padding:2px 8px;border-radius:6px;background:var(--blue);color:#fff;font-size:12px;font-weight:600}
+.empty{padding:40px 0;font-size:14px;color:var(--t2)}
 
-/* CTA */
-.cta{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:20px 20px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--bg) 20px);pointer-events:none}
-.ctain{max-width:440px;margin:0 auto;display:flex;gap:8px;pointer-events:auto}
-.btn{flex:1;height:56px;border:0;border-radius:16px;background:var(--blue);color:#fff;font-size:17px;font-weight:600;transition:background .15s,transform .15s var(--ease),opacity .2s}
-.btn:active{background:var(--blue-press);transform:scale(.98)}
-.btn.sec{background:var(--blue50);color:var(--bluetext)}
-.btn:disabled{opacity:.35;pointer-events:none}
-@media(min-width:1024px){.cta.wide .ctain{max-width:1040px;padding:0 24px;justify-content:flex-end}.cta.wide .btn{flex:0 0 236px}}
+/* preview column */
+.pv{position:sticky;top:56px;height:calc(100vh - 56px);padding:40px 0 24px;display:flex;flex-direction:column}
+.pvhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.pvhead h2{margin:0;font-size:16px;font-weight:600}
+.pvhead span{font-size:13px;color:var(--t2)}
+.lead{margin:6px 0 0;font-size:14px;color:var(--t2)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 16px}
+.tag{padding:3px 8px;border-radius:6px;background:var(--surface);font-size:13px;color:var(--t2)}
+.canvas{flex:1;overflow:auto;border-radius:8px;background:var(--surface);padding:24px 24px 96px;position:relative}
+.canvas svg{display:block;width:100%;max-width:460px;height:auto;margin:0 auto;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer}
+.bar{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;height:56px;padding:0 8px;border:1px solid var(--line2);border-radius:28px;background:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.08);white-space:nowrap}
+.bar .ib{width:40px;height:40px;border-radius:20px}
+.bar .pname{padding:0 10px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.bar .sep{width:1px;height:20px;background:var(--line2);margin:0 6px}
+.bar .tb{height:40px;padding:0 12px;border-radius:20px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.bar .tb:hover{background:var(--hover)}
+.bar .tb svg.i{width:20px;height:20px}
 
-/* bottom sheet */
-.dim{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.48);opacity:0;pointer-events:none;transition:opacity .25s}
-.dim.on{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;margin:0 auto;max-height:88vh;overflow:auto;overscroll-behavior:contain;background:var(--sheet);border-radius:28px 28px 0 0;padding:8px 0 calc(20px + env(safe-area-inset-bottom));transform:translateY(105%);visibility:hidden;transition:transform .32s var(--ease),visibility 0s .32s}
-.sheet.on{transform:none;visibility:visible;transition:transform .32s var(--ease)}
-.grab{width:40px;height:4px;border-radius:2px;background:var(--g200);margin:4px auto 16px}
-.sheet h2{margin:0;padding:0 24px;font-size:22px;line-height:1.4;font-weight:700;outline:none}
-.sheet .sub{margin:6px 0 0;padding:0 24px;font-size:15px;line-height:1.5;color:var(--g600)}
-.sheet .list{margin-top:12px}
-.field{padding:24px 24px 0}
-.field>label,.field>.lb{display:flex;justify-content:space-between;margin-bottom:12px;font-size:15px;font-weight:600;color:var(--g700)}
-.field .lb em{font-style:normal;color:var(--bluetext)}
-.pills{display:flex;flex-wrap:wrap;gap:8px}
-.pill{height:44px;padding:0 16px;border:0;border-radius:12px;background:var(--g100);color:var(--g700);font-size:16px;font-weight:600;transition:background .15s,transform .15s var(--ease)}
-.pill:active{transform:scale(.96)}
-.pill[aria-pressed=true]{background:var(--blue50);color:var(--bluetext);box-shadow:inset 0 0 0 1.5px var(--blue)}
-input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--blue)}
-.sheet .hscroll{padding-top:0}
-.sheet figure{cursor:pointer;position:relative}
-.sheet figure.hit img{box-shadow:0 0 0 2.5px var(--blue)}
-.sheet figure.cre img{object-fit:contain;background:var(--g100)}
-.badge{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:8px;background:var(--blue);color:#fff;font-size:12px;font-weight:600}
-.sheetcta{padding:28px 20px 0}
-.sheetcta .btn{width:100%}
-
-@media(min-width:1024px){.dim{background:rgba(0,0,0,.16)}.sheet{left:auto;right:max(24px,calc(50% - 496px));width:480px;margin:0;bottom:24px;max-height:calc(100vh - 104px);border-radius:24px;padding-bottom:20px;box-shadow:0 12px 40px rgba(0,0,0,.18);transform:translateY(calc(100% + 48px))}}
-.toast{position:fixed;left:50%;bottom:108px;z-index:30;transform:translate(-50%,16px);padding:14px 20px;border-radius:16px;background:rgba(25,31,40,.94);color:#fff;font-size:15px;font-weight:500;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s var(--ease)}
+.toast{position:fixed;left:50%;bottom:32px;z-index:30;transform:translate(-50%,8px);padding:12px 16px;border-radius:8px;background:#333840;color:#fff;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-@media(prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}}
+
+@media(max-width:1279px){.shell{grid-template-columns:72px minmax(0,1fr)}.side{padding:12px 4px;align-items:center}.navi{flex-direction:column;justify-content:center;gap:4px;height:68px;padding:0;font-size:10px}.navi .cnt,.sidehead,.theme,.divider{display:none}.work{padding:0 32px;gap:32px}}
+@media(max-width:1023px){.work{grid-template-columns:1fr}.pv{position:relative;height:auto;padding-top:0}.canvas{max-height:80vh}.panel{padding-bottom:40px}}
+@media(max-width:640px){.shell{display:block}.side{position:sticky;top:56px;z-index:10;height:auto;flex-direction:row;overflow-x:auto;padding:4px 8px;border-right:0;border-bottom:1px solid var(--line);background:var(--bg)}.navi{flex:none;width:auto;flex-direction:row;height:40px;padding:0 12px;gap:8px;font-size:14px}.work{padding:0 16px}.gnb{padding:0 12px 0 4px}.wordmark span,.gnb .btn:not(.dark){display:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.guide dl{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<header class="nav">
-  <button class="back" id="back" aria-label="뒤로" hidden><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-  <span class="navtitle">러프 만들기</span>
-  <span class="stepno" id="stepno">1/3</span>
+<header class="gnb">
+  <button class="ib" id="menu" aria-label="메뉴 접기"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <span class="wordmark">ROUGH<span>웹툰 연출 러프</span></span>
+  <div class="right">
+    <button class="btn" data-act="svg">SVG 저장</button>
+    <button class="btn dark" data-act="png">PNG 저장</button>
+  </div>
 </header>
 
-<main id="main">
-<section class="screen" id="sc1">
-  <div class="hero"><h1>어떤 장면을<br>그릴까요?</h1><p>한 줄에 한 컷씩 적어주세요</p></div>
-  <div class="pad">
-    <textarea id="beats" aria-label="장면" placeholder="에드가 | 복도 끝에서 걸어옴">에드가 | 복도 끝에서 걸어옴
+<div class="shell" id="shell">
+<nav class="side" aria-label="작업">
+  <div class="sidehead">작업</div>
+  <button class="navi" data-panel="scene"><svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg><span class="lbl">장면</span><span class="cnt" id="cScene"></span></button>
+  <button class="navi" data-panel="rhythm"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg><span class="lbl">리듬</span><span class="cnt" id="cRhythm"></span></button>
+  <button class="navi" data-panel="cuts"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="7" rx="1.5"/><rect x="5" y="13" width="14" height="8" rx="1.5"/></svg><span class="lbl">컷</span><span class="cnt" id="cCuts"></span></button>
+  <button class="navi" data-panel="refs"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg><span class="lbl">참고</span><span class="cnt" id="cRefs"></span></button>
+  <div class="divider"></div>
+  <div class="sidehead">도움말</div>
+  <button class="navi" data-panel="scene" data-guide="1"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17.2v.1"/></svg><span class="lbl">쓰는 법</span></button>
+  <div class="theme"><label for="themeSel">표시 테마</label><select id="themeSel"><option value="">시스템 설정</option><option value="light">라이트</option><option value="dark">다크</option></select></div>
+</nav>
+
+<div class="work">
+  <section class="panel" id="p-scene" aria-labelledby="h-scene">
+    <p class="crumb">작업 · 1 / 4</p>
+    <h1 id="h-scene">장면</h1>
+    <p class="desc">한 줄에 한 컷씩 적으면 오른쪽 러프가 바로 바뀌어요.</p>
+    <div class="sect">
+      <textarea id="beats" aria-label="장면" spellcheck="false" placeholder="에드가 | 복도 끝에서 걸어옴">에드가 | 복도 끝에서 걸어옴
 준 | 놀라 돌아봄 "에드가?"
 에드가 | 준의 손목을 잡음
 준 | 얼굴이 붉어짐
 에드가 | "같이 가자" 미소</textarea>
-    <div class="meta"><span id="count"></span><button class="textbtn" data-act="clear">모두 지우기</button></div>
-  </div>
-  <div class="info"><b>이렇게 적으면 돼요</b><ul>
-    <li><code>인물 | 행동</code> 순서로 적어요</li>
-    <li>대사는 <code>"따옴표"</code> 안에 넣어요</li>
-    <li>다섯 줄마다 한 묶음으로 연출해요</li></ul></div>
-</section>
-
-<section class="screen" id="sc2" hidden>
-  <div class="hero"><h1>어떤 리듬으로<br>그릴까요?</h1><p>고르지 않아도 장면에 맞게 찾아드려요</p></div>
-  <ul class="list" id="optList"></ul>
-</section>
-
-<section class="screen" id="sc3" hidden>
-  <div class="result">
-    <div class="rleft">
-      <div class="hero"><h1>러프를 그렸어요</h1><p id="lead"></p></div>
-      <div class="preview" id="preview"></div>
+      <div class="under"><span id="count"></span><button class="link" data-act="clear">모두 지우기</button></div>
     </div>
-    <div class="rright">
-      <div class="band first"></div>
-      <h2 class="sh">컷</h2><p class="shsub">누르면 샷·앵글·길이를 고칠 수 있어요</p>
-      <ul class="list" id="cutList"></ul>
-      <div class="band"></div>
-      <h2 class="sh">참고한 연출</h2>
-      <div id="patInfo"></div>
-      <ul class="list"><li><button class="row" data-act="to2"><div class="tx"><div class="t">리듬 다시 고르기</div></div>__CHEV__</button></li></ul>
-      <div class="band"></div>
-      <h2 class="sh">원본 컷</h2>
-      <div id="refs"></div>
+    <div class="guide" id="guide">
+      <h3>쓰는 법</h3>
+      <dl>
+        <dt>한 줄</dt><dd>컷 하나예요. <code>인물 | 행동</code> 순서로 적어요.</dd>
+        <dt>대사</dt><dd><code>"따옴표"</code> 안에 넣으면 말풍선이 생겨요.</dd>
+        <dt>다섯 줄</dt><dd>한 묶음이에요. 묶음마다 DB에서 연출 패턴 하나를 골라요.</dd>
+        <dt>두 사람</dt><dd>행동에 <code>,</code> <code>와</code> <code>둘</code>이 있으면 두 인물을 그려요.</dd>
+      </dl>
     </div>
-  </div>
-</section>
-</main>
+  </section>
 
-<div class="cta" id="cta"><div class="ctain" id="ctain"></div></div>
-<div class="dim" id="dim"></div>
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="grab"></div><div id="sheetBody"></div></div>
+  <section class="panel" id="p-rhythm" aria-labelledby="h-rhythm" hidden>
+    <p class="crumb">작업 · 2 / 4</p>
+    <h1 id="h-rhythm">리듬</h1>
+    <p class="desc">고르지 않은 항목은 장면에 맞게 찾아요. 고를 때마다 러프가 다시 그려져요.</p>
+    <div class="sect" id="opts"></div>
+  </section>
+
+  <section class="panel" id="p-cuts" aria-labelledby="h-cuts" hidden>
+    <p class="crumb">작업 · 3 / 4</p>
+    <h1 id="h-cuts">컷</h1>
+    <p class="desc">컷을 골라 샷·앵글·길이를 고쳐요. 미리보기에서 컷을 눌러도 돼요.</p>
+    <div class="sect" id="cutList"></div>
+  </section>
+
+  <section class="panel" id="p-refs" aria-labelledby="h-refs" hidden>
+    <p class="crumb">작업 · 4 / 4</p>
+    <h1 id="h-refs">참고</h1>
+    <p class="desc">그림을 누르면 고른 컷에 그 그림의 샷·앵글·비율을 입혀요.</p>
+    <div class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-tab="color">컬러 러프</button>
+      <button class="tab" role="tab" data-tab="cre">창작 클로즈업</button>
+      <button class="tab" role="tab" data-tab="orig">원본 컷</button>
+    </div>
+    <div class="target" id="target"></div>
+    <div id="refGrid"></div>
+  </section>
+
+  <aside class="pv" aria-label="미리보기">
+    <div class="pvhead"><h2>미리보기</h2><span id="pvsize"></span></div>
+    <p class="lead" id="lead"></p>
+    <div class="tags" id="tags"></div>
+    <div class="canvas" id="canvas"><div id="preview"></div></div>
+    <div class="bar" id="bar">
+      <button class="ib" data-act="prev" aria-label="이전 패턴"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <span class="pname" id="pname">패턴</span>
+      <button class="ib" data-act="next" aria-label="다음 패턴"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <span class="sep"></span>
+      <button class="tb" data-act="png"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>저장</button>
+    </div>
+  </aside>
+</div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
 const W=690;const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const CHEV='<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const CHECK=on=>on?'<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#3182f6"/><path d="M7 12.4l3.3 3.3L17 9" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.2" fill="none" stroke="var(--g200)" stroke-width="1.6"/></svg>';
-document.querySelectorAll('.list').forEach(l=>l.innerHTML=l.innerHTML.replace('__CHEV__',CHEV));
-
 const ANY='상관없어요';
 const OPTS=[
- {key:'dist',title:'카메라 거리',items:[[ANY,'장면에 맞게 골라드려요'],['좁혀감','멀리서 점점 다가가요'],['넓혀감','가까이서 점점 물러나요'],['넓혔다 좁힘','물러났다가 확 다가가요'],['좁혔다 넓힘','다가갔다가 다시 물러나요'],['교차','멀고 가까움을 오가요'],['유지·좁게','계속 가까이서 봐요'],['유지·넓게','계속 멀리서 봐요']]},
- {key:'tempo',title:'속도',items:[[ANY,'장면에 맞게 골라드려요'],['빠름','짧은 컷으로 빠르게'],['보통','적당한 호흡으로'],['느림','긴 컷으로 천천히']]},
- {key:'narr',title:'터지는 순간',items:[[ANY,'장면에 맞게 골라드려요'],['끝 정점','마지막에 터뜨려요'],['중간 정점','가운데서 터지고 여운을 남겨요'],['정점 선행','처음부터 터뜨려요'],['정점 연속','계속 몰아쳐요'],['무정점','잔잔하게 흘러가요']]},
- {key:'goal',title:'노리는 효과',items:[[ANY,'장면에 맞게 골라드려요'],['몰입 유도','장면 안으로 끌어들여요'],['궁금증 유발','보여줄 걸 미뤄요'],['충격 강조','한 방을 크게 보여줘요'],['긴장 고조','독자만 먼저 알게 해요'],['관계 대비','두 사람을 번갈아 보여줘요'],['감정 지속','감정을 오래 붙잡아요'],['여운','물러나며 마무리해요'],['시간 압축','여러 동작을 빠르게 넘겨요'],['장면 전환','다음 장면으로 넘어가요'],['정보 강조','손·소품을 크게 보여줘요']]},
+ {key:'dist',title:'카메라 거리',items:[[ANY,'장면에 맞게 골라요'],['좁혀감','멀리서 점점 다가가요'],['넓혀감','가까이서 점점 물러나요'],['넓혔다 좁힘','물러났다가 확 다가가요'],['좁혔다 넓힘','다가갔다가 다시 물러나요'],['교차','멀고 가까움을 오가요'],['유지·좁게','계속 가까이서 봐요'],['유지·넓게','계속 멀리서 봐요']]},
+ {key:'tempo',title:'속도',items:[[ANY,'장면에 맞게 골라요'],['빠름','짧은 컷으로 빠르게'],['보통','적당한 호흡으로'],['느림','긴 컷으로 천천히']]},
+ {key:'narr',title:'터지는 순간',items:[[ANY,'장면에 맞게 골라요'],['끝 정점','마지막에 터뜨려요'],['중간 정점','가운데서 터지고 여운을 남겨요'],['정점 선행','처음부터 터뜨려요'],['정점 연속','계속 몰아쳐요'],['무정점','잔잔하게 흘러가요']]},
+ {key:'goal',title:'노리는 효과',items:[[ANY,'장면에 맞게 골라요'],['몰입 유도','장면 안으로 끌어들여요'],['궁금증 유발','보여줄 걸 미뤄요'],['충격 강조','한 방을 크게 보여줘요'],['긴장 고조','독자만 먼저 알게 해요'],['관계 대비','두 사람을 번갈아 보여줘요'],['감정 지속','감정을 오래 붙잡아요'],['여운','물러나며 마무리해요'],['시간 압축','여러 동작을 빠르게 넘겨요'],['장면 전환','다음 장면으로 넘어가요'],['정보 강조','손·소품을 크게 보여줘요']]},
 ];
 const DESC=Object.fromEntries(OPTS.map(g=>[g.key,Object.fromEntries(g.items)]));
 const SHOTS=['설정','전경','전신','중경','클로즈업','디테일','효과 배경'];
 const ANGLES=['아이레벨','하이앵글','로우앵글','탑뷰'];
 const want={dist:ANY,tempo:ANY,narr:ANY,goal:ANY};
-let PATS=[],CUTS=null,GAL=[],CRE=[],screen=1,sheetKind=null,lastFocus=null;
-const state={chunks:[],pick:[],panels:[],used:[],sel:-1,svg:''};
+const CRE_BASE='references/creative/green-midnight-closeups/';
+let PATS=[],CUTS=null,GAL=[],CRE=[],panel='scene',refTab='color';
+const state={chunks:[],pick:[],panels:[],used:[],sel:0,svg:''};
 const lenWord=h=>h<.7?'짧게':h<1.2?'보통':h<2?'길게':'아주 길게';
+const toAnd=s=>s.replace(/봐요$/,'보고').replace(/요$/,'고');
 
-// ---------- screens ----------
-function go(n){screen=n;[1,2,3].forEach(i=>{const s=$('#sc'+i);s.hidden=i!==n;s.classList.remove('enter')});
-  const s=$('#sc'+n);void s.offsetWidth;s.classList.add('enter');
-  $('#back').hidden=n===1;$('#stepno').textContent=`${n}/3`;$('#main').classList.toggle('wide',n===3);$('#cta').classList.toggle('wide',n===3);
-  if(n===2)renderOpts();renderCTA();scrollTo(0,0)}
-function renderCTA(){const c=$('#ctain');
-  if(screen===1)c.innerHTML=`<button class="btn" data-act="to2"${parseBeats().length?'':' disabled'}>다음</button>`;
-  else if(screen===2)c.innerHTML=`<button class="btn" data-act="draw"${PATS.length?'':' disabled'}>러프 그리기</button>`;
-  else c.innerHTML=`<button class="btn sec" data-act="next">다른 패턴</button><button class="btn" data-act="save">저장하기</button>`}
-function updateCount(){const n=parseBeats().length;$('#count').textContent=n?`${n}컷 · ${Math.ceil(n/5)}묶음`:'아직 적은 컷이 없어요';if(screen===1)renderCTA()}
-$('#beats').addEventListener('input',updateCount);
-$('#back').onclick=()=>go(screen-1);
+// ---------- layout ----------
+function show(p){panel=p;['scene','rhythm','cuts','refs'].forEach(k=>$('#p-'+k).hidden=k!==p);
+  document.querySelectorAll('.navi[data-panel]').forEach(b=>b.classList.toggle('on',b.dataset.panel===p&&!b.dataset.guide));
+  if(p==='rhythm')renderOpts();if(p==='cuts')renderCuts();if(p==='refs')renderRefs();scrollTo({top:0})}
+document.querySelectorAll('.navi[data-panel]').forEach(b=>b.onclick=()=>{show(b.dataset.panel);if(b.dataset.guide)$('#guide').scrollIntoView({behavior:'smooth'})});
+$('#menu').onclick=()=>$('#shell').classList.toggle('rail');
+try{const t=localStorage.getItem('rough-theme');if(t){document.documentElement.dataset.theme=t;$('#themeSel').value=t}}catch(e){}
+$('#themeSel').onchange=e=>{const v=e.target.value;if(v)document.documentElement.dataset.theme=v;else delete document.documentElement.dataset.theme;try{localStorage.setItem('rough-theme',v)}catch(_){}};
+function counts(){const n=parseBeats().length;$('#cScene').textContent=n?`${n}컷`:'';$('#count').textContent=n?`${n}컷 · ${Math.ceil(n/5)}묶음`:'아직 적은 컷이 없어요';
+  const k=Object.values(want).filter(v=>v!==ANY).length;$('#cRhythm').textContent=k?`${k}개 고름`:'자동';$('#cCuts').textContent=state.panels.length||'';$('#cRefs').textContent=GAL.length+CRE.length||''}
+let tmr;$('#beats').addEventListener('input',()=>{counts();clearTimeout(tmr);tmr=setTimeout(()=>{if(PATS.length)generate()},350)});
 
-// ---------- step 2 ----------
-function renderOpts(){$('#optList').innerHTML=OPTS.map(g=>{const v=want[g.key];return `<li><button class="row" data-act="opt" data-k="${g.key}"><div class="tx"><div class="t">${g.title}</div>${v===ANY?'':`<div class="s">${esc(DESC[g.key][v])}</div>`}</div><span class="v${v===ANY?' none':''}">${esc(v)}</span>${CHEV}</button></li>`}).join('')}
-function openOpt(k){const g=OPTS.find(o=>o.key===k);
-  openSheet('opt',`<h2 id="sheetTitle" tabindex="-1">${g.title}</h2><ul class="list">${g.items.map(([v,d])=>`<li><button class="row" data-act="pick" data-k="${k}" data-v="${esc(v)}" aria-pressed="${want[k]===v}"><div class="tx"><div class="t">${esc(v)}</div><div class="s">${esc(d)}</div></div>${CHECK(want[k]===v)}</button></li>`).join('')}</ul>`)}
+// ---------- rhythm ----------
+function renderOpts(){$('#opts').innerHTML=OPTS.map(g=>`<div class="group"><h3>${g.title}<em>${esc(want[g.key])}</em></h3><div class="chips" role="group" aria-label="${g.title}">${g.items.map(([v,d])=>`<button class="chip" data-k="${g.key}" data-v="${esc(v)}" aria-pressed="${want[g.key]===v}"><b>${esc(v)}</b><small>${esc(d)}</small></button>`).join('')}</div></div>`).join('')}
+$('#opts').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;want[b.dataset.k]=b.dataset.v;renderOpts();generate()});
 
 // ---------- matching ----------
 function parseBeats(){return $('#beats').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const [who,...rest]=l.split('|');const act=rest.join('|').trim()||who.trim();const said=(act.match(/"([^"]+)"/)||[])[1]||'';return {who:rest.length?who.trim():'',act,said}})}
 function score(p,n){let s=0;for(const k in want)if(want[k]!==ANY)s+=p[k]===want[k]?3:-1;const pics=p.cuts.filter(c=>c.t==='그림').length;return s-Math.abs(pics-n)*1.5}
 function candidates(n){return PATS.map(p=>({p,s:score(p,n)})).sort((a,b)=>b.s-a.s).slice(0,12).map(x=>x.p)}
 function generate(){const beats=parseBeats();state.chunks=[];for(let i=0;i<beats.length;i+=5)state.chunks.push(beats.slice(i,i+5));state.pick=state.chunks.map(()=>0);build()}
-function build(){state.panels=[];state.used=[];state.sel=-1;
-  state.chunks.forEach((ch,ci)=>{const cand=candidates(ch.length);const p=cand[state.pick[ci]%cand.length];const pics=p.cuts.filter(c=>c.t==='그림');state.used.push(p);
+function build(){state.panels=[];state.used=[];
+  state.chunks.forEach((ch,ci)=>{const cand=candidates(ch.length);const p=cand[((state.pick[ci]%cand.length)+cand.length)%cand.length];const pics=p.cuts.filter(c=>c.t==='그림');state.used.push(p);
     ch.forEach((b,i)=>{const c=pics[Math.round(i*(pics.length-1)/Math.max(1,ch.length-1))]||pics[0]||{shot:'중경',ang:'아이레벨',h:1,gap:.3};
       state.panels.push({...b,shot:SHOTS.includes(c.shot)?c.shot:'중경',ang:ANGLES.includes(c.ang)?c.ang:'아이레벨',h:+Math.max(.45,Math.min(2.2,c.h||1)).toFixed(2),gap:Math.max(.08,Math.min(1,c.gap||.3)),src:`${p.src}-${p.id}`})})});
-  renderResult();render();renderRefs()}
+  state.sel=Math.min(state.sel,Math.max(0,state.panels.length-1));
+  renderHead();render();counts();if(panel==='cuts')renderCuts();if(panel==='refs')renderRefs()}
 
-// ---------- step 3 ----------
-const toAnd=s=>s.replace(/봐요$/,'보고').replace(/요$/,'고');
-function renderResult(){const p=state.used[0];if(!p)return;
+// ---------- preview head ----------
+function renderHead(){const p=state.used[0];if(!p){$('#lead').textContent='장면을 적으면 러프가 여기 그려져요';$('#tags').innerHTML='';$('#pname').textContent='패턴 없음';return}
   $('#lead').textContent=`${toAnd(DESC.dist[p.dist]||p.dist)}, ${DESC.narr[p.narr]||p.narr}`;
-  renderCutList();
-  $('#patInfo').innerHTML=state.used.map((p,i)=>`${state.used.length>1?`<div class="chunk">${i+1}묶음</div>`:''}
-    <div class="irow"><span>카메라 거리</span><b>${esc(p.dist)}</b></div><div class="irow"><span>속도</span><b>${esc(p.tempo)}</b></div>
-    <div class="irow"><span>터지는 순간</span><b>${esc(p.narr)}</b></div><div class="irow"><span>노리는 효과</span><b>${esc(p.goal)}</b></div>
-    <div class="irow"><span>원본 패턴</span><b>${esc(p.src)}-${esc(p.id)}${p.name?` · ${esc(p.name)}`:''}</b></div>`).join('')}
-function renderCutList(){$('#cutList').innerHTML=state.panels.map((p,i)=>`<li><button class="row${i===state.sel?' on':''}" data-act="cut" data-i="${i}"><span class="num">${i+1}</span><div class="tx"><div class="t">${esc(p.act.replace(/"[^"]*"/,'').trim()||p.act)}</div><div class="s">${esc([p.who,p.shot,p.ang,lenWord(p.h)].filter(Boolean).join(' · '))}</div></div>${CHEV}</button></li>`).join('')}
+  $('#tags').innerHTML=state.used.map((u,i)=>`${state.used.length>1?`<span class="tag">${i+1}묶음</span>`:''}${[u.dist,u.tempo,u.narr,u.goal].map(t=>`<span class="tag">${esc(t)}</span>`).join('')}`).join('');
+  $('#pname').textContent=state.used.map(u=>`${u.src}-${u.id}`).join(' · ');
+  $('#pvsize').textContent=`${state.panels.length}컷`}
 
-function openCut(i){state.sel=i;render();renderCutList();openSheet('cut',cutSheet(i))}
-function cutSheet(i){const p=state.panels[i];const used=new Set(state.used.flatMap(u=>u.cuts.map(c=>c.id)));
-  return `<h2 id="sheetTitle" tabindex="-1">${i+1}번 컷</h2><p class="sub">${esc(p.act)}</p>
-  <div class="field"><div class="lb">샷</div><div class="pills">${SHOTS.map(s=>`<button class="pill" data-act="set" data-k="shot" data-v="${s}" aria-pressed="${s===p.shot}">${s}</button>`).join('')}</div></div>
-  <div class="field"><div class="lb">앵글</div><div class="pills">${ANGLES.map(s=>`<button class="pill" data-act="set" data-k="ang" data-v="${s}" aria-pressed="${s===p.ang}">${s}</button>`).join('')}</div></div>
-  <div class="field"><label class="lb" for="hr">컷 길이 <em id="hv">${lenWord(p.h)}</em></label><input id="hr" type="range" min="0.4" max="3" step="0.05" value="${p.h}"></div>
-  ${GAL.length?`<div class="field" style="padding-bottom:12px"><div class="lb">컬러 러프에서 가져오기</div></div><div class="hscroll">${GAL.map((g,k)=>`<figure data-act="ref" data-g="${k}" class="${used.has(g.source_cut)?'hit':''}" tabindex="0" role="button" aria-label="${esc(g.shot)} ${esc(g.angle)} 적용">${used.has(g.source_cut)?'<span class="badge">이 패턴</span>':''}<img loading="lazy" src="references/green-midnight/${g.file}" alt=""><figcaption>${esc(g.shot)} · ${esc(g.angle)}</figcaption></figure>`).join('')}</div>`:''}
-  ${CRE.length?`<div class="field" style="padding-bottom:12px"><div class="lb">창작 클로즈업에서 가져오기</div></div><div class="hscroll">${CRE.map((g,k)=>`<figure data-act="cre" data-g="${k}" class="cre" tabindex="0" role="button" aria-label="${esc(g.composition)} 적용"><img loading="lazy" src="${CRE_BASE}${esc(g.file)}" alt=""><figcaption>${esc(g.composition)}<br>${esc(g.composition===g.angle?g.shot:g.angle)}</figcaption></figure>`).join('')}</div>`:''}
-  <div class="sheetcta"><button class="btn" data-act="close">완료</button></div>`}
-function refreshCut(){const sc=$('#sheet').scrollTop,hs=[...document.querySelectorAll('#sheet .hscroll')].map(h=>h.scrollLeft);$('#sheetBody').innerHTML=cutSheet(state.sel);$('#sheet').scrollTop=sc;document.querySelectorAll('#sheet .hscroll').forEach((h,i)=>h.scrollLeft=hs[i]||0);render();renderCutList()}
-$('#sheet').addEventListener('input',e=>{if(e.target.id!=='hr')return;state.panels[state.sel].h=+e.target.value;$('#hv').textContent=lenWord(+e.target.value);render();renderCutList()});
-$('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(g)openCut(+g.dataset.p)});
+// ---------- cuts ----------
+const beatTitle=p=>p.act.replace(/"[^"]*"/,'').trim()||p.act;
+const meta=p=>[p.who,p.shot,p.ang,lenWord(p.h)].filter(Boolean).join(' · ');
+function renderCuts(){$('#cutList').innerHTML=state.panels.length?state.panels.map((p,i)=>`<div class="cutrow${i===state.sel?' on':''}" data-i="${i}" ${i===state.sel?'':'tabindex="0" role="button"'}>
+  <span class="n">${i+1}</span><div><div class="ct">${esc(beatTitle(p))}</div><div class="cm" id="cm${i}">${esc(meta(p))}${p.said?` · “${esc(p.said)}”`:''}</div>
+  ${i===state.sel?`<div class="ed">
+   <div><div class="lb">샷</div><div class="pills">${SHOTS.map(s=>`<button class="pill" data-set="shot" data-v="${s}" aria-pressed="${s===p.shot}">${s}</button>`).join('')}</div></div>
+   <div><div class="lb">앵글</div><div class="pills">${ANGLES.map(s=>`<button class="pill" data-set="ang" data-v="${s}" aria-pressed="${s===p.ang}">${s}</button>`).join('')}</div></div>
+   <div><label class="lb" for="hr">컷 길이 <span id="hv">${lenWord(p.h)}</span></label><input id="hr" type="range" min="0.4" max="3" step="0.05" value="${p.h}"></div>
+   <button class="go" data-act="toRefs">참고 그림에서 구도 가져오기 →</button></div>`:''}</div></div>`).join(''):'<p class="empty">장면을 먼저 적어주세요.</p>'}
+function reveal(){const g=$(`#preview [data-p="${state.sel}"]`),c=$('#canvas');if(!g||!c)return;const gr=g.getBoundingClientRect(),cr=c.getBoundingClientRect();if(gr.top<cr.top||gr.bottom>cr.bottom-90)c.scrollBy({top:gr.top-cr.top-24,behavior:'smooth'})}
+function select(i){state.sel=i;render();reveal();if(panel==='cuts')renderCuts();if(panel==='refs')renderRefs()}
+$('#cutList').addEventListener('click',e=>{const row=e.target.closest('.cutrow');if(!row)return;const i=+row.dataset.i;const b=e.target.closest('[data-set]');
+  if(b){state.panels[i][b.dataset.set]=b.dataset.v;renderCuts();render();return}if(e.target.closest('.ed'))return;if(i!==state.sel)select(i)});
+$('#cutList').addEventListener('keydown',e=>{const row=e.target.closest('.cutrow[role=button]');if(row&&(e.key==='Enter'||e.key===' ')){e.preventDefault();select(+row.dataset.i)}});
+$('#cutList').addEventListener('input',e=>{if(e.target.id!=='hr')return;const p=state.panels[state.sel];p.h=+e.target.value;$('#hv').textContent=lenWord(p.h);$('#cm'+state.sel).textContent=meta(p)+(p.said?` · “${p.said}”`:'');render()});
+$('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(!g)return;state.sel=+g.dataset.p;if(panel!=='cuts'&&panel!=='refs')show('cuts');else select(state.sel)});
 
-// ---------- sheet ----------
-function openSheet(kind,html){sheetKind=kind;lastFocus=document.activeElement;$('#sheetBody').innerHTML=html;$('#sheet').scrollTop=0;$('#dim').classList.add('on');$('#sheet').classList.add('on');$('#cta').style.visibility='hidden';setTimeout(()=>$('#sheetTitle')?.focus({preventScroll:true}),50)}
-function closeSheet(){if(!sheetKind)return;$('#dim').classList.remove('on');$('#sheet').classList.remove('on');$('#cta').style.visibility='';if(sheetKind==='cut'){state.sel=-1;render();renderCutList()}sheetKind=null;lastFocus?.focus?.({preventScroll:true})}
-$('#dim').onclick=closeSheet;
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();if((e.key==='Enter'||e.key===' ')&&e.target.matches('figure[data-act]')){e.preventDefault();e.target.click()}});
-
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
-function download(name,href){const a=document.createElement('a');a.href=href;a.download=name;a.click()}
+// ---------- refs ----------
+$('#tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;refTab=t.dataset.tab;renderRefs()});
+function renderRefs(){document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===refTab));
+  const p=state.panels[state.sel];$('#target').innerHTML=p&&refTab!=='orig'?`적용할 컷 <b>${state.sel+1}번 · ${esc(beatTitle(p))}</b>`:refTab==='orig'?'지금 패턴이 참고한 원본 컷이에요':'';
+  const used=new Set(state.used.flatMap(u=>u.cuts.map(c=>c.id)));let h='';
+  if(refTab==='color')h=GAL.length?`<div class="grid">${GAL.map((g,k)=>`<figure class="card" data-ref="color" data-g="${k}" tabindex="0" role="button">${used.has(g.source_cut)?'<span class="badge">이 패턴</span>':''}<img loading="lazy" src="references/green-midnight/${g.file}" alt=""><figcaption>${esc(g.shot)} · ${esc(g.angle)}<small>${esc(g.frame)} · ${esc(g.source_cut)}</small></figcaption></figure>`).join('')}</div>`:'<p class="empty">컬러 러프가 없어요.</p>';
+  else if(refTab==='cre')h=CRE.length?`<div class="grid">${CRE.map((g,k)=>`<figure class="card cre" data-ref="cre" data-g="${k}" tabindex="0" role="button"><img loading="lazy" src="${CRE_BASE}${esc(g.file)}" alt=""><figcaption>${esc(g.composition)}<small>${esc(g.shot)} · ${esc(g.angle)}</small></figcaption></figure>`).join('')}</div>`:'<p class="empty">창작 클로즈업이 없어요.</p>';
+  else if(CUTS===false)h='<p class="empty">비공개 컷 저장소(cuts/)를 받으면 참고한 패턴의 원본 컷이 여기 보여요.</p>';
+  else if(CUTS)h=`<div class="grid">${state.used.flatMap(u=>u.cuts.filter(c=>c.t==='그림'&&CUTS[c.id])).map(c=>`<figure class="card" style="cursor:default"><img loading="lazy" src="../cuts/${CUTS[c.id]}" alt="${esc(c.id)}"><figcaption>${esc(c.shot)} · ${esc(c.ang)}<small>${esc(c.id)}</small></figcaption></figure>`).join('')}</div>`;
+  $('#refGrid').innerHTML=h}
+function applyRef(el){const g=(el.dataset.ref==='color'?GAL:CRE)[+el.dataset.g];const p=state.panels[state.sel];if(!p)return;
+  Object.assign(p,{shot:SHOTS.includes(g.shot)?g.shot:'중경',ang:ANGLES.includes(g.angle)?g.angle:'아이레벨',h:g.h_ratio});render();reveal();toast(`${state.sel+1}번 컷에 ${g.shot} · ${g.angle} 구도를 입혔어요`)}
+$('#refGrid').addEventListener('click',e=>{const f=e.target.closest('[data-ref]');if(f)applyRef(f)});
+$('#refGrid').addEventListener('keydown',e=>{const f=e.target.closest('[data-ref]');if(f&&(e.key==='Enter'||e.key===' ')){e.preventDefault();applyRef(f)}});
 
 // ---------- actions ----------
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
+function download(name,href){const a=document.createElement('a');a.href=href;a.download=name;a.click()}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
-  if(a==='to2'){closeSheet();go(2)}
-  else if(a==='clear'){$('#beats').value='';$('#beats').focus();updateCount()}
-  else if(a==='opt')openOpt(el.dataset.k)
-  else if(a==='pick'){want[el.dataset.k]=el.dataset.v;renderOpts();closeSheet()}
-  else if(a==='draw'){generate();go(3)}
-  else if(a==='next'){state.pick=state.pick.map(v=>v+1);build();toast('다른 패턴으로 다시 그렸어요')}
-  else if(a==='cut')openCut(+el.dataset.i)
-  else if(a==='set'){state.panels[state.sel][el.dataset.k]=el.dataset.v;refreshCut()}
-  else if(a==='ref'||a==='cre'){const g=(a==='ref'?GAL:CRE)[+el.dataset.g];Object.assign(state.panels[state.sel],{shot:SHOTS.includes(g.shot)?g.shot:'중경',ang:ANGLES.includes(g.angle)?g.angle:'아이레벨',h:g.h_ratio});refreshCut();toast(a==='ref'?'컬러 러프의 구도를 입혔어요':'창작 클로즈업의 구도를 입혔어요')}
-  else if(a==='close')closeSheet()
-  else if(a==='save')openSheet('save',`<h2 id="sheetTitle" tabindex="-1">어떻게 저장할까요?</h2><ul class="list"><li><button class="row" data-act="png"><div class="tx"><div class="t">PNG 이미지</div><div class="s">바로 보거나 공유하기 좋아요</div></div>${CHEV}</button></li><li><button class="row" data-act="svg"><div class="tx"><div class="t">SVG 벡터</div><div class="s">그림 툴에서 선을 고칠 수 있어요</div></div>${CHEV}</button></li></ul>`)
-  else if(a==='svg'){download('rough.svg',URL.createObjectURL(new Blob([state.svg],{type:'image/svg+xml'})));closeSheet();toast('SVG로 저장했어요')}
-  else if(a==='png'){const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.width*2;c.height=img.height*2;const g=c.getContext('2d');g.scale(2,2);g.fillStyle='#fff';g.fillRect(0,0,img.width,img.height);g.drawImage(img,0,0);download('rough.png',c.toDataURL('image/png'))};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(state.svg);closeSheet();toast('PNG로 저장했어요')}
+  if(a==='clear'){$('#beats').value='';$('#beats').focus();counts();generate()}
+  else if(a==='next'||a==='prev'){state.pick=state.pick.map(v=>v+(a==='next'?1:-1));build()}
+  else if(a==='toRefs')show('refs')
+  else if(a==='svg'&&state.svg){download('rough.svg',URL.createObjectURL(new Blob([state.svg],{type:'image/svg+xml'})));toast('SVG로 저장했어요')}
+  else if(a==='png'&&state.svg){const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.width*2;c.height=img.height*2;const g=c.getContext('2d');g.scale(2,2);g.fillStyle='#fff';g.fillRect(0,0,img.width,img.height);g.drawImage(img,0,0);download('rough.png',c.toDataURL('image/png'))};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(state.svg);toast('PNG로 저장했어요')}
 });
 
 // ---------- drawing ----------
@@ -328,23 +363,21 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   return o}
 function render(){let y=40,o='';const ws=W-60;
   state.panels.forEach((p,i)=>{const h=Math.round(p.h*ws);const sel=i===state.sel;
-    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#3182f6':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${drawPanel(p,30,y,ws,h,i)}</g>`+
-      `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#3182f6':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text></g>`;
+    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#2d71f7':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${drawPanel(p,30,y,ws,h,i)}</g>`+
+      `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text></g>`;
     y+=h+Math.round(p.gap*ws)+16});
   state.svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif">${o}</svg>`;
   $('#preview').innerHTML=state.svg}
 
+
 // ---------- references ----------
-const CRE_BASE='references/creative/green-midnight-closeups/';
-fetch(CRE_BASE+'index.json').then(r=>r.ok?r.json():Promise.reject()).then(d=>{CRE=d.items||[]}).catch(()=>{});
-fetch('references/green-midnight/index.json').then(r=>r.json()).then(d=>{GAL=d.items}).catch(()=>{});
-fetch('../cuts/manifest.csv').then(r=>r.ok?r.text():Promise.reject()).then(t=>{const L=t.replace(/^﻿/,'').trim().split('\n');const H=L.shift().split(',');CUTS={};for(const l of L){const v=l.split(',');CUTS[v[0]]=v[H.indexOf('file')]}renderRefs()}).catch(()=>{CUTS=false;renderRefs()});
-function renderRefs(){if(CUTS===false){$('#refs').innerHTML='<p class="note">비공개 컷 저장소(cuts/)를 받으면 참고한 패턴의 원본 컷이 여기 보여요.</p>';return}if(!CUTS||!state.used.length)return;
-  $('#refs').innerHTML=state.used.map((p,i)=>`${state.used.length>1?`<div class="chunk" style="padding-bottom:8px">${i+1}묶음</div>`:''}<div class="hscroll">${p.cuts.filter(c=>c.t==='그림'&&CUTS[c.id]).map(c=>`<figure><img loading="lazy" src="../cuts/${CUTS[c.id]}" alt="${esc(c.id)}"><figcaption>${esc(c.shot)}<br>${esc(c.id)}</figcaption></figure>`).join('')}</div>`).join('')}
+fetch('references/green-midnight/index.json').then(r=>r.json()).then(d=>{GAL=d.items;counts();if(panel==='refs')renderRefs()}).catch(()=>{});
+fetch(CRE_BASE+'index.json').then(r=>r.ok?r.json():Promise.reject()).then(d=>{CRE=d.items||[];counts();if(panel==='refs')renderRefs()}).catch(()=>{});
+fetch('../cuts/manifest.csv').then(r=>r.ok?r.text():Promise.reject()).then(t=>{const L=t.replace(/^﻿/,'').trim().split('\n');const H=L.shift().split(',');CUTS={};for(const l of L){const v=l.split(',');CUTS[v[0]]=v[H.indexOf('file')]}if(panel==='refs')renderRefs()}).catch(()=>{CUTS=false;if(panel==='refs')renderRefs()});
 
 // ---------- start ----------
-updateCount();renderCTA();
-fetch('patterns.json').then(r=>r.json()).then(d=>{PATS=d.patterns.filter(p=>p.cuts.some(c=>c.t==='그림'));renderCTA()}).catch(()=>toast('패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요'));
+show('scene');counts();renderHead();
+fetch('patterns.json').then(r=>r.json()).then(d=>{PATS=d.patterns.filter(p=>p.cuts.some(c=>c.t==='그림'));generate()}).catch(()=>toast('패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요'));
 </script>
 </body>
 </html>
