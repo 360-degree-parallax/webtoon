@@ -542,16 +542,54 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .materials .material-status{min-height:1em;margin:7px 0;font-size:12px;color:var(--t2)}
 #reader[data-material-mode]{cursor:crosshair;touch-action:none}
 #reader[data-material-mode] [data-letter]{cursor:crosshair}
+
+/* 연출 화면 보강(studio.js) */
+.gscbar{margin:0 0 0 12px}.gscbar[hidden]{display:none}.gscbar select{max-width:260px}
+.edcanvas{overflow-x:auto}.edcanvas.panning,.edcanvas.panning *{cursor:grab!important}.edcanvas.panning-on,.edcanvas.panning-on *{cursor:grabbing!important}
+.edsep{width:1px;height:20px;background:var(--line2);margin:0 4px}
+.czoom{display:inline-flex;align-items:center;border:1px solid var(--line2);border-radius:8px;height:34px}.czoom .ib{width:30px;height:32px;font-size:16px}
+.czlab{min-width:52px;height:32px;font-size:13px;font-weight:600;color:var(--t1);font-variant-numeric:tabular-nums}.czlab:hover{background:var(--hover)}
+.reader [data-slot-index].crop .page-frame{stroke:#2d71f7;stroke-width:4;stroke-dasharray:12 7}
+.edtree .tsc small{margin-left:auto;font-size:11px;font-weight:500;color:var(--t3)}
+.edtree .tcutrow{display:flex;align-items:center}.edtree .tcutrow .tcut{padding-left:4px}
+.edtree .texp{flex:none;width:18px;height:24px;margin-left:4px;font-size:10px;color:var(--t3);transition:transform .12s}.edtree .texp[aria-expanded=true]{transform:rotate(90deg)}
+.edtree .tlayers{display:grid;gap:1px;margin:0 0 4px 30px;padding-left:6px;border-left:1px solid var(--line)}
+.edtree .tlrow{display:flex;align-items:center}.edtree .tlrow .tlay{flex:1;min-width:0}
+.edtree .tlay{display:flex;align-items:center;gap:7px;width:100%;padding:4px 6px;border-radius:6px;font-size:12px;color:var(--t2);text-align:left}
+.edtree .tlay:hover{background:var(--hover)}.edtree .tlay[aria-current=true]{background:var(--blue-soft,#eaf1ff);color:var(--t1);font-weight:600}
+.edtree .tlay .ti{width:14px;text-align:center;color:var(--t3);flex:none}.edtree .tlay .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.edtree .tlay small{margin-left:auto;font-size:11px;color:var(--t3)}
+.edtree .teye{flex:none;width:24px;height:24px;border-radius:5px;display:grid;place-items:center;color:var(--t3);opacity:.0}.edtree .tlrow:hover .teye,.edtree .teye.off,.edtree .teye:focus-visible{opacity:1}
+.edtree .teye svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}.edtree .teye.off{color:var(--t1)}
+.minimap{position:fixed;right:316px;bottom:16px;z-index:14;background:#fff;border:1px solid var(--line2);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.12);overflow:hidden;cursor:pointer;touch-action:none}
+.minimap.wide{right:16px}.minimap[hidden]{display:none}
+.minimap .mm-in{transform-origin:0 0;pointer-events:none}.minimap .mm-in .frame-handles,.minimap .mm-in [data-page-gap],.minimap .mm-in .scn{visibility:hidden}
+.minimap .mm-view{position:absolute;left:0;top:0;border:2px solid #2d71f7;background:rgba(45,113,247,.08);border-radius:3px;pointer-events:none}
+.readmode{position:fixed;inset:0;z-index:100;background:rgba(15,17,21,.86);display:grid;grid-template-rows:auto 1fr;justify-items:center;--rdw:390px}.readmode[hidden]{display:none}
+.rd-bar{display:flex;align-items:center;gap:12px;width:min(100%,720px);padding:12px 16px;color:#fff}.rd-bar b{margin-right:auto}.rd-bar .btn{background:#fff;color:#111;border-color:#fff}.rd-bar kbd{color:#555}
+.rd-bar .seg3{background:rgba(255,255,255,.12);border-radius:8px;padding:2px}.rd-bar .seg3 button{background:none;color:#cfd3da;border:0}.rd-bar .seg3 button[aria-pressed=true]{background:#fff;color:#111}
+.reader svg text{-webkit-user-select:none;user-select:none}
+.rd-phone{width:min(calc(var(--rdw) + 24px),100vw);height:calc(100vh - 80px);padding:12px;border-radius:36px;background:#0b0c0e;box-shadow:0 0 0 2px #2a2d33;margin-bottom:16px}
+.rd-scroll{height:100%;overflow-y:auto;background:#fff;border-radius:26px;outline:none}.rd-scroll svg{display:block;width:100%;height:auto}
+.rd-head{padding:28px 16px 12px;font-size:17px;font-weight:800;text-align:center;color:#111}.rd-end{padding:40px 16px 60px;text-align:center;font-size:13px;color:#8a8f98}
+@media(max-width:640px){.rd-phone{border-radius:0;padding:0;height:calc(100vh - 60px)}.rd-scroll{border-radius:0}}
+.keysdlg{border:0;border-radius:14px;padding:22px 24px;width:min(480px,calc(100vw - 32px));background:var(--bg);color:var(--t1);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.keysdlg::backdrop{background:rgba(0,0,0,.35)}.keysdlg h3{margin:0 0 6px;font-size:18px}.keysdlg h4{margin:16px 0 6px;font-size:12px;color:var(--t3);font-weight:700}
+.keysdlg dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:13px}.keysdlg dt{white-space:nowrap}.keysdlg dd{margin:0;color:var(--t2)}
+.keysdlg kbd{display:inline-block;min-width:20px;padding:1px 6px;border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;font:600 12px/1.6 inherit;text-align:center;background:var(--bg)}
+.keysdlg form{margin-top:18px;text-align:right}
+@media(max-width:1100px){.czoom,.edsep{display:none}}
+@media(max-width:640px){.gscbar>span,#gkeys{display:none}.gscbar{margin-left:2px}.gscbar select{max-width:128px}}
 </style>
 </head>
 <body>
 <header class="gnb">
   <span class="wordmark">ROUGH<span>웹툰 연출 러프</span></span>
+  <div class="scbar gscbar" data-scbar id="gscbar" hidden></div>
   <div class="right">
     <button class="btn" data-view="db" id="gDb">DB</button>
+    <button class="ib" id="gkeys" aria-label="단축키 보기" title="단축키 (?)">?</button>
     <button class="ib" id="theme" aria-label="테마 바꾸기" title="테마 바꾸기"><svg class="i" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
-    <button class="btn" data-act="svg" id="gSvg">SVG 저장</button>
-    <button class="btn dark" data-act="png" id="gPng">PNG 저장</button>
+    <div class="xwrap"><button class="btn dark" id="wexport" aria-haspopup="menu" aria-expanded="false" aria-controls="wxmenu">내보내기</button><div class="xmenu" id="wxmenu" role="menu" hidden><button role="menuitem" data-act="wsave"><b>PNG 이미지</b><span>한 장으로 이어 붙인 그림 · 확인·공유용</span></button><button role="menuitem" data-act="wsvg"><b>SVG · 피그마</b><span>씬·컷·칸·그림·식자가 이름 붙은 레이어로 · 글자는 텍스트로 남아요</span></button><button role="menuitem" data-act="wpsd"><b>PSD · 클립스튜디오</b><span>씬마다 PSD(컷 폴더·칸 모양 마스크·식자 레이어) + 대사 목록 ZIP</span></button></div></div>
   </div>
 </header>
 
@@ -696,7 +734,6 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div class="view" id="v-layout" hidden>
 <div class="page">
 <main class="main">
-  <div class="scbar" data-scbar></div>
   <h1>콘티</h1>
   <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB 244묶음 중 가장 닮은 패턴으로 컷을 짰어요.</p>
 
@@ -728,7 +765,6 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
 <div class="view" id="v-nai">
 <div class="wrap">
-  <div class="scbar" data-scbar></div>
   <h1>작화 <small class="h1sub">NovelAI V4.5 Full</small></h1>
   <p class="desc">NovelAI Diffusion V4.5 Full 기준이에요. 컷마다 기본 프롬프트, 캐릭터 프롬프트와 위치, 해상도, img2img 바탕 이미지, 레퍼런스를 칸별로 나눠 줘요.</p>
   <ol class="psteps"><li><b>1</b>화풍·인물 태그 확인</li><li><b>2</b>컷 카드의 칸을 NovelAI 같은 칸에 복사</li><li><b>3</b>바탕 PNG를 img2img로 올려 생성</li><li><b>4</b>생성 이미지를 컷에 등록</li></ol>
@@ -768,7 +804,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div class="edtop">
   <div class="edtop-l"><b class="edcrumb">편집</b><span class="edsave" id="edsave" aria-live="polite">자동 저장</span></div>
   <div class="edtop-c"><div class="seg3" id="wmode"><button data-m="final" aria-pressed="true">완성본</button><button data-m="rough" aria-pressed="false">러프</button></div></div>
-  <div class="edtop-r"><button class="ib" id="wundo" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="ib" id="wredo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button class="btn" id="wedit" aria-pressed="false" aria-controls="wtools">미리보기</button><div class="xwrap"><button class="btn dark" id="wexport" aria-haspopup="menu" aria-expanded="false" aria-controls="wxmenu">내보내기</button><div class="xmenu" id="wxmenu" role="menu" hidden><button role="menuitem" data-act="wsave"><b>PNG 이미지</b><span>한 장으로 이어 붙인 그림 · 확인·공유용</span></button><button role="menuitem" data-act="wsvg"><b>SVG · 피그마</b><span>씬·컷·칸·그림·식자가 이름 붙은 레이어로 · 글자는 텍스트로 남아요</span></button><button role="menuitem" data-act="wpsd"><b>PSD · 클립스튜디오</b><span>씬마다 PSD(컷 폴더·칸 모양 마스크·식자 레이어) + 대사 목록 ZIP</span></button></div></div></div>
+  <div class="edtop-r"><div class="czoom" role="group" aria-label="캔버스 배율"><button class="ib" id="wczout" title="축소 (Ctrl −)" aria-label="캔버스 축소">−</button><button class="czlab" id="wczlab" title="100%로 (Shift+0) · 전체 보기 Shift+1 · 선택한 컷 보기 Shift+2" aria-label="캔버스 배율, 눌러서 100%">100%</button><button class="ib" id="wczin" title="확대 (Ctrl +)" aria-label="캔버스 확대">+</button></div><button class="btn" id="wread" title="모바일 폭으로 읽어 보기 (P)">읽기</button><span class="edsep" aria-hidden="true"></span><button class="ib" id="wundo" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="ib" id="wredo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button class="btn" id="wedit" aria-pressed="false" aria-controls="wtools">미리보기</button></div>
 </div>
 <span class="status edst" id="wst"></span>
 <div class="edgrid">
@@ -1781,7 +1817,7 @@ document.addEventListener('click',e=>{const t=e.target;
   if(a==='addscene'){saveScenes();SCENES.push({id:'s'+Date.now(),title:'',cuts:[''],pageEdits:[]});switchScene(SCENES.length-1);$('#sctitle').focus()}
   if(a==='wsave'||a==='wsvg'||a==='wpsd'){closeXMenu();const st=t=>$('#wst').textContent=t;
     const run=a==='wsave'?saveWebtoon():a==='wsvg'?RoughExport.exportSVG(st):RoughExport.exportPSD(st);
-    Promise.resolve(run).catch(err=>{console.error(err);st(a==='wsave'?'소재 또는 이미지를 불러오지 못했어요. 다시 저장해 주세요.':'내보내기 실패: '+(err.message||err))})}
+    Promise.resolve(run).then(()=>{if(VIEW!=='webtoon')toast($('#wst').textContent)}).catch(err=>{console.error(err);if(VIEW!=='webtoon')toast('내보내기 실패: '+(err.message||err));st(a==='wsave'?'소재 또는 이미지를 불러오지 못했어요. 다시 저장해 주세요.':'내보내기 실패: '+(err.message||err))})}
   if(t.closest('#wexport')){const m=$('#wxmenu'),open=m.hidden;m.hidden=!open;$('#wexport').setAttribute('aria-expanded',open);if(open)m.querySelector('button').focus()}
   else if(!t.closest('#wxmenu'))closeXMenu()});
 function closeXMenu(){const m=$('#wxmenu');if(m&&!m.hidden){m.hidden=true;$('#wexport').setAttribute('aria-expanded','false')}}
@@ -1801,6 +1837,8 @@ function sceneArt(i,ps,pre,interactive=false){
     svg:renderSVG(ps,-1,pre,false,imgs,false,{edits:SCENES[i].pageEdits,interactive})};
 }
 let pageEditing=true,pageSelection='',pageDrag=null;
+// 그림 편집 모드(피그마 이미지 크롭처럼): 그림을 더블클릭하면 그 컷에서만 Ctrl+휠이 그림 확대로 동작
+let cropKey='';
 const ART_LABEL={img:'',mix:'일부 러프',rough:'러프'};
 function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
@@ -2221,7 +2259,7 @@ function startArtDrag(group,e){e.preventDefault();artDrag={group,svg:group.owner
 function zoomAt(group,s2,pt){const z=group._z||zoomOf(group),f=JSON.parse(group.dataset.frame),cx=f.x+f.w/2,cy=f.y+f.h/2;
   const c=pt||{x:cx+z.dx,y:cy+z.dy},k=s2/z.s;
   return setZoom(group,{s:s2,dx:c.x-cx-k*(c.x-cx-z.dx),dy:c.y-cy-k*(c.y-cy-z.dy)})}
-pageReader.addEventListener('wheel',e=>{if(!pageEditing||!(e.ctrlKey||e.metaKey))return;const group=e.target.closest('[data-slot-index]');if(!group)return;
+pageReader.addEventListener('wheel',e=>{if(!pageEditing||!(e.ctrlKey||e.metaKey))return;const group=e.target.closest('[data-slot-index]');if(!group||cropKey!==pageKey(group))return;
   e.preventDefault();if(pageSelection!==pageKey(group))selectPageCut(group);
   const z=group._z||zoomOf(group);zoomAt(group,Math.max(1,Math.min(ZMAX,z.s*Math.exp(-e.deltaY*(Math.abs(e.deltaY)<20?.012:.002)))),pagePoint(group.ownerSVGElement,e));
   clearTimeout(zoomTimer);zoomTimer=setTimeout(()=>saveZoom(group),300)},{passive:false});
@@ -2234,6 +2272,8 @@ function hideTip(){zoomTip.hidden=true}
 pageReader.addEventListener('pointermove',e=>{
   const art=e.pointerType==='mouse'&&pageEditing&&!tipQuiet&&!(artDrag||frameDrag||pageDrag||gapDrag||tailDrag)&&e.target.closest('[data-slot-index].sel [data-art]');
   if(!art){hideTip();return}
+  const crop=cropKey===pageKey(art.closest('[data-slot-index]')),tipMode=crop?'crop':'enter';
+  if(zoomTip.dataset.mode!==tipMode){zoomTip.dataset.mode=tipMode;zoomTip.innerHTML=crop?`<kbd>${MODK}</kbd> + 휠로 확대·축소 · 끌어서 이동 · <kbd>Esc</kbd> 끝내기`:'더블클릭하면 그림을 확대하거나 옮길 수 있어요'}
   zoomTip.hidden=false;
   const x=Math.min(e.clientX+10,innerWidth-zoomTip.offsetWidth-8),y=Math.min(e.clientY+24,innerHeight-zoomTip.offsetHeight-8);
   zoomTip.style.transform=`translate(${x}px,${y}px)`});
@@ -2484,10 +2524,10 @@ document.addEventListener('keydown',e=>{if(typeof VIEW==='undefined'||VIEW!=='we
 
 // ---------- 보기 전환 ----------
 let VIEW='nai';
-function showView(v){if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='nai';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+function showView(v){if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='write';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
   ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
-  $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=v!=='layout';$('#gDb').setAttribute('aria-pressed',v==='db');
+  $('#gscbar').hidden=!['write','layout','nai','webtoon'].includes(v);$('#gDb').setAttribute('aria-pressed',v==='db');
   if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons();refreshPageMaterials()}
   if(v!=='webtoon'&&materialMode)armMaterialLine('');
   if(v==='plan')openComposition();
@@ -2654,7 +2694,7 @@ $('#dbtabs').addEventListener('click',e=>{const b=e.target.closest('[data-s]');i
 $('#dbfilter').addEventListener('input',e=>{const f=e.target.dataset.f;if(!f)return;dbF[f]=e.target.value;if(f==='work')dbF.ep='';dbLimit=200;if(f==='q'){clearTimeout(renderDB.t);renderDB.t=setTimeout(renderDBTable,200)}else renderDB()});
 $('#dbscroll').addEventListener('click',e=>{const tr=e.target.closest('tr[data-i]');if(tr){dbSel=+tr.dataset.i;document.querySelectorAll('table.db tr.on').forEach(x=>x.classList.remove('on'));tr.classList.add('on');renderDBSide(dbSel)}
   if(e.target.closest('[data-act="dbmore"]')){dbLimit+=300;renderDBTable()}});
-try{const v=localStorage.getItem('rough-view');setTimeout(()=>showView(v||'nai'),0)}catch(_){setTimeout(()=>showView('nai'),0)}
+try{const v=localStorage.getItem('rough-view');setTimeout(()=>showView(v||'write'),0)}catch(_){setTimeout(()=>showView('write'),0)}
 
 Promise.all([
   fetch('patterns.json').then(r=>r.json()),
@@ -2665,5 +2705,6 @@ Promise.all([
   REFS=cuts.items.filter(g=>g.fit==='ok'||g.fixed).map(g=>({...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}${g.fixed?' · 수정본':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));
   compute(true);if(VIEW==='webtoon')refreshPageMaterials()}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 </script>
+<script src="studio.js"></script>
 </body>
 </html>
