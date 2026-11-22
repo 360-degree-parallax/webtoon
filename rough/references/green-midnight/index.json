@@ -169,6 +169,102 @@
    "role": "공개",
    "emotion": "놀람",
    "group": "GM-05-G03"
+  },
+  {
+   "file": "02-medium/GM-06-009.png",
+   "source_cut": "GM-06-009",
+   "frame": "세로 보통",
+   "h_ratio": 1.1884,
+   "type": "그림",
+   "shot": "중경",
+   "angle": "아이레벨",
+   "role": "전개",
+   "emotion": "평온",
+   "group": "GM-06-G02"
+  },
+  {
+   "file": "02-medium/GM-06-010.png",
+   "source_cut": "GM-06-010",
+   "frame": "세로 보통",
+   "h_ratio": 1.1,
+   "type": "그림",
+   "shot": "중경",
+   "angle": "아이레벨",
+   "role": "반응",
+   "emotion": "냉담",
+   "group": "GM-06-G02"
+  },
+  {
+   "file": "03-tall/GM-06-012.png",
+   "source_cut": "GM-06-012",
+   "frame": "세로 긴형",
+   "h_ratio": 2.2362,
+   "type": "그림",
+   "shot": "중경",
+   "angle": "아이레벨",
+   "role": "공개",
+   "emotion": "개그",
+   "group": "GM-06-G03"
+  },
+  {
+   "file": "01-low/GM-06-013.png",
+   "source_cut": "GM-06-013",
+   "frame": "가로형",
+   "h_ratio": 0.7203,
+   "type": "그림",
+   "shot": "클로즈업",
+   "angle": "아이레벨",
+   "role": "반응",
+   "emotion": "분노",
+   "group": "GM-06-G03"
+  },
+  {
+   "file": "01-low/GM-07-010.png",
+   "source_cut": "GM-07-010",
+   "frame": "가로형",
+   "h_ratio": 0.6696,
+   "type": "그림",
+   "shot": "중경",
+   "angle": "아이레벨",
+   "role": "전개",
+   "emotion": "기쁨",
+   "group": "GM-07-G02"
+  },
+  {
+   "file": "01-low/GM-07-011.png",
+   "source_cut": "GM-07-011",
+   "frame": "가로형",
+   "h_ratio": 0.5275,
+   "type": "그림",
+   "shot": "디테일",
+   "angle": "하이앵글",
+   "role": "공개",
+   "emotion": "의아",
+   "group": "GM-07-G02"
+  },
+  {
+   "file": "01-low/GM-07-012.png",
+   "source_cut": "GM-07-012",
+   "frame": "가로형",
+   "h_ratio": 0.729,
+   "type": "그림",
+   "shot": "중경",
+   "angle": "아이레벨",
+   "role": "반응",
+   "emotion": "의아",
+   "group": "GM-07-G02"
+  },
+  {
+   "file": "03-tall/GM-07-014.png",
+   "source_cut": "GM-07-014",
+   "frame": "세로 긴형",
+   "h_ratio": 1.8478,
+   "type": "그림",
+   "shot": "클로즈업",
+   "angle": "아이레벨",
+   "role": "반응",
+   "emotion": "설렘",
+   "group": "GM-07-G02"
   }
  ]
 }
