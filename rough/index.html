@@ -258,6 +258,8 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .kkeep{border:0;padding:0;margin:8px 0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}.kkeep legend{padding:0;margin-bottom:6px;font-size:13px;font-weight:600}
 .kkeep label{display:flex;align-items:center;gap:6px}
 .kfoot{font-size:12px!important;color:var(--t3)!important}
+.sheetbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 12px;padding:14px 16px;border:1px solid var(--line);border-radius:8px}.sheetbar>div{flex:1 1 300px;display:grid;gap:2px;font-size:14px}.sheetbar span{font-size:13px;color:var(--t2)}
+.sheetimg{display:block;width:100%;margin:0 0 12px;border:1px solid var(--line);border-radius:8px}
 .hint{margin:10px 0 0;font-size:13px;color:var(--t2)}
 .pcard.cut{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px}
 .pcard.cut .drop{width:150px;height:auto;min-height:150px}
@@ -489,6 +491,8 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   </section>
   <section>
     <div class="sh"><h2>씬 브리프</h2><span>생성 도구에 먼저 넣어 두면 컷끼리 인물·색이 덜 흔들려요</span></div>
+    <div class="sheetbar"><div><b>참고 시트 PNG</b><span>인물·장면 참고 이미지, 색, 컷별 러프 구도와 구도 레퍼런스를 한 장에 모아요. 생성할 때 프롬프트와 함께 이 한 장만 올리면 돼요.</span></div><button class="btn" data-act="sheetview">미리 보기</button><button class="btn dark" data-act="sheetpng">PNG 내보내기</button></div>
+    <img id="sheetimg" class="sheetimg" alt="참고 시트 미리 보기" hidden>
     <div class="pcard"><header><h3 id="pbriefh">씬 브리프</h3><button class="btn" data-act="pcopyb">복사</button></header><pre id="pbrief"></pre></div>
   </section>
   <section>
@@ -701,7 +705,62 @@ const STYLE_DEF='korean webtoon, soft watercolor cel shading, clean thin ink lin
 let PSTYLE=STYLE_DEF,AIVIEW='ai',AIKEY='',AIC={};
 try{PSTYLE=localStorage.getItem('rough-style')||STYLE_DEF;AIKEY=localStorage.getItem('rough-ai-key')||sessionStorage.getItem('rough-ai-key')||'';AIC=JSON.parse(localStorage.getItem('rough-ai')||'{}')}catch(_){}
 function promptCtx(panels){const sc=panels.length?sceneFor(panels[0]):null;
-  return{chars:engineChars().map(c=>({...c,look:(CHARS.find(x=>x.name===c.name)||{}).look||c.look||''})),style:PSTYLE,palette:sc?sc.palette:[],an:state.an,charRef:n=>!!IMG.char[n],sceneRef:!!sc,setting:RP.setting(panels)}}
+  return{chars:engineChars().map(c=>({...c,look:(CHARS.find(x=>x.name===c.name)||{}).look||c.look||''})),style:PSTYLE,palette:sc?sc.palette:[],an:state.an,charRef:n=>!!IMG.char[n],sceneRef:!!sc,setting:RP.setting(panels),sheet:(()=>{const s=sheetInfo();return{charImg:s.charImg,scene:s.scenes.length>0,refs:s.refs.map(r=>!!r)}})()}}
+// 참고 시트: 씬 하나를 한 장으로. A 인물 / B 장면·색 / C 컷 구도(러프 + 구도 레퍼런스)
+function sheetInfo(){const ps=state.panels;const who=[...new Set(ps.flatMap(p=>[p.who,...CHARS.map(c=>c.name).filter(n=>n&&(p.act||'').includes(n))]).filter(Boolean))];
+  const scenes=[...new Map(ps.map(p=>sceneFor(p)).filter(Boolean).map(r=>[r.id,r])).values()];
+  return{who,charImg:who.filter(n=>IMG.char[n]),scenes,refs:ps.map(p=>p.ref||null)}}
+async function sheetCanvas(){const ps=state.panels;if(!ps.length)throw new Error('컷이 없어요');const info=sheetInfo();
+  const SW=1600,M=48,G=24,ink='#1b1d22',sub='#6b7280',line='#d9dce1';const c=document.createElement('canvas');const g=c.getContext('2d');
+  const F=(w,sz)=>`${w} ${sz}px "Pretendard Variable", Pretendard, system-ui, sans-serif`;
+  const wrap=(t,maxW,font)=>{g.font=font;const out=[];let cur='';for(const ch of String(t)){if(g.measureText(cur+ch).width>maxW&&cur){out.push(cur);cur=ch}else cur+=ch}if(cur)out.push(cur);return out};
+  const svgImg=svg=>loadImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg));
+  // 미리 이미지 불러오기
+  const chImgs=await Promise.all(info.who.map(n=>IMG.char[n]?loadImg(IMG.char[n].src).catch(()=>null):null));
+  const scImgs=await Promise.all(info.scenes.map(r=>loadImg(r.src).catch(()=>null)));
+  const keep=showUnder;showUnder=false;let roughs;try{roughs=await Promise.all(ps.map((p,i)=>svgImg(renderSVG([p],-1,`sh${i}_`,false))))}finally{showUnder=keep}
+  const refImgs=await Promise.all(info.refs.map(r=>r?loadImg(r.src).catch(()=>null):null));
+  // 레이아웃 계산
+  const head=130,secH=44;const PW=W-60,crop=p=>({sx:30,sy:40,sw:PW,sh:Math.round(p.h*PW)});const colW=SW-2*M;
+  const chW=220,chH=300;const chCols=Math.max(1,Math.floor((colW+G)/(chW+G)));const chRows=Math.max(1,Math.ceil(info.who.length/chCols));
+  const scH=info.scenes.length?260:0;
+  const cols=ps.length<=6?ps.length:5;const tw=(colW-G*(cols-1))/cols;
+  const RH=96;const tiles=ps.map((p,i)=>{const ih=tw*p.h;return{ih,h:ih+64+(refImgs[i]?RH+12:0)}});
+  const rows=[];for(let i=0;i<ps.length;i+=cols)rows.push(tiles.slice(i,i+cols));const rowsH=rows.reduce((a,r)=>a+Math.max(...r.map(t=>t.h))+G,0);
+  const H=Math.round(head+secH+chRows*(chH+G)+secH+Math.max(scH,90)+G+secH+rowsH+70);
+  c.width=SW;c.height=H;g.fillStyle='#fff';g.fillRect(0,0,SW,H);g.textBaseline='alphabetic';
+  // 머리
+  g.fillStyle=ink;g.font=F(800,34);g.fillText(`참고 시트 · ${sceneLabel(SCENES[SCUR],SCUR)}`,M,M+30);
+  g.fillStyle=sub;g.font=F(500,17);g.fillText(`${$('#wtitle').value||''} · ${ps.length}컷 · 이 시트는 참고용 — 시트 안의 글자·번호·회색 러프 선은 그리지 말 것`,M,M+62);
+  g.fillStyle=line;g.fillRect(M,head-8,colW,2);let y=head;
+  const sec=(k,t)=>{g.fillStyle=ink;g.font=F(800,22);g.fillText(`${k}  ${t}`,M,y+28);y+=secH};
+  const cover=(im,x,y0,w,h)=>{const k=Math.max(w/im.width,h/im.height),sw=w/k,sh=h/k;g.drawImage(im,(im.width-sw)/2,0,sw,sh,x,y0,w,h)};
+  // A 인물
+  sec('A','인물 — 얼굴·머리·의상을 이 그림/설명과 똑같이');
+  info.who.forEach((n,k)=>{const x=M+(k%chCols)*(chW+G),y0=y+Math.floor(k/chCols)*(chH+G);const im=chImgs[k];const look=(CHARS.find(c=>c.name===n)||{}).look||'';
+    g.fillStyle='#f3f4f6';g.fillRect(x,y0,chW,chH-70);if(im)cover(im,x,y0,chW,chH-70);else{g.fillStyle=sub;wrap(look||'외형 설명 없음',chW-28,F(500,16)).slice(0,8).forEach((l,j)=>g.fillText(l,x+14,y0+34+j*24))}
+    g.strokeStyle=line;g.lineWidth=2;g.strokeRect(x,y0,chW,chH-70);g.fillStyle=ink;g.font=F(800,20);g.fillText(n,x,y0+chH-42);g.fillStyle=sub;g.font=F(500,14);
+    wrap(look,chW,F(500,14)).slice(0,2).forEach((l,j)=>g.fillText(l,x,y0+chH-20+j*18-6));});
+  if(!info.who.length){g.fillStyle=sub;g.font=F(500,16);g.fillText('등장인물 없음',M,y+24)}
+  y+=chRows*(chH+G);
+  // B 장면·색·화풍
+  sec('B','장면·색·화풍 — 분위기와 색을 이 칸에 맞춤');let x=M;
+  info.scenes.forEach((r,k)=>{const im=scImgs[k];const w=im?Math.min(420,scH*im.width/im.height):300;if(im)g.drawImage(im,x,y,w,scH);g.strokeStyle=line;g.strokeRect(x,y,w,scH);g.fillStyle=ink;g.font=F(700,15);g.fillText(r.name||'장면',x,y+scH+20);x+=w+G});
+  const pal=(info.scenes[0]?.palette)||[];const px=x;pal.slice(0,5).forEach((h,k)=>{g.fillStyle=h;g.fillRect(px+k*58,y,50,50);g.fillStyle=sub;g.font=F(500,12);g.fillText(h,px+k*58,y+68)});
+  g.fillStyle=ink;g.font=F(700,15);g.fillText('화풍',px,y+(pal.length?100:20));g.fillStyle=sub;wrap(PSTYLE,SW-M-px,F(500,15)).slice(0,6).forEach((l,j)=>g.fillText(l,px,y+(pal.length?124:44)+j*22));
+  y+=Math.max(scH,90)+G+(info.scenes.length?20:0);
+  // C 컷 구도
+  sec('C','컷 구도 — 인물 위치·크기·카메라만 참고 (러프의 선·회색·번호는 그리지 말 것)');
+  rows.forEach((row,ri)=>{const rh=Math.max(...row.map(t=>t.h));row.forEach((t,ci)=>{const i=ri*cols+ci,p=ps[i],x0=M+ci*(tw+G),sp=RP.spec(p.h);
+    const cr=crop(p);g.drawImage(roughs[i],cr.sx,cr.sy,cr.sw,cr.sh,x0,y,tw,t.ih);g.strokeStyle=ink;g.lineWidth=2;g.strokeRect(x0,y,tw,t.ih);
+    const ref=refImgs[i];if(ref){const k=Math.min(RH/ref.height,(tw-84)/ref.width),rw=ref.width*k,rh2=ref.height*k,ry=y+t.ih+60;g.fillStyle=sub;g.font=F(700,13);g.fillText('구도 참고',x0,ry+16);g.drawImage(ref,x0+76,ry,rw,rh2);g.strokeStyle=line;g.lineWidth=1;g.strokeRect(x0+76,ry,rw,rh2)}
+    g.fillStyle=ink;g.beginPath();g.arc(x0+16,y+16,15,0,7);g.fill();g.fillStyle='#fff';g.font=F(800,16);g.textAlign='center';g.fillText(String(i+1),x0+16,y+22);g.textAlign='left';
+    g.fillStyle=ink;g.font=F(800,16);g.fillText(`컷 ${i+1} · ${sp.ratio}`,x0,y+t.ih+24);g.fillStyle=sub;g.font=F(500,13);g.fillText(`${p.shot}·${p.ang}${p.who?' · '+p.who:''}${p.vng==='P'?' · 정점':''}`,x0,y+t.ih+44)});y+=rh+G});
+  g.fillStyle=sub;g.font=F(500,14);g.fillText('ROUGH · 웹툰 연출 러프에서 만든 참고 시트',M,H-28);
+  return c}
+async function sheetExport(view){try{const c=await sheetCanvas();if(view){const im=$('#sheetimg');im.src=c.toDataURL('image/png');im.hidden=false;return}
+  const name=`${($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_')}-${sceneLabel(SCENES[SCUR],SCUR).replace(/[\\/:*?"<>|]/g,'_')}-참고시트.png`;
+  c.toBlob(b=>{download(name,URL.createObjectURL(b));toast('참고 시트를 PNG로 저장했어요')},'image/png')}catch(e){console.error(e);toast('시트를 만들지 못했어요: '+e.message)}}
 function cutPrompts(){const ps=state.panels,ctx=promptCtx(ps);return ps.map((p,i)=>({p,i,o:RP.cut(p,i,ps,ctx)}))}
 // Claude 다듬기: 엔진값 + 규칙 초안을 보내고, 결과는 씬별로 입력 서명과 함께 저장
 function aiPayload(){const ps=state.panels,ctx=promptCtx(ps);
@@ -919,6 +978,8 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   else if(a==='pdown'){download(`${sceneLabel(SCENES[SCUR],SCUR)}-prompts.txt`,URL.createObjectURL(new Blob([prompts()],{type:'text/plain'})));toast('txt로 저장했어요')}
   else if(a==='pmulti'){target=null;$('#filem').click()}
   else if(a==='airefine')aiRefine();
+  else if(a==='sheetpng')sheetExport(false);
+  else if(a==='sheetview')sheetExport(true);
   else if(a==='aikeyopen')openKey(false);
   else if(a==='keycancel')closeKey();
   else if(a==='keydel'){setKey('',null);closeKey();toast('키를 지웠어요')}
@@ -936,7 +997,7 @@ renderKey();
   el.addEventListener('dragover',e=>{const s=e.target.closest('[data-cutslot]');if(s){e.preventDefault();s.classList.add('over')}});
   el.addEventListener('dragleave',e=>{e.target.closest('[data-cutslot]')?.classList.remove('over')});
   el.addEventListener('drop',e=>{const s=e.target.closest('[data-cutslot]');if(!s)return;e.preventDefault();s.classList.remove('over');attachCuts(e.dataTransfer.files,+s.dataset.cutslot)});}
-function renderPrompts(){const ps=state.panels;
+function renderPrompts(){const ps=state.panels;$('#sheetimg').hidden=true;
   const ai=aiFor();$('#aiview').hidden=!ai;document.querySelectorAll('#aiview button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===AIVIEW));
   if(ai&&!aiBusy)$('#aist').textContent=ai.stale?'글이나 화풍이 바뀌었어요. 다시 다듬으면 반영돼요':`다듬은 결과 · ${new Date(ai.at).toLocaleString()}`;
   if(!ps.length){$('#pbrief').textContent='';$('#pcount').textContent='';$('#pcards').innerHTML='<p class="empty">작성 단계에서 컷을 적어주세요.</p>';return}
