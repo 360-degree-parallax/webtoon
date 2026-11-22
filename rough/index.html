@@ -256,6 +256,13 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .ce-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.ce-foot .grow{flex:1}.ce-foot .cstat{font-size:12px;color:var(--t3)}
 .ccadd{margin-top:16px;width:100%;height:56px;border:1px dashed var(--line2);border-radius:14px;font-size:15px;font-weight:700;color:var(--t2)}.ccadd:hover{border-color:var(--t1);color:var(--t1)}
 @media(max-width:640px){.cedit{grid-template-columns:1fr;gap:14px;padding:18px 0}.ce-img{min-height:0;aspect-ratio:4/3;flex:none}}
+.wrows{display:grid;border-top:1px solid var(--line)}
+.wrows .cedit .ce-img.cover{min-height:200px}
+.ce-sel{height:44px;padding:0 10px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px;font-weight:600}
+.ce-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.catdot{display:inline-block;width:8px;height:8px;border-radius:4px;margin-right:6px;vertical-align:middle}
+.lcard .av.sq{border-radius:12px}
+@media(max-width:640px){.ce-grid2{grid-template-columns:1fr}}
 .libbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}.libbar input{flex:1 1 220px;max-width:340px;height:40px;box-sizing:border-box;padding:0 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px}
 .libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .lcard{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px 12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
@@ -397,10 +404,11 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
 <nav class="topnav" role="tablist" aria-label="보기">
   <button role="tab" data-view="chars" aria-selected="false"><b>1</b>캐릭터</button>
-  <button role="tab" data-view="write" aria-selected="false"><b>2</b>씬</button>
-  <button role="tab" data-view="layout" aria-selected="false"><b>3</b>연출</button>
-  <button role="tab" data-view="nai" aria-selected="true"><b>4</b>NovelAI</button>
-  <button role="tab" data-view="webtoon" aria-selected="false"><b>5</b>웹툰 보기</button>
+  <button role="tab" data-view="world" aria-selected="false"><b>2</b>세계관</button>
+  <button role="tab" data-view="write" aria-selected="false"><b>3</b>씬</button>
+  <button role="tab" data-view="layout" aria-selected="false"><b>4</b>연출</button>
+  <button role="tab" data-view="nai" aria-selected="true"><b>5</b>NovelAI</button>
+  <button role="tab" data-view="webtoon" aria-selected="false"><b>6</b>웹툰 보기</button>
 </nav>
 
 <div class="view" id="v-chars" hidden>
@@ -418,7 +426,31 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="libgrid" id="libgrid"></div>
     <input type="file" id="libfile" accept="application/json,.json" hidden>
   </section>
-  <div class="next"><span class="grow"></span><button class="btn dark big" data-view="write">씬으로 →</button></div>
+  <div class="next"><span class="grow"></span><button class="btn dark big" data-view="world">세계관으로 →</button></div>
+</div>
+</div>
+
+<div class="view" id="v-world" hidden>
+<div class="wrap" style="max-width:1200px">
+  <h1>세계관</h1>
+  <p class="desc">이야기가 벌어지는 세계를 적어요. 장소·세력·물건·용어는 로어북처럼 항목으로 두면, 컷 글에 이름이나 키워드가 나올 때 NovelAI 태그와 Claude 다듬기에 자동으로 들어가요.</p>
+  <section style="margin-top:28px">
+    <div class="sh"><h2>세계관 개요</h2><span>작품 전체에 깔리는 설정 · 태그는 모든 컷의 기본 프롬프트에 붙어요</span></div>
+    <div class="wrows" id="worldov"></div>
+  </section>
+  <section>
+    <div class="sh"><h2>설정 항목</h2><span>이름·키워드가 컷 글에 나오면 그 컷에 적용돼요 · 장소 이미지는 배경 레퍼런스로 쓰여요</span></div>
+    <div class="libbar"><div class="seg3" id="lorecat"></div></div>
+    <div class="wrows" id="lore"></div>
+    <div class="toolbar"><span class="status" id="lorest"></span><span class="grow"></span><button class="btn" data-act="wlibsaveall">모두 보관함에 저장</button></div>
+  </section>
+  <section>
+    <div class="sh"><h2>세계관 보관함</h2><span>이 브라우저에 저장돼요 · 다른 기기로 옮길 땐 파일로 내보내기</span></div>
+    <div class="libbar"><input type="search" id="wlibq" placeholder="이름·키워드·설명 검색" aria-label="세계관 보관함 검색"><div class="seg3" id="wlibc"></div><span class="grow"></span><button class="btn" data-act="wlibimport">가져오기</button><button class="btn" data-act="wlibexport">파일로 내보내기</button></div>
+    <div class="libgrid" id="wlibgrid"></div>
+    <input type="file" id="wlibfile" accept="application/json,.json" hidden>
+  </section>
+  <div class="next"><button class="btn" data-view="chars">← 캐릭터</button><span class="grow"></span><button class="btn dark big" data-view="write">씬으로 →</button></div>
 </div>
 </div>
 
@@ -435,6 +467,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <section>
     <div class="sh"><h2>등장인물</h2><span>캐릭터 페이지에서 만든 인물이에요</span></div>
     <div class="refsum" id="castsum"></div>
+    <div class="refsum" id="worldsum" style="margin-top:10px"></div>
     <div class="sugg" id="sugg"></div>
   </section>
   <section>
@@ -1035,7 +1068,7 @@ function render(){state.svg=renderSVG(state.panels,state.sel);$('#preview').inne
 
 
 // ---------- reference images (캐릭터·장면) ----------
-const IMG={char:{},scene:[],cut:{},lib:{}};let target=null,showUnder=true;
+const IMG={char:{},scene:[],cut:{},lib:{},lore:{},world:null,wlib:{}};let target=null,showUnder=true;
 const idb=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('rough-refs',1);r.onupgradeneeded=()=>r.result.createObjectStore('refs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('refs',mode);const st=t.objectStore('refs');const out=fn(st);t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
   return{all:()=>tx('readonly',st=>st.getAll()).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).catch(()=>{}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
@@ -1048,7 +1081,9 @@ function palette(cv){const c=document.createElement('canvas');c.width=c.height=4
   return out.map(([r,g2,b])=>'#'+[r,g2,b].map(v=>v.toString(16).padStart(2,'0')).join(''))}
 function accent(pal){let best=pal[0]||'#2d71f7',bs=-1;for(const h of pal){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);const mx=Math.max(r,g,b),mn=Math.min(r,g,b);const sat=mx?(mx-mn)/mx:0;const v=mx/255;const sc=sat*(v>.2&&v<.95?1:.3);if(sc>bs){bs=sc;best=h}}return best}
 function charRef(name){const c=IMG.char[name];return c?{...c,color:accent(c.palette)}:null}
-function sceneFor(p){if(!IMG.scene.length)return null;const a=state.an[p.chunk];const text=a?a.beats.map(b=>b.act).join(' '):'';return IMG.scene.find(s=>s.name&&text.includes(s.name))||IMG.scene[p.chunk%IMG.scene.length]}
+function sceneFor(p){const a=state.an[p.chunk];const text=a?a.beats.map(b=>b.act).join(' '):'';
+  const lp=typeof loreHits==='function'&&loreHits(text).find(e=>e.cat==='place'&&IMG.lore[e.id]);if(lp)return{...IMG.lore[lp.id],id:'lore:'+lp.id,name:lp.name};
+  if(!IMG.scene.length)return null;return IMG.scene.find(s=>s.name&&text.includes(s.name))||IMG.scene[p.chunk%IMG.scene.length]}
 function underlay(p){if(!showUnder)return null;
   if(p.shot==='클로즈업'){const c=p.who&&IMG.char[p.who];if(c)return{src:c.src,op:.32}}
   if(['설정','전경','전신','중경','효과 배경'].includes(p.shot)){const sc=sceneFor(p);if(sc)return{src:sc.src,op:p.shot==='설정'||p.shot==='전경'?.38:.22}}
@@ -1062,9 +1097,11 @@ function renderBgs(){$('#bgs').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,
 function renderRefSum(){const ns=CHARS.map(c=>c.name.trim()).filter(Boolean);const el=$('#refsum');if(!el)return;
   el.innerHTML=ns.map(n=>`<span class="av" title="${esc(n)}${IMG.char[n]?'':' · 이미지 없음'}" style="${IMG.char[n]?'':`background:${avBg(n)}`}">${IMG.char[n]?`<img src="${IMG.char[n].src}" alt="${esc(n)}">`:esc(n.slice(0,1))}</span>`).join('')+
     `<span>인물 이미지 ${ns.filter(n=>IMG.char[n]).length}/${ns.length} · 배경 ${IMG.scene.length}장</span><button class="btn" data-view="write">씬에서 편집</button>`}
-function renderSlotsLite(){renderBgs();renderRefSum();renderCastSum();$('#under').hidden=false}
+function renderSlotsLite(){renderBgs();renderRefSum();renderCastSum();if(typeof renderWorldSum==='function')renderWorldSum();if(!$('#v-world').hidden)renderWorld();$('#under').hidden=false}
 function renderSlots(){renderChars();renderSlotsLite()}
 async function attach(file,slot){if(!file||!file.type.startsWith('image/'))return;const im=await shrink(file);
+  if(slot.kind==='lore'){const o={id:'lore:'+slot.key,kind:'loreimg',loreId:slot.key,...im};IMG.lore[slot.key]=o;idb.put(o);toast('설정 항목 이미지를 넣었어요');renderSlots();render();return}
+  if(slot.kind==='world'){const o={id:'world:cover',kind:'worldimg',...im};IMG.world=o;idb.put(o);toast('세계관 대표 이미지를 넣었어요');renderSlots();render();return}
   if(slot.kind==='char'){const o={id:'char:'+slot.key,kind:'char',name:slot.key,...im};IMG.char[slot.key]=o;idb.put(o);toast(`${slot.key} 캐릭터 이미지를 연결했어요`)}
   else{const id=slot.key==='__new'?'scene:'+Date.now():slot.key;const old=IMG.scene.find(r=>r.id===id);const o={id,kind:'scene',name:old?.name||file.name.replace(/\.[^.]+$/,'').slice(0,20)||`장면 ${IMG.scene.length+1}`,...im};
     if(old)Object.assign(old,o);else IMG.scene.push(o);idb.put(o);toast('장면 이미지를 넣었어요')}
@@ -1085,7 +1122,7 @@ slotsEl.forEach(el=>{
 document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
 try{showUnder=localStorage.getItem('rough-under')!=='0'}catch(_){}$('#under').setAttribute('aria-pressed',showUnder);
 $('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);try{localStorage.setItem('rough-under',showUnder?'1':'0')}catch(_){}render()};
-idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
+idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
 
 // ---------- prompt export ----------
 const RP=window.RoughPrompt;
@@ -1239,6 +1276,115 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(
   else if(k==='libsaveall'){let n=0;CHARS.forEach((c,i)=>{if(c.name.trim()&&libState(c)!=='same'){libSave(i,true);n++}});toast(n?`${n}명을 보관함에 저장했어요`:'모두 보관함과 같아요')}
   else if(k==='libexport')libExport();
   else if(k==='libimport')$('#libfile').click()});
+
+// ---------- 세계관: 개요 + 설정 항목(로어북) + 보관함 ----------
+// 캐릭터챗 사이트의 세계관·로어북 구성을 따름: 개요(이름·장르·시대·분위기·한줄 소개·상세 설정)와
+// 키워드로 불려 나오는 항목(장소·세력·물건·용어·역사·규칙). 컷 글에 이름이나 키워드가 나오면 그 컷에 적용.
+const LORE_CAT={place:['장소','#5b8def'],faction:['세력·조직','#c2410c'],item:['물건','#a16207'],term:['용어·개념','#7c3aed'],history:['역사·사건','#0f766e'],rule:['규칙·체계','#be185d']};
+var WORLD,LORE,WLIB;
+try{WORLD=JSON.parse(localStorage.getItem('rough-world')||'null')}catch(_){}
+if(!WORLD)WORLD={name:'녹빛자정',genre:'로맨스 판타지, 빅토리아풍',era:'19세기 말을 닮은 가상의 왕국',tone:'잔잔하고 서정적, 은근한 긴장',summary:'오래된 저택의 하인들 사이에서 벌어지는 비밀과 연정',detail:'',tags:'victorian, 19th century'};
+try{LORE=JSON.parse(localStorage.getItem('rough-lore')||'null')}catch(_){}
+if(!Array.isArray(LORE))LORE=[{id:'l1',name:'저택',cat:'place',keys:'복도, 대저택, 저택 안',desc:'왕도 외곽의 오래된 대저택. 긴 복도와 샹들리에, 밤이면 촛불만 켠다.',tags:'mansion, long hallway, candlelight, wooden floor'}];
+try{WLIB=JSON.parse(localStorage.getItem('rough-wlib')||'[]')}catch(_){WLIB=[]}
+let LORECAT='',WLIBQ='',WLIBC='';
+const saveWorld=()=>{try{localStorage.setItem('rough-world',JSON.stringify(WORLD));localStorage.setItem('rough-lore',JSON.stringify(LORE))}catch(_){}};
+const saveWlib=()=>{try{localStorage.setItem('rough-wlib',JSON.stringify(WLIB))}catch(_){toast('저장 공간이 부족해요')}};
+const loreKeys=e=>[e.name,...String(e.keys||'').split(/[,·]/)].map(x=>x.trim()).filter(x=>x.length>=1);
+function loreHits(text){text=String(text||'');return LORE.filter(e=>e.name&&loreKeys(e).some(k=>text.includes(k)))}
+function loreTagList(e){return String(e.tags||'').split(',').map(t=>t.trim()).filter(Boolean)}
+function worldBrief(){const w=WORLD;return{name:w.name||'',genre:w.genre||'',era:w.era||'',tone:w.tone||'',summary:w.summary||'',detail:(w.detail||'').slice(0,1500),tags:w.tags||''}}
+const WF=['name','genre','era','tone','summary','detail','tags'],LF=['name','cat','keys','desc','tags'];
+const wlibOf=x=>x&&x.lib&&WLIB.find(y=>y.id===x.lib);
+function wState(x,kind){const L=wlibOf(x);if(!L)return'';const F=kind==='world'?WF:LF;const imX=(kind==='world'?IMG.world:IMG.lore[x.id])?.src||'',imL=IMG.wlib[L.id]?.src||'';
+  return F.every(f=>(L[f]||'')===(x[f]||''))&&imX===imL?'same':'diff'}
+function loreStat(e){const bs=RE.parseCuts(CUTS,engineChars());return bs.filter(b=>loreKeys(e).some(k=>[b.act,b.caption,...(b.dialogs||[]).map(d=>d.text)].join(' ').includes(k))).length}
+const imgBox=(im,label,attr,cls='')=>`<div class="drop ce-img${cls}${im?' has':''}" ${attr} tabindex="0" role="button" aria-label="${esc(label)}" style="${im?'':`background:${avBg(label)}`}">${im?`<img src="${im.src}" alt=""><button class="x" data-wimgdel aria-label="이미지 지우기">×</button>`:`<span class="ini">${esc((label||'?').slice(0,1))}</span><small>+ 이미지</small>`}</div>${im?`<div class="pal">${im.palette.map(h=>`<i style="background:${h}" title="${h}"></i>`).join('')}</div>`:''}`;
+const libBtns=()=>`<span class="grow"></span><button type="button" class="btn" data-act="wrevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="wsave">보관함에 저장</button>`;
+function worldRow(){const w=WORLD;return `<article class="cedit" data-wk="world"><div class="ce-side">${imgBox(IMG.world,w.name||'세계관','data-wimg="world"',' cover')}</div>
+  <div class="ce-f"><div class="ce-top"><input class="ce-name" data-wf="name" value="${esc(w.name||'')}" maxlength="30" placeholder="세계관 이름" aria-label="세계관 이름" spellcheck="false"><span class="cbadge" data-badge hidden></span></div>
+    <div class="ce-grid2"><label class="cf"><span>장르 <small>쉼표로 구분</small></span><input data-wf="genre" value="${esc(w.genre||'')}" placeholder="예: 로맨스 판타지, 미스터리"></label>
+      <label class="cf"><span>시대·배경</span><input data-wf="era" value="${esc(w.era||'')}" placeholder="예: 19세기 말 가상의 왕국"></label>
+      <label class="cf"><span>분위기·톤</span><input data-wf="tone" value="${esc(w.tone||'')}" placeholder="예: 잔잔하고 서정적"></label>
+      <label class="cf"><span>한줄 소개 <small data-cnt="summary">${(w.summary||'').length}/80</small></span><input data-wf="summary" maxlength="80" value="${esc(w.summary||'')}" placeholder="이 세계를 한 문장으로"></label></div>
+    <label class="cf"><span>상세 설정 <small data-cnt="detail">${(w.detail||'').length}/3000</small></span><textarea data-wf="detail" rows="5" maxlength="3000" placeholder="역사, 사회 구조, 계급, 기술·마법 수준, 금기, 일상 풍경 등">${esc(w.detail||'')}</textarea></label>
+    <label class="cf"><span>NovelAI 태그 <small>모든 컷의 기본 프롬프트에 붙어요</small></span><input data-wf="tags" value="${esc(w.tags||'')}" placeholder="victorian, 19th century" spellcheck="false"></label>
+    <div class="ce-foot"><span class="cstat">설정 항목 ${LORE.length}개</span>${libBtns()}</div></div></article>`}
+function loreRow(e,i){const c=LORE_CAT[e.cat]||LORE_CAT.place,n=loreStat(e);return `<article class="cedit" data-li="${i}"><div class="ce-side">${imgBox(IMG.lore[e.id],e.name||c[0],`data-wimg="lore"`)}</div>
+  <div class="ce-f"><div class="ce-top"><input class="ce-name" data-lf="name" value="${esc(e.name||'')}" maxlength="30" placeholder="항목 이름" aria-label="항목 이름" spellcheck="false"><select class="ce-sel" data-lf="cat" aria-label="분류">${Object.entries(LORE_CAT).map(([k,v])=>`<option value="${k}"${e.cat===k?' selected':''}>${v[0]}</option>`).join('')}</select><span class="cbadge" data-badge hidden></span></div>
+    <label class="cf"><span>키워드 <small>쉼표로 구분 · 이름이나 이 단어가 컷 글에 나오면 적용</small></span><input data-lf="keys" value="${esc(e.keys||'')}" placeholder="예: 복도, 대저택" spellcheck="false"></label>
+    <label class="cf"><span>설명 <small data-cnt="desc">${(e.desc||'').length}/1000</small></span><textarea data-lf="desc" rows="3" maxlength="1000" placeholder="생김새, 역할, 얽힌 사연, 규칙">${esc(e.desc||'')}</textarea></label>
+    <label class="cf"><span>NovelAI 태그 <small>이 항목이 나오는 컷의 기본 프롬프트에 붙어요</small></span><input data-lf="tags" value="${esc(e.tags||'')}" placeholder="mansion, long hallway" spellcheck="false"></label>
+    <div class="ce-foot"><span class="cstat"><i class="catdot" style="background:${c[1]}"></i>${c[0]} · 이 씬 ${n}컷에 등장</span>${libBtns()}<button type="button" class="btn" data-act="ldel">작품에서 빼기</button></div></div></article>`}
+function updateWRow(el){const isW=el.dataset.wk==='world',x=isW?WORLD:LORE[+el.dataset.li];if(!x)return;const st=wState(x,isW?'world':'lore');
+  const bd=el.querySelector('[data-badge]');bd.textContent=st==='same'?'보관함과 같음':st==='diff'?'보관함과 다름':'';bd.className='cbadge'+(st==='diff'?' diff':'');bd.hidden=!st;
+  const sv=el.querySelector('[data-act=wsave]');sv.textContent=st?'보관함 갱신':'보관함에 저장';sv.disabled=st==='same';el.querySelector('[data-act=wrevert]').hidden=st!=='diff';
+  el.querySelectorAll('[data-cnt]').forEach(c=>{const f=c.dataset.cnt;c.textContent=`${(x[f]||'').length}/${f==='summary'?80:f==='detail'?3000:1000}`})}
+function renderWorld(){if(!$('#worldov'))return;$('#worldov').innerHTML=worldRow();
+  $('#lorecat').innerHTML=[['','전체'],...Object.entries(LORE_CAT).map(([k,v])=>[k,v[0]])].map(([k,l])=>`<button data-lc="${k}" aria-pressed="${LORECAT===k}">${l}${k?` ${LORE.filter(e=>e.cat===k).length}`:` ${LORE.length}`}</button>`).join('');
+  const rows=LORE.map((e,i)=>[e,i]).filter(([e])=>!LORECAT||e.cat===LORECAT);
+  $('#lore').innerHTML=rows.map(([e,i])=>loreRow(e,i)).join('')+`<button class="ccadd" data-act="loreadd">+ 새 설정 항목${LORECAT?` (${LORE_CAT[LORECAT][0]})`:''}</button>`;
+  document.querySelectorAll('#worldov .cedit,#lore .cedit').forEach(updateWRow);
+  const k=LORE.filter(e=>wState(e,'lore')==='same').length;$('#lorest').textContent=`항목 ${LORE.length}개 · 보관함 저장 ${k}`;renderWlib();renderWorldSum()}
+function renderWorldSum(){const el=$('#worldsum');if(!el)return;el.innerHTML=`<span class="av" style="border-radius:10px;${IMG.world?'':`background:${avBg(WORLD.name||'?')}`}">${IMG.world?`<img src="${IMG.world.src}" alt="">`:esc((WORLD.name||'?').slice(0,1))}</span><span>세계관 <b>${esc(WORLD.name||'이름 없음')}</b> · 설정 항목 ${LORE.length}개${LORE.length?` (${LORE.slice(0,4).map(e=>esc(e.name)).join(', ')}${LORE.length>4?' …':''})`:''}</span><button class="btn" data-view="world">세계관 페이지에서 편집</button>`}
+// 보관함: 개요(kind world)와 항목(kind lore)을 함께 보관
+function wlibSave(x,kind,quiet){const nm=(x.name||'').trim();if(!nm){toast('이름을 먼저 정해 주세요');return}
+  let L=wlibOf(x);if(!L){L={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind};WLIB.unshift(L);x.lib=L.id}
+  for(const f of kind==='world'?WF:LF)L[f]=x[f]||'';L.kind=kind;L.at=Date.now();
+  const im=kind==='world'?IMG.world:IMG.lore[x.id];if(im){const o={...im,id:'wlib:'+L.id,kind:'wlibimg',libId:L.id};delete o.loreId;IMG.wlib[L.id]=o;idb.put(o)}else if(IMG.wlib[L.id]){delete IMG.wlib[L.id];idb.del('wlib:'+L.id)}
+  saveWlib();saveWorld();if(!quiet)toast(`${nm}을(를) 보관함에 저장했어요`)}
+function wlibApply(L,x,kind){for(const f of kind==='world'?WF:LF)x[f]=L[f]||'';x.lib=L.id;const im=IMG.wlib[L.id];
+  if(kind==='world'){if(im){const o={...im,id:'world:cover',kind:'worldimg'};delete o.libId;IMG.world=o;idb.put(o)}else if(IMG.world){IMG.world=null;idb.del('world:cover')}}
+  else{if(im){const o={...im,id:'lore:'+x.id,kind:'loreimg',loreId:x.id};delete o.libId;IMG.lore[x.id]=o;idb.put(o)}else if(IMG.lore[x.id]){delete IMG.lore[x.id];idb.del('lore:'+x.id)}}}
+function wlibUse(id){const L=WLIB.find(x=>x.id===id);if(!L)return;
+  if(L.kind==='world'){if(WORLD.lib===id){toast('이미 이 작품의 세계관이에요');return}if((WORLD.name||WORLD.detail)&&!confirm(`지금 세계관 개요를 '${L.name}'(으)로 바꿀까요? 설정 항목은 그대로예요.`))return;wlibApply(L,WORLD,'world')}
+  else{if(LORE.some(e=>e.lib===id)){toast('이미 이 작품에 있어요');return}const e={id:'l'+Date.now().toString(36)};LORE.push(e);wlibApply(L,e,'lore')}
+  saveWorld();renderWorld();compute(false);renderSlotsLite();toast(`${L.name}을(를) 작품에 넣었어요`)}
+function renderWlib(){const el=$('#wlibgrid');if(!el)return;const q=WLIBQ.trim().toLowerCase();
+  $('#wlibc').innerHTML=[['','전체'],['world','세계관'],...Object.entries(LORE_CAT).map(([k,v])=>[k,v[0]])].map(([k,l])=>`<button data-wc="${k}" aria-pressed="${WLIBC===k}">${l}</button>`).join('');
+  const list=WLIB.filter(L=>(!WLIBC||(WLIBC==='world'?L.kind==='world':L.kind==='lore'&&L.cat===WLIBC))&&(!q||[L.name,L.keys,L.desc,L.genre,L.summary,L.detail,L.tags].join(' ').toLowerCase().includes(q)));
+  el.innerHTML=list.length?list.map(L=>{const im=IMG.wlib[L.id],used=L.kind==='world'?WORLD.lib===L.id:LORE.some(e=>e.lib===L.id),c=L.kind==='world'?['세계관','#334155']:(LORE_CAT[L.cat]||LORE_CAT.place);
+    return `<div class="lcard${used?' in':''}"><span class="av sq" style="${im?'':`background:${avBg(L.name)}`}">${im?`<img src="${im.src}" alt="">`:esc((L.name||'?').slice(0,1))}</span>
+      <div style="min-width:0"><b>${esc(L.name)}</b><small><i class="catdot" style="background:${c[1]}"></i>${c[0]}${L.kind==='world'&&L.genre?` · ${esc(L.genre)}`:L.keys?` · ${esc(L.keys)}`:''}</small><div class="ll">${esc((L.kind==='world'?L.summary||L.detail:L.desc)||L.tags||'설명 없음')}</div></div>
+      <div class="la"><button class="lx" data-wlibdel="${L.id}">삭제</button><small>${new Date(L.at).toLocaleDateString('ko-KR')} 저장</small>${used?'<span class="status">이 작품에서 사용 중</span>':`<button class="btn dark" data-wlibuse="${L.id}">작품에 넣기</button>`}</div></div>`}).join(''):
+    `<p class="empty" style="padding:8px 0">${WLIB.length?'검색 결과가 없어요':'아직 비어 있어요. 위 개요나 항목에서 \'보관함에 저장\'을 누르면 여기 쌓여요.'}</p>`}
+function wlibExport(){if(!WLIB.length){toast('보관함이 비어 있어요');return}
+  const data={type:'rough-world',version:1,exported:new Date().toISOString(),items:WLIB.map(L=>({...L,image:IMG.wlib[L.id]?{src:IMG.wlib[L.id].src,w:IMG.wlib[L.id].w,h:IMG.wlib[L.id].h,palette:IMG.wlib[L.id].palette}:null}))};
+  download('rough-world.json',URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'})));toast(`세계관 보관함 ${WLIB.length}개를 파일로 내보냈어요`)}
+async function wlibImport(file){try{const d=JSON.parse(await file.text());if(d.type!=='rough-world'||!Array.isArray(d.items))throw new Error('세계관 파일이 아니에요');let n=0;
+  for(const x of d.items){if(!x||!x.name)continue;const kind=x.kind==='world'?'world':'lore';const L={id:String(x.id||('w'+Date.now().toString(36)+n)),kind,at:+x.at||Date.now()};
+    for(const f of kind==='world'?WF:LF)L[f]=String(x[f]||'').slice(0,f==='detail'?3000:1000);if(kind==='lore'&&!LORE_CAT[L.cat])L.cat='place';
+    const i=WLIB.findIndex(y=>y.id===L.id);if(i>=0)WLIB[i]=L;else WLIB.push(L);
+    if(x.image&&typeof x.image.src==='string'&&/^data:image\/(png|jpeg|webp);base64,/.test(x.image.src)){const o={id:'wlib:'+L.id,kind:'wlibimg',libId:L.id,src:x.image.src,w:+x.image.w||0,h:+x.image.h||0,palette:Array.isArray(x.image.palette)?x.image.palette.filter(h=>/^#[0-9a-f]{6}$/i.test(h)).slice(0,5):[]};IMG.wlib[L.id]=o;idb.put(o)}n++}
+  saveWlib();renderWorld();toast(`${n}개를 가져왔어요`)}catch(e){toast('가져오지 못했어요: '+e.message)}}
+// 바로 고치기 이벤트
+{const root=$('#v-world');let wt;
+  const rowOf=e=>e.target.closest('#worldov .cedit,#lore .cedit');
+  const itemOf=el=>el.dataset.wk==='world'?[WORLD,'world']:[LORE[+el.dataset.li],'lore'];
+  root.addEventListener('input',e=>{const el=rowOf(e);if(!el)return;const f=e.target.dataset.wf||e.target.dataset.lf;if(!f)return;const [x]=itemOf(el);x[f]=e.target.value;saveWorld();updateWRow(el);
+    clearTimeout(wt);wt=setTimeout(()=>{compute(false);renderWorldSum()},400)});
+  root.addEventListener('change',e=>{const el=rowOf(e);if(!el)return;if(e.target.dataset.lf==='cat'||e.target.dataset.lf==='name'||e.target.dataset.lf==='keys')renderWorld()});
+  root.addEventListener('focusin',e=>{const el=rowOf(e);if(!el)return;target=el.dataset.wk==='world'?{kind:'world',key:'cover'}:{kind:'lore',key:LORE[+el.dataset.li].id}});
+  root.addEventListener('click',e=>{const lc=e.target.closest('[data-lc]');if(lc){LORECAT=lc.dataset.lc;renderWorld();return}
+    const wc=e.target.closest('[data-wc]');if(wc){WLIBC=wc.dataset.wc;renderWlib();return}
+    const u=e.target.closest('[data-wlibuse]');if(u){wlibUse(u.dataset.wlibuse);return}
+    const dl=e.target.closest('[data-wlibdel]');if(dl){const L=WLIB.find(x=>x.id===dl.dataset.wlibdel);if(!L||!confirm(`보관함에서 '${L.name}'을(를) 지울까요? 작품에 넣은 내용은 그대로 남아요.`))return;
+      WLIB=WLIB.filter(x=>x.id!==L.id);if(IMG.wlib[L.id]){delete IMG.wlib[L.id];idb.del('wlib:'+L.id)}if(WORLD.lib===L.id)delete WORLD.lib;LORE.forEach(x=>{if(x.lib===L.id)delete x.lib});saveWlib();saveWorld();renderWorld();toast('보관함에서 지웠어요');return}
+    const a=e.target.closest('[data-act]'),k=a&&a.dataset.act;
+    if(k==='loreadd'){const it={id:'l'+Date.now().toString(36),name:'',cat:LORECAT||'place',keys:'',desc:'',tags:''};LORE.push(it);saveWorld();renderWorld();setTimeout(()=>{const r=document.querySelector(`#lore .cedit[data-li="${LORE.length-1}"]`);if(r){r.scrollIntoView({behavior:'smooth',block:'center'});r.querySelector('[data-lf=name]').focus({preventScroll:true})}},30);return}
+    if(k==='wlibsaveall'){let n=0;if((WORLD.name||'').trim()&&wState(WORLD,'world')!=='same'){wlibSave(WORLD,'world',true);n++}LORE.forEach(x=>{if((x.name||'').trim()&&wState(x,'lore')!=='same'){wlibSave(x,'lore',true);n++}});renderWorld();toast(n?`${n}개를 보관함에 저장했어요`:'모두 보관함과 같아요');return}
+    if(k==='wlibexport'){wlibExport();return}if(k==='wlibimport'){$('#wlibfile').click();return}
+    const el=rowOf(e);if(!el)return;const [x,kind]=itemOf(el);
+    if(e.target.closest('[data-wimgdel]')){e.stopPropagation();if(kind==='world'){if(IMG.world){IMG.world=null;idb.del('world:cover')}}else if(IMG.lore[x.id]){delete IMG.lore[x.id];idb.del('lore:'+x.id)}renderWorld();render();return}
+    if(e.target.closest('[data-wimg]')){target=kind==='world'?{kind:'world',key:'cover'}:{kind:'lore',key:x.id};$('#file').click();return}
+    if(k==='wsave'){wlibSave(x,kind);renderWorld()}
+    else if(k==='wrevert'){const L=wlibOf(x);if(L){wlibApply(L,x,kind);saveWorld();renderWorld();compute(false);toast('보관함 버전으로 되돌렸어요')}}
+    else if(k==='ldel'){if(!confirm(`${x.name||'이 항목'}을(를) 이 작품에서 뺄까요?${x.lib?' 보관함에는 남아 있어요.':''}`))return;if(IMG.lore[x.id]){delete IMG.lore[x.id];idb.del('lore:'+x.id)}LORE.splice(+el.dataset.li,1);saveWorld();renderWorld();compute(false);toast('작품에서 뺐어요')}});
+  root.addEventListener('keydown',e=>{if(e.target.matches('[data-wimg]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.target.click()}});
+  for(const ev of ['dragover','dragleave','drop'])root.addEventListener(ev,e=>{const d=e.target.closest('[data-wimg]');if(!d)return;e.preventDefault();d.classList.toggle('over',ev==='dragover');
+    if(ev==='drop'){const el=rowOf(e);const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!f||!el)return;attach(f,el.dataset.wk==='world'?{kind:'world',key:'cover'}:{kind:'lore',key:LORE[+el.dataset.li].id})}});
+  $('#wlibq').addEventListener('input',e=>{WLIBQ=e.target.value;renderWlib()});
+  $('#wlibfile').addEventListener('change',e=>{const f=e.target.files[0];if(f)wlibImport(f);e.target.value=''});}
 
 // ---------- @ 자동완성 ----------
 const mbox=document.createElement('div');mbox.className='menu';mbox.id='mbox';mbox.setAttribute('role','listbox');mbox.hidden=true;document.body.appendChild(mbox);
@@ -1713,9 +1859,9 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
 
 // ---------- 보기 전환 ----------
 let VIEW='nai';
-function showView(v){if(!['chars','write','layout','nai','webtoon','db'].includes(v))v='nai';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
-  ['chars','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
-  if(v==='chars'){renderChars();renderLib()}
+function showView(v){if(!['chars','world','write','layout','nai','webtoon','db'].includes(v))v='nai';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+  ['chars','world','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
+  if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=v!=='layout';$('#gDb').setAttribute('aria-pressed',v==='db');
   if(v==='webtoon')renderWebtoon();
   if(v==='nai')renderNai();if(v==='db')loadDB();
@@ -1750,11 +1896,12 @@ let NAISTYLE=NAI_STYLE_DEF;
 try{NAISTYLE=localStorage.getItem('rough-nai-style')||NAI_STYLE_DEF}catch(_){}
 function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),body:c.body||'female',look:c.look||''}))}
 function naiRuleCuts(){const ps=state.panels,chars=naiChars(),sc=ps.length?sceneFor(ps[0]):null;
-  const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc}};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
+  const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc},worldTags:WORLD.tags||'',loreTags:p=>loreHits([p.act,p.caption,...(p.dialogs||[]).map(d=>d.text)].join(' ')).flatMap(e=>loreTagList(e))};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
 // Claude 다듬기(NovelAI): 결과는 씬별로 입력 서명과 함께 저장, 기본/Claude 전환
 let NAIVIEW='ai',AIN={};try{AIN=JSON.parse(localStorage.getItem('rough-ai-nai')||'{}')}catch(_){}
 function naiPayload(){const L=naiRuleCuts(),chars=naiChars();
-  return{title:SCENES[SCUR].title||'',style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
+  const sceneText=L.map(({p})=>[p.act,p.caption,...(p.dialogs||[]).map(d=>d.text)].join(' ')).join(' ');
+  return{title:SCENES[SCUR].title||'',world:worldBrief(),lore:loreHits(sceneText).map(e=>({name:e.name,category:LORE_CAT[e.cat]?.[0]||e.cat,keywords:e.keys||'',description:(e.desc||'').slice(0,600),tags:loreTagList(e).join(', ')})),style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
     cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,
       dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${a.narr} · ${a.goal}`:'',draft:{base:o.base,chars:o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}}})}}
 function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(naiPayload())}}
@@ -1775,9 +1922,9 @@ const naiCopy=o=>[o.base,...o.chars.map(c=>c.prompt)].map(t=>t.trim().replace(/,
 function naiText(){const L=naiCuts();return L.map(({p,i,o})=>NAI.text(o,i,L.length,cutHead(p,i))).join('\n\n────────\n\n')}
 function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
-  $('#naichars').innerHTML=chars.length?chars.map(c=>`<div class="naichar"><b>${esc(c.name)}</b><input data-naitag="${esc(c.name)}" value="${esc(NAITAGS[c.name]??NAI.lookTags(c.look).join(', '))}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="btn" data-act="naireset" data-n="${esc(c.name)}">외형에서 다시</button></div>`).join(''):'<p class="empty">작성 단계의 인물 설정에 인물을 넣어주세요.</p>';
+  $('#naichars').innerHTML=chars.length?chars.map(c=>`<div class="naichar"><b>${esc(c.name)}</b><input data-naitag="${esc(c.name)}" value="${esc(NAITAGS[c.name]??NAI.lookTags(c.look).join(', '))}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="btn" data-act="naireset" data-n="${esc(c.name)}">외형에서 다시</button></div>`).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
   const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
-  $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="write">작성에서 이미지 등록</button>`;
+  $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="write">씬에서 이미지 등록</button>`;
   const ai=ainFor();$('#naiview').hidden=!ai;document.querySelectorAll('#naiview button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===NAIVIEW));
   if(ai&&!naiBusy)$('#naist').textContent=ai.stale?'글이나 태그가 바뀌었어요. 다시 다듬으면 반영돼요':`다듬은 결과 · ${new Date(ai.at).toLocaleString()}`;
   if(!ps.length){$('#ncards').innerHTML='<p class="empty">씬 단계에서 컷을 적어주세요.</p>';$('#naicount').textContent='';return}

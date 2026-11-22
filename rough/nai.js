@@ -87,9 +87,10 @@
     const base = uniq([
       ...(cast.length ? countTag(cast) : ['no humans']),
       ...shot, ...(ANG[p.ang] || []),
-      ...place, ...light, ...(MOOD[p.emo] || []),
+      ...place, ...(ctx.loreTags ? ctx.loreTags(p) : []), ...light, ...(MOOD[p.emo] || []),
       peak && '1.2::dramatic lighting::',
       (p.dialogs || []).length && 'negative space',
+      ...String(ctx.worldTags || '').split(',').map(s => s.trim()),
       ...String(style).split(',').map(s => s.trim()),
     ]);
     // 캐릭터 프롬프트: 외형(사용자 태그 우선) + 표정 + 동작

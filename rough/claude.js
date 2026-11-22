@@ -96,7 +96,8 @@ const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 컷을 �
 - cell(캐릭터 위치): 5×5 칸 A~E(가로, 왼쪽→오른쪽) 1~5(세로, 위→아래). 컷 사이에서 인물의 좌우 위치가 뒤바뀌지 않게(180도 선) 유지하고, 클로즈업은 C3 근처, 넓은 샷은 아래쪽(4~5행)에 둔다.
 - 연속성: 앞 컷에서 든 소품, 옷, 머리 모양, 빛 방향은 다음 컷에도 같은 태그로 남긴다. 원문과 모순되는 걸 지어내지 않는다.
 - 디테일(인서트) 컷은 얼굴 대신 손·소품에 초점(hands focus, close-up, head out of frame 등)을 둔다.
-- 글자·말풍선 관련 태그는 넣지 않는다(제외 칸은 쓰지 않음). 대사가 있으면 base에 negative space 정도만.`;
+- 글자·말풍선 관련 태그는 넣지 않는다(제외 칸은 쓰지 않음). 대사가 있으면 base에 negative space 정도만.
+- world(세계관 개요)의 시대·장르·분위기와 lore(이 씬에 나오는 설정 항목: 장소·세력·물건·용어·역사·규칙)의 설명을 읽고, 배경·소품·의상·조명 태그를 그 세계에 맞게 고른다. lore의 tags는 해당 항목이 나오는 컷에 살린다. 세계관과 어긋나는 현대 소품 등은 넣지 않는다.`;
 const SCHEMA_NAI = {
   type: 'object',
   properties: {
@@ -125,7 +126,7 @@ const SCHEMA_NAI = {
   required: ['cuts'],
   additionalProperties: false,
 };
-// payload: { title, style, chars:[{name, gender, tags, look}], cuts:[{n, size, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
+// payload: { title, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
 export async function refineNai(apiKey, payload, { onStatus } = {}) {
   const r = await run(apiKey, SYSTEM_NAI, SCHEMA_NAI, `다음 씬의 NovelAI V4.5 태그를 다시 짜줘.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
   return { cuts: r.out.cuts, model: r.model, usage: r.usage };
