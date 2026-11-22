@@ -50,6 +50,14 @@ for (const chars of [[{ name: '에드가' }, { name: '준' }], []]) {
   const checks = [[b.length, 6], [b.map(x => x.who).join(','), ',에드가,준,에드가,준,에드가'], [b[2].said, '에드가?'], [b[5].said, '같이 가자.'], [b[2].emo, '놀람'], [b[4].emo, '설렘']];
   for (const [got, want] of checks) { ptot++; if (got === want) pok++; else console.log('  줄글 X', JSON.stringify(got), '≠', JSON.stringify(want)); }
 }
+// @멘션: 목록이 없어도 @로 부른 이름을 인물로, 조사가 붙어도 이름만
+const MPROSE = `복도는 조용했다. @민수는 교실 문을 열었다. 창가의 @지아가 돌아보며 "왔어?" 하고 웃었다. @민수의 얼굴이 붉어졌다. @지아는 @민수에게 다가가 어깨를 두드렸다.`;
+for (const chars of [[], [{ name: '민수' }, { name: '지아', aliases: ['지아야'] }]]) {
+  const b = R.analyze(MPROSE, chars)[0].beats;
+  const checks = [[b.map(x => x.who).join(','), ',민수,지아,민수,지아'], [b[1].act.includes('@'), false], [b[2].said, '왔어?']];
+  for (const [got, want] of checks) { ptot++; if (got === want) pok++; else console.log('  멘션 X', JSON.stringify(got), '≠', JSON.stringify(want)); }
+}
+ptot++; if (R.mentions('@준이 웃었다', [{ name: '준' }])[0].name === '준') pok++; else console.log('  멘션 X @준이');
 console.log(`줄글 파싱 ${pok}/${ptot}`);
 
 let ok = 0, total = 0;

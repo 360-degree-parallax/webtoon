@@ -102,6 +102,7 @@ textarea:focus{border-color:var(--t1)}
 .menu button{display:flex;justify-content:space-between;gap:12px;width:100%;height:34px;padding:0 10px;border-radius:6px;font-size:14px;text-align:left}
 .menu button:hover{background:var(--hover)}
 .menu button[aria-checked=true]{font-weight:700}
+#mbox button[aria-checked=true]{background:var(--hover)}
 .menu button small{color:var(--t3);font-size:12px}
 .menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
 
@@ -278,9 +279,9 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
   <section>
     <div class="sh"><h2>장면</h2><span id="count"></span></div>
-    <textarea id="beats" aria-label="장면" spellcheck="false" placeholder="줄글로 써도 되고, 한 줄에 한 컷씩 인물 | 행동 &quot;대사&quot; 로 써도 돼요.">비가 그친 저녁, 저택 복도는 촛불만 흔들리고 있었다. 에드가는 긴 복도 끝에서 천천히 걸어왔다. 발소리를 들은 준이 놀라 돌아보며 "에드가?" 하고 불렀다.
-에드가는 대답 대신 준의 손목을 붙잡았다. 준의 얼굴이 순식간에 붉어졌다. 잠시 침묵이 흐른 뒤, 에드가가 희미하게 웃으며 말했다. "같이 가자."</textarea>
-    <div class="under"><span>줄글은 문장마다 컷으로 나눠요 · 또는 한 줄에 한 컷 <code>인물 | 행동</code> · 대사는 <code>"따옴표"</code> · 7컷 넘으면 5컷씩 묶음</span><button class="link" data-act="clear">지우기</button></div>
+    <textarea id="beats" aria-label="장면" spellcheck="false" placeholder="예: @에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다.">비가 그친 저녁, 저택 복도는 촛불만 흔들리고 있었다. @에드가는 긴 복도 끝에서 천천히 걸어왔다. 발소리를 들은 @준이 놀라 돌아보며 "에드가?" 하고 불렀다.
+@에드가는 대답 대신 @준의 손목을 붙잡았다. @준의 얼굴이 순식간에 붉어졌다. 잠시 침묵이 흐른 뒤, @에드가가 희미하게 웃으며 말했다. "같이 가자."</textarea>
+    <div class="under"><span>인물은 <code>@이름</code>으로 불러요(@를 치면 목록이 떠요) · 줄글은 문장마다 컷 · 또는 한 줄에 한 컷 <code>인물 | 행동</code> · 대사는 <code>"따옴표"</code> · 7컷 넘으면 5컷씩 묶음</span><button class="link" data-act="clear">지우기</button></div>
   </section>
 
   <section>
@@ -564,7 +565,7 @@ function renderChars(){
   renderSugg()}
 function renderSugg(){const have=new Set(CHARS.map(c=>c.name.trim()));const txt=$('#beats').value;
   const found=[...new Set([...RE.guessNames(RE.sentences(txt)),...RE.parse(txt,engineChars()).map(b=>b.who)])].filter(n=>n&&!have.has(n)&&!NOTP.test(n));
-  $('#sugg').innerHTML=found.length?`장면에서 찾은 이름 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
+  $('#sugg').innerHTML=found.length?`인물 칸에 없는 이름 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
 let ctmr;
 $('#chars').addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;const i=+e.target.closest('.chr').dataset.i;CHARS[i][k]=e.target.value;saveChars();clearTimeout(ctmr);ctmr=setTimeout(()=>{compute(false);renderSugg();renderSlots()},400)});
 $('#chars').addEventListener('click',e=>{const b=e.target.closest('[data-body]');if(b){const i=+b.closest('.chr').dataset.i;CHARS[i].body=b.dataset.body;saveChars();renderChars();dirty3d=true;return}
@@ -573,6 +574,31 @@ $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');i
 document.addEventListener('click',e=>{if(e.target.closest('[data-act="addchar"]')){CHARS.push({name:'',aliases:'',body:'female',look:''});renderChars();const ins=document.querySelectorAll('#chars .nm');ins[ins.length-1]?.focus()}});
 $('#beats').addEventListener('input',()=>{clearTimeout(renderSugg.t);renderSugg.t=setTimeout(renderSugg,500)});
 renderChars();
+
+// ---------- @ 자동완성 ----------
+const mbox=document.createElement('div');mbox.className='menu';mbox.id='mbox';mbox.setAttribute('role','listbox');mbox.hidden=true;document.body.appendChild(mbox);
+let mSel=0,mList=[],mStart=-1;
+function caretXY(ta,pos){const cs=getComputedStyle(ta),d=document.createElement('div');
+  for(const k of ['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','paddingTop','paddingLeft','paddingRight','borderTopWidth','borderLeftWidth','boxSizing'])d.style[k]=cs[k];
+  Object.assign(d.style,{position:'absolute',visibility:'hidden',whiteSpace:'pre-wrap',wordWrap:'break-word',width:ta.clientWidth+'px',left:'-9999px',top:'0'});
+  d.textContent=ta.value.slice(0,pos);const sp=document.createElement('span');sp.textContent='​';d.appendChild(sp);document.body.appendChild(d);
+  const r=ta.getBoundingClientRect(),x=r.left+sp.offsetLeft,y=r.top+sp.offsetTop-ta.scrollTop+parseFloat(cs.lineHeight||20);d.remove();return [x,y]}
+function mentionQuery(){const ta=$('#beats');if(ta.selectionStart!==ta.selectionEnd)return null;const pos=ta.selectionStart;const m=ta.value.slice(0,pos).match(/(^|[^가-힣A-Za-z0-9_])@([가-힣A-Za-z0-9_]*)$/);return m?{q:m[2],start:pos-m[2].length-1,pos}:null}
+function showMbox(){const mq=mentionQuery();const all=CHARS.map(c=>c.name.trim()).filter(Boolean);
+  mList=mq?all.filter(n=>n.startsWith(mq.q)&&n!==mq.q):[];if(!mList.length){mbox.hidden=true;return}
+  mStart=mq.start;mSel=Math.min(mSel,mList.length-1);
+  mbox.innerHTML=mList.map((n,i)=>`<button role="option" data-mi="${i}" aria-checked="${i===mSel}">@${esc(n)}<small>${esc(CHARS.find(c=>c.name.trim()===n)?.body==='male'?'남자':'여자')}</small></button>`).join('');
+  mbox.hidden=false;const [x,y]=caretXY($('#beats'),mq.pos);mbox.style.left=Math.min(innerWidth-mbox.offsetWidth-8,x+scrollX)+'px';mbox.style.top=(y+scrollY+4)+'px'}
+function pickMention(i){const ta=$('#beats');const name=mList[i];if(!name)return;const pos=ta.selectionStart;
+  ta.value=ta.value.slice(0,mStart)+'@'+name+ta.value.slice(pos);const c=mStart+name.length+1;ta.setSelectionRange(c,c);ta.focus();mbox.hidden=true;ta.dispatchEvent(new Event('input'))}
+$('#beats').addEventListener('input',()=>{mSel=0;showMbox()});
+$('#beats').addEventListener('click',showMbox);
+$('#beats').addEventListener('keydown',e=>{if(mbox.hidden)return;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();mSel=(mSel+(e.key==='ArrowDown'?1:-1)+mList.length)%mList.length;showMbox()}
+  else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();pickMention(mSel)}
+  else if(e.key==='Escape'){mbox.hidden=true}});
+$('#beats').addEventListener('blur',()=>setTimeout(()=>{mbox.hidden=true},150));
+mbox.addEventListener('mousedown',e=>{const b=e.target.closest('[data-mi]');if(b){e.preventDefault();pickMention(+b.dataset.mi)}});
 
 // ---------- 보기 전환 ----------
 let VIEW='layout',dirty3d=true;

@@ -69,7 +69,27 @@
     const stop = /^(그|그녀|그것|이것|저것|우리|나|너|자신|사람|누구|무엇|얼굴|목소리|순간|잠시|침묵|복도|방|문|손|눈|발소리|대답|저녁|아침|밤|비|바람|하늘|모두|서로|둘|한참|뒤)$/;
     return Object.entries(cnt).filter(([n, c]) => c >= 2 && !stop.test(n)).sort((a, b) => b[1] - a[1]).map(([n]) => n).slice(0, 6);
   }
+  // @이름 멘션: 알려진 이름(긴 것부터)을 먼저 맞추고, 없으면 뒤에 붙은 조사를 떼어 이름으로 본다
+  const PARTICLES = ['께서', '에게', '한테', '이랑', '에서', '은', '는', '이', '가', '도', '의', '을', '를', '와', '과', '께', '랑', '아', '야'];
+  function mentions(t, chars) {
+    const known = (chars || []).flatMap(c => [c.name, ...(c.aliases || [])].filter(Boolean).map(n => [n, c.name])).sort((a, b) => b[0].length - a[0].length);
+    const out = [];
+    for (const m of String(t).matchAll(/@([가-힣A-Za-z0-9_]+)/g)) {
+      const tok = m[1]; let name = null, rest = '';
+      const k = known.find(([n]) => tok.startsWith(n));
+      if (k) { name = k[1]; rest = tok.slice(k[0].length); }
+      else { const p = PARTICLES.find(x => tok.length > x.length && tok.endsWith(x)); name = p ? tok.slice(0, -p.length) : tok; rest = p || ''; }
+      out.push({ name, rest, index: m.index });
+    }
+    return out;
+  }
   function findWho(t, chars) {
+    const ms = mentions(t.replace(/["“][^"”]*["”]/g, ' '), chars);
+    if (ms.length) {
+      const subj = ms.find(m => /^(은|는|이|가|도|께서)$/.test(m.rest));
+      const poss = ms.find(m => m.rest === '의');
+      return (subj || (poss && !/(손목|손|팔|어깨)을/.test(t) ? poss : null) || ms[0]).name;
+    }
     const body = t.replace(/["“][^"”]*["”]/g, ' ');
     let subj = null, poss = null, si = 1e9, pi = 1e9;
     for (const c of chars) for (const n of [c.name, ...(c.aliases || [])].filter(Boolean)) {
@@ -82,19 +102,21 @@
   }
   function parseProse(text, chars) {
     const sents = sentences(text);
-    const list = chars && chars.length ? chars : guessNames(sents).map(name => ({ name }));
+    const named = chars && chars.length ? chars.slice() : [];
+    for (const m of mentions(text, named)) if (!named.some(c => c.name === m.name)) named.push({ name: m.name });
+    const list = named.length ? named : guessNames(sents).map(name => ({ name }));
     const beats = []; let last = '';
     for (const t of sents) {
       const said = (t.match(/["“]([^"”]+)["”]/) || [])[1] || '';
       const onlyQuote = /^["“][^"”]*["”][.!?…]*$/.test(t);
       const who = findWho(t, list);
-      const act = t.replace(/["“][^"”]*["”]\s*(하고|라고|하며|라며)?/g, ' ').replace(/\s+/g, ' ').trim();
+      const act = t.replace(/["“][^"”]*["”]\s*(하고|라고|하며|라며)?/g, ' ').replace(/@/g, '').replace(/\s+/g, ' ').trim();
       const prev = beats[beats.length - 1];
       if (onlyQuote && prev && !prev.said) { prev.said = said; prev.line += ' ' + t; prev.key = prev.line; continue; }
       if (!who && !said && prev && !prev.who && beats.length === 1) { prev.act += ' ' + act; prev.line += ' ' + t; prev.key = prev.line; continue; }
       const w = who || (onlyQuote ? last : '');
       if (w) last = w;
-      beats.push({ line: t, who: w, act: act || t, said, key: t, prose: true });
+      beats.push({ line: t, who: w, act: act || t.replace(/@/g, ''), said, key: t, prose: true });
     }
     return beats;
   }
@@ -103,8 +125,8 @@
     const piped = lines.filter(l => l.includes('|')).length;
     if (lines.length && piped >= Math.ceil(lines.length / 2)) return lines.map(line => {
       const parts = line.split('|');
-      const who = parts.length > 1 ? parts[0].trim() : '';
-      const act = (parts.length > 1 ? parts.slice(1).join('|') : parts[0]).trim();
+      const who = parts.length > 1 ? parts[0].replace(/@/g, '').trim() : '';
+      const act = (parts.length > 1 ? parts.slice(1).join('|') : parts[0]).replace(/@/g, '').trim();
       const said = (act.match(/["“]([^"”]+)["”]/) || [])[1] || '';
       return { line, who, act, said, key: line };
     });
@@ -331,5 +353,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, parse, sentences, guessNames, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, parse, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
