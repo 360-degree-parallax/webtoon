@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이미지 프롬프트 · ROUGH</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topline">
+    <a class="brand" href="./">ROUGH</a>
+    <span class="top-divider" aria-hidden="true"></span>
+    <span class="top-label">이미지 프롬프트</span>
+    <div class="top-actions">
+      <button class="button quiet" id="save-layout" type="button" disabled>배치 JSON</button>
+      <button class="button" id="save-text" type="button" disabled>전체 TXT</button>
+    </div>
+  </div>
+</header>
+<main class="page">
+  <div class="page-heading">
+    <h1>이미지 프롬프트</h1>
+    <p>장면에 맞는 컷을 찾아 생성 프롬프트와 식자 지시를 만듭니다.</p>
+  </div>
+  <div class="workbench">
+    <form id="form" class="input-pane" aria-labelledby="input-heading">
+      <div class="section-heading">
+        <h2 id="input-heading">장면 입력</h2>
+        <button class="link" id="example" type="button">명경도령 예시</button>
+      </div>
+      <div class="script-field">
+        <label class="sr-only" for="script">장면 스크립트</label>
+        <textarea id="script" maxlength="16000" placeholder="인물 | 행동 &quot;대사&quot;" spellcheck="false" required></textarea>
+        <div class="script-footer" id="cut-count" aria-live="polite"></div>
+      </div>
+      <details class="guide">
+        <summary>입력 문법</summary>
+        <dl>
+          <div><dt>대사</dt><dd><code>도령 | 고개를 든다 "앉아."</code></dd></div>
+          <div><dt>내레이션</dt><dd><code>[내레이션: 비가 그쳤다.]</code></dd></div>
+          <div><dt>효과음</dt><dd><code>[효과음: 달칵]</code></dd></div>
+          <div><dt>구도</dt><dd><code>[구도: 문틈으로 한쪽 눈만 보인다.]</code></dd></div>
+        </dl>
+      </details>
+
+      <div class="field">
+        <label for="cast">캐릭터 설정 <small>선택</small></label>
+        <textarea id="cast" rows="2" maxlength="1600" placeholder="인물 | 외형과 의상 · 한 줄에 한 명"></textarea>
+      </div>
+      <div class="field">
+        <label for="scene">공간·빛 <small>선택</small></label>
+        <textarea id="scene" rows="2" maxlength="1200" placeholder="장면 전체에 유지할 공간, 조명, 색감"></textarea>
+      </div>
+      <fieldset class="styles">
+        <legend>그림 톤</legend>
+        <div class="style-choices">
+          <label><input type="radio" name="style" value="green" checked><span>녹빛 컬러</span></label>
+          <label><input type="radio" name="style" value="neutral"><span>중성 컬러</span></label>
+          <label><input type="radio" name="style" value="ink"><span>흑백 러프</span></label>
+        </div>
+      </fieldset>
+      <button class="button primary submit" id="generate" type="submit">프롬프트 생성</button>
+      <p class="form-error" id="form-error" role="alert"></p>
+    </form>
+
+    <section class="results" aria-labelledby="result-heading">
+      <header class="section-heading">
+        <div>
+          <h2 id="result-heading">컷별 프롬프트</h2>
+          <p id="result-meta"></p>
+        </div>
+        <button class="button" type="button" id="copy-all" disabled>전체 복사</button>
+      </header>
+      <div id="plan" class="plan" hidden></div>
+      <div id="cuts" class="cuts"><p class="empty">왼쪽에서 장면을 입력하면 컷별 결과가 여기에 나옵니다.</p></div>
+    </section>
+  </div>
+</main>
+<p class="notice" id="notice" role="status" aria-live="polite"></p>
+</body>
+</html>
