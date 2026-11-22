@@ -13,3 +13,4 @@ __pycache__/
 
 # 러프 레퍼런스용 원본 컷(권리자 허락 하에 비상업 공개)은 예외
 !rough/cuts/**/*.jpg
+!rough/cuts-fixed/**/*.jpg
