@@ -145,6 +145,14 @@ input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--blue)}
 .toast{position:fixed;left:50%;bottom:108px;z-index:30;transform:translate(-50%,16px);padding:14px 20px;border-radius:16px;background:rgba(25,31,40,.94);color:#fff;font-size:15px;font-weight:500;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s var(--ease)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 @media(prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}}
+
+.image-settings{margin:18px 24px 24px}
+.image-settings summary{cursor:pointer;color:var(--bluetext);font-weight:600}
+.image-settings label{display:block;color:var(--g600);margin:12px 0 6px;font-size:14px}
+.image-settings input{width:100%;min-height:44px;border:1px solid var(--g200);border-radius:12px;padding:8px 10px;background:var(--sheet);color:inherit;font:inherit}
+.image-actions{display:flex;gap:8px;margin-top:12px}
+.image-actions .btn{min-height:44px;height:auto;padding:8px;font-size:15px}
+.image-status:not(:empty){margin:8px 0 0;color:var(--g600);font-size:14px}
 </style>
 </head>
 <body>
@@ -163,7 +171,7 @@ input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--blue)}
 에드가 | 준의 손목을 잡음
 준 | 얼굴이 붉어짐
 에드가 | "같이 가자" 미소</textarea>
-    <div class="meta"><span id="count"></span><button class="textbtn" data-act="clear">모두 지우기</button></div>
+    <div class="meta"><span id="count"></span><div><button class="textbtn" id="loadExample" type="button">명경도령 예시</button> <button class="textbtn" data-act="clear">모두 지우기</button></div></div>
   </div>
   <div class="info"><b>이렇게 적으면 돼요</b><ul>
     <li><code>인물 | 행동</code> 순서로 적어요</li>
@@ -184,8 +192,13 @@ input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--blue)}
     </div>
     <div class="rright">
       <div class="band first"></div>
-      <h2 class="sh">컷</h2><p class="shsub">누르면 샷·앵글·길이를 고칠 수 있어요</p>
+      <h2 class="sh">컷</h2><p class="shsub">컷을 누르면 구도를 편집하고 이미지를 만들 수 있어요</p>
       <ul class="list" id="cutList"></ul>
+    <details class="image-settings">
+      <summary>이미지 생성 설정</summary>
+      <div class="field"><label for="imageStyle">장면 공통 묘사</label><input type="text" id="imageStyle" maxlength="800" placeholder="공간, 의상, 팔레트, 선의 느낌"></div>
+      <div class="field"><label for="imageReference">캐릭터 참고 이미지 (선택)</label><input id="imageReference" type="file" accept="image/png,image/jpeg,image/webp"></div>
+    </details>
       <div class="band"></div>
       <h2 class="sh">참고한 연출</h2>
       <div id="patInfo"></div>
@@ -203,6 +216,7 @@ input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--blue)}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="grab"></div><div id="sheetBody"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
+<script src="panel-image.js"></script>
 <script>
 const W=690;const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -248,10 +262,13 @@ function parseBeats(){return $('#beats').value.split('\n').map(l=>l.trim()).filt
 function score(p,n){let s=0;for(const k in want)if(want[k]!==ANY)s+=p[k]===want[k]?3:-1;const pics=p.cuts.filter(c=>c.t==='그림').length;return s-Math.abs(pics-n)*1.5}
 function candidates(n){return PATS.map(p=>({p,s:score(p,n)})).sort((a,b)=>b.s-a.s).slice(0,12).map(x=>x.p)}
 function generate(){const beats=parseBeats();state.chunks=[];for(let i=0;i<beats.length;i+=5)state.chunks.push(beats.slice(i,i+5));state.pick=state.chunks.map(()=>0);build()}
-function build(){state.panels=[];state.used=[];state.sel=-1;
+function build(){const previous=state.panels;state.panels=[];state.used=[];state.sel=-1;
   state.chunks.forEach((ch,ci)=>{const cand=candidates(ch.length);const p=cand[state.pick[ci]%cand.length];const pics=p.cuts.filter(c=>c.t==='그림');state.used.push(p);
     ch.forEach((b,i)=>{const c=pics[Math.round(i*(pics.length-1)/Math.max(1,ch.length-1))]||pics[0]||{shot:'중경',ang:'아이레벨',h:1,gap:.3};
-      state.panels.push({...b,shot:SHOTS.includes(c.shot)?c.shot:'중경',ang:ANGLES.includes(c.ang)?c.ang:'아이레벨',h:+Math.max(.45,Math.min(2.2,c.h||1)).toFixed(2),gap:Math.max(.08,Math.min(1,c.gap||.3)),src:`${p.src}-${p.id}`})})});
+      const old=previous[state.panels.length];
+      const panel=old?.act===b.act&&old.who===b.who?old:{...b};
+      Object.assign(panel,{shot:SHOTS.includes(c.shot)?c.shot:'중경',ang:ANGLES.includes(c.ang)?c.ang:'아이레벨',h:+Math.max(.45,Math.min(2.2,c.h||1)).toFixed(2),gap:Math.max(.08,Math.min(1,c.gap||.3)),composition:'',src:`${p.src}-${p.id}`});
+      state.panels.push(panel)})});
   renderResult();render();renderRefs()}
 
 // ---------- step 3 ----------
@@ -263,11 +280,18 @@ function renderResult(){const p=state.used[0];if(!p)return;
     <div class="irow"><span>카메라 거리</span><b>${esc(p.dist)}</b></div><div class="irow"><span>속도</span><b>${esc(p.tempo)}</b></div>
     <div class="irow"><span>터지는 순간</span><b>${esc(p.narr)}</b></div><div class="irow"><span>노리는 효과</span><b>${esc(p.goal)}</b></div>
     <div class="irow"><span>원본 패턴</span><b>${esc(p.src)}-${esc(p.id)}${p.name?` · ${esc(p.name)}`:''}</b></div>`).join('')}
-function renderCutList(){$('#cutList').innerHTML=state.panels.map((p,i)=>`<li><button class="row${i===state.sel?' on':''}" data-act="cut" data-i="${i}"><span class="num">${i+1}</span><div class="tx"><div class="t">${esc(p.act.replace(/"[^"]*"/,'').trim()||p.act)}</div><div class="s">${esc([p.who,p.shot,p.ang,lenWord(p.h)].filter(Boolean).join(' · '))}</div></div>${CHEV}</button></li>`).join('')}
+function renderCutList(){$('#cutList').innerHTML=state.panels.map((p,i)=>`<li><button class="row${i===state.sel?' on':''}" data-act="cut" data-i="${i}"><span class="num">${i+1}</span><div class="tx"><div class="t">${esc(p.act.replace(/"[^"]*"/,'').trim()||p.act)}</div><div class="s">${esc([p.who,p.shot,p.ang,lenWord(p.h),p.imagePending?'생성 중':p.image?'이미지 있음':''].filter(Boolean).join(' · '))}</div></div>${CHEV}</button></li>`).join('')}
 
 function openCut(i){state.sel=i;render();renderCutList();openSheet('cut',cutSheet(i))}
 function cutSheet(i){const p=state.panels[i];const used=new Set(state.used.flatMap(u=>u.cuts.map(c=>c.id)));
   return `<h2 id="sheetTitle" tabindex="-1">${i+1}번 컷</h2><p class="sub">${esc(p.act)}</p>
+  <div class="field">
+    <div class="image-actions">
+      <button class="btn" data-act="generate-image" ${p.imagePending?'disabled':''}>${p.imagePending?'생성 중…':p.image?'이미지 재생성':'이미지 생성'}</button>
+      ${p.image?`<button class="btn sec" data-act="remove-image" ${p.imagePending?'disabled':''}>스케치로 돌아가기</button>`:''}
+    </div>
+    <p class="image-status" id="imageStatus" role="status">${esc(imageStatus(p))}</p>
+  </div>
   <div class="field"><div class="lb">샷</div><div class="pills">${SHOTS.map(s=>`<button class="pill" data-act="set" data-k="shot" data-v="${s}" aria-pressed="${s===p.shot}">${s}</button>`).join('')}</div></div>
   <div class="field"><div class="lb">앵글</div><div class="pills">${ANGLES.map(s=>`<button class="pill" data-act="set" data-k="ang" data-v="${s}" aria-pressed="${s===p.ang}">${s}</button>`).join('')}</div></div>
   <div class="field"><label class="lb" for="hr">컷 길이 <em id="hv">${lenWord(p.h)}</em></label><input id="hr" type="range" min="0.4" max="3" step="0.05" value="${p.h}"></div>
@@ -275,7 +299,7 @@ function cutSheet(i){const p=state.panels[i];const used=new Set(state.used.flatM
   ${CRE.length?`<div class="field" style="padding-bottom:12px"><div class="lb">창작 클로즈업에서 가져오기</div></div><div class="hscroll">${CRE.map((g,k)=>`<figure data-act="cre" data-g="${k}" class="cre" tabindex="0" role="button" aria-label="${esc(g.composition)} 적용"><img loading="lazy" src="${CRE_BASE}${esc(g.file)}" alt=""><figcaption>${esc(g.composition)}<br>${esc(g.composition===g.angle?g.shot:g.angle)}</figcaption></figure>`).join('')}</div>`:''}
   <div class="sheetcta"><button class="btn" data-act="close">완료</button></div>`}
 function refreshCut(){const sc=$('#sheet').scrollTop,hs=[...document.querySelectorAll('#sheet .hscroll')].map(h=>h.scrollLeft);$('#sheetBody').innerHTML=cutSheet(state.sel);$('#sheet').scrollTop=sc;document.querySelectorAll('#sheet .hscroll').forEach((h,i)=>h.scrollLeft=hs[i]||0);render();renderCutList()}
-$('#sheet').addEventListener('input',e=>{if(e.target.id!=='hr')return;state.panels[state.sel].h=+e.target.value;$('#hv').textContent=lenWord(+e.target.value);render();renderCutList()});
+$('#sheet').addEventListener('input',e=>{if(e.target.id!=='hr')return;state.panels[state.sel].h=+e.target.value;$('#hv').textContent=lenWord(+e.target.value);$('#imageStatus').textContent=imageStatus(state.panels[state.sel]);render();renderCutList()});
 $('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(g)openCut(+g.dataset.p)});
 
 // ---------- sheet ----------
@@ -285,7 +309,39 @@ $('#dim').onclick=closeSheet;
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();if((e.key==='Enter'||e.key===' ')&&e.target.matches('figure[data-act]')){e.preventDefault();e.target.click()}});
 
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
-function download(name,href){const a=document.createElement('a');a.href=href;a.download=name;a.click()}
+function download(name,blob){
+  const url=URL.createObjectURL(blob);
+  const link=Object.assign(document.createElement('a'),{href:url,download:name});
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function exportPng(){
+  const button=$('[data-act="png"]');
+  if(button)button.disabled=true;
+  const url=URL.createObjectURL(new Blob([state.svg],{type:'image/svg+xml'}));
+  try{
+    const image=new Image();
+    image.src=url;
+    await image.decode();
+    const scale=Math.min(2,Math.min(16000/image.height,Math.sqrt(16000000/(image.width*image.height))));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.round(image.width*scale);
+    canvas.height=Math.round(image.height*scale);
+    const context=canvas.getContext('2d');
+    context.drawImage(image,0,0,canvas.width,canvas.height);
+    const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!png)throw new Error();
+    download('rough.png',png);
+    if(button?.isConnected)closeSheet();
+    toast('PNG로 저장했어요');
+  }catch{
+    toast('PNG로 저장하지 못했어요. SVG 저장을 시도해주세요.');
+  }finally{
+    URL.revokeObjectURL(url);
+    if(button)button.disabled=false;
+  }
+}
+
 
 // ---------- actions ----------
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
@@ -296,12 +352,19 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   else if(a==='draw'){generate();go(3)}
   else if(a==='next'){state.pick=state.pick.map(v=>v+1);build();toast('다른 패턴으로 다시 그렸어요')}
   else if(a==='cut')openCut(+el.dataset.i)
+  else if(a==='generate-image')generatePanelImage(state.panels[state.sel],state.sel)
+  else if(a==='remove-image'){
+    const panel=state.panels[state.sel];
+    delete panel.image;
+    delete panel.imageError;
+    refreshCut();
+  }
   else if(a==='set'){state.panels[state.sel][el.dataset.k]=el.dataset.v;refreshCut()}
-  else if(a==='ref'||a==='cre'){const g=(a==='ref'?GAL:CRE)[+el.dataset.g];Object.assign(state.panels[state.sel],{shot:SHOTS.includes(g.shot)?g.shot:'중경',ang:ANGLES.includes(g.angle)?g.angle:'아이레벨',h:g.h_ratio});refreshCut();toast(a==='ref'?'컬러 러프의 구도를 입혔어요':'창작 클로즈업의 구도를 입혔어요')}
+  else if(a==='ref'||a==='cre'){const g=(a==='ref'?GAL:CRE)[+el.dataset.g];Object.assign(state.panels[state.sel],{shot:SHOTS.includes(g.shot)?g.shot:'중경',ang:ANGLES.includes(g.angle)?g.angle:'아이레벨',h:Math.min(3,Math.max(.4,g.h_ratio)),composition:g.composition||''});refreshCut();toast(a==='ref'?'컬러 러프의 구도를 입혔어요':'창작 클로즈업의 구도를 입혔어요')}
   else if(a==='close')closeSheet()
-  else if(a==='save')openSheet('save',`<h2 id="sheetTitle" tabindex="-1">어떻게 저장할까요?</h2><ul class="list"><li><button class="row" data-act="png"><div class="tx"><div class="t">PNG 이미지</div><div class="s">바로 보거나 공유하기 좋아요</div></div>${CHEV}</button></li><li><button class="row" data-act="svg"><div class="tx"><div class="t">SVG 벡터</div><div class="s">그림 툴에서 선을 고칠 수 있어요</div></div>${CHEV}</button></li></ul>`)
-  else if(a==='svg'){download('rough.svg',URL.createObjectURL(new Blob([state.svg],{type:'image/svg+xml'})));closeSheet();toast('SVG로 저장했어요')}
-  else if(a==='png'){const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.width*2;c.height=img.height*2;const g=c.getContext('2d');g.scale(2,2);g.fillStyle='#fff';g.fillRect(0,0,img.width,img.height);g.drawImage(img,0,0);download('rough.png',c.toDataURL('image/png'))};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(state.svg);closeSheet();toast('PNG로 저장했어요')}
+  else if(a==='save')openSheet('save',`<h2 id="sheetTitle" tabindex="-1">어떻게 저장할까요?</h2><ul class="list"><li><button class="row" data-act="png"><div class="tx"><div class="t">PNG 이미지</div><div class="s">바로 보거나 공유하기 좋아요</div></div>${CHEV}</button></li><li><button class="row" data-act="svg"><div class="tx"><div class="t">SVG 파일</div><div class="s">스케치와 생성 이미지를 함께 담아요</div></div>${CHEV}</button></li></ul>`)
+  else if(a==='svg'){download('rough.svg',new Blob([state.svg],{type:'image/svg+xml'}));closeSheet();toast('SVG로 저장했어요')}
+  else if(a==='png')exportPng()
 });
 
 // ---------- drawing ----------
@@ -324,15 +387,32 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   else if(p.shot==='클로즈업'){const r=Math.min(w,h)*.4;o+=head(x+w*.5+j(w*.15),y+h*.55,r)}
   else if(p.shot==='디테일'){const r=Math.min(w,h)*.35;o+=`<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${r*1.3}" ry="${r*.8}" stroke="${st}" stroke-width="3" fill="none"/>`+C(x+w/2,y+h/2,r*.35,3)}
   else{for(let i=0;i<20;i++){const a=i/20*Math.PI*2;o+=L(x+w/2+Math.cos(a)*w*.15,y+h/2+Math.sin(a)*h*.15,x+w/2+Math.cos(a)*w,y+h/2+Math.sin(a)*h,1)}o+=head(x+w/2,y+h/2,Math.min(w,h)*.2)}
-  if(p.said){const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;o+=`<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`}
   return o}
-function render(){let y=40,o='';const ws=W-60;
-  state.panels.forEach((p,i)=>{const h=Math.round(p.h*ws);const sel=i===state.sel;
-    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#3182f6':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${drawPanel(p,30,y,ws,h,i)}</g>`+
-      `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#3182f6':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text></g>`;
-    y+=h+Math.round(p.gap*ws)+16});
-  state.svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif">${o}</svg>`;
-  $('#preview').innerHTML=state.svg}
+function drawLettering(p,x,y,w){
+  if(!p.said)return '';
+  const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;
+  return `<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`;
+}
+function roughSvg(w,h,content){
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" font-family="Pretendard,system-ui,sans-serif">${content}</svg>`;
+}
+function render(){
+  let y=40,art='',guides='';
+  const x=30,w=W-2*x;
+  state.panels.forEach((p,i)=>{
+    const h=Math.round(p.h*w),selected=i===state.sel;
+    const picture=p.image
+      ? `<image href="${esc(p.image.src)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`
+      : drawPanel(p,x,y,w,h,i);
+    const frame=`<rect x="${x}" y="${y}" width="${w}" height="${h}"`;
+    art+=`<g data-p="${i}"><clipPath id="c${i}">${frame}/></clipPath><g clip-path="url(#c${i})">${picture}${drawLettering(p,x,y,w)}</g>${frame} fill="transparent" stroke="#222" stroke-width="3"/></g>`;
+    guides+=`<g data-p="${i}">${selected?`${frame} fill="none" stroke="#3182f6" stroke-width="6" pointer-events="none"/>`:''}<circle cx="52" cy="${y+22}" r="16" fill="${selected?'#3182f6':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text></g>`;
+    y+=h+Math.round(p.gap*w)+16;
+  });
+  const background='<rect width="100%" height="100%" fill="white"/>';
+  state.svg=roughSvg(W,y+24,background+art);
+  $('#preview').innerHTML=roughSvg(W,y+24,art+guides);
+}
 
 // ---------- references ----------
 const CRE_BASE='references/creative/green-midnight-closeups/';
@@ -343,6 +423,17 @@ function renderRefs(){if(CUTS===false){$('#refs').innerHTML='<p class="note">비
   $('#refs').innerHTML=state.used.map((p,i)=>`${state.used.length>1?`<div class="chunk" style="padding-bottom:8px">${i+1}묶음</div>`:''}<div class="hscroll">${p.cuts.filter(c=>c.t==='그림'&&CUTS[c.id]).map(c=>`<figure><img loading="lazy" src="../cuts/${CUTS[c.id]}" alt="${esc(c.id)}"><figcaption>${esc(c.shot)}<br>${esc(c.id)}</figcaption></figure>`).join('')}</div>`).join('')}
 
 // ---------- start ----------
+$('#loadExample').onclick=()=>{
+  $('#beats').value=[
+    '상담객 | 비 내리는 밤, 어두운 상담방 문을 열고 들어선다.',
+    '명경도령 | 거울을 닦던 은발의 여우 도령이 시선만 든다. "거기 앉아."',
+    '명경도령 | 손끝으로 오래된 청동 거울을 상담객 쪽으로 돌린다.',
+    '상담객 | 거울을 들여다보다 표정이 조금 풀린다.',
+    '명경도령 | 모른 척 시선을 피하며 따뜻한 찻잔을 밀어준다.',
+  ].join('\n');
+  $('#imageStyle').value='옛 한옥의 상담방. 먹빛과 낮은 청록 바탕에 등불의 호박색. 거친 펜선과 넓은 색면. 명경도령은 은발에 짙은 녹색 도포를 입은 성인 남성. 상담객은 검은 머리를 낮게 묶은 성인 여성.';
+  updateCount();
+};
 updateCount();renderCTA();
 fetch('patterns.json').then(r=>r.json()).then(d=>{PATS=d.patterns.filter(p=>p.cuts.some(c=>c.t==='그림'));renderCTA()}).catch(()=>toast('패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요'));
 </script>
