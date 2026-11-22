@@ -318,6 +318,11 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .reader [data-letter]:active{cursor:grabbing}
 .reader [data-letter]:focus-visible{outline:2px solid #2d71f7}
 .reader .cut-selected{outline:3px solid #2d71f7;outline-offset:-3px}
+.reader polygon.cut-selected{outline:none;stroke:#2d71f7;stroke-width:4}
+.reader .frame-handles{display:none}.reader .frame-handles.sel{display:inline}
+.frame-handles rect,.frame-handles circle{fill:#fff;stroke:#2d71f7;stroke-width:3;touch-action:none}
+.frame-handles [data-fh=t],.frame-handles [data-fh=b]{cursor:ns-resize}.frame-handles [data-fh=l],.frame-handles [data-fh=r]{cursor:ew-resize}
+.frame-handles circle{cursor:move}.frame-handles :hover{fill:#2d71f7}
 .reader-top{max-width:720px;margin:0 auto;padding:32px 16px 8px}
 .h1sub{margin-left:8px;font-size:15px;font-weight:600;color:var(--t2);vertical-align:middle}
 .wtitle{display:block;width:100%;border:0;background:none;font-size:30px;font-weight:800;letter-spacing:-.02em;padding:0;outline:none}
@@ -787,9 +792,10 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
         <div class="prop col"><span>아래 전환 질감</span><div class="bg-presets" id="wbgpresets" role="group" aria-label="컷 아래 전환 질감"></div></div>
         <div class="prop"><span></span><button class="btn sm" id="wbgreset">배경 초기화</button></div>
       </div>
+      <div class="prop"><span>프레임</span><button class="btn sm" id="wframereset">크기·모양 초기화</button></div>
       <div class="prop"><span>식자</span><button class="btn sm" id="wletterreset">이 컷 식자 배치·스타일 초기화</button></div>
     </section>
-    <small class="insp-foot">컷 사이 손잡이를 위아래로 끌면 간격이 바뀌고, 두 번 클릭하면 기본 간격으로 돌아가요.</small>
+    <small class="insp-foot">컷을 고르면 테두리에 손잡이가 생겨요. 변을 끌면 크기, 꼭짓점을 끌면 칸 모양(사선)이 바뀌어요. 컷 사이 손잡이로 간격을 바꾸고, 두 번 클릭하면 기본 간격으로 돌아가요.</small>
   </aside>
 </div>
 </div>
@@ -1241,19 +1247,28 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
 function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false}={}){let y=40,o='',gaps='',backgrounds='';const multi=panels.length>1;
-  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi),bx=B.x,bw=B.w;const h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);const on=i===sel;const u=im?null:underlay(p);
+  let prev=null,handles='';
+  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
+    // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
+    if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const u=im?null:underlay(p);
     // 코드로 그린 러프 그림은 쓰지 않음: 등록 이미지 → 원본 컷 레퍼런스(그림 영역만 잘라) → 빈 칸에 샷·앵글 표시
     let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:'';
     if(u){const c=u.crop&&u.w?u.crop:null;const vb=c?`${(c[0]*u.w).toFixed(0)} ${(c[1]*u.h).toFixed(0)} ${((c[2]-c[0])*u.w).toFixed(0)} ${((c[3]-c[1])*u.h).toFixed(0)}`:null;
       art=c?`<svg x="${bx}" y="${y}" width="${bw}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${u.src}" width="${u.w}" height="${u.h}" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/></svg>`:`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`}
     else if(!im)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;
     // 원본 칸이 사선이면 칸 모양도 그 꼭짓점대로(그림 영역 상자 기준으로 옮김)
-    const poly=u&&u.quad&&u.crop?u.quad.map(([qx,qy])=>[(bx+(qx-u.crop[0])/(u.crop[2]-u.crop[0])*bw).toFixed(1),(y+(qy-u.crop[1])/(u.crop[3]-u.crop[1])*h).toFixed(1)].join(',')).join(' '):null;
+    const box=[[bx,y],[bx+bw,y],[bx+bw,y+h],[bx,y+h]];
+    let pts=u&&u.quad&&u.crop?u.quad.map(([qx,qy])=>[bx+(qx-u.crop[0])/(u.crop[2]-u.crop[0])*bw,y+(qy-u.crop[1])/(u.crop[3]-u.crop[1])*h]):null;
+    // 편집 화면에서 꼭짓점을 끌어 바꾼 칸 모양(상자 모서리 기준 오프셋)
+    if(Array.isArray(edit?.quad)&&edit.quad.length===4)pts=box.map(([cx,cy],k)=>[cx+edit.quad[k][0],cy+edit.quad[k][1]]);
+    const fp=pts||(interactive?box:null),poly=fp?fp.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' '):null;
+    const fdata=interactive?` data-frame='${JSON.stringify({x:bx,y,w:bw,h,q:(pts||box).map((q,k)=>[Math.round(q[0]-box[k][0]),Math.round(q[1]-box[k][1])])})}'${prev?` data-prev="${prev[0]}:${prev[1]}"`:''}`:'';
     const c=!clean&&!im&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame?`stroke="#222" stroke-width="3"`:'stroke="none"';
-    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g clip-path="url(#${pre}${i})">${art}</g>`+
+    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g clip-path="url(#${pre}${i})">${art}</g>`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
       (clean?'':letterSVG(rough?{...p,dialogs:[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame},i,edit?.letters,interactive))+`</g>`;
+    if(interactive)handles+=frameHandles(pts||box,slot,i);
     const base=defaultPageGap(p),size=edit?.gap??base;
     y+=h;
     if(edits){
@@ -1262,10 +1277,15 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
       backgrounds+=`<g data-bg-panel="${i}"><rect y="${i?y-h:0}" width="${W}" height="${h+(i?0:40)}" fill="${background}"/>${transitionSVG(background,end,edit?.transition,`${pre}bg-${i}`,y,size)}</g>`;
     }
     if(interactive&&i<panels.length-1)gaps+=gapMarkup(y,size,base,slot,i);
-    y+=size;
+    prev=[slot,size];y+=size;
   });
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${o}${gaps}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${o}${gaps}${handles}</svg>`;
 }
+// 칸 프레임 손잡이: 네 변(크기) + 네 꼭짓점(모양). 선택한 컷에만 보임
+function frameHandles(pts,slot,i){const E=[['t',0,1],['r',1,2],['b',2,3],['l',3,0]];
+  return `<g class="frame-handles" data-fh-for="${slot}" data-p="${i}">`+E.map(([k,a,b])=>{const x=(pts[a][0]+pts[b][0])/2,y=(pts[a][1]+pts[b][1])/2,hz=k==='t'||k==='b';
+    return `<rect data-fh="${k}" x="${(x-(hz?22:7)).toFixed(1)}" y="${(y-(hz?7:22)).toFixed(1)}" width="${hz?44:14}" height="${hz?14:44}" rx="7"><title>${hz?'위아래로 끌어 높이':'좌우로 끌어 폭'} 조절</title></rect>`}).join('')+
+    ['tl','tr','br','bl'].map((k,n)=>`<circle data-fh="${k}" cx="${pts[n][0].toFixed(1)}" cy="${pts[n][1].toFixed(1)}" r="10"><title>끌어서 칸 모양(사선) 바꾸기</title></circle>`).join('')+`</g>`}
 function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false,{rough:true});$('#preview').innerHTML=state.svg}
 
 
@@ -1764,7 +1784,8 @@ function selectPageCut(group){
   pageCut.value=pageSelection;
   refreshBackgroundTools();
   pageReader.querySelector('.cut-selected')?.classList.remove('cut-selected');
-  group.querySelector('.page-frame').classList.add('cut-selected');
+  pageReader.querySelectorAll('.frame-handles.sel').forEach(h=>h.classList.remove('sel'));
+  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');
 }
 const backgroundColor=$('#wbgcolor'),backgroundPresets=$('#wbgpresets');
 backgroundPresets.innerHTML=PAGE_BACKGROUNDS.map((preset,i)=>{
@@ -1933,7 +1954,7 @@ pageReader.addEventListener('focusin',e=>{
 });
 function gapLayout(gap){
   const svg=gap.ownerSVGElement,index=Number(gap.dataset.pageGap);
-  const following=[...svg.querySelectorAll('[data-slot-index],[data-page-gap],[data-bg-panel]')]
+  const following=[...svg.querySelectorAll('[data-slot-index],[data-page-gap],[data-bg-panel],[data-fh-for]')]
     .filter(el=>Number(el.dataset.p??el.dataset.pageGap??el.dataset.bgPanel)>index)
     .map(el=>[el,Number(el.dataset.shift||0)]);
   const transition=svg.querySelector(`[data-bg-panel="${index}"] > [data-page-transition]`);
@@ -1977,12 +1998,14 @@ pageReader.addEventListener('dblclick',e=>{
   saveGap(layout,true);
 });
 pageReader.addEventListener('pointerdown',e=>{
-  if(!pageEditing||e.button!==0||pageDrag||gapDrag||tailDrag)return;
+  if(!pageEditing||e.button!==0||pageDrag||gapDrag||tailDrag||frameDrag)return;
   const gap=e.target.closest('[data-page-gap]');
   if(gap){
     if(e.pointerType!=='touch'||e.target.closest('.gap-grip'))startGapDrag(gap,e);
     return;
   }
+  const fh=e.target.closest('[data-fh]');
+  if(fh){const hs=fh.closest('[data-fh-for]');startFrameDrag(hs.ownerSVGElement.querySelector(`[data-slot-index="${hs.dataset.fhFor}"]`),fh,e);return}
   const group=e.target.closest('[data-slot-index]');
   if(!group)return;
   selectPageCut(group);
@@ -2002,6 +2025,7 @@ pageReader.addEventListener('pointerdown',e=>{
   pageReader.setPointerCapture(e.pointerId);
 });
 pageReader.addEventListener('pointermove',e=>{
+  if(frameDrag?.id===e.pointerId){moveFrame(e);return}
   if(tailDrag?.id===e.pointerId){
     const {art,meta,start,end}=tailDrag,point=pagePoint(art,e);
     tailDrag.offset={x:Math.round(end.x+point.x-start.x-meta.cx),y:Math.round(end.y+point.y-start.y-meta.cy)};
@@ -2020,6 +2044,7 @@ pageReader.addEventListener('pointermove',e=>{
   moveLetter(letter,pageDrag.position);
 });
 pageReader.addEventListener('pointerup',e=>{
+  if(frameDrag?.id===e.pointerId){saveFrame();return}
   if(tailDrag?.id===e.pointerId){
     if(tailDrag.offset)saveLetter(tailDrag.letter,{tail:tailDrag.offset});
     tailDrag=null;
@@ -2035,6 +2060,7 @@ pageReader.addEventListener('pointerup',e=>{
   pageDrag=null;
 });
 pageReader.addEventListener('lostpointercapture',e=>{
+  if(frameDrag?.id===e.pointerId){showFrame(frameDrag.group,frameDrag.f0);frameDrag=null;return}
   if(tailDrag?.id===e.pointerId){
     showTail(tailDrag.art,tailDrag.meta,tailDrag.initial);
     tailDrag=null;
@@ -2078,6 +2104,33 @@ pageReader.addEventListener('keydown',e=>{
   const next={x:pos.x+n*step[0],y:pos.y+n*step[1]};
   moveLetter(letter,next);saveLetter(letter,next);
 });
+// ---------- 칸 프레임 끌기: 변 = 크기, 꼭짓점 = 모양 ----------
+let frameDrag=null;
+const framePts=f=>[[f.x,f.y],[f.x+f.w,f.y],[f.x+f.w,f.y+f.h],[f.x,f.y+f.h]].map((c,k)=>[c[0]+f.q[k][0],c[1]+f.q[k][1]]);
+function showFrame(group,f){const pts=framePts(f),str=pts.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' ');
+  group.querySelector('.page-frame')?.setAttribute('points',str);group.querySelector('clipPath polygon')?.setAttribute('points',str);
+  const old=handlesOf(group);if(old){const sh=old.getAttribute('transform');old.outerHTML=frameHandles(pts,group.dataset.slotIndex,group.dataset.p);const nw=handlesOf(group);nw.classList.add('sel');if(sh)nw.setAttribute('transform',sh)}}
+function handlesOf(group){return group.ownerSVGElement.querySelector(`[data-fh-for="${group.dataset.slotIndex}"]`)}
+function startFrameDrag(group,fh,e){e.preventDefault();e.stopPropagation();selectPageCut(group);selectLetter(null);
+  const f0=JSON.parse(group.dataset.frame);
+  frameDrag={group,k:fh.dataset.fh,f0,f:structuredClone(f0),id:e.pointerId,start:pagePoint(group.ownerSVGElement,e),moved:false};
+  pageReader.setPointerCapture(e.pointerId)}
+function moveFrame(e){const d=frameDrag,pt=pagePoint(d.group.ownerSVGElement,e),dx=pt.x-d.start.x,dy=pt.y-d.start.y,f0=d.f0,f=structuredClone(f0),MINW=80,MINH=60;
+  if(d.k==='l'){f.x=Math.max(0,Math.min(f0.x+f0.w-MINW,f0.x+dx));f.w=f0.x+f0.w-f.x}
+  else if(d.k==='r')f.w=Math.max(MINW,Math.min(W-f0.x,f0.w+dx));
+  else if(d.k==='b')f.h=Math.max(MINH,f0.h+dy);
+  else if(d.k==='t'){const lim=d.group.dataset.prev?-Number(d.group.dataset.prev.split(':')[1]):-f0.h;const ddy=Math.max(lim,Math.min(f0.h-MINH,dy));f.y=f0.y+ddy;f.h=f0.h-ddy}
+  else{const n=['tl','tr','br','bl'].indexOf(d.k),c=[[f0.x,f0.y],[f0.x+f0.w,f0.y],[f0.x+f0.w,f0.y+f0.h],[f0.x,f0.y+f0.h]][n];
+    const ax=Math.max(0,Math.min(W,c[0]+f0.q[n][0]+dx)),ay=c[1]+f0.q[n][1]+dy;f.q[n]=[Math.round(ax-c[0]),Math.round(ay-c[1])]}
+  d.f=f;d.moved=Math.abs(dx)+Math.abs(dy)>1;showFrame(d.group,f)}
+function saveFrame(){const d=frameDrag;frameDrag=null;if(!d.moved)return;const {f,f0,k,group}=d;
+  const key=pageKey(group),scene=group.closest('section').dataset.pageScene,set=pageSettings(true,key);
+  set.frame={x:Math.round(f.x),w:Math.round(f.w),h:Math.round(f.h)};
+  if(k.length===2||Array.isArray(set.quad))set.quad=f.q.map(q=>q.map(Math.round));
+  // 윗변을 끌면 바로 위 칸과의 간격을 그만큼 줄이거나 늘려 아랫변은 그대로
+  if(k==='t'&&group.dataset.prev){const [ps,size]=group.dataset.prev.split(':').map(Number);pageSettings(true,scene+':'+ps).gap=clampGap(size+(f.y-f0.y))}
+  saveScenes();renderWebtoon()}
+$('#wframereset').addEventListener('click',()=>{if(!pageSelection)return;const set=pageSettings();if(set){delete set.frame;delete set.quad}saveScenes();renderWebtoon()});
 function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
 async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 만드는 중');
   const items=[];for(let i=0;i<SCENES.length;i++){const ps=scenePanels(i);if(!ps.length)continue;const art=sceneArt(i,ps,`x${i}_`);
