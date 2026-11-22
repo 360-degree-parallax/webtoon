@@ -189,7 +189,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scside{position:sticky;top:156px;max-height:calc(100vh - 156px);min-height:calc(100vh - 156px);overflow:auto;padding:16px;border-left:1px solid var(--line);background:var(--bg)}
 .scside .refsum{gap:6px;font-size:13px}.scside .refsum .btn{display:none}
 .scside .bgcards .slot{width:120px}.scside .bgcards .drop{width:120px;height:80px}
-.dbpair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px}.dbpair figure{margin:0}.dbpair img{width:100%;display:block;border:1px solid var(--line);border-radius:6px}.dbpair figcaption{font-size:11px;color:var(--t3);margin-top:4px}
+.dbpair{display:grid;grid-template-columns:1fr;gap:8px;margin:0 0 8px}.dbpair figure{margin:0}.dbpair img{width:100%;display:block;border:1px solid var(--line);border-radius:6px}.dbpair figcaption{font-size:11px;color:var(--t3);margin-top:4px}
 .dbmeta{font-size:12px;color:var(--t2);margin:0 0 12px}
 .insp-note{margin:0;font-size:12px;color:var(--t3);line-height:1.5}
 .insp-h .link{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:0;text-decoration:none;opacity:.8}.insp-h .link:hover{color:var(--t1);opacity:1;text-decoration:underline}
@@ -831,7 +831,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script>
 const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const CUT_BASE='cuts/',CLEAN_BASE='cuts-clean/'; // 원본(말풍선 있음) / 같은 이름의 말풍선 제거본(러프용)
+const CUT_BASE='cuts/'; // 네이버 원본 컷 전체(권리자 허락, 비상업 공개)
 const LEN=[['짧게',.6],['보통',1],['길게',1.5],['아주 길게',2.2]];
 const lenWord=h=>h<.7?'짧게':h<1.2?'보통':h<2?'길게':'아주 길게';
 const NARR={'끝 정점':'마지막 컷에서 터지는 장면','중간 정점':'가운데서 터지고 가라앉는 장면','정점 선행':'처음부터 터지고 수습하는 장면','정점 연속':'계속 몰아치는 장면','무정점':'큰 고비 없이 흐르는 장면'};
@@ -2290,7 +2290,7 @@ function renderDBTable(){const t=DB[dbSheet],c=t.columns,rows=dbRows();const sho
     return `<tr data-i="${i}"${i===dbSel?' class="on"':''}>${showImg?`<td>${DBM[id]?`<img loading="lazy" src="${DBBASE}${DBM[id]}" alt="">`:''}</td>`:''}${r.map((v,k)=>cell(v,c[k])).join('')}</tr>`}).join('')}</tbody></table>`+(rows.length>dbLimit?`<button class="more" data-act="dbmore">${rows.length-dbLimit}행 더 보기</button>`:'')}
 function renderDBSide(i){const t=DB[dbSheet],c=t.columns,r=t.rows[i];const id=dbImgId(dbSheet,c,r);
   const cm=CUTMETA[id],FIT={ok:'그림 위주 · 레퍼런스로 씀',partial:'말풍선 위주·그림이 덜 차지 · 레퍼런스 제외',multi:'여러 칸 섞임·잘림 · 레퍼런스 제외'};
-  $('#dbside').innerHTML=(cm?`<div class="dbpair"><figure><img src="${CUT_BASE}${cm.file}" alt="${esc(id)} 원본"><figcaption>원본 · cuts/</figcaption></figure><figure><img src="${CLEAN_BASE}${cm.clean||cm.file}" alt="${esc(id)} 말풍선 제거본"><figcaption>말풍선 제거본 · cuts-clean/${cm.balloons_removed?` (${cm.balloons_removed}개 지움)`:' (지운 것 없음)'}</figcaption></figure></div><p class="dbmeta">칸 모양 <b>${cm.frame==='slant'?'사선':'사각'}</b> · ${FIT[cm.fit]||''}</p>`:DBM[id]?`<img src="${DBBASE}${DBM[id]}" alt="${esc(id)}">`:'')+`<dl>${c.map((h,k)=>r[k]===null||r[k]===undefined||r[k]===''?'':`<dt>${esc(h)}</dt><dd>${esc(r[k])}</dd>`).join('')}</dl>`}
+  $('#dbside').innerHTML=(cm?`<div class="dbpair"><figure><img src="${CUT_BASE}${cm.file}" alt="${esc(id)} 원본"><figcaption>원본 · cuts/</figcaption></figure></div><p class="dbmeta">칸 모양 <b>${cm.frame==='slant'?'사선':'사각'}</b> · ${FIT[cm.fit]||''}</p>`:DBM[id]?`<img src="${DBBASE}${DBM[id]}" alt="${esc(id)}">`:'')+`<dl>${c.map((h,k)=>r[k]===null||r[k]===undefined||r[k]===''?'':`<dt>${esc(h)}</dt><dd>${esc(r[k])}</dd>`).join('')}</dl>`}
 $('#dbtabs').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b)return;dbSheet=b.dataset.s;dbLimit=200;dbSel=-1;dbF={work:dbF.work,ep:'',q:''};renderDB();$('#dbside').innerHTML='<p class="empty" style="padding:0">행을 누르면 자세히 보여요</p>'});
 $('#dbfilter').addEventListener('input',e=>{const f=e.target.dataset.f;if(!f)return;dbF[f]=e.target.value;if(f==='work')dbF.ep='';dbLimit=200;if(f==='q'){clearTimeout(renderDB.t);renderDB.t=setTimeout(renderDBTable,200)}else renderDB()});
 $('#dbscroll').addEventListener('click',e=>{const tr=e.target.closest('tr[data-i]');if(tr){dbSel=+tr.dataset.i;document.querySelectorAll('table.db tr.on').forEach(x=>x.classList.remove('on'));tr.classList.add('on');renderDBSide(dbSel)}
@@ -2303,7 +2303,7 @@ Promise.all([
 ]).then(([pt,cuts])=>{
   PATS=pt.patterns;
   // 그림 위주 컷만 레퍼런스로(말풍선 위주·덜 차지·여러 칸 섞인 컷은 자동 판정으로 제외)
-  REFS=cuts.items.filter(g=>g.fit==='ok').map(g=>({...g,kind:'cut',src:CLEAN_BASE+(g.clean||g.file),orig:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));
+  REFS=cuts.items.filter(g=>g.fit==='ok').map(g=>({...g,kind:'cut',src:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));
   compute(true)}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 </script>
 </body>
