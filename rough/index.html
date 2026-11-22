@@ -324,9 +324,9 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .frame-handles [data-fh=t],.frame-handles [data-fh=b]{cursor:ns-resize}.frame-handles [data-fh=l],.frame-handles [data-fh=r]{cursor:ew-resize}
 .frame-handles circle{cursor:move}
 .reader [data-slot-index].sel [data-art]{cursor:grab}.reader [data-slot-index].sel [data-art]:active{cursor:grabbing}
-.zoomtip{position:fixed;left:0;top:0;z-index:60;pointer-events:none;white-space:nowrap;padding:7px 11px;border-radius:10px;background:var(--blue);color:#fff;text-align:center;font-size:12.5px;font-weight:500;line-height:1.4;box-shadow:0 4px 14px rgba(45,113,247,.32)}
+.zoomtip{position:fixed;left:0;top:0;z-index:60;pointer-events:none;white-space:nowrap;padding:7px 11px;border-radius:10px;background:#1f2329;color:#fff;font-size:12.5px;font-weight:500;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .zoomtip::before{content:"";position:absolute;left:10px;top:-5px;width:10px;height:10px;background:inherit;transform:rotate(45deg);border-radius:2px}
-.zoomtip kbd{font:inherit;font-weight:700;padding:0 5px;border-radius:4px;background:rgba(255,255,255,.24)}
+.zoomtip kbd{font:inherit;font-weight:700;padding:0 5px;border-radius:4px;background:rgba(255,255,255,.16)}
 .zoomtip[hidden]{display:none}
 .zoomrow{display:flex;align-items:center;gap:8px;min-width:0}.zoomrow input{flex:1;min-width:80px}.zoomrow b{font-size:12px;font-weight:600;width:40px;text-align:right;color:var(--t2)}.frame-handles :hover{fill:#2d71f7}
 .reader-top{max-width:720px;margin:0 auto;padding:32px 16px 8px}
@@ -2167,7 +2167,7 @@ pageReader.addEventListener('wheel',e=>{if(!pageEditing||!(e.ctrlKey||e.metaKey)
 // 확대할 수 있는 순간(고른 컷의 그림 위에 마우스가 있을 때) 커서 옆에 안내 말풍선
 const zoomTip=document.createElement('div');zoomTip.className='zoomtip';zoomTip.setAttribute('role','tooltip');zoomTip.hidden=true;
 const MODK=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent)?'⌘':'Ctrl';
-zoomTip.innerHTML=`<kbd>${MODK}</kbd> + 휠로 이미지를<br>확대하거나 축소할 수 있어요`;document.body.appendChild(zoomTip);
+zoomTip.innerHTML=`<kbd>${MODK}</kbd> + 휠로 이미지를 확대하거나 축소할 수 있어요`;document.body.appendChild(zoomTip);
 let tipQuiet=false;
 function hideTip(){zoomTip.hidden=true}
 pageReader.addEventListener('pointermove',e=>{
