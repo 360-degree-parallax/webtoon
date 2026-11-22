@@ -265,6 +265,54 @@
    "role": "반응",
    "emotion": "설렘",
    "group": "GM-07-G02"
+  },
+  {
+   "file": "02-medium/GM-06-015.png",
+   "source_cut": "GM-06-015",
+   "frame": "세로 보통",
+   "h_ratio": 1.0391,
+   "type": "그림",
+   "shot": "클로즈업",
+   "angle": "아이레벨",
+   "role": "반응",
+   "emotion": "당황",
+   "group": "GM-06-G03"
+  },
+  {
+   "file": "02-medium/GM-06-016.png",
+   "source_cut": "GM-06-016",
+   "frame": "세로 보통",
+   "h_ratio": 1.2072,
+   "type": "그림",
+   "shot": "전경",
+   "angle": "아이레벨",
+   "role": "전개",
+   "emotion": "긴장",
+   "group": "GM-06-G03"
+  },
+  {
+   "file": "01-low/GM-06-017.png",
+   "source_cut": "GM-06-017",
+   "frame": "가로형",
+   "h_ratio": 0.6101,
+   "type": "그림",
+   "shot": "중경",
+   "angle": "아이레벨",
+   "role": "전개",
+   "emotion": "냉담",
+   "group": "GM-06-G03"
+  },
+  {
+   "file": "01-low/GM-06-018.png",
+   "source_cut": "GM-06-018",
+   "frame": "가로형",
+   "h_ratio": 0.8348,
+   "type": "그림",
+   "shot": "전경",
+   "angle": "아이레벨",
+   "role": "전개",
+   "emotion": "긴장",
+   "group": "GM-06-G04"
   }
  ]
 }
