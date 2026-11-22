@@ -453,7 +453,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <section>
     <div class="sh"><h2>컷</h2><span id="count"></span></div>
     <input class="sctitle" id="sctitle" placeholder="씬 제목 (예: 복도에서 다시 만남)" aria-label="씬 제목">
-    <div class="guide2"><code>[식자]</code> 내레이션 · <code>-툭-</code> 효과음 · <code>@인물 "(감정·연기)대사"</code> 대사 · 나머지는 행동 묘사 · <code>@</code>를 치면 인물 목록</div>
+    <div class="guide2"><code>[식자]</code> 내레이션 · <code>-툭-</code> 효과음 메모 · <code>@인물 "(감정·연기)대사"</code> 대사 · 나머지는 행동 묘사 · <code>@</code>를 치면 인물 목록</div>
     <ol class="cutlist" id="cutlist"></ol>
     <div class="toolbar" style="margin-top:10px"><button class="btn" data-act="addcut">+ 컷 추가</button><button class="btn" data-act="prose">줄글 붙여넣기</button><span class="grow"></span><button class="link" data-act="clear">모두 지우기</button></div>
     <dialog id="pdlg2" aria-labelledby="pd2t"><h3 id="pd2t">줄글 붙여넣기</h3><p>문장마다 컷으로 나눠 컷 칸에 채워요. 지금 컷은 바뀌어요.</p><textarea id="prosein" style="min-height:220px" placeholder="@에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다."></textarea><div class="acts"><button class="btn" data-act="prosecancel">닫기</button><button class="btn dark" data-act="prosego">컷으로 나누기</button></div></dialog>
@@ -736,11 +736,10 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   else{for(let i=0;i<20;i++){const a=i/20*Math.PI*2;o+=L(x+w/2+Math.cos(a)*w*.15,y+h/2+Math.sin(a)*h*.15,x+w/2+Math.cos(a)*w,y+h/2+Math.sin(a)*h,1)}o+=head(x+w/2,y+h/2,Math.min(w,h)*.2)}
   if(p.said){const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;o+=`<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`}
   return o}
-// ---------- 식자·말풍선·효과음 (녹빛 레퍼런스 54장 분석 기준) ----------
+// ---------- 식자·말풍선 (녹빛 레퍼런스 54장 분석 기준) ----------
 // 말풍선: 크림색 바탕 + 손그림 느낌 잉크선, 패널 위쪽, 테두리를 걸치기도 함. 꼬리는 가늘고 길게 화자 쪽.
 // 종류: 보통(타원) / 떨림(울퉁불퉁) / 외침(뾰족) / 생각(구름 + 작은 원) / 작게(작은 타원, 작은 글자)
 // 식자: 장면 첫머리·시간 표시는 장식 상자(초록 계열 + 모서리 잎), 일반은 반투명 사각 상자, 여운 컷은 글자만. 아래 가운데.
-// 효과음: 큰 소리는 붉은 붓글씨처럼 크게 위쪽, 작은 소리는 진한 잉크로 작게 동작 옆 + 짧은 움직임 선. 기울임.
 const LT={ink:'#2a2622',paper:'#fbf8f1',text:'#24201c'};
 const rngL=seed=>{let h=2166136261;for(const ch of String(seed))h=Math.imul(h^ch.charCodeAt(0),16777619);return()=>((h=Math.imul(h^(h>>>15),2246822507)^Math.imul(h^(h>>>13),3266489909))>>>0)/4294967296};
 function wrapKo(t,max){const words=String(t).trim().split(/\s+/);const out=[];let cur='';for(const w of words){if(!cur)cur=w;else if((cur+' '+w).length<=max)cur+=' '+w;else{out.push(cur);cur=w}}if(cur)out.push(cur);
@@ -916,13 +915,6 @@ function captionSVG(t,p,box,first,edit){const k=box.w/630,fs=19*k,lines=wrapKo(t
     return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#86c99c" stroke="#2f5a3a" stroke-width="${2*k}"/><rect x="${x+4*k}" y="${y+4*k}" width="${w-8*k}" height="${h-8*k}" fill="none" stroke="#2f5a3a" stroke-width="${1*k}" opacity=".6"/>`+
       leaf(x,y,1)+leaf(x+w,y,-1)+leaf(x,y+h,1)+leaf(x+w,y+h,-1)+txt('#1d2a20')}
   return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(196,182,170,.93)" stroke="#3a332e" stroke-width="${1.6*k}"/>`+txt('#2a241f')}
-const LOUD=/쾅|쨍그랑|와장창|퍽|콰|쿵|펑|탕|빠직|으악|꺄/;
-function sfxSVG(t,p,box,n,R){const k=box.w/630,loud=LOUD.test(t)||p.i>=3;
-  if(loud){const fs=Math.min(box.w*.9/Math.max(1,t.length),box.h*.22),x=box.x+box.w*.5,y=box.y+fs*1.05+n*fs;
-    return`<text x="0" y="0" font-size="${fs.toFixed(1)}" font-weight="900" text-anchor="middle" fill="#a8232b" stroke="#fff" stroke-width="${5*k}" paint-order="stroke" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(-10) skewX(-12)">${esc(t)}</text>`}
-  const fs=Math.max(36*k,Math.min(box.w*.12,box.h*.16)),x=box.x+box.w*(p.side==='left'?.66:.34)+n*fs*.8,y=box.y+box.h*.7-n*fs*.9;
-  const mv=[0,1].map(m=>`<path d="M${(x-fs*1.1-m*7*k).toFixed(1)} ${(y-fs*(.9-m*.35)).toFixed(1)} l${(-9*k).toFixed(1)} ${(-8*k).toFixed(1)}" stroke="${LT.ink}" stroke-width="${2*k}" stroke-linecap="round"/>`).join('');
-  return mv+`<text x="0" y="0" font-size="${fs.toFixed(1)}" font-weight="900" text-anchor="middle" fill="#2b241f" stroke="#fff" stroke-width="${4*k}" paint-order="stroke" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(-14) skewX(-10)">${esc(t)}</text>`}
 function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);let o='';
   const add=(key,label,svg)=>{
     const pos=positions?.[key];
@@ -931,7 +923,6 @@ function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);l
     o+=move||access?`<g${move}${access}>${svg}</g>`:svg;
   };
   if(p.caption)add('caption','나레이션 '+p.caption,captionSVG(p.caption,p,box,idx===0,positions?.caption));
-  (p.sfx||[]).slice(0,2).forEach((x,n)=>add('effect-'+n,'효과음 '+x,sfxSVG(x,p,box,n,R)));
   const ds=(p.dialogs||[]).filter(d=>d.text).slice(0,3);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
   ds.forEach((d,n)=>{
     const key='dialog-'+n;
