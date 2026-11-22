@@ -148,6 +148,48 @@ dialog p{margin:0 0 12px;font-size:13px;color:var(--t2)}
 dialog textarea{min-height:360px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.6}
 dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 
+/* flow */
+.topnav button b{display:inline-grid;place-items:center;width:20px;height:20px;margin-right:6px;border-radius:50%;background:var(--surface);font-size:12px;color:var(--t2)}
+.topnav button[aria-selected=true] b{background:var(--dark);color:var(--ondark)}
+.wgrid{display:grid;grid-template-columns:240px minmax(0,780px);gap:40px;max-width:1120px;margin:0 auto;padding:0 40px}
+.scenes{position:sticky;top:104px;align-self:start;padding:32px 0;max-height:calc(100vh - 104px);overflow:auto}
+.scenes ol{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:4px}
+.scenes li button{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;width:100%;padding:10px;border-radius:8px;text-align:left;font-size:14px}
+.scenes li button:hover{background:var(--hover)}
+.scenes li button[aria-current=true]{background:var(--blue-soft)}
+.scenes li .sn{width:24px;height:24px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:12px;font-weight:700}
+.scenes li button[aria-current=true] .sn{background:var(--dark);color:var(--ondark);border-color:transparent}
+.scenes li .st{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scenes li small{color:var(--t2);font-size:12px}
+.scenes li .tag3{font-size:11px;font-weight:700;color:var(--blue)}
+.sctitle{display:block;width:100%;height:42px;margin:0 0 12px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);font-size:16px;font-weight:600}
+.next{display:flex;gap:8px;align-items:center;margin-top:36px;padding-top:20px;border-top:1px solid var(--line)}
+.btn.big{height:48px;padding:0 22px;font-size:16px}
+.scbar{display:flex;align-items:center;gap:6px;margin-bottom:14px;font-size:14px;color:var(--t2)}
+.scbar b{color:var(--t1);font-weight:700}
+.scbar .ib{width:32px;height:32px}
+.scbar select{height:32px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);padding:0 8px;font-size:14px;font-weight:600;max-width:60vw}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+.choice{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:24px;border:1px solid var(--line2);border-radius:12px;text-align:left;background:var(--bg);transition:border-color .12s,background .12s}
+.choice:hover{border-color:var(--t1)}
+.choice[aria-pressed=true]{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue);background:var(--blue-soft)}
+.choice .ck{display:grid;place-items:center;width:44px;height:44px;border-radius:10px;background:var(--dark);color:var(--ondark);font-weight:800}
+.choice b{font-size:20px}
+.choice span{font-size:14px;color:var(--t2);line-height:1.6}
+.choice em{font-style:normal;font-size:13px;font-weight:600;color:var(--blue);margin-top:auto}
+#v-webtoon{background:var(--surface);min-height:calc(100vh - 104px)}
+.reader-top{max-width:720px;margin:0 auto;padding:32px 16px 8px}
+.wtitle{display:block;width:100%;border:0;background:none;font-size:30px;font-weight:800;letter-spacing:-.02em;padding:0;outline:none}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.toc a{padding:5px 10px;border-radius:14px;background:var(--bg);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--t1);text-decoration:none}
+.reader{max-width:720px;margin:12px auto 80px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.reader .scn{padding:28px 0 6px;text-align:center;font-size:13px;font-weight:600;color:#8a8f98;display:flex;align-items:center;gap:12px}
+.reader .scn::before,.reader .scn::after{content:"";flex:1;height:1px;background:#e5e7eb}
+.reader .scn span{white-space:nowrap}
+.reader svg,.reader img{display:block;width:100%;height:auto}
+.reader .empty{padding:60px 20px;text-align:center;color:#8a8f98}
+@media(max-width:900px){.wgrid{grid-template-columns:1fr;padding:0 24px;gap:0}.scenes{position:static;max-height:none;padding:20px 0 0}.scenes ol{display:flex;overflow-x:auto;gap:6px}.scenes li button{grid-template-columns:22px auto;white-space:nowrap}.scenes li small{display:none}.choices{grid-template-columns:1fr}}
+@media(max-width:640px){.wgrid{padding:0 16px}.next{flex-wrap:wrap}.next .big{flex:1}.wtitle{font-size:24px}}
 /* cut list */
 .guide2{font-size:13px;color:var(--t2);margin:-4px 0 10px;line-height:1.7}
 .guide2 code{font-family:inherit;font-weight:600;color:var(--t1);background:var(--surface);border-radius:6px;padding:1px 6px}
@@ -263,6 +305,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <header class="gnb">
   <span class="wordmark">ROUGH<span>웹툰 연출 러프</span></span>
   <div class="right">
+    <button class="btn" data-view="db" id="gDb">DB</button>
     <button class="ib" id="theme" aria-label="테마 바꾸기" title="테마 바꾸기"><svg class="i" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
     <button class="btn" data-act="svg" id="gSvg">SVG 저장</button>
     <button class="btn dark" data-act="png" id="gPng">PNG 저장</button>
@@ -270,18 +313,22 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 </header>
 
 <nav class="topnav" role="tablist" aria-label="보기">
-  <button role="tab" data-view="layout" aria-selected="true">컷 배치</button>
-  <button role="tab" data-view="3d" aria-selected="false">3D 시안</button>
-  <button role="tab" data-view="prompt" aria-selected="false">프롬프트 시안</button>
-  <button role="tab" data-view="db" aria-selected="false">데이터베이스</button>
+  <button role="tab" data-view="write" aria-selected="true"><b>1</b>작성</button>
+  <button role="tab" data-view="layout" aria-selected="false"><b>2</b>연출</button>
+  <button role="tab" data-view="finish" aria-selected="false"><b>3</b>완성</button>
+  <button role="tab" data-view="webtoon" aria-selected="false"><b>4</b>웹툰 보기</button>
 </nav>
 
-<div class="view" id="v-layout">
-<div class="page">
-<main class="main">
-  <h1>장면만 적으면 러프가 나와요</h1>
-  <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB 244묶음 중 가장 닮은 패턴으로 컷을 짜요.</p>
-
+<div class="view" id="v-write">
+<div class="wgrid">
+  <aside class="scenes" aria-label="씬 목록">
+    <div class="sh"><h2>씬</h2><span id="scount"></span></div>
+    <ol id="scenelist"></ol>
+    <button class="btn" data-act="addscene" style="width:100%">+ 씬 추가</button>
+  </aside>
+  <main class="main">
+    <h1>작성</h1>
+    <p class="desc">인물을 정하고, 씬마다 컷을 적어요. 다 적으면 연출을 확인해요.</p>
   <section>
     <div class="sh"><h2>인물</h2><span>이름·다른 호칭으로 장면 글에서 인물을 찾아요 · 외형은 프롬프트에, 체형은 3D에 쓰여요</span></div>
     <div class="chars" id="chars"></div>
@@ -290,12 +337,25 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   </section>
 
   <section>
-    <div class="sh"><h2>장면</h2><span id="count"></span></div>
+    <div class="sh"><h2>컷</h2><span id="count"></span></div>
+    <input class="sctitle" id="sctitle" placeholder="씬 제목 (예: 복도에서 다시 만남)" aria-label="씬 제목">
     <div class="guide2"><code>[식자]</code> 내레이션 · <code>-툭-</code> 효과음 · <code>@인물 "(감정·연기)대사"</code> 대사 · 나머지는 행동 묘사 · <code>@</code>를 치면 인물 목록</div>
     <ol class="cutlist" id="cutlist"></ol>
     <div class="toolbar" style="margin-top:10px"><button class="btn" data-act="addcut">+ 컷 추가</button><button class="btn" data-act="prose">줄글 붙여넣기</button><span class="grow"></span><button class="link" data-act="clear">모두 지우기</button></div>
     <dialog id="pdlg2" aria-labelledby="pd2t"><h3 id="pd2t">줄글 붙여넣기</h3><p>문장마다 컷으로 나눠 컷 칸에 채워요. 지금 컷은 바뀌어요.</p><textarea id="prosein" style="min-height:220px" placeholder="@에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다."></textarea><div class="acts"><button class="btn" data-act="prosecancel">닫기</button><button class="btn dark" data-act="prosego">컷으로 나누기</button></div></dialog>
   </section>
+
+    <div class="next"><button class="btn" data-act="delscene">이 씬 삭제</button><span class="grow"></span><button class="btn dark big" data-view="layout">연출 보기 →</button></div>
+  </main>
+</div>
+</div>
+
+<div class="view" id="v-layout" hidden>
+<div class="page">
+<main class="main">
+  <div class="scbar" data-scbar></div>
+  <h1>연출</h1>
+  <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB 244묶음 중 가장 닮은 패턴으로 컷을 짰어요.</p>
 
   <section>
     <div class="sh"><h2>이렇게 읽었어요</h2><span>코드표 기준 자동 판정</span></div>
@@ -306,6 +366,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="sh"><h2>컷</h2><span>값을 누르면 바꿀 수 있어요 · <b style="color:var(--blue)">●</b> 직접 고른 값</span></div>
     <div class="tbl" id="tbl"></div>
   </section>
+  <div class="next"><button class="btn" data-view="write">← 작성으로</button><span class="grow"></span><button class="btn dark big" data-view="finish">완성 방식 고르기 →</button></div>
 </main>
 
 <aside class="pv" aria-label="미리보기">
@@ -322,9 +383,33 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 </div>
 </div>
 
+<div class="view" id="v-finish" hidden>
+<div class="wrap" style="max-width:960px">
+  <div class="scbar" data-scbar></div>
+  <h1>완성</h1>
+  <p class="desc">이 씬을 어떻게 완성할지 골라요. 씬마다 다르게 골라도 돼요. 고른 방식은 웹툰 보기에 쓰여요.</p>
+  <div class="choices">
+    <button class="choice" data-choose="3d"><span class="ck">3D</span><b>3D 시안</b><span>VRoid 기본 체형을 흑백 툰으로 그려요. 카메라·표정·포즈를 연출에서 계산한 대로 잡아요.</span><em>웹툰 보기에 3D 컷으로 들어가요</em></button>
+    <button class="choice" data-choose="prompt"><span class="ck">AI</span><b>프롬프트 시안</b><span>캐릭터·장면 참고 이미지를 붙여 컷마다 이미지 생성용 프롬프트를 만들어요.</span><em>웹툰 보기에는 러프로 들어가요</em></button>
+  </div>
+  <div class="next"><button class="btn" data-view="layout">← 연출로</button><span class="grow"></span><button class="btn big" data-view="webtoon">러프 그대로 웹툰 보기 →</button></div>
+</div>
+</div>
+
+<div class="view" id="v-webtoon" hidden>
+<div class="reader-top">
+  <input class="wtitle" id="wtitle" aria-label="작품 제목" placeholder="작품 제목">
+  <p class="desc" id="wstat"></p>
+  <div class="toolbar"><div class="seg3" id="wmode"><button data-m="rough" aria-pressed="true">러프</button><button data-m="3d" aria-pressed="false">3D</button></div><button class="btn" data-act="w3dall" id="w3dall" hidden>3D로 모두 그리기</button><span class="status" id="wst"></span><span class="grow"></span><button class="btn dark" data-act="wsave">이미지 저장</button></div>
+  <nav class="toc" id="wtoc" aria-label="씬 목차"></nav>
+</div>
+<div class="reader" id="reader"></div>
+</div>
+
 <div class="view" id="v-3d" hidden>
 <div class="wrap g3">
   <section style="margin:0">
+    <div class="scbar" data-scbar></div>
     <h1>3D 시안</h1>
     <p class="desc">컷 배치에서 계산한 샷·앵글·감정·행동으로 VRoid 기본 체형을 흑백 툰으로 그려요. 장면 글을 고치면 다시 그리기를 눌러주세요.</p>
     <div class="sh" style="margin-top:28px"><h2>배역</h2><span>인물마다 체형을 골라요</span></div>
@@ -332,6 +417,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="toolbar"><label class="status"><input type="checkbox" id="clothes" checked> 옷 입히기</label><span class="grow"></span><span class="status" id="st3"></span><button class="btn dark" data-act="draw3d">다시 그리기</button></div>
     <div class="sh" style="margin-top:28px"><h2>컷</h2><span>컷 배치 탭의 값을 그대로 써요</span></div>
     <div class="c3list" id="c3list"></div>
+    <div class="next"><button class="btn" data-view="finish">← 완성 방식</button><span class="grow"></span><button class="btn dark big" data-view="webtoon">웹툰 보기 →</button></div>
   </section>
   <div class="stage" id="stage"><p class="empty">다시 그리기를 누르면 여기 그려져요</p></div>
 </div>
@@ -339,6 +425,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
 <div class="view" id="v-prompt" hidden>
 <div class="wrap">
+  <div class="scbar" data-scbar></div>
   <h1>프롬프트 시안</h1>
   <p class="desc">캐릭터·장면 참고 이미지를 붙이면 컷마다 이미지 생성용 프롬프트(미드저니 V7 형식)가 만들어져요.</p>
   <section style="margin-top:28px">
@@ -353,6 +440,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="toolbar"><span class="grow"></span><button class="btn" data-act="pdown">txt 저장</button><button class="btn dark" data-act="pcopy">전체 복사</button></div>
     <div class="pcards" id="pcards"></div>
   </section>
+  <div class="next"><button class="btn" data-view="finish">← 완성 방식</button><span class="grow"></span><button class="btn dark big" data-view="webtoon">웹툰 보기 →</button></div>
 </div>
 </div>
 
@@ -452,7 +540,7 @@ function reveal(){const g=$(`#preview [data-p="${state.sel}"]`),c=$('#canvas');i
 // ---------- actions ----------
 let tmr;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
-function download(name,href){const a=document.createElement('a');a.href=href;a.download=name;a.click()}
+function download(name,href){const a=document.createElement("a");a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove()}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   if(a==='clear'){CUTS=[''];saveCuts();renderCuts();compute(true);document.querySelector('.cutin')?.focus()}
   else if(a==='next'||a==='prev'){state.pick=state.pick.map((v,i)=>{const n=state.ranks[i].length;return (v+(a==='next'?1:-1)+n)%n});compute(false);toast(`${state.pick[0]+1}번째로 닮은 패턴으로 바꿨어요`)}
@@ -484,19 +572,20 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   else{for(let i=0;i<20;i++){const a=i/20*Math.PI*2;o+=L(x+w/2+Math.cos(a)*w*.15,y+h/2+Math.sin(a)*h*.15,x+w/2+Math.cos(a)*w,y+h/2+Math.sin(a)*h,1)}o+=head(x+w/2,y+h/2,Math.min(w,h)*.2)}
   if(p.said){const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;o+=`<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`}
   return o}
-function render(){let y=40,o='';const ws=W-60;
-  state.panels.forEach((p,i)=>{const h=Math.round(p.h*ws);const sel=i===state.sel;const u=underlay(p);
+function renderSVG(panels,sel=-1,pre='c',nums=true){let y=40,o='';const ws=W-60;
+  panels.forEach((p,i)=>{const h=Math.round(p.h*ws);const on=i===sel;const u=underlay(p);
     let art=drawPanel(p,30,y,ws,h,i);
     if(u){art=`<image href="${u.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}" filter="url(#gs)"/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
     const c=p.who&&charRef(p.who);
-    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#2d71f7':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${art}</g>`+
-      `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`+
+    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${on?'#2d71f7':'#222'}" stroke-width="${on?6:3}"/><clipPath id="${pre}${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
+      (nums?`<circle cx="52" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       ((p.sfx||[]).map((x,k)=>`<text x="${30+ws-24}" y="${y+h-24-k*52}" font-size="${Math.min(54,Math.max(30,h*.16))}" font-weight="900" text-anchor="end" fill="#111" stroke="#fff" stroke-width="6" paint-order="stroke" transform="rotate(-8 ${30+ws-24} ${y+h-24-k*52})">${esc(x)}</text>`).join(''))+
       (p.caption?`<rect x="76" y="${y+8}" width="${Math.min(ws-200,24+p.caption.length*17)}" height="30" fill="#fff" stroke="#222" stroke-width="2"/><text x="88" y="${y+29}" font-size="16" fill="#222">${esc(p.caption.slice(0,24))}</text>`:'')+
       (c?`<rect x="42" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="62" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="76" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+`</g>`;
     y+=h+Math.round(p.gap*ws)+16});
-  state.svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
-  $('#preview').innerHTML=state.svg}
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
+}
+function render(){state.svg=renderSVG(state.panels,state.sel);$('#preview').innerHTML=state.svg}
 
 
 // ---------- reference images (캐릭터·장면) ----------
@@ -607,8 +696,25 @@ function pickMention(i){const ta=TA;const name=mList[i];if(!name)return;const po
   ta.value=ta.value.slice(0,mStart)+'@'+name+ta.value.slice(pos);const c=mStart+name.length+1;ta.setSelectionRange(c,c);ta.focus();mbox.hidden=true;ta.dispatchEvent(new Event('input',{bubbles:true}))}
 // 컷 칸 (컷별 입력)
 const DEFAULT_CUTS=['비가 그친 저녁, 저택 복도. 촛불만 흔들린다.\n[그날 밤, 저택]','@에드가 복도 끝에서 천천히 걸어온다.','발소리에 @준 놀라 돌아본다.\n@준 "(놀라서)에드가?"','@에드가 대답 대신 @준의 손목을 붙잡는다.\n-툭-','@준의 얼굴이 순식간에 붉어진다.\n[두근]','@에드가 희미하게 웃는다.\n@에드가 "(낮게, 다정하게)같이 가자."'];
-let CUTS;try{CUTS=JSON.parse(localStorage.getItem('rough-cuts')||'null')||DEFAULT_CUTS.slice()}catch(_){CUTS=DEFAULT_CUTS.slice()}
-function saveCuts(){try{localStorage.setItem('rough-cuts',JSON.stringify(CUTS))}catch(_){}}
+// 작품 = 씬 목록. 씬 = {id,title,cuts,out}
+let SCENES,SCUR=0;
+try{SCENES=JSON.parse(localStorage.getItem('rough-scenes')||'null')}catch(_){}
+if(!Array.isArray(SCENES)||!SCENES.length){let old=null;try{old=JSON.parse(localStorage.getItem('rough-cuts')||'null')}catch(_){}
+  SCENES=[{id:'s'+Date.now(),title:'복도에서',cuts:old||DEFAULT_CUTS.slice(),out:null}]}
+try{SCUR=Math.min(SCENES.length-1,Math.max(0,+localStorage.getItem('rough-scene-cur')||0))}catch(_){}
+let CUTS=SCENES[SCUR].cuts;
+function saveScenes(){SCENES[SCUR].cuts=CUTS;try{localStorage.setItem('rough-scenes',JSON.stringify(SCENES));localStorage.setItem('rough-scene-cur',SCUR)}catch(_){}}
+function saveCuts(){saveScenes();renderSceneList()}
+const SCENE3D={};
+function sceneLabel(sc,i){return `씬 ${i+1} · ${sc.title||'제목 없는 씬'}`}
+function renderSceneList(){$('#scenelist').innerHTML=SCENES.map((sc,i)=>`<li><button data-scene="${i}" aria-current="${i===SCUR}"><span class="sn">${i+1}</span><span style="min-width:0"><span class="st">${esc(sc.title||'제목 없는 씬')}</span><br><small>${sc.cuts.filter(c=>c.trim()).length}컷${sc.out?` · <span class="tag3">${sc.out==='3d'?'3D':'프롬프트'}</span>`:''}</small></span></button></li>`).join('');
+  $('#scount').textContent=`${SCENES.length}개`;
+  document.querySelectorAll('[data-scbar]').forEach(el=>el.innerHTML=`<button class="ib" data-scmove="-1" aria-label="이전 씬"${SCUR?'':' disabled'}>‹</button><select data-scsel aria-label="씬 고르기">${SCENES.map((sc,i)=>`<option value="${i}"${i===SCUR?' selected':''}>${esc(sceneLabel(sc,i))}</option>`).join('')}</select><button class="ib" data-scmove="1" aria-label="다음 씬"${SCUR<SCENES.length-1?'':' disabled'}>›</button><span>${SCENES[SCUR].cuts.filter(c=>c.trim()).length}컷</span>`);
+  document.querySelectorAll('[data-choose]').forEach(b=>b.setAttribute('aria-pressed',SCENES[SCUR].out===b.dataset.choose))}
+function switchScene(i){if(i<0||i>=SCENES.length)return;saveScenes();SCUR=i;CUTS=SCENES[i].cuts;saveScenes();
+  $('#sctitle').value=SCENES[i].title||'';renderCuts();renderSceneList();state.sel=-1;compute(true);renderSlots();renderSugg();
+  last3d=null;const c=SCENE3D[SCENES[i].id];if(c&&c.sig===CUTS.join('\n')){$('#stage').innerHTML=`<img src="${c.url}" alt="3D 시안" style="width:100%;display:block">`;dirty3d=false}else{$('#stage').innerHTML='<p class="empty">다시 그리기를 누르면 여기 그려져요</p>';dirty3d=true}
+  if(VIEW==='3d'&&dirty3d)draw3d()}
 function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
 function renderCuts(){if(!CUTS.length)CUTS=[''];
   $('#cutlist').innerHTML=CUTS.map((c,i)=>`<li data-i="${i}"><span class="cn">${i+1}</span><textarea class="cutin" rows="1" spellcheck="false" aria-label="${i+1}번 컷" placeholder="${i?'행동 묘사 / @인물 &quot;(감정)대사&quot; / [식자]':'예: @에드가 복도 끝에서 걸어온다.'}">${esc(c)}</textarea><span class="tools"><button data-cut="up" aria-label="위로" title="위로">↑</button><button data-cut="down" aria-label="아래로" title="아래로">↓</button><button data-cut="del" aria-label="삭제" title="삭제">×</button></span></li>`).join('');
@@ -629,23 +735,73 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-act]')?.da
   if(a==='prose'){$('#prosein').value='';$('#pdlg2').showModal()}
   if(a==='prosecancel')$('#pdlg2').close();
   if(a==='prosego'){const c=RE.proseToCuts($('#prosein').value,engineChars()).filter(x=>x.trim());if(c.length){CUTS=c;renderCuts();cutChanged();toast(`${c.length}컷으로 나눴어요`)}$('#pdlg2').close()}});
-renderCuts();renderChars();
+renderCuts();renderChars();renderSceneList();
 mbox.addEventListener('mousedown',e=>{const b=e.target.closest('[data-mi]');if(b){e.preventDefault();pickMention(+b.dataset.mi)}});
+
+// ---------- 씬 · 완성 · 웹툰 보기 ----------
+$('#sctitle').value=SCENES[SCUR].title||'';
+$('#sctitle').addEventListener('input',e=>{SCENES[SCUR].title=e.target.value;saveScenes();renderSceneList()});
+document.addEventListener('click',e=>{const t=e.target;
+  const sb=t.closest('[data-scene]');if(sb){switchScene(+sb.dataset.scene);return}
+  const mv=t.closest('[data-scmove]');if(mv){switchScene(SCUR+(+mv.dataset.scmove));return}
+  const ch=t.closest('[data-choose]');if(ch){SCENES[SCUR].out=ch.dataset.choose;saveScenes();renderSceneList();showView(ch.dataset.choose);return}
+  const a=t.closest('[data-act]')?.dataset.act;
+  if(a==='addscene'){saveScenes();SCENES.push({id:'s'+Date.now(),title:'',cuts:[''],out:null});switchScene(SCENES.length-1);$('#sctitle').focus()}
+  if(a==='delscene'){if(SCENES.length<2){toast('씬이 하나뿐이라 지울 수 없어요');return}if(!confirm(`${sceneLabel(SCENES[SCUR],SCUR)}을(를) 지울까요?`))return;delete SCENE3D[SCENES[SCUR].id];SCENES.splice(SCUR,1);SCUR=Math.max(0,SCUR-1);CUTS=SCENES[SCUR].cuts;switchScene(SCUR);toast('씬을 지웠어요')}
+  if(a==='w3dall')draw3dAll();
+  if(a==='wsave')saveWebtoon()});
+document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switchScene(+e.target.value)});
+let WMODE='rough';
+try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 러프'}catch(_){$('#wtitle').value='제목 없는 작품'}
+$('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
+$('#wmode').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;WMODE=b.dataset.m;document.querySelectorAll('#wmode button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderWebtoon()});
+function scenePanels(i){if(i===SCUR)return state.panels;const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
+  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;out.push(c)})});return out}
+const has3d=i=>{const c=SCENE3D[SCENES[i].id];return c&&c.sig===SCENES[i].cuts.join('\n')?c:null};
+function renderWebtoon(){if(!PATS.length){$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
+  let cuts=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;const c3=WMODE==='3d'&&has3d(i);
+    const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':c3?`<img src="${c3.url}" alt="${esc(sceneLabel(sc,i))} 3D">`:renderSVG(ps,-1,`w${i}_`,false);
+    return `<section id="ws-${i}" style="scroll-margin-top:120px"><div class="scn"><span>${esc(sceneLabel(sc,i))}${WMODE==='3d'&&!c3&&ps.length?' · 러프':''}</span></div>${body}</section>`});
+  $('#reader').innerHTML=parts.join('');
+  $('#wstat').textContent=`씬 ${SCENES.length}개 · 컷 ${cuts}개`;
+  $('#wtoc').innerHTML=SCENES.map((sc,i)=>`<a href="#ws-${i}" data-toc="${i}">${esc(sceneLabel(sc,i))}</a>`).join('');
+  const missing=SCENES.filter((_,i)=>!has3d(i)&&SCENES[i].cuts.some(c=>c.trim())).length;
+  $('#w3dall').hidden=!(WMODE==='3d'&&missing);$('#w3dall').textContent=`남은 ${missing}개 씬 3D로 그리기`}
+$('#wtoc').addEventListener('click',e=>{const a=e.target.closest('[data-toc]');if(!a)return;e.preventDefault();document.getElementById('ws-'+a.dataset.toc)?.scrollIntoView({behavior:'smooth'})});
+async function draw3dAll(){const st=t=>$('#wst').textContent=t;$('#w3dall').disabled=true;
+  try{if(!D3){st('3D 엔진 불러오는 중');const m=await import('./toon3d.js');D3=new m.Director()}
+    const all={};for(const n of [...new Set([...CHARS.map(c=>c.name),...SCENES.flatMap((_,i)=>scenePanels(i).map(p=>p.who))].filter(Boolean))]){const c=CHARS.find(x=>x.name===n);all[n]=c?c.body:(CAST[n]||(NOTP.test(n)?'none':'female'))}
+    for(let i=0;i<SCENES.length;i++){if(has3d(i)||!SCENES[i].cuts.some(c=>c.trim()))continue;st(`${sceneLabel(SCENES[i],i)} 그리는 중`);
+      const c=await D3.renderStrip(scenePanels(i),{cast:all,clothes:true,onProgress:t=>st(`${sceneLabel(SCENES[i],i)} · ${t}`)});SCENE3D[SCENES[i].id]={url:c.toDataURL('image/png'),sig:SCENES[i].cuts.join('\n')};renderWebtoon()}
+    st('모두 그렸어요')}catch(err){console.error(err);st('3D를 그리지 못했어요: '+err.message)}finally{$('#w3dall').disabled=false}}
+function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
+async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 만드는 중');
+  const items=[];for(let i=0;i<SCENES.length;i++){const ps=scenePanels(i);if(!ps.length)continue;const c3=WMODE==='3d'&&has3d(i);
+    items.push({i,im:await loadImg(c3?c3.url:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(renderSVG(ps,-1,`x${i}_`,false)))})}
+  if(!items.length){st('저장할 컷이 없어요');return}
+  const LABEL=56,total=items.reduce((a,x)=>a+LABEL+x.im.height*W/x.im.width,0);
+  const draw=(list,name)=>{const H=Math.round(list.reduce((a,x)=>a+LABEL+x.im.height*W/x.im.width,0));const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);let y=0;
+    for(const x of list){g.fillStyle='#8a8f98';g.font='600 15px Pretendard, sans-serif';g.textAlign='center';g.fillText(sceneLabel(SCENES[x.i],x.i),W/2,y+34);y+=LABEL;const h=x.im.height*W/x.im.width;g.drawImage(x.im,0,y,W,h);y+=h}
+    return new Promise(res=>c.toBlob(bl=>{download(name,URL.createObjectURL(bl));res()},'image/png'))};
+  const base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
+  if(total<=30000){await draw(items,`${base}.png`);st('이미지로 저장했어요')}else{for(const x of items)await draw([x],`${base}-씬${x.i+1}.png`);st(`길어서 씬별 ${items.length}장으로 저장했어요`)}}
 
 // ---------- 보기 전환 ----------
 let VIEW='layout',dirty3d=true;
 function showView(v){VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
-  ['layout','3d','prompt','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
-  $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=!(v==='layout'||v==='3d');
+  const nav={'3d':'finish',prompt:'finish',db:''}[v]??v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===nav));
+  ['write','layout','finish','3d','prompt','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
+  $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=!(v==='layout'||v==='3d');$('#gDb').setAttribute('aria-pressed',v==='db');
+  if(v==='webtoon')renderWebtoon();if(v==='finish')renderSceneList();
   if(v==='prompt')renderPrompts();if(v==='3d'){renderCast();renderC3();if(dirty3d&&state.panels.length)draw3d()}if(v==='db')loadDB();
   scrollTo(0,0);try{localStorage.setItem('rough-view',v)}catch(_){}}
-document.querySelector('.topnav').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
 {const _c=compute;compute=function(...a){_c(...a);dirty3d=true;if(VIEW==='prompt')renderPrompts();if(VIEW==='3d'){renderCast();renderC3();if(!last3d)draw3d()}}}
 {const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='prompt')renderPrompts()}}
 
 // ---------- 프롬프트 시안 ----------
 function renderPrompts(){const arr=state.panels.length?prompts().split('\n\n'):[];
-  $('#pcards').innerHTML=arr.length?arr.map(t=>{const [h,...r]=t.split('\n');return `<div class="pcard"><header><h3>${esc(h)}</h3><button class="btn" data-act="pcopy1">복사</button></header><pre>${esc(r.join('\n'))}</pre></div>`}).join(''):'<p class="empty">컷 배치 탭에서 장면을 적어주세요.</p>'}
+  $('#pcards').innerHTML=arr.length?arr.map(t=>{const [h,...r]=t.split('\n');return `<div class="pcard"><header><h3>${esc(h)}</h3><button class="btn" data-act="pcopy1">복사</button></header><pre>${esc(r.join('\n'))}</pre></div>`}).join(''):'<p class="empty">작성 단계에서 컷을 적어주세요.</p>'}
 
 // ---------- 3D 시안 ----------
 let D3=null,last3d=null,CAST={};
@@ -662,12 +818,12 @@ async function draw3d(){if(busy3d||!state.panels.length)return;busy3d=true;const
   try{if(!D3){st('3D 엔진 불러오는 중');const m=await import('./toon3d.js');D3=new m.Director()}
     const all={};for(const n of castNames())all[n]=CAST[n]||'none';
     const c=await D3.renderStrip(state.panels,{cast:all,clothes:$('#clothes').checked,onProgress:st});
-    last3d=c;$('#stage').innerHTML='';$('#stage').appendChild(c);dirty3d=false;st(`${state.panels.length}컷 완료`)}
+    last3d=c;SCENE3D[SCENES[SCUR].id]={url:c.toDataURL('image/png'),sig:CUTS.join('\n')};$('#stage').innerHTML='';$('#stage').appendChild(c);dirty3d=false;st(`${state.panels.length}컷 완료`)}
   catch(err){console.error(err);st('3D를 그리지 못했어요: '+err.message)}finally{busy3d=false}}
 $('#clothes').addEventListener('change',()=>{dirty3d=true});
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;
   if(el.dataset.act==='draw3d')draw3d();
-  if(el.dataset.act==='png'&&VIEW==='3d'){e.stopImmediatePropagation();if(last3d){download('rough-3d.png',last3d.toDataURL('image/png'));toast('3D 시안을 PNG로 저장했어요')}else toast('먼저 다시 그리기를 눌러주세요')}},true);
+  if(el.dataset.act==='png'&&VIEW==='3d'){e.stopImmediatePropagation();const u3=last3d?last3d.toDataURL('image/png'):SCENE3D[SCENES[SCUR].id]?.url;if(u3){download('rough-3d.png',u3);toast('3D 시안을 PNG로 저장했어요')}else toast('먼저 다시 그리기를 눌러주세요')}},true);
 
 // ---------- 데이터베이스 ----------
 let DB=null,DBM={},dbSheet='컷표',dbLimit=200,dbSel=-1,dbF={work:'',ep:'',q:''};
@@ -704,7 +860,7 @@ $('#dbtabs').addEventListener('click',e=>{const b=e.target.closest('[data-s]');i
 $('#dbfilter').addEventListener('input',e=>{const f=e.target.dataset.f;if(!f)return;dbF[f]=e.target.value;if(f==='work')dbF.ep='';dbLimit=200;if(f==='q'){clearTimeout(renderDB.t);renderDB.t=setTimeout(renderDBTable,200)}else renderDB()});
 $('#dbscroll').addEventListener('click',e=>{const tr=e.target.closest('tr[data-i]');if(tr){dbSel=+tr.dataset.i;document.querySelectorAll('table.db tr.on').forEach(x=>x.classList.remove('on'));tr.classList.add('on');renderDBSide(dbSel)}
   if(e.target.closest('[data-act="dbmore"]')){dbLimit+=300;renderDBTable()}});
-try{const v=localStorage.getItem('rough-view');if(v&&v!=='layout')setTimeout(()=>showView(v),0)}catch(_){}
+try{const v=localStorage.getItem('rough-view');setTimeout(()=>showView(v&&document.getElementById('v-'+v)?v:'write'),0)}catch(_){setTimeout(()=>showView('write'),0)}
 
 Promise.all([
   fetch('patterns.json').then(r=>r.json()),
