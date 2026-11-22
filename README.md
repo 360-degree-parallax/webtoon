@@ -20,7 +20,7 @@ git clone --recurse-submodules https://github.com/360-degree-parallax/webtoon
 ```
 python3 rough/serve.py
 ```
-`http://localhost:8000/rough/` 가 열립니다. 장면만 적으면 판정·패턴·컷 배치가 자동으로 나오고, 틀린 값만 눌러서 고치면 됩니다.
+`http://localhost:8000/rough/` 가 열립니다. 장면만 적으면 판정·패턴·컷 배치가 자동으로 나오고, 틀린 값만 눌러서 고치면 됩니다. 캐릭터·장면 참고 이미지를 첨부하면 밑그림·이름표·컷별 이미지 프롬프트(미드저니 형식)에 쓰입니다. 첨부 이미지는 브라우저에만 저장됩니다.
 
 엔진 판정 검증:
 ```

@@ -118,6 +118,33 @@ textarea:focus{border-color:var(--t1)}
 .toast{position:fixed;left:50%;bottom:28px;z-index:50;transform:translate(-50%,8px);padding:12px 16px;border-radius:8px;background:#333840;color:#fff;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .empty{padding:32px 0;color:var(--t2);font-size:14px}
+/* reference images */
+.refrow{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.refrow:last-child{border-bottom:1px solid var(--line)}
+.rlabel{font-size:14px;font-weight:600;padding-top:4px}
+.rlabel small{display:block;font-size:12px;font-weight:500;color:var(--t2);margin-top:2px;line-height:1.4}
+.slots{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}
+.slot{flex:none;width:104px}
+.drop{position:relative;width:104px;height:132px;border-radius:8px;border:1px dashed var(--line2);background:var(--surface);display:grid;place-items:center;text-align:center;font-size:13px;color:var(--t2);cursor:pointer;overflow:hidden;transition:border-color .12s,background .12s}
+.drop:hover,.drop.over{border-color:var(--t1);background:var(--hover)}
+.drop.has{border-style:solid;border-color:var(--line)}
+.drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.drop .x{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:24px;display:none}
+.drop.has:hover .x{display:block}
+.slot .nm{margin-top:6px;font-size:13px;font-weight:600;line-height:1.3;display:flex;align-items:center;gap:6px}
+.slot .nm input{width:100%;border:0;border-bottom:1px solid transparent;background:none;font-size:13px;font-weight:600;padding:0}
+.slot .nm input:focus{outline:none;border-bottom-color:var(--t1)}
+.slot.off{opacity:.5}
+.pal{display:flex;gap:3px;margin-top:4px}
+.pal i{width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+.toggle{height:30px;padding:0 10px;border-radius:15px;border:1px solid var(--line2);font-size:13px;font-weight:600}
+.toggle[aria-pressed=true]{background:var(--dark);color:var(--ondark);border-color:transparent}
+dialog{width:min(760px,calc(100vw - 32px));border:1px solid var(--line2);border-radius:12px;padding:24px;background:var(--bg);color:var(--t1)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h3{margin:0 0 4px;font-size:18px}
+dialog p{margin:0 0 12px;font-size:13px;color:var(--t2)}
+dialog textarea{min-height:360px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.6}
+dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 
 @media(max-width:1180px){.page{grid-template-columns:minmax(0,1fr) 340px;gap:32px;padding:0 24px}.tr{grid-template-columns:28px minmax(0,1fr) 70px 86px 80px 80px 64px;}.tr>.ref{display:none}.kv{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){.page{grid-template-columns:1fr}.pv{position:relative;height:auto;padding-top:0}.canvas{max-height:80vh}}
@@ -130,6 +157,7 @@ textarea:focus{border-color:var(--t1)}
   <span class="wordmark">ROUGH<span>웹툰 연출 러프</span></span>
   <div class="right">
     <button class="ib" id="theme" aria-label="테마 바꾸기" title="테마 바꾸기"><svg class="i" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
+    <button class="btn" data-act="prompt">프롬프트</button>
     <button class="btn" data-act="svg">SVG 저장</button>
     <button class="btn dark" data-act="png">PNG 저장</button>
   </div>
@@ -151,6 +179,13 @@ textarea:focus{border-color:var(--t1)}
   </section>
 
   <section>
+    <div class="sh"><h2>참고 이미지</h2><span>끌어다 놓기·붙여넣기·클릭 · 이 브라우저에만 저장돼요</span></div>
+    <div class="refrow"><div class="rlabel">캐릭터<small>장면 글의 인물 이름과 자동 연결</small></div><div class="slots" id="charSlots"></div></div>
+    <div class="refrow"><div class="rlabel">장면<small>배경·분위기. 이름이 글에 나오면 그 묶음에</small></div><div class="slots" id="sceneSlots"></div></div>
+    <input type="file" id="file" accept="image/*" hidden>
+  </section>
+
+  <section>
     <div class="sh"><h2>이렇게 읽었어요</h2><span>코드표 기준 자동 판정</span></div>
     <div id="reading"></div>
   </section>
@@ -162,7 +197,7 @@ textarea:focus{border-color:var(--t1)}
 </main>
 
 <aside class="pv" aria-label="미리보기">
-  <div class="sh"><h2>미리보기</h2><span id="pvsize"></span></div>
+  <div class="sh"><h2>미리보기</h2><span><button class="toggle" id="under" aria-pressed="true" hidden>밑그림</button> <span id="pvsize"></span></span></div>
   <div class="canvas" id="canvas"><div id="preview"></div></div>
   <div class="bar">
     <button class="ib" data-act="prev" aria-label="이전 안"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
@@ -174,6 +209,7 @@ textarea:focus{border-color:var(--t1)}
 </aside>
 </div>
 <div class="menu" id="menu" role="menu" hidden></div>
+<dialog id="pdlg" aria-labelledby="pdlgT"><h3 id="pdlgT">컷별 이미지 프롬프트</h3><p>미드저니(V7) 형식이에요. 참고 이미지는 미드저니에 올린 뒤 &lt;…&gt; 자리에 그 링크를 넣으세요. V6에서는 --oref 를 --cref 로 바꾸면 돼요.</p><textarea id="ptext" readonly></textarea><div class="acts"><button class="btn" data-act="pclose">닫기</button><button class="btn" data-act="pdown">txt 저장</button><button class="btn dark" data-act="pcopy">복사</button></div></dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="engine.js"></script>
@@ -257,7 +293,7 @@ $('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');
 function reveal(){const g=$(`#preview [data-p="${state.sel}"]`),c=$('#canvas');if(!g)return;const gr=g.getBoundingClientRect(),cr=c.getBoundingClientRect();if(gr.top<cr.top||gr.bottom>cr.bottom-90)c.scrollBy({top:gr.top-cr.top-20,behavior:'smooth'})}
 
 // ---------- actions ----------
-let tmr;$('#beats').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(()=>compute(true),350)});
+let tmr;$('#beats').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(()=>{compute(true);renderSlots()},350)});
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
 function download(name,href){const a=document.createElement('a');a.href=href;a.download=name;a.click()}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
@@ -292,13 +328,80 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   if(p.said){const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;o+=`<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`}
   return o}
 function render(){let y=40,o='';const ws=W-60;
-  state.panels.forEach((p,i)=>{const h=Math.round(p.h*ws);const sel=i===state.sel;
-    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#2d71f7':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${drawPanel(p,30,y,ws,h,i)}</g>`+
-      `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text></g>`;
+  state.panels.forEach((p,i)=>{const h=Math.round(p.h*ws);const sel=i===state.sel;const u=underlay(p);
+    let art=drawPanel(p,30,y,ws,h,i);
+    if(u){art=`<image href="${u.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}" filter="url(#gs)"/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
+    const c=p.who&&charRef(p.who);
+    o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#2d71f7':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${art}</g>`+
+      `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`+
+      (c?`<rect x="42" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="62" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="76" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+`</g>`;
     y+=h+Math.round(p.gap*ws)+16});
-  state.svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif">${o}</svg>`;
+  state.svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
   $('#preview').innerHTML=state.svg}
 
+
+// ---------- reference images (캐릭터·장면) ----------
+const IMG={char:{},scene:[]};let target=null,showUnder=true;
+const idb=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('rough-refs',1);r.onupgradeneeded=()=>r.result.createObjectStore('refs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+  const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('refs',mode);const st=t.objectStore('refs');const out=fn(st);t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
+  return{all:()=>tx('readonly',st=>st.getAll()).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).catch(()=>{}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
+function shrink(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file);const im=new Image();im.onload=()=>{const k=Math.min(1,768/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(url);res({src:c.toDataURL('image/jpeg',.85),w:c.width,h:c.height,palette:palette(c)})};im.onerror=rej;im.src=url})}
+// 팔레트: 48px로 줄여 색을 4비트로 묶고 많이 쓰인 순서, 서로 비슷한 색은 건너뜀
+function palette(cv){const c=document.createElement('canvas');c.width=c.height=48;const g=c.getContext('2d');g.drawImage(cv,0,0,48,48);const d=g.getImageData(0,0,48,48).data;const cnt={};
+  for(let k=0;k<d.length;k+=4){const key=(d[k]>>4)<<8|(d[k+1]>>4)<<4|(d[k+2]>>4);cnt[key]=(cnt[key]||0)+1}
+  const cols=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([k])=>{k=+k;return[((k>>8)&15)*17,((k>>4)&15)*17,(k&15)*17]});const out=[];
+  for(const c1 of cols){if(out.every(c2=>Math.abs(c1[0]-c2[0])+Math.abs(c1[1]-c2[1])+Math.abs(c1[2]-c2[2])>90))out.push(c1);if(out.length===5)break}
+  return out.map(([r,g2,b])=>'#'+[r,g2,b].map(v=>v.toString(16).padStart(2,'0')).join(''))}
+function accent(pal){let best=pal[0]||'#2d71f7',bs=-1;for(const h of pal){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);const mx=Math.max(r,g,b),mn=Math.min(r,g,b);const sat=mx?(mx-mn)/mx:0;const v=mx/255;const sc=sat*(v>.2&&v<.95?1:.3);if(sc>bs){bs=sc;best=h}}return best}
+function charRef(name){const c=IMG.char[name];return c?{...c,color:accent(c.palette)}:null}
+function sceneFor(p){if(!IMG.scene.length)return null;const a=state.an[p.chunk];const text=a?a.beats.map(b=>b.act).join(' '):'';return IMG.scene.find(s=>s.name&&text.includes(s.name))||IMG.scene[p.chunk%IMG.scene.length]}
+function underlay(p){if(!showUnder)return null;
+  if(p.shot==='클로즈업'){const c=p.who&&IMG.char[p.who];if(c)return{src:c.src,op:.32}}
+  if(['설정','전경','전신','중경','효과 배경'].includes(p.shot)){const sc=sceneFor(p);if(sc)return{src:sc.src,op:p.shot==='설정'||p.shot==='전경'?.38:.22}}
+  return null}
+function names(){return [...new Set(RE.parse($('#beats').value).map(b=>b.who).filter(Boolean))]}
+function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
+  <div class="nm">${kind==='scene'&&ref?`<input value="${esc(ref.name)}" data-rename="${esc(key)}" aria-label="장면 이름">`:esc(label)}</div>${ref?`<div class="pal">${ref.palette.map(c=>`<i style="background:${c}" title="${c}"></i>`).join('')}</div>`:''}</div>`}
+function renderSlots(){const ns=names();const extra=Object.keys(IMG.char).filter(n=>!ns.includes(n));
+  $('#charSlots').innerHTML=ns.map(n=>slotHTML('char',n,IMG.char[n],n,false)).join('')+extra.map(n=>slotHTML('char',n,IMG.char[n],`${n} (글에 없음)`,true)).join('')||'<p class="empty" style="padding:8px 0">글에 <b>인물 | 행동</b> 형식으로 이름을 적으면 칸이 생겨요.</p>';
+  $('#sceneSlots').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,r,r.name,false)).join('')+slotHTML('scene','__new',null,'장면 추가',false);
+  $('#under').hidden=!(Object.keys(IMG.char).length||IMG.scene.length)}
+async function attach(file,slot){if(!file||!file.type.startsWith('image/'))return;const im=await shrink(file);
+  if(slot.kind==='char'){const o={id:'char:'+slot.key,kind:'char',name:slot.key,...im};IMG.char[slot.key]=o;idb.put(o);toast(`${slot.key} 캐릭터 이미지를 연결했어요`)}
+  else{const id=slot.key==='__new'?'scene:'+Date.now():slot.key;const old=IMG.scene.find(r=>r.id===id);const o={id,kind:'scene',name:old?.name||file.name.replace(/\.[^.]+$/,'').slice(0,20)||`장면 ${IMG.scene.length+1}`,...im};
+    if(old)Object.assign(old,o);else IMG.scene.push(o);idb.put(o);toast('장면 이미지를 넣었어요')}
+  renderSlots();render()}
+$('#file').addEventListener('change',e=>{if(target)attach(e.target.files[0],target);e.target.value=''});
+const slotsEl=[$('#charSlots'),$('#sceneSlots')];
+slotsEl.forEach(el=>{
+  el.addEventListener('click',e=>{const d=e.target.closest('[data-del]');if(d){e.stopPropagation();if(d.dataset.del==='char'){delete IMG.char[d.dataset.key];idb.del('char:'+d.dataset.key)}else{IMG.scene=IMG.scene.filter(r=>r.id!==d.dataset.key);idb.del(d.dataset.key)}renderSlots();render();return}
+    const s=e.target.closest('[data-slot]');if(s){target={kind:s.dataset.slot,key:s.dataset.key};$('#file').click()}});
+  el.addEventListener('keydown',e=>{const s=e.target.closest('[data-slot]');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();s.click()}});
+  el.addEventListener('focusin',e=>{const s=e.target.closest('[data-slot]');if(s)target={kind:s.dataset.slot,key:s.dataset.key}});
+  el.addEventListener('dragover',e=>{const s=e.target.closest('[data-slot]');if(s){e.preventDefault();s.classList.add('over')}});
+  el.addEventListener('dragleave',e=>{e.target.closest('[data-slot]')?.classList.remove('over')});
+  el.addEventListener('drop',e=>{const s=e.target.closest('[data-slot]');if(!s)return;e.preventDefault();s.classList.remove('over');const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
+    if(s.dataset.slot==='scene'&&s.dataset.key==='__new')files.forEach((f,k)=>setTimeout(()=>attach(f,{kind:'scene',key:'__new'}),k*30));else attach(files[0],{kind:s.dataset.slot,key:s.dataset.key})});
+  el.addEventListener('change',e=>{const r=e.target.closest('[data-rename]');if(!r)return;const o=IMG.scene.find(x=>x.id===r.dataset.rename);if(o){o.name=r.value.trim()||o.name;idb.put(o);render()}});
+});
+document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();attach(f,target||{kind:'scene',key:'__new'})});
+$('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);render()};
+idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
+
+// ---------- prompt export ----------
+const EN_SHOT={설정:'establishing shot',전경:'wide shot',전신:'full body shot',중경:'medium shot',클로즈업:'close-up shot',디테일:'extreme close-up detail shot','효과 배경':'abstract emotional effect background'};
+const EN_ANG={아이레벨:'eye level',하이앵글:'high angle',로우앵글:'low angle',탑뷰:"top-down bird's-eye view"};
+const EN_EMO={놀람:'surprised',분노:'angry',긴장:'tense',설렘:'flustered, blushing',당황:'embarrassed, flustered',쓸쓸:'lonely, sorrowful',결의:'determined',다정:'tender, gentle',기쁨:'joyful',의아:'puzzled',냉담:'cold, indifferent',회상:'nostalgic flashback mood',개그:'comedic, chibi expression',평온:'calm'};
+const EN_INT=['','slightly ','','intensely '];
+function prompts(){return state.panels.map((p,i)=>{const sc=sceneFor(p),c=p.who&&IMG.char[p.who];const ar=`100:${Math.round(p.h*100)}`;
+  const desc=[EN_SHOT[p.shot],EN_ANG[p.ang],p.who?`character "${p.who}"`:'',`${EN_INT[p.i]||''}${EN_EMO[p.emo]||''}`.trim(),`action: ${p.act.replace(/["“”]/g,'')}`,'korean webtoon panel, clean lineart',sc?`color palette ${sc.palette.slice(0,4).join(' ')}`:''].filter(Boolean).join(', ');
+  const flags=[c?`--oref <${p.who} 캐릭터 이미지 링크> --ow 100`:'',sc?`--sref <${sc.name} 장면 이미지 링크>`:'',`--ar ${ar}`].filter(Boolean).join(' ');
+  return `[${i+1}] ${p.who?p.who+' · ':''}${p.act}  (${p.shot}·${p.ang}·${p.emo} ${p.i}${p.vng==='P'?'·정점':''})\n${desc} ${flags}`}).join('\n\n')}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+  if(a==='prompt'){$('#ptext').value=prompts();$('#pdlg').showModal()}
+  else if(a==='pclose')$('#pdlg').close()
+  else if(a==='pcopy'){navigator.clipboard?.writeText($('#ptext').value).then(()=>toast('프롬프트를 복사했어요'),()=>{$('#ptext').select();toast('복사가 막혀 있어요. 선택된 글을 직접 복사하세요')})}
+  else if(a==='pdown'){download('rough-prompts.txt',URL.createObjectURL(new Blob([$('#ptext').value],{type:'text/plain'})));toast('txt로 저장했어요')}});
 
 // ---------- data ----------
 Promise.all([
