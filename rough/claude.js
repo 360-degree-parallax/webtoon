@@ -57,17 +57,17 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
-// payload: { title, style, palette, chars:[{name,look}], cuts:[{n, shot, angle, lens, emotion, intensity, peak, ratio, who, action, dialogs, caption, sfx, story, draft}] }
-export async function refine(apiKey, payload, { onStatus } = {}) {
+// 공통 호출: 스트리밍 + JSON 스키마 출력 + 거절 시 서버 측 대체 모델
+async function run(apiKey, system, schema, userText, onStatus) {
   onStatus?.('Claude가 씬을 읽는 중');
   const stream = client(apiKey).beta.messages.stream({
     model: MODEL,
     max_tokens: 64000,
-    output_config: { effort: 'medium', format: { type: 'json_schema', schema: SCHEMA } },
+    output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
-    system: SYSTEM,
-    messages: [{ role: 'user', content: `다음 씬의 컷 프롬프트를 다시 써줘. draft는 규칙으로 만든 초안이니 참고만 해.\n\n${JSON.stringify(payload, null, 1)}` }],
+    system,
+    messages: [{ role: 'user', content: userText }],
   });
   let chars = 0;
   stream.on('text', t => { chars += t.length; onStatus?.(`Claude가 쓰는 중 · ${chars.toLocaleString()}자`); });
@@ -75,8 +75,60 @@ export async function refine(apiKey, payload, { onStatus } = {}) {
   if (msg.stop_reason === 'refusal') throw new Error('Claude가 이 요청을 거절했어요');
   if (msg.stop_reason === 'max_tokens') throw new Error('응답이 길어 잘렸어요. 컷 수를 줄여 다시 시도해 주세요');
   const text = msg.content.filter(b => b.type === 'text').map(b => b.text).join('');
-  const out = JSON.parse(text);
-  return { brief: out.brief, cuts: out.cuts, model: msg.model, usage: msg.usage };
+  return { out: JSON.parse(text), model: msg.model, usage: msg.usage };
+}
+
+// payload: { title, style, palette, chars:[{name,look}], cuts:[{n, spec, role, trans, gapAfter, shot, angle, lens, emotion, intensity, peak, who, action, dialogs, caption, sfx, story, draft}] }
+export async function refine(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, SYSTEM, SCHEMA, `다음 씬의 컷 프롬프트를 다시 써줘. draft는 규칙으로 만든 초안이니 참고만 해.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
+  return { brief: r.out.brief, cuts: r.out.cuts, model: r.model, usage: r.usage };
+}
+
+// NovelAI Diffusion V4.5 Full: 기본 프롬프트 + 캐릭터 프롬프트(위치)를 Danbooru 태그로 다시 짠다
+const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 컷을 뽑는 프롬프트 엔지니어다.
+입력은 한 씬의 컷 목록이다. 샷·앵글·감정·해상도는 연출 엔진이 이미 정했으니 그대로 지킨다. draft는 규칙으로 만든 태그 초안이다.
+씬 전체를 읽고 추론해서, 컷마다 NovelAI 화면 칸에 그대로 붙여 넣을 태그를 다시 짠다.
+
+규칙
+- 태그는 Danbooru 태그(영어, 소문자, 쉼표로 구분). 문장 금지. 가중치가 필요하면 V4.5 문법 "1.2::tag::"만 쓴다(과용 금지, 컷당 1~2개).
+- base(기본 프롬프트): 인원 태그(1girl, 1boy, 2girls…, 인물이 없으면 no humans) → 샷·구도(close-up, upper body, full body, wide shot, from above, from below, dutch angle 등) → 장소·배경 소품 → 시간대·빛·날씨 → 분위기 → 마지막에 입력 style 태그를 그대로.
+- chars(캐릭터 프롬프트, 최대 6명): 컷에 보이는 인물만. 각자 1girl/1boy로 시작 → 외형 태그(입력 tags를 기본으로, 컷 안에서 보이는 의상·소품으로 보강) → 표정 → 자세·동작·시선(looking at another, looking back 등). 인물 사이 상호작용은 해당 캐릭터 쪽에 쓴다(예: grabbing another's wrist).
+- cell(캐릭터 위치): 5×5 칸 A~E(가로, 왼쪽→오른쪽) 1~5(세로, 위→아래). 컷 사이에서 인물의 좌우 위치가 뒤바뀌지 않게(180도 선) 유지하고, 클로즈업은 C3 근처, 넓은 샷은 아래쪽(4~5행)에 둔다.
+- 연속성: 앞 컷에서 든 소품, 옷, 머리 모양, 빛 방향은 다음 컷에도 같은 태그로 남긴다. 원문과 모순되는 걸 지어내지 않는다.
+- 디테일(인서트) 컷은 얼굴 대신 손·소품에 초점(hands focus, close-up, head out of frame 등)을 둔다.
+- 글자·말풍선 관련 태그는 넣지 않는다(제외 칸은 쓰지 않음). 대사가 있으면 base에 negative space 정도만.`;
+const SCHEMA_NAI = {
+  type: 'object',
+  properties: {
+    cuts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          n: { type: 'integer' },
+          base: { type: 'string' },
+          chars: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { name: { type: 'string' }, cell: { type: 'string', enum: ['A', 'B', 'C', 'D', 'E'].flatMap(c => [1, 2, 3, 4, 5].map(r => c + r)) }, prompt: { type: 'string' } },
+              required: ['name', 'cell', 'prompt'],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ['n', 'base', 'chars'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['cuts'],
+  additionalProperties: false,
+};
+// payload: { title, style, chars:[{name, gender, tags, look}], cuts:[{n, size, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
+export async function refineNai(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, SYSTEM_NAI, SCHEMA_NAI, `다음 씬의 NovelAI V4.5 태그를 다시 짜줘.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
+  return { cuts: r.out.cuts, model: r.model, usage: r.usage };
 }
 
 export function explain(err) {

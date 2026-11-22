@@ -422,12 +422,12 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div class="wrap">
   <div class="scbar" data-scbar></div>
   <h1>NovelAI V4.5 시안</h1>
-  <p class="desc">NovelAI Diffusion V4.5 Full 기준이에요. 컷마다 기본 프롬프트, 캐릭터 프롬프트와 위치, 제외할 내용, 해상도, img2img 바탕 이미지, 레퍼런스를 칸별로 나눠 줘요.</p>
+  <p class="desc">NovelAI Diffusion V4.5 Full 기준이에요. 컷마다 기본 프롬프트, 캐릭터 프롬프트와 위치, 해상도, img2img 바탕 이미지, 레퍼런스를 칸별로 나눠 줘요.</p>
   <ol class="psteps"><li><b>1</b>화풍·인물 태그 확인</li><li><b>2</b>컷 카드의 칸을 NovelAI 같은 칸에 복사</li><li><b>3</b>바탕 PNG를 img2img로 올려 생성</li><li><b>4</b>생성 이미지를 컷에 등록</li></ol>
   <section style="margin-top:28px">
     <div class="sh"><h2>화풍 태그</h2><span>모든 컷의 기본 프롬프트 끝에 붙어요 · 영어 태그, 쉼표로 구분</span></div>
     <textarea class="pstyle" id="naistyle" rows="2" aria-label="NovelAI 화풍 태그"></textarea>
-    <p class="hint">NovelAI의 Add Quality Tags와 제외할 내용 프리셋(Heavy)은 켜 두는 걸 권해요. 여기 태그는 그 위에 더해져요.</p>
+    <p class="hint">NovelAI의 Add Quality Tags는 켜 두는 걸 권해요. 여기 태그는 그 위에 더해져요.</p>
   </section>
   <section>
     <div class="sh"><h2>인물 태그</h2><span>인물 설정의 외형을 태그로 바꿨어요 · 고치면 이 브라우저에 저장</span></div>
@@ -438,7 +438,13 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="naiterms" id="nairefs"></div>
   </section>
   <section>
+    <div class="sh"><h2>Claude로 다듬기</h2><span>씬 전체를 읽고 연속성·위치·소품을 추론해 태그와 캐릭터 위치를 다시 짜요</span></div>
+    <div class="aibox"><span class="keyst" data-keyst></span><button class="btn" data-act="aikeyopen" data-keybtn>API 키 입력</button><button class="btn dark" data-act="nairefine" id="naibtn">Claude로 다듬기</button><span class="status" id="naist"></span></div>
+    <p class="hint">프롬프트 시안과 같은 Claude API 키(Opus 5.5)를 써요. 씬 글·인물 태그·화풍 태그만 보내요.</p>
+  </section>
+  <section>
     <div class="sh"><h2>컷별 입력값</h2><span id="naicount"></span></div>
+    <div class="toolbar" style="margin-top:0"><div class="seg3" id="naiview" hidden><button data-v="ai">Claude 다듬음</button><button data-v="base">기본</button></div></div>
     <div class="toolbar"><span class="grow"></span><button class="btn" data-act="naimulti">이미지 여러 장 등록</button><button class="btn" data-act="naidown">txt 저장</button></div>
     <div class="pcards" id="ncards"></div>
   </section>
@@ -475,23 +481,8 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   </section>
   <section>
     <div class="sh"><h2>Claude로 다듬기</h2><span>씬 전체를 읽고 연속성·구도·몸 표현을 추론해 컷 프롬프트를 다시 써요</span></div>
-    <div class="aibox"><span class="keyst" id="aikeyst"></span><button class="btn" data-act="aikeyopen" id="aikeybtn">API 키 입력</button><button class="btn dark" data-act="airefine" id="aibtn">Claude로 다듬기</button><span class="status" id="aist"></span></div>
+    <div class="aibox"><span class="keyst" id="aikeyst" data-keyst></span><button class="btn" data-act="aikeyopen" id="aikeybtn" data-keybtn>API 키 입력</button><button class="btn dark" data-act="airefine" id="aibtn">Claude로 다듬기</button><span class="status" id="aist"></span></div>
     <p class="hint">Claude API(Opus 5.5) 전용이에요. 키는 보안 입력창에서만 받고, 화면에는 끝 네 자리만 보여요. 씬 글·인물 외형·화풍만 보내고 이미지는 보내지 않아요.</p>
-    <dialog id="keydlg" class="keydlg" aria-labelledby="kdt">
-      <form id="keyform" novalidate>
-        <h3 id="kdt"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Claude API 키</h3>
-        <p>Anthropic Claude API 키만 받아요. 키는 <b>api.anthropic.com</b>으로만 전송되고, 이 페이지는 보안 정책으로 다른 서버에 연결할 수 없어요.</p>
-        <label class="klabel" for="kin">API 키</label>
-        <div class="keyrow"><input type="password" id="kin" name="k" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="sk-ant-api03-…" aria-describedby="kerr"><button type="button" class="btn" data-act="keyshow" aria-pressed="false">보기</button></div>
-        <p class="kerr" id="kerr" role="alert"></p>
-        <fieldset class="kkeep"><legend>보관</legend>
-          <label><input type="radio" name="keep" value="local" checked> 이 브라우저에 저장</label>
-          <label><input type="radio" name="keep" value="session"> 이 탭을 닫으면 지움</label>
-        </fieldset>
-        <p class="kfoot">모델 Claude Opus 5.5 고정 · 저장 전에 키가 맞는지 Anthropic에 확인해요(토큰 비용 없음) · 키 발급은 Claude Console의 API Keys</p>
-        <div class="acts"><button type="button" class="btn" data-act="keydel" id="keydel">키 지우기</button><span class="grow"></span><button type="button" class="btn" data-act="keycancel">취소</button><button type="submit" class="btn dark" id="keyok">확인하고 저장</button></div>
-      </form>
-    </dialog>
   </section>
   <section>
     <div class="sh"><h2>씬 브리프</h2><span>생성 도구에 먼저 넣어 두면 컷끼리 인물·색이 덜 흔들려요</span></div>
@@ -522,6 +513,21 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
 <div class="toast" id="toast" role="status"></div>
 
+    <dialog id="keydlg" class="keydlg" aria-labelledby="kdt">
+      <form id="keyform" novalidate>
+        <h3 id="kdt"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Claude API 키</h3>
+        <p>Anthropic Claude API 키만 받아요. 키는 <b>api.anthropic.com</b>으로만 전송되고, 이 페이지는 보안 정책으로 다른 서버에 연결할 수 없어요.</p>
+        <label class="klabel" for="kin">API 키</label>
+        <div class="keyrow"><input type="password" id="kin" name="k" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="sk-ant-api03-…" aria-describedby="kerr"><button type="button" class="btn" data-act="keyshow" aria-pressed="false">보기</button></div>
+        <p class="kerr" id="kerr" role="alert"></p>
+        <fieldset class="kkeep"><legend>보관</legend>
+          <label><input type="radio" name="keep" value="local" checked> 이 브라우저에 저장</label>
+          <label><input type="radio" name="keep" value="session"> 이 탭을 닫으면 지움</label>
+        </fieldset>
+        <p class="kfoot">모델 Claude Opus 5.5 고정 · 저장 전에 키가 맞는지 Anthropic에 확인해요(토큰 비용 없음) · 키 발급은 Claude Console의 API Keys</p>
+        <div class="acts"><button type="button" class="btn" data-act="keydel" id="keydel">키 지우기</button><span class="grow"></span><button type="button" class="btn" data-act="keycancel">취소</button><button type="submit" class="btn dark" id="keyok">확인하고 저장</button></div>
+      </form>
+    </dialog>
 <script src="engine.js"></script>
 <script src="prompt.js"></script>
 <script src="nai.js"></script>
@@ -788,9 +794,9 @@ async function aiRefine(){if(aiBusy)return;if(!state.panels.length){toast('컷�
 // API 키 보안 입력창: Claude 키 형식만 받고, 저장 전에 Anthropic에 확인
 const maskKey=k=>k?`${k.slice(0,7)}…${k.slice(-4)}`:'';
 function setKey(k,keep){AIKEY=k;try{localStorage.removeItem('rough-ai-key');sessionStorage.removeItem('rough-ai-key');if(k)(keep==='session'?sessionStorage:localStorage).setItem('rough-ai-key',k)}catch(_){}renderKey()}
-function renderKey(){const on=!!AIKEY;$('#aikeyst').textContent=on?maskKey(AIKEY):'API 키 없음';$('#aikeyst').classList.toggle('on',on);$('#aikeybtn').textContent=on?'키 변경':'API 키 입력';$('#keydel').hidden=!on}
-let keyThen=false;
-function openKey(then=false,msg=''){keyThen=then;const i=$('#kin');i.value='';i.type='password';i.removeAttribute('aria-invalid');document.querySelector('[data-act=keyshow]').textContent='보기';$('#kerr').textContent=msg;$('#keyok').disabled=false;$('#keyok').textContent='확인하고 저장';
+function renderKey(){const on=!!AIKEY;document.querySelectorAll('[data-keyst]').forEach(e=>{e.textContent=on?maskKey(AIKEY):'API 키 없음';e.classList.toggle('on',on)});document.querySelectorAll('[data-keybtn]').forEach(e=>e.textContent=on?'키 변경':'API 키 입력');$('#keydel').hidden=!on}
+let keyThen=null;
+function openKey(then=null,msg=''){keyThen=typeof then==='function'?then:then?aiRefine:null;const i=$('#kin');i.value='';i.type='password';i.removeAttribute('aria-invalid');document.querySelector('[data-act=keyshow]').textContent='보기';$('#kerr').textContent=msg;$('#keyok').disabled=false;$('#keyok').textContent='확인하고 저장';
   let keep='local';try{if(sessionStorage.getItem('rough-ai-key'))keep='session'}catch(_){}document.querySelector(`#keyform [name=keep][value=${keep}]`).checked=true;$('#keydlg').showModal();setTimeout(()=>i.focus(),30)}
 function closeKey(){$('#kin').value='';$('#keydlg').close()}
 $('#keydlg').addEventListener('close',()=>{$('#kin').value=''});
@@ -800,7 +806,7 @@ $('#keyform').addEventListener('submit',async e=>{e.preventDefault();const i=$('
   if(k.startsWith('sk-ant-admin'))return err('관리자 키는 쓸 수 없어요. 일반 API 키를 넣어주세요');
   i.removeAttribute('aria-invalid');$('#kerr').textContent='';$('#keyok').disabled=true;$('#keyok').textContent='확인 중…';
   let mod;try{mod=await import('./claude.js');await mod.check(k)}catch(ex){$('#keyok').disabled=false;$('#keyok').textContent='확인하고 저장';return err(mod?mod.explain(ex):'Claude 모듈을 불러오지 못했어요')}
-  const keep=document.querySelector('#keyform [name=keep]:checked').value;setKey(k,keep);closeKey();toast(keep==='session'?'키를 연결했어요 (탭을 닫으면 지워져요)':'키를 연결했어요');if(keyThen){keyThen=false;aiRefine()}});
+  const keep=document.querySelector('#keyform [name=keep]:checked').value;setKey(k,keep);closeKey();toast(keep==='session'?'키를 연결했어요 (탭을 닫으면 지워져요)':'키를 연결했어요');if(keyThen){const f=keyThen;keyThen=null;f()}});
 function aiCut(ai,i){return ai&&AIVIEW==='ai'?(ai.cuts.find(c=>c.n===i+1)||{}).prompt:null}
 function fmtText(o){return o.natural}
 function cutHead(p,i){return `${i+1}. ${p.who?p.who+' · ':''}${p.shot}·${p.ang}·${p.emo} ${p.i}${p.vng==='P'?' · 정점':''}`}
@@ -977,7 +983,8 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   else if(a==='airefine')aiRefine();
   else if(a==='sheetpng')sheetExport(false);
   else if(a==='sheetview')sheetExport(true);
-  else if(a==='aikeyopen')openKey(false);
+  else if(a==='aikeyopen')openKey(null);
+  else if(a==='nairefine')naiRefine();
   else if(a==='keycancel')closeKey();
   else if(a==='keydel'){setKey('',null);closeKey();toast('키를 지웠어요')}
   else if(a==='keyshow'){const i=$('#kin'),show=i.type==='password';i.type=show?'text':'password';el.textContent=show?'숨기기':'보기';el.setAttribute('aria-pressed',show)}});
@@ -1012,24 +1019,44 @@ let NAISTYLE=NAI_STYLE_DEF,NAITAGS={};
 try{NAISTYLE=localStorage.getItem('rough-nai-style')||NAI_STYLE_DEF;NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){}
 const saveNaiTags=()=>{try{localStorage.setItem('rough-nai-tags',JSON.stringify(NAITAGS))}catch(_){}};
 function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),body:c.body||'female',look:c.look||''}))}
-function naiCuts(){const ps=state.panels,chars=naiChars(),sc=ps.length?sceneFor(ps[0]):null;
+function naiRuleCuts(){const ps=state.panels,chars=naiChars(),sc=ps.length?sceneFor(ps[0]):null;
   const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc}};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
+// Claude 다듬기(NovelAI): 결과는 씬별로 입력 서명과 함께 저장, 기본/Claude 전환
+let NAIVIEW='ai',AIN={};try{AIN=JSON.parse(localStorage.getItem('rough-ai-nai')||'{}')}catch(_){}
+function naiPayload(){const L=naiRuleCuts(),chars=naiChars();
+  return{title:SCENES[SCUR].title||'',style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
+    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,
+      dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${a.narr} · ${a.goal}`:'',draft:{base:o.base,chars:o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}}})}}
+function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(naiPayload())}}
+function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai)return L;
+  return L.map(x=>{const c=ai.cuts.find(k=>k.n===x.i+1);if(!c)return x;
+    const chars=c.chars.slice(0,6).map((k,n)=>{const old=x.o.chars.find(o=>o.name===k.name)||x.o.chars[n]||{};return{name:k.name,prompt:k.prompt,pos:NAI.cellPos(k.cell)||old.pos||NAI.cellPos('C3'),ref:!!IMG.char[k.name]}});
+    return{...x,o:{...x.o,base:c.base,chars,ai:true}}})}
+let naiBusy=false;
+async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}
+  if(!AIKEY){openKey(naiRefine);return}const st=t=>$('#naist').textContent=t;naiBusy=true;$('#naibtn').disabled=true;const sid=SCENES[SCUR].id,payload=naiPayload();
+  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,payload,{onStatus:st});
+    AIN[sid]={sig:sigOf(payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
+    NAIVIEW='ai';st(`다듬었어요 · ${r.model}`);if(SCENES[SCUR].id===sid&&VIEW==='nai')renderNai()}
+  catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';st(m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false}}
+$('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;NAIVIEW=b.dataset.v;renderNai()});
 function naiText(){const L=naiCuts();return L.map(({p,i,o})=>NAI.text(o,i,L.length,cutHead(p,i))).join('\n\n────────\n\n')}
 function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
   $('#naichars').innerHTML=chars.length?chars.map(c=>`<div class="naichar"><b>${esc(c.name)}</b><input data-naitag="${esc(c.name)}" value="${esc(NAITAGS[c.name]??NAI.lookTags(c.look).join(', '))}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="btn" data-act="naireset" data-n="${esc(c.name)}">외형에서 다시</button></div>`).join(''):'<p class="empty">작성 단계의 인물 설정에 인물을 넣어주세요.</p>';
   const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
   $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="prompt">참고 이미지 등록하러 가기</button>`;
+  const ai=ainFor();$('#naiview').hidden=!ai;document.querySelectorAll('#naiview button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===NAIVIEW));
+  if(ai&&!naiBusy)$('#naist').textContent=ai.stale?'글이나 태그가 바뀌었어요. 다시 다듬으면 반영돼요':`다듬은 결과 · ${new Date(ai.at).toLocaleString()}`;
   if(!ps.length){$('#ncards').innerHTML='<p class="empty">작성 단계에서 컷을 적어주세요.</p>';$('#naicount').textContent='';return}
   $('#naicount').textContent=`이미지 ${cutCount(SCUR,ps)}/${ps.length}컷 등록 · 칸마다 복사 버튼`;
   const blk=(t,sub,txt)=>`<div class="nf"><header><h4>${t}${sub?`<small>${sub}</small>`:''}</h4><button class="btn" data-act="ncopy">복사</button></header><pre>${esc(txt)}</pre></div>`;
   $('#ncards').innerHTML=naiCuts().map(({p,i,o})=>{const im=cutImg(SCUR,i,p),S=o.settings;
     return `<div class="pcard cut"><div class="drop${im?' has':''}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 이미지 ${im?'바꾸기':'등록'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="삭제">×</button>`:'+ 생성한 이미지'}</div>
-    <div><header><h3>${esc(cutHead(p,i))}${im?(im.stale?'<span class="tag warn">글이 바뀜</span>':'<span class="tag">등록됨</span>'):''}</h3><button class="btn" data-act="ncopyall">전체 복사</button></header>
+    <div><header><h3>${esc(cutHead(p,i))}${im?(im.stale?'<span class="tag warn">글이 바뀜</span>':'<span class="tag">등록됨</span>'):''}${o.ai?'<span class="tag">Claude</span>':''}</h3><button class="btn" data-act="ncopyall">전체 복사</button></header>
     <p class="meta"><span class="ratio">${o.size.w} × ${o.size.h}${o.size.exact?'':' → 자르기'}</span> ${esc(p.act)}${o.size.exact?'':` · 생성 후 ${esc(o.size.crop)}`}</p>
     ${blk('기본 프롬프트','Base Prompt',o.base)}
     ${o.chars.map((c,n)=>blk(`캐릭터 ${n+1} · ${esc(c.name)}`,`위치 ${c.pos.cell} (x ${c.pos.x}, y ${c.pos.y})`,c.prompt)).join('')}
-    ${blk('제외할 내용','Undesired Content',o.uc)}
     <div class="nset"><div><b>해상도</b>${o.size.w} × ${o.size.h}</div><div><b>Steps · Guidance</b>${S.steps} · ${S.guidance}</div><div><b>Sampler</b>${S.sampler} · ${S.noise}</div><div><b>img2img</b>Strength ${S.strength} · Noise ${S.noiseImg}</div><div><b>캐릭터 위치</b>${o.chars.length>1?'AI\'s Choice 끄고 칸 지정':o.chars.length?'1명이면 AI\'s Choice도 괜찮음':'인물 없음'}</div><div><b>레퍼런스</b>${o.charRef?`Character Reference: ${esc(o.charRef)}`:o.vibe?'Vibe Transfer: 장면 이미지':'없음'}</div></div>
     <div class="nbtns"><button class="btn dark" data-act="naibase" data-i="${i}">바탕 PNG (${o.size.w}×${o.size.h})</button>${o.charRef?`<button class="btn" data-act="nairef" data-n="${esc(o.charRef)}">캐릭터 레퍼런스 이미지</button>`:o.vibe?'<button class="btn" data-act="naivibe">장면 이미지</button>':''}</div>
     </div></div>`}).join('')}

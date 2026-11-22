@@ -1,5 +1,5 @@
 /* NovelAI Diffusion V4.5 Full용 출력: 엔진이 정한 컷 값을 Danbooru 태그로 바꾸고,
-   V4.5 화면 칸(기본 프롬프트 / 캐릭터 프롬프트+위치 / 제외할 내용 / 해상도 / img2img / 레퍼런스)에 맞춰 나눈다.
+   V4.5 화면 칸(기본 프롬프트 / 캐릭터 프롬프트+위치 / 해상도 / img2img / 레퍼런스)에 맞춰 나눈다.
    브라우저(window.RoughNAI)와 Node(require) 모두에서 쓴다. */
 (function (N) {
   'use strict';
@@ -105,15 +105,14 @@
         cast.length > 1 ? (n === 0 ? `facing ${side === 'left' ? 'right' : 'left'}` : 'looking at another') : '',
         insert ? 'hands only' : '',
       ]).join(', ');
-      return { name: c.name, prompt, uc: '', pos: pos(x, y), ref: !!refs.char?.(c.name) };
+      return { name: c.name, prompt, pos: pos(x, y), ref: !!refs.char?.(c.name) };
     });
-    const uc = ['text', 'speech bubble', 'english text', 'watermark', 'signature', 'logo', 'multiple views', 'comic', 'panel border', 'border', 'bad hands', 'extra fingers', 'lowres', 'blurry', 'jpeg artifacts', '3d', 'realistic'];
     const sz = size(p.h);
     const strength = insert ? 0.72 : tiny ? 0.62 : peak ? 0.7 : 0.66;
     const charRef = main && refs.char?.(main.name) ? main.name : null;
     const vibe = !charRef && refs.scene ? true : false;
     return {
-      base: base.join(', '), chars: charP, uc: uc.join(', '), size: sz,
+      base: base.join(', '), chars: charP, size: sz,
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe, peak, aiChoice: cast.length < 2 && !insert,
     };
@@ -123,12 +122,13 @@
       `해상도: ${o.size.w} × ${o.size.h}${o.size.exact ? '' : ` (생성 후 ${o.size.crop} 자르기)`}`,
       `기본 프롬프트:\n${o.base}`,
       ...o.chars.map((c, n) => `캐릭터 ${n + 1} · ${c.name} · 위치 ${c.pos.cell} (x ${c.pos.x}, y ${c.pos.y}):\n${c.prompt}`),
-      `제외할 내용:\n${o.uc}`,
       `설정: Steps ${o.settings.steps} · Guidance ${o.settings.guidance} · Sampler ${o.settings.sampler} · Noise Schedule ${o.settings.noise}`,
       `img2img: 바탕 PNG 업로드, Strength ${o.settings.strength} · Noise ${o.settings.noiseImg}`,
       o.charRef ? `Character Reference: ${o.charRef} 이미지 (V4.5, 한 장만 · Vibe Transfer와 같이 못 씀)` : o.vibe ? 'Vibe Transfer: 장면 이미지 (정보 추출 0.6 · 강도 0.5 정도에서 시작)' : '',
     ].filter(Boolean);
     return L.join('\n\n');
   }
-  Object.assign(N, { cut, text, lookTags, size, SHOT, ANG, EXPR });
+  // 칸 이름(A1~E5) → 좌표
+  const cellPos = cell => { const c = COLS.indexOf(String(cell)[0]), r = +String(cell).slice(1) - 1; return c < 0 || !(r >= 0 && r < 5) ? null : pos(+(0.1 + c * 0.2).toFixed(1), +(0.1 + r * 0.2).toFixed(1)); };
+  Object.assign(N, { cut, text, lookTags, size, cellPos, SHOT, ANG, EXPR });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughNAI = {}));
