@@ -96,6 +96,7 @@ input[type=range]{width:100%;height:36px;accent-color:var(--accent)}
 .gal figure.hit{border-color:var(--accent)}
 .gal img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover}
 .gal figcaption{padding:8px 10px;font-size:14px;color:var(--sub)}
+#creativeGallery img{object-fit:contain}
 .strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;align-items:flex-start}
 .strip figure{margin:0;flex:none;width:130px}
 .strip img{width:130px;height:170px;object-fit:cover;object-position:top;border-radius:10px;display:block;background:var(--line)}
@@ -152,6 +153,11 @@ input[type=range]{width:100%;height:36px;accent-color:var(--accent)}
     <h2>컬러 러프 참고</h2>
     <p class="desc">고른 컷에 이 그림의 샷·앵글·비율을 입혀요. 지금 패턴과 같은 컷은 파랗게 표시돼요.</p>
     <div class="gal" id="gallery"></div>
+  </section>
+  <section class="card" id="creativeCard" aria-labelledby="creativeTitle" hidden>
+    <h2 id="creativeTitle">창작 연출 참고</h2>
+    <p class="desc">《녹빛자정의 연인》의 색감을 참고해 새로 구성한 얼굴 클로즈업이에요. 고르면 현재 컷에 샷·앵글·비율을 적용해요.</p>
+    <div class="gal" id="creativeGallery"></div>
   </section>
   <section class="card" id="refCard">
     <h2>원본 컷 참고</h2>
@@ -257,9 +263,44 @@ function render(){let y=40,o='';const ws=W-60;
 fetch('references/green-midnight/index.json').then(r=>r.json()).then(d=>{GAL=d.items;renderGallery()}).catch(()=>{});
 function renderGallery(){if(!GAL.length)return;$('#galCard').hidden=false;const used=new Set(state.used.flatMap(p=>p.cuts.map(c=>c.id)));
   $('#gallery').innerHTML=GAL.map((g,i)=>`<figure data-g="${i}" class="${used.has(g.source_cut)?'hit':''}" tabindex="0" role="button" aria-label="${esc(g.source_cut)} 적용"><img loading="lazy" src="references/green-midnight/${g.file}" alt=""><figcaption>${esc(g.shot)} · ${esc(g.angle)}<br>${esc(g.frame)}</figcaption></figure>`).join('')}
-function applyRef(el){if(!state.panels.length)return;const g=GAL[+el.dataset.g];Object.assign(state.panels[state.sel],{shot:SHOTS.includes(g.shot)?g.shot:'중경',ang:ANGLES.includes(g.angle)?g.angle:'아이레벨',h:g.h_ratio});renderCuts();render()}
-$('#gallery').addEventListener('click',e=>{const f=e.target.closest('figure');if(f)applyRef(f)});
-$('#gallery').addEventListener('keydown',e=>{const f=e.target.closest('figure');if(f&&(e.key==='Enter'||e.key===' ')){e.preventDefault();applyRef(f)}});
+function applyRef(ref){
+  if(!ref || !state.panels.length)return;
+  Object.assign(state.panels[state.sel],{
+    shot:SHOTS.includes(ref.shot)?ref.shot:'중경',
+    ang:ANGLES.includes(ref.angle)?ref.angle:'아이레벨',
+    h:ref.h_ratio
+  });
+  renderCuts();
+  render();
+}
+function bindGallery(gallery,getItems){
+  function selectRef(figure){applyRef(getItems()[Number(figure.dataset.g)])}
+  gallery.addEventListener('click',event=>{
+    const figure=event.target.closest('figure[data-g]');
+    if(figure)selectRef(figure);
+  });
+  gallery.addEventListener('keydown',event=>{
+    const figure=event.target.closest('figure[data-g]');
+    if(figure && (event.key==='Enter' || event.key===' ')){
+      event.preventDefault();
+      selectRef(figure);
+    }
+  });
+}
+bindGallery($('#gallery'),()=>GAL);
+const creativeBase='references/creative/green-midnight-closeups/';
+fetch(creativeBase+'index.json')
+  .then(response=>response.ok?response.json():Promise.reject())
+  .then(({items})=>{
+    const gallery=$('#creativeGallery');
+    gallery.innerHTML=items.map((ref,index)=>{
+      const label=esc(ref.composition);
+      return `<figure data-g="${index}" tabindex="0" role="button" aria-label="${label} 적용"><img loading="lazy" src="${creativeBase}${esc(ref.file)}" alt=""><figcaption>${label}</figcaption></figure>`;
+    }).join('');
+    bindGallery(gallery,()=>items);
+    $('#creativeCard').hidden=items.length===0;
+  })
+  .catch(()=>{});
 fetch('../cuts/manifest.csv').then(r=>r.ok?r.text():Promise.reject()).then(t=>{const L=t.replace(/^﻿/,'').trim().split('\n');const H=L.shift().split(',');CUTS={};for(const l of L){const v=l.split(',');CUTS[v[0]]=v[H.indexOf('file')]}renderRefs()}).catch(()=>{CUTS=false;renderRefs()});
 function renderRefs(){if(CUTS===false){$('#refs').innerHTML='<p class="note">비공개 컷 저장소(cuts/)를 받으면 고른 패턴의 원본 컷이 여기 보여요.</p>';return}if(!CUTS||!state.used.length)return;
   $('#refs').innerHTML=state.used.map(p=>`<div class="strip">${p.cuts.filter(c=>c.t==='그림'&&CUTS[c.id]).map(c=>`<figure><img loading="lazy" src="../cuts/${CUTS[c.id]}" alt="${esc(c.id)}"><figcaption>${esc(c.id)} · ${esc(c.shot)}</figcaption></figure>`).join('')}</div>`).join('')}

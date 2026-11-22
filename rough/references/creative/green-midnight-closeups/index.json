@@ -1,0 +1,158 @@
+{
+  "category": "creative",
+  "label": "창작 연출",
+  "reference_work": "녹빛자정의 연인",
+  "note": "작품의 색감과 일부 인물 외형을 참고해 새로 구성한 창작 컷입니다. 창작 컷 ID(CR)로 관리합니다.",
+  "items": [
+    {
+      "id": "CR-GM-CU-01",
+      "file": "01-frontal.png",
+      "composition": "정면",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 1.2496,
+      "lettering": "말풍선",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-02",
+      "file": "02-profile.png",
+      "composition": "완전 측면",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 0.5628,
+      "lettering": "말풍선",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-03",
+      "file": "03-low-angle.png",
+      "composition": "로우앵글",
+      "shot": "클로즈업",
+      "angle": "로우앵글",
+      "h_ratio": 1.2496,
+      "lettering": "말풍선",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-04",
+      "file": "04-high-angle.png",
+      "composition": "하이앵글",
+      "shot": "클로즈업",
+      "angle": "하이앵글",
+      "h_ratio": 1.2496,
+      "lettering": "효과음",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-05",
+      "file": "05-over-shoulder.png",
+      "composition": "어깨 너머",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 1.2496,
+      "lettering": "말풍선",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-06",
+      "file": "06-dutch-angle.png",
+      "composition": "더치앵글",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 0.5628,
+      "lettering": "효과음",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-07",
+      "file": "07-inverted.png",
+      "composition": "뒤집힌 얼굴",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 1.2496,
+      "lettering": "내레이션",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-08",
+      "file": "08-turn-back.png",
+      "composition": "뒤돌아보기",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 1.2496,
+      "lettering": "효과음",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-09",
+      "file": "09-door-gap.png",
+      "composition": "문틈",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 1.2496,
+      "lettering": null,
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-10",
+      "file": "10-mirror.png",
+      "composition": "거울 반사",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 0.6667,
+      "lettering": "말풍선",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-11",
+      "file": "11-diagonal-light.png",
+      "composition": "사선 조명",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 1.2496,
+      "lettering": null,
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-12",
+      "file": "12-mouth-crop.png",
+      "composition": "입술 크롭",
+      "shot": "디테일",
+      "angle": "아이레벨",
+      "h_ratio": 0.3333,
+      "lettering": "말풍선",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-13",
+      "file": "13-close-perspective.png",
+      "composition": "근접 원근",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 1.2496,
+      "lettering": "말풍선",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-14",
+      "file": "14-overhead.png",
+      "composition": "부감",
+      "shot": "클로즈업",
+      "angle": "하이앵글",
+      "h_ratio": 0.5628,
+      "lettering": "효과음",
+      "source_cut": null
+    },
+    {
+      "id": "CR-GM-CU-15",
+      "file": "15-two-face-depth.png",
+      "composition": "전경과 후경의 두 얼굴",
+      "shot": "클로즈업",
+      "angle": "아이레벨",
+      "h_ratio": 1.2496,
+      "lettering": "말풍선",
+      "source_cut": null
+    }
+  ]
+}
