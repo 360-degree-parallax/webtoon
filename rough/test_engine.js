@@ -87,7 +87,7 @@ for (const c of CASES) {
   for (const p of PATS.filter(p => p.cuts.some(x => x.t === '그림'))) {
     for (const cut of R.layout(an, p)) {
       runs++;
-      if (!(cut.h >= 0.45 && cut.h <= 2.4 && cut.gap >= 0.08 && cut.gap <= 1.2 && R.SHOTS.includes(cut.shot) && R.ANGLES.includes(cut.ang))) bad++;
+      if (!(cut.h >= 0.45 && cut.h <= 2.4 && cut.gap >= 0.06 && cut.gap <= 1.2 && R.SHOTS.includes(cut.shot) && R.ANGLES.includes(cut.ang))) bad++;
     }
   }
 }

@@ -379,10 +379,25 @@
       if (b.vng === 'P' && h < 1.1) { h = 1.1; why.h.push('정점은 크게'); }
       if (tf !== 1) { h *= tf === 0.8 ? 0.9 : 1.1; why.h.push(`템포 ${an.tempo}`); }
       h = +clamp(h, 0.45, 2.4).toFixed(2);
-      let gap = (pc.gap ?? 0.3) * tf; why.gap.push(`패턴 여백 × 템포 ${an.tempo}`);
-      if (b.vng === 'P') { gap *= 1.6; why.gap.push('정점 뒤 숨 고르기'); }
-      if (an.beats[k + 1]?.role === '전환') { gap *= 1.8; why.gap.push('다음 컷이 장면 전환'); }
-      gap = +clamp(gap, 0.08, 1.2).toFixed(2);
+      // 컷 사이 간격 = 다음 컷과의 관계로 중요도 단계를 정하고(붙임·보통·쉼·큰 쉼), 패턴 여백과 섞는다
+      const nx = an.beats[k + 1]; let base = 0.25, tag = '보통';
+      const set = (v, t, r) => { if (v > base || tag === '보통') { base = v; tag = t; } why.gap.push(r); };
+      if (nx) {
+        if (nx.role === '전환' || nx.trans === '장면 전환') set(0.9, '큰 쉼', '다음 컷이 장면 전환');
+        if (b.vng === 'P') set(b.i - nx.i >= 1 ? 0.9 : 0.55, b.i - nx.i >= 1 ? '큰 쉼' : '쉼', '정점 뒤 숨 고르기');
+        else if (nx.vng === 'P') set(0.5, '쉼', '정점 앞 뜸 들이기');
+        if (tag === '보통') {
+          if (b.i - nx.i >= 2) set(0.5, '쉼', '감정이 가라앉는 사이');
+          else if (nx.trans === '양상 전환') set(0.45, '쉼', '분위기 컷 사이 여유');
+          else if (nx.trans === '순간 전환') { base = 0.07; tag = '붙임'; why.gap.push('즉각 반응이라 붙임'); }
+          else if (nx.trans === '동작 전환' && nx.who && nx.who === b.who) { base = 0.1; tag = '붙임'; why.gap.push('같은 인물 연속 동작'); }
+          else if (nx.trans === '주체 전환' && b.said && nx.said) { base = 0.16; why.gap.push('대사 주고받기'); }
+        }
+      } else if (an.goal === '여운' || b.vng === 'P') set(0.95, '큰 쉼', b.vng === 'P' ? '정점으로 묶음이 끝남' : '묶음 끝 · 여운');
+      else set(0.6, '쉼', '묶음 끝');
+      let gap = (0.35 * (pc.gap ?? 0.3) + 0.65 * base) * tf; why.gap.unshift(`${tag} · 패턴 여백 ${(pc.gap ?? 0.3).toFixed(2)} 섞음${tf !== 1 ? ` · 템포 ${an.tempo}` : ''}`);
+      const band = { 붙임: [0.06, 0.12], 보통: [0.13, 0.32], 쉼: [0.33, 0.64], '큰 쉼': [0.65, 1.2] }[tag];
+      gap = +clamp(gap, band[0], band[1]).toFixed(2);
       return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', sfx: b.sfx || [], dialogs: b.dialogs || [], key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
     });
   }

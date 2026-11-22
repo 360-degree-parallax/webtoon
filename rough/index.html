@@ -86,6 +86,7 @@ textarea:focus{border-color:var(--t1)}
 .beat b{display:block;font-size:15px;font-weight:600;line-height:1.45}
 .beat small{display:block;font-size:13px;color:var(--t2)}
 .why{font-size:12px;color:var(--t3);line-height:1.45;margin-top:4px}
+.gapw{margin-top:6px;font-size:12px;line-height:1.4;color:var(--t3)}.gapw b{color:var(--t2);font-weight:600}
 .vng{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
 .vng em{font-style:normal;display:inline-grid;place-items:center;min-width:26px;height:22px;padding:0 5px;border-radius:6px;background:var(--surface);font-size:12px;font-weight:700}
 .vng em.P{background:var(--peak);color:#fff}
@@ -250,6 +251,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .pcard.cut .drop{width:150px;height:auto;min-height:150px}
 .pcard.cut .drop img{position:static;width:100%;height:auto;display:block}
 .pcard.cut .drop .x{display:block}
+.pcard .ratio{display:inline-block;margin-right:6px;padding:1px 8px;border-radius:4px;background:var(--t1);color:var(--bg);font-size:12px;font-weight:700}
 .pcard .tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;background:var(--surface);font-size:12px;font-weight:600;color:var(--t2)}
 .pcard .tag.warn{color:#c2410c}
 .pcard .bt{display:flex;gap:6px}
@@ -530,6 +532,7 @@ function renderReading(){
     ${p?`<div class="match"><span class="meter"><i style="width:${r.pct}%"></i></span><b>${r.pct}%</b> 참고 패턴 ${esc(p.src)}-${esc(p.id)} · ${esc(p.dist)} · ${esc(p.tempo)}<span class="why">${top?`${esc(top)} 일치`:''}</span></div>`:''}</div>`}).join('')}
 
 // ---------- table ----------
+const gapWord=g=>g<0.13?'붙임':g<0.33?'보통':g<0.65?'쉼':'큰 쉼';
 function renderTable(){
   if(!state.panels.length){$('#tbl').innerHTML='';return}
   const head=`<div class="tr head"><span></span><span>컷</span><span>구조</span><span>감정·강도</span><span>샷</span><span>앵글</span><span>길이</span><span class="ref">참고</span></div>`;
@@ -542,7 +545,7 @@ function renderTable(){
       <div><span style="font-size:14px;font-weight:600">${esc(c.emo)}</span><div class="dots${P?' P':''}">${[1,2,3].map(k=>`<i class="${c.i>=k?'on':''}"></i>`).join('')}</div><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.emoWhy||'')}</div></div>
       ${v('shot',c.shot,c.lock.shot!==undefined?'직접 고름':c.why.shot.slice(1).join(' · ')||c.why.shot[0])}
       ${v('ang',c.ang,c.lock.ang!==undefined?'직접 고름':c.why.ang.join(' · '))}
-      ${v('h',lenWord(c.h),c.lock.h!==undefined?'직접 고름':c.why.h.slice(1).join(' · ')||c.why.h[0])}
+      <div>${v('h',lenWord(c.h),c.lock.h!==undefined?'직접 고름':c.why.h.slice(1).join(' · ')||c.why.h[0])}<div class="gapw" title="${esc(c.why.gap.join(' · '))}">↓ <b>${gapWord(c.gap)}</b> ${esc(c.why.gap.slice(1).join(' · '))}</div></div>
       <div class="ref">${c.ref?`<img class="thumb" data-ref="${i}" src="${c.ref.src}" alt="" title="${esc(c.ref.label)} 구도 적용" loading="lazy">`:'<span class="thumb empty"></span>'}</div>
     </div>`}).join('')}
 
@@ -676,7 +679,7 @@ function cutPrompts(){const ps=state.panels,ctx=promptCtx(ps);return ps.map((p,i
 // Claude 다듬기: 엔진값 + 규칙 초안을 보내고, 결과는 씬별로 입력 서명과 함께 저장
 function aiPayload(){const ps=state.panels,ctx=promptCtx(ps);
   return{title:SCENES[SCUR].title||'',style:PSTYLE,palette:ctx.palette,chars:ctx.chars.filter(c=>ps.some(p=>p.who===c.name||(p.act||'').includes(c.name))).map(c=>({name:c.name,look:c.look})),
-    cuts:cutPrompts().map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,shot:p.shot,angle:p.ang,lens:(RP.SHOT[p.shot]||{}).lens||'',emotion:p.emo,intensity:p.i,peak:p.vng==='P',ratio:`100:${Math.round(p.h*100)}`,who:p.who||'',action:p.act,
+    cuts:cutPrompts().map(({p,i,o})=>{const a=state.an[p.chunk],sp=o.spec;return{n:i+1,spec:{ratio:sp.ratio,size:`${sp.W}x${sp.H}px`,nearestStandard:sp.near,standardExact:sp.exact,shape:sp.shape},role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),shotWhy:(p.why?.shot||[]).join(', '),shot:p.shot,angle:p.ang,lens:(RP.SHOT[p.shot]||{}).lens||'',emotion:p.emo,intensity:p.i,peak:p.vng==='P',who:p.who||'',action:p.act,
       dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${a.narr} · ${a.goal}`:'',draft:o.natural}})}}
 function sigOf(o){const t=JSON.stringify(o);let h=0;for(let k=0;k<t.length;k++)h=(h*31+t.charCodeAt(k))|0;return h.toString(36)}
 function aiFor(){const r=AIC[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(aiPayload())}}
@@ -896,7 +899,7 @@ function renderPrompts(){const ps=state.panels;
   const n=cutCount(SCUR,ps);$('#pcount').textContent=`이미지 ${n}/${ps.length}컷 등록 · 여러 장을 한 번에 놓으면 그 컷부터 차례로 들어가요`;
   $('#pcards').innerHTML=cutPrompts().map(({p,i,o})=>{const im=cutImg(SCUR,i,p);
     return `<div class="pcard cut"><div class="drop${im?' has':''}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 이미지 ${im?'바꾸기':'등록'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="삭제">×</button>`:'+ 생성한 이미지'}</div>
-    <div><header><h3>${esc(cutHead(p,i))}${im?(im.stale?'<span class="tag warn">글이 바뀜</span>':'<span class="tag">등록됨</span>'):''}${aiCut(ai,i)?'<span class="tag">Claude</span>':''}</h3><button class="btn" data-act="pcopy1">복사</button></header><p class="meta">${esc(p.act)}${p.said?` · “${esc(p.said)}”`:''} · 비율 ${o.ar}</p><pre>${esc(aiCut(ai,i)||fmtText(o))}</pre></div></div>`}).join('')}
+    <div><header><h3>${esc(cutHead(p,i))}${im?(im.stale?'<span class="tag warn">글이 바뀜</span>':'<span class="tag">등록됨</span>'):''}${aiCut(ai,i)?'<span class="tag">Claude</span>':''}</h3><button class="btn" data-act="pcopy1">복사</button></header><p class="meta"><span class="ratio">${esc(o.spec.ratio)} · ${o.spec.W}×${o.spec.H}px · ${o.spec.exact?'표준 ':'가까운 표준 '}${o.spec.near}</span> ${esc(p.act)}${p.said?` · “${esc(p.said)}”`:''} · 뒤 간격 ${RP.gapTag(p.gap??0.3)}</p><pre>${esc(aiCut(ai,i)||fmtText(o))}</pre></div></div>`}).join('')}
 
 // ---------- 3D 시안 ----------
 let D3=null,last3d=null,CAST={};
