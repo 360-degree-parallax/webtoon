@@ -245,6 +245,19 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .ccard.add span{font-size:30px;line-height:1}
 .bgcards{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}
 .bgcards .slot{width:180px}.bgcards .drop{width:180px;height:120px}
+.libbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}.libbar input{flex:1 1 220px;max-width:340px;height:40px;box-sizing:border-box;padding:0 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px}
+.libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.lcard{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px 12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.lcard .av{width:56px;height:56px;border-radius:28px;overflow:hidden;display:grid;place-items:center;color:#fff;font-weight:800;font-size:20px}
+.lcard .av img{width:100%;height:100%;object-fit:cover;object-position:top}
+.lcard b{display:block;font-size:15px}.lcard small{color:var(--t2);font-size:12px}
+.lcard .ll{font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.lcard .la{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid var(--line)}.lcard .la .btn{height:32px;padding:0 12px;font-size:13px}
+.lcard .lx{font-size:12px;color:var(--t3);background:none;border:0;padding:0;cursor:pointer}.lcard .lx:hover{color:var(--t1);text-decoration:underline}
+.lcard.in{background:var(--surface)}
+.ccard .cbadge{position:absolute;top:8px;left:8px;z-index:1;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;background:rgba(255,255,255,.92);color:#1d2a20}
+.ccard .cbadge.diff{background:#fff3e0;color:#9a3412}
+.libst{font-size:12px;color:var(--t2);margin-left:8px;align-self:center}
 .refsum{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:14px;color:var(--t2)}
 .refsum .av{width:40px;height:40px;border-radius:20px;overflow:hidden;background:var(--surface);display:grid;place-items:center;font-weight:700;color:#fff;border:2px solid var(--bg);box-shadow:0 0 0 1px var(--line)}
 .refsum .av img{width:100%;height:100%;object-fit:cover;object-position:top}
@@ -391,11 +404,31 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 </header>
 
 <nav class="topnav" role="tablist" aria-label="보기">
-  <button role="tab" data-view="write" aria-selected="false"><b>1</b>작성</button>
-  <button role="tab" data-view="layout" aria-selected="false"><b>2</b>연출</button>
-  <button role="tab" data-view="nai" aria-selected="true"><b>3</b>NovelAI</button>
-  <button role="tab" data-view="webtoon" aria-selected="false"><b>4</b>웹툰 보기</button>
+  <button role="tab" data-view="chars" aria-selected="false"><b>1</b>캐릭터</button>
+  <button role="tab" data-view="write" aria-selected="false"><b>2</b>작성</button>
+  <button role="tab" data-view="layout" aria-selected="false"><b>3</b>연출</button>
+  <button role="tab" data-view="nai" aria-selected="true"><b>4</b>NovelAI</button>
+  <button role="tab" data-view="webtoon" aria-selected="false"><b>5</b>웹툰 보기</button>
 </nav>
+
+<div class="view" id="v-chars" hidden>
+<div class="wrap" style="max-width:1200px">
+  <h1>캐릭터</h1>
+  <p class="desc">이 작품에 나오는 인물을 만들어요. 한 번 만든 캐릭터는 보관함에 저장해 두고 다른 작품에서도 불러 쓸 수 있어요.</p>
+  <section style="margin-top:28px">
+    <div class="sh"><h2>이 작품 등장인물</h2><span>카드를 눌러 프로필 편집 · 대표 이미지와 외형은 NovelAI 태그·참고 시트에 그대로 쓰여요</span></div>
+    <div class="ccards" id="chars"></div>
+    <div class="toolbar"><span class="status" id="castst"></span><span class="grow"></span><button class="btn" data-act="libsaveall">모두 보관함에 저장</button></div>
+  </section>
+  <section>
+    <div class="sh"><h2>캐릭터 보관함</h2><span>이 브라우저에 저장돼요 · 다른 기기로 옮길 땐 파일로 내보내기</span></div>
+    <div class="libbar"><input type="search" id="libq" placeholder="이름·외형·태그 검색" aria-label="보관함 검색"><div class="seg3" id="libg"><button data-g="" aria-pressed="true">전체</button><button data-g="female" aria-pressed="false">여자</button><button data-g="male" aria-pressed="false">남자</button></div><span class="grow"></span><button class="btn" data-act="libimport">가져오기</button><button class="btn" data-act="libexport">파일로 내보내기</button></div>
+    <div class="libgrid" id="libgrid"></div>
+    <input type="file" id="libfile" accept="application/json,.json" hidden>
+  </section>
+  <div class="next"><span class="grow"></span><button class="btn dark big" data-view="write">작성으로 →</button></div>
+</div>
+</div>
 
 <div class="view" id="v-write" hidden>
 <div class="wgrid">
@@ -406,10 +439,10 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   </aside>
   <main class="main">
     <h1>작성</h1>
-    <p class="desc">인물을 정하고, 씬마다 컷을 적어요. 다 적으면 연출을 확인해요.</p>
+    <p class="desc">씬마다 컷을 적어요. 인물은 @이름으로 부르고, 다 적으면 연출을 확인해요.</p>
   <section>
-    <div class="sh"><h2>등장인물</h2><span>카드를 눌러 프로필을 편집해요 · 대표 이미지와 외형은 프롬프트·참고 시트·NovelAI에 그대로 쓰여요</span></div>
-    <div class="ccards" id="chars"></div>
+    <div class="sh"><h2>등장인물</h2><span>캐릭터 페이지에서 만든 인물이에요</span></div>
+    <div class="refsum" id="castsum"></div>
     <div class="sugg" id="sugg"></div>
   </section>
   <section>
@@ -577,12 +610,12 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       <label class="cf"><span>이름</span><input data-ck="name" maxlength="20" placeholder="예: 에드가" spellcheck="false"></label>
       <label class="cf"><span>다른 호칭 <small>쉼표로 구분 · 줄글에서 이 이름들도 같은 인물로 찾아요</small></span><input data-ck="aliases" placeholder="예: 도련님, 에드" spellcheck="false"></label>
       <div class="cf"><span>성별 <small>NovelAI 인원 태그(1girl·1boy)</small></span><div class="seg3" id="chbody"><button type="button" data-cbody="female">여자</button><button type="button" data-cbody="male">남자</button></div></div>
-      <label class="cf"><span>외형 <small id="chcnt"></small></span><textarea data-ck="look" rows="4" maxlength="300" placeholder="머리 모양·색, 눈, 체격, 옷차림, 특징"></textarea></label>
+      <label class="cf"><span>외형 <small id="chcnt"></small></span><textarea data-ck="look" rows="6" maxlength="1000" placeholder="머리 모양·색, 눈, 체격, 옷차림, 특징"></textarea></label>
       <label class="cf"><span>NovelAI 태그 <small>비우면 외형에서 자동으로 만들어요</small></span><input data-ck="tags" spellcheck="false" placeholder="blonde hair, short hair, green eyes, black tailcoat"></label>
       <div class="cf"><span>대사 미리보기</span><div class="chat" id="chchat"></div></div>
     </div>
   </div>
-  <div class="acts"><button type="button" class="btn" data-act="chdel">캐릭터 삭제</button><span class="grow"></span><button type="button" class="btn dark" data-act="chclose">완료</button></div>
+  <div class="acts"><button type="button" class="btn" data-act="chdel">작품에서 빼기</button><span class="libst" id="libst"></span><span class="grow"></span><button type="button" class="btn" data-act="librevert" id="librevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="libsave" id="libsavebtn">보관함에 저장</button><button type="button" class="btn dark" data-act="chclose">완료</button></div>
 </dialog>
 <script src="engine.js"></script>
 <script src="prompt.js"></script>
@@ -999,7 +1032,7 @@ function render(){state.svg=renderSVG(state.panels,state.sel);$('#preview').inne
 
 
 // ---------- reference images (캐릭터·장면) ----------
-const IMG={char:{},scene:[],cut:{}};let target=null,showUnder=true;
+const IMG={char:{},scene:[],cut:{},lib:{}};let target=null,showUnder=true;
 const idb=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('rough-refs',1);r.onupgradeneeded=()=>r.result.createObjectStore('refs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('refs',mode);const st=t.objectStore('refs');const out=fn(st);t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
   return{all:()=>tx('readonly',st=>st.getAll()).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).catch(()=>{}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
@@ -1026,7 +1059,7 @@ function renderBgs(){$('#bgs').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,
 function renderRefSum(){const ns=CHARS.map(c=>c.name.trim()).filter(Boolean);const el=$('#refsum');if(!el)return;
   el.innerHTML=ns.map(n=>`<span class="av" title="${esc(n)}${IMG.char[n]?'':' · 이미지 없음'}" style="${IMG.char[n]?'':`background:${avBg(n)}`}">${IMG.char[n]?`<img src="${IMG.char[n].src}" alt="${esc(n)}">`:esc(n.slice(0,1))}</span>`).join('')+
     `<span>인물 이미지 ${ns.filter(n=>IMG.char[n]).length}/${ns.length} · 배경 ${IMG.scene.length}장</span><button class="btn" data-view="write">작성에서 편집</button>`}
-function renderSlotsLite(){renderBgs();renderRefSum();$('#under').hidden=false}
+function renderSlotsLite(){renderBgs();renderRefSum();renderCastSum();$('#under').hidden=false}
 function renderSlots(){renderChars();renderSlotsLite()}
 async function attach(file,slot){if(!file||!file.type.startsWith('image/'))return;const im=await shrink(file);
   if(slot.kind==='char'){const o={id:'char:'+slot.key,kind:'char',name:slot.key,...im};IMG.char[slot.key]=o;idb.put(o);toast(`${slot.key} 캐릭터 이미지를 연결했어요`)}
@@ -1049,7 +1082,7 @@ slotsEl.forEach(el=>{
 document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
 try{showUnder=localStorage.getItem('rough-under')!=='0'}catch(_){}$('#under').setAttribute('aria-pressed',showUnder);
 $('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);try{localStorage.setItem('rough-under',showUnder?'1':'0')}catch(_){}render()};
-idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
+idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
 
 // ---------- prompt export ----------
 const RP=window.RoughPrompt;
@@ -1106,13 +1139,66 @@ function charLines(name){const out=[];SCENES.forEach(sc=>RE.parseCuts(sc.cuts,en
 function charStat(name){const bs=RE.parseCuts(CUTS,engineChars());return{cuts:bs.filter(b=>b.who===name||(b.act||'').includes(name)).length,lines:bs.reduce((a,b)=>a+(b.dialogs||[]).filter(d=>d.who===name).length,0)}}
 function renderChars(){
   $('#chars').innerHTML=CHARS.map((c,i)=>{const n=c.name.trim(),im=n&&IMG.char[n],st=n?charStat(n):{cuts:0,lines:0},tags=n?charTags(c).slice(0,5):[];
-    return `<button class="ccard" data-ci="${i}" aria-label="${esc(n||'이름 없음')} 프로필 편집"><span class="cav" style="${im?'':`background:${avBg(n||'?')}`}">${im?`<img src="${im.src}" alt="">`:`<span class="ini">${esc((n||'?').slice(0,1))}</span>`}<span class="cname"><b>${esc(n||'이름 없음')}</b><small>${c.body==='male'?'남자':'여자'}${c.aliases?` · ${esc(c.aliases)}`:''}</small></span></span>
+    const ls=libState(c);
+    return `<button class="ccard" data-ci="${i}" aria-label="${esc(n||'이름 없음')} 프로필 편집">${ls==='same'?'<span class="cbadge">보관함</span>':ls==='diff'?'<span class="cbadge diff">보관함과 다름</span>':''}<span class="cav" style="${im?'':`background:${avBg(n||'?')}`}">${im?`<img src="${im.src}" alt="">`:`<span class="ini">${esc((n||'?').slice(0,1))}</span>`}<span class="cname"><b>${esc(n||'이름 없음')}</b><small>${c.body==='male'?'남자':'여자'}${c.aliases?` · ${esc(c.aliases)}`:''}</small></span></span>
       <span class="cbody"><span class="clook">${esc(c.look||'외형을 적어 주세요')}</span>${tags.length?`<span class="ctags">${tags.map(t=>`<i>#${esc(t)}</i>`).join('')}</span>`:''}<span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span></span></button>`}).join('')+
     `<button class="ccard add" data-act="addchar"><span>+</span>새 캐릭터</button>`;
-  renderSugg();if($('#chdlg').open)renderEditor()}
+  const k=CHARS.filter(c=>libState(c)==='same').length,d=CHARS.filter(c=>libState(c)==='diff').length;$('#castst').textContent=`${CHARS.length}명 · 보관함 저장 ${k}${d?` · 보관함과 다름 ${d}`:''}`;
+  renderSugg();renderCastSum();if(!$('#v-chars').hidden)renderLib();if($('#chdlg').open)renderEditor()}
 function renderSugg(){const have=new Set(CHARS.map(c=>c.name.trim()));
   const found=[...new Set(RE.parseCuts(CUTS,engineChars()).map(b=>b.who))].filter(n=>n&&!have.has(n)&&!NOTP.test(n));
   $('#sugg').innerHTML=found.length?`글에서 찾은 인물 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
+function renderCastSum(){const el=$('#castsum');if(!el)return;
+  el.innerHTML=CHARS.filter(c=>c.name.trim()).map(c=>{const n=c.name.trim(),im=IMG.char[n];return `<span class="av" title="${esc(n)}" style="${im?'':`background:${avBg(n)}`}">${im?`<img src="${im.src}" alt="${esc(n)}">`:esc(n.slice(0,1))}</span>`}).join('')+
+    `<span>${CHARS.filter(c=>c.name.trim()).map(c=>'@'+esc(c.name.trim())).join(' ')||'아직 인물이 없어요'}</span><button class="btn" data-view="chars">캐릭터 페이지에서 편집</button>`}
+// ---------- 캐릭터 보관함: 작품과 상관없이 이 브라우저에 남는 캐릭터 목록 ----------
+// 작품의 인물은 보관함 항목의 복사본이고 c.lib로 연결된다. 고쳐도 보관함은 그대로이고, '보관함에 저장'을 눌러야 갱신된다.
+let LIB=[];try{LIB=JSON.parse(localStorage.getItem('rough-lib')||'[]')}catch(_){LIB=[]}
+let LIBQ='',LIBG='';
+const saveLib=()=>{try{localStorage.setItem('rough-lib',JSON.stringify(LIB))}catch(_){toast('저장 공간이 부족해요')}};
+const libOf=c=>c&&c.lib&&LIB.find(x=>x.id===c.lib);
+const castTags=c=>(NAITAGS[c.name.trim()]??'').trim();
+function libState(c){const L=libOf(c);if(!L)return'';const n=c.name.trim();const imC=IMG.char[n]?.src||'',imL=IMG.lib[L.id]?.src||'';
+  return L.name===n&&(L.aliases||'')===(c.aliases||'')&&L.body===c.body&&(L.look||'')===(c.look||'')&&(L.tags||'')===castTags(c)&&imC===imL?'same':'diff'}
+function libSave(i,quiet){const c=CHARS[i],n=c.name.trim();if(!n){toast('이름을 먼저 정해 주세요');return}
+  let L=libOf(c);if(!L){L={id:'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)};LIB.unshift(L);c.lib=L.id}
+  Object.assign(L,{name:n,aliases:c.aliases||'',body:c.body,look:c.look||'',tags:castTags(c),at:Date.now()});
+  const im=IMG.char[n];if(im){const o={...im,id:'lib:'+L.id,kind:'libimg',libId:L.id,name:n};IMG.lib[L.id]=o;idb.put(o)}else if(IMG.lib[L.id]){delete IMG.lib[L.id];idb.del('lib:'+L.id)}
+  saveLib();saveChars();if(!quiet)toast(`${n}을(를) 보관함에 저장했어요`);renderChars()}
+function libApply(L,c){const old=c.name.trim();Object.assign(c,{name:L.name,aliases:L.aliases||'',body:L.body,look:L.look||'',lib:L.id});
+  if(old&&old!==L.name){delete NAITAGS[old];if(IMG.char[old]){delete IMG.char[old];idb.del('char:'+old)}}
+  if(L.tags)NAITAGS[L.name]=L.tags;else delete NAITAGS[L.name];saveNaiTags();
+  const im=IMG.lib[L.id];if(im){const o={...im,id:'char:'+L.name,kind:'char',name:L.name};delete o.libId;IMG.char[L.name]=o;idb.put(o)}else if(IMG.char[L.name]){delete IMG.char[L.name];idb.del('char:'+L.name)}}
+function libUse(id){const L=LIB.find(x=>x.id===id);if(!L)return;
+  if(CHARS.some(c=>c.lib===id)){toast('이미 이 작품에 있어요');return}
+  const same=CHARS.findIndex(c=>c.name.trim()===L.name);
+  if(same>=0&&!confirm(`이 작품에 이미 '${L.name}'이(가) 있어요. 보관함 버전으로 바꿀까요?`))return;
+  const c=same>=0?CHARS[same]:{name:'',aliases:'',body:'female',look:''};if(same<0)CHARS.push(c);libApply(L,c);
+  saveChars();compute(false);renderSlots();toast(`${L.name}을(를) 작품에 넣었어요`)}
+function renderLib(){const el=$('#libgrid');if(!el)return;const q=LIBQ.trim().toLowerCase();
+  const list=LIB.filter(L=>(!LIBG||L.body===LIBG)&&(!q||[L.name,L.aliases,L.look,L.tags].join(' ').toLowerCase().includes(q)));
+  document.querySelectorAll('#libg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.g===LIBG));
+  el.innerHTML=list.length?list.map(L=>{const im=IMG.lib[L.id],inCast=CHARS.some(c=>c.lib===L.id);
+    return `<div class="lcard${inCast?' in':''}"><span class="av" style="${im?'':`background:${avBg(L.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(L.name.slice(0,1))}</span>
+      <div style="min-width:0"><b>${esc(L.name)}</b><small>${L.body==='male'?'남자':'여자'}${L.aliases?` · ${esc(L.aliases)}`:''}</small><div class="ll">${esc(L.look||L.tags||'외형 없음')}</div></div>
+      <div class="la"><button class="lx" data-libdel="${L.id}">삭제</button><small>${new Date(L.at).toLocaleDateString('ko-KR')} 저장</small>${inCast?'<span class="status">이 작품에서 사용 중</span>':`<button class="btn dark" data-libuse="${L.id}">작품에 넣기</button>`}</div></div>`}).join(''):
+    `<p class="empty" style="padding:8px 0">${LIB.length?'검색 결과가 없어요':'아직 보관함이 비어 있어요. 등장인물 프로필에서 \'보관함에 저장\'을 누르면 여기 쌓여요.'}</p>`}
+function libExport(){if(!LIB.length){toast('보관함이 비어 있어요');return}
+  const data={type:'rough-characters',version:1,exported:new Date().toISOString(),characters:LIB.map(L=>({...L,image:IMG.lib[L.id]?{src:IMG.lib[L.id].src,w:IMG.lib[L.id].w,h:IMG.lib[L.id].h,palette:IMG.lib[L.id].palette}:null}))};
+  download('rough-characters.json',URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'})));toast(`캐릭터 ${LIB.length}명을 파일로 내보냈어요`)}
+async function libImport(file){try{const d=JSON.parse(await file.text());if(d.type!=='rough-characters'||!Array.isArray(d.characters))throw new Error('캐릭터 파일이 아니에요');let n=0;
+  for(const x of d.characters){if(!x||!x.name)continue;const L={id:String(x.id||('c'+Date.now().toString(36)+n)),name:String(x.name).slice(0,20),aliases:String(x.aliases||''),body:x.body==='male'?'male':'female',look:String(x.look||'').slice(0,1000),tags:String(x.tags||''),at:+x.at||Date.now()};
+    const i=LIB.findIndex(y=>y.id===L.id);if(i>=0)LIB[i]=L;else LIB.push(L);
+    if(x.image&&typeof x.image.src==='string'&&/^data:image\/(png|jpeg|webp);base64,/.test(x.image.src)){const o={id:'lib:'+L.id,kind:'libimg',libId:L.id,name:L.name,src:x.image.src,w:+x.image.w||0,h:+x.image.h||0,palette:Array.isArray(x.image.palette)?x.image.palette.filter(h=>/^#[0-9a-f]{6}$/i.test(h)).slice(0,5):[]};IMG.lib[L.id]=o;idb.put(o)}n++}
+  saveLib();renderLib();renderChars();toast(`캐릭터 ${n}명을 가져왔어요`)}catch(e){toast('가져오지 못했어요: '+e.message)}}
+$('#libq').addEventListener('input',e=>{LIBQ=e.target.value;renderLib()});
+$('#libg').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;LIBG=b.dataset.g;renderLib()});
+$('#libgrid').addEventListener('click',e=>{const u=e.target.closest('[data-libuse]');if(u){libUse(u.dataset.libuse);return}
+  const d=e.target.closest('[data-libdel]');if(d){const L=LIB.find(x=>x.id===d.dataset.libdel);if(!L||!confirm(`보관함에서 '${L.name}'을(를) 지울까요? 작품에 넣은 인물은 그대로 남아요.`))return;
+    LIB=LIB.filter(x=>x.id!==L.id);if(IMG.lib[L.id]){delete IMG.lib[L.id];idb.del('lib:'+L.id)}CHARS.forEach(c=>{if(c.lib===L.id)delete c.lib});saveLib();saveChars();renderChars();toast('보관함에서 지웠어요')}});
+$('#libfile').addEventListener('change',e=>{const f=e.target.files[0];if(f)libImport(f);e.target.value=''});
+function renderLibState(){const c=CHARS[CED];if(!c)return;const st=libState(c);
+  $('#libst').textContent=st==='same'?'보관함과 같아요':st==='diff'?'보관함과 달라요':'보관함에 없어요';$('#libsavebtn').textContent=st?'보관함 갱신':'보관함에 저장';$('#libsavebtn').disabled=st==='same';$('#librevert').hidden=st!=='diff'}
 let CED=-1,cedOld='';
 function openEditor(i){CED=i;const c=CHARS[i];cedOld=c.name.trim();target={kind:'char',key:cedOld};
   for(const el of document.querySelectorAll('#chdlg [data-ck]'))el.value=el.dataset.ck==='tags'?(NAITAGS[c.name.trim()]??''):(c[el.dataset.ck]||'');
@@ -1121,7 +1207,7 @@ function renderEditor(){const c=CHARS[CED];if(!c)return;const n=c.name.trim(),im
   const d=$('#chdlg [data-cimg]');d.classList.toggle('has',!!im);d.style.background=im?'':avBg(n||'?');d.innerHTML=im?`<img src="${im.src}" alt="">`:`<span style="color:#fff;font-size:15px;font-weight:700;line-height:1.5">+ 대표 이미지<br><small style="font-weight:500;opacity:.85">${n?'':'이름을 먼저 정해 주세요'}</small></span>`;
   $('#chpal').innerHTML=im?im.palette.map(h=>`<i style="background:${h}" title="${h}"></i>`).join(''):'';$('#chimgdel').hidden=!im;
   document.querySelectorAll('#chbody button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.cbody===c.body));
-  $('#chcnt').textContent=`${(c.look||'').length}/300`;$('#chdlg [data-ck=tags]').placeholder=window.RoughNAI.lookTags(c.look).join(', ')||'blonde hair, short hair, green eyes';
+  $('#chcnt').textContent=`${(c.look||'').length}/1000`;renderLibState();$('#chdlg [data-ck=tags]').placeholder=window.RoughNAI.lookTags(c.look).join(', ')||'blonde hair, short hair, green eyes';
   const av=`<span class="av" style="${im?'':`background:${avBg(n||'?')}`}">${im?`<img src="${im.src}" alt="">`:esc((n||'?').slice(0,1))}</span>`;
   const ls=n?charLines(n).slice(-3):[];
   $('#chchat').innerHTML=ls.length?ls.map(l=>`<div class="msg">${av}<div><b>${esc(n)}</b><span class="bub">${l.note?`<em>(${esc(l.note)})</em>`:''}${esc(l.text)}</span></div></div>`).join(''):`<div class="msg">${av}<div><b>${esc(n||'이름 없음')}</b><span class="bub"><em>아직 대사가 없어요</em>컷 칸에 @${esc(n||'이름')} "(감정)대사" 형식으로 쓰면 여기 보여요.</span></div></div>`}
@@ -1144,8 +1230,13 @@ $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');i
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
   if(k==='addchar'){CHARS.push({name:'',aliases:'',body:'female',look:''});saveChars();renderChars();openEditor(CHARS.length-1)}
   else if(k==='chclose')$('#chdlg').close();
+  else if(k==='libsave'&&CED>=0){libSave(CED);renderEditor()}
+  else if(k==='librevert'&&CED>=0){const c=CHARS[CED],L=libOf(c);if(!L)return;libApply(L,c);cedOld=c.name.trim();saveChars();openEditor(CED);compute(false);renderSlots();toast('보관함 버전으로 되돌렸어요')}
+  else if(k==='libsaveall'){let n=0;CHARS.forEach((c,i)=>{if(c.name.trim()&&libState(c)!=='same'){libSave(i,true);n++}});toast(n?`${n}명을 보관함에 저장했어요`:'모두 보관함과 같아요')}
+  else if(k==='libexport')libExport();
+  else if(k==='libimport')$('#libfile').click();
   else if(k==='chimgdel'&&CED>=0){const n=CHARS[CED].name.trim();if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n);renderSlots();render()}}
-  else if(k==='chdel'&&CED>=0){const c=CHARS[CED],n=c.name.trim();if(!confirm(`${n||'이 캐릭터'}을(를) 지울까요? 대표 이미지도 함께 지워져요.`))return;if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n)}CHARS.splice(CED,1);saveChars();CED=-1;$('#chdlg').close();toast('캐릭터를 지웠어요')}});
+  else if(k==='chdel'&&CED>=0){const c=CHARS[CED],n=c.name.trim();if(!confirm(`${n||'이 캐릭터'}을(를) 이 작품에서 뺄까요?${c.lib?' 보관함에는 남아 있어요.':' 보관함에 저장하지 않았다면 다시 불러올 수 없어요.'}`))return;if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n)}CHARS.splice(CED,1);saveChars();CED=-1;$('#chdlg').close();toast('작품에서 뺐어요')}});
 
 // ---------- @ 자동완성 ----------
 const mbox=document.createElement('div');mbox.className='menu';mbox.id='mbox';mbox.setAttribute('role','listbox');mbox.hidden=true;document.body.appendChild(mbox);
@@ -1569,8 +1660,9 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
 
 // ---------- 보기 전환 ----------
 let VIEW='nai';
-function showView(v){if(!['write','layout','nai','webtoon','db'].includes(v))v='nai';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
-  ['write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
+function showView(v){if(!['chars','write','layout','nai','webtoon','db'].includes(v))v='nai';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+  ['chars','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
+  if(v==='chars'){renderChars();renderLib()}
   $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=v!=='layout';$('#gDb').setAttribute('aria-pressed',v==='db');
   if(v==='webtoon')renderWebtoon();
   if(v==='nai')renderNai();if(v==='db')loadDB();
