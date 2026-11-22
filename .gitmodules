@@ -1,0 +1,4 @@
+[submodule "cuts"]
+	path = cuts
+	url = https://github.com/360-degree-parallax/webtoon-cut
+	branch = main

@@ -7,12 +7,25 @@
 | `analysis/` | 기존 웹툰 회차를 컷 단위로 나누고 샷·앵글·역할·감정·색·5컷 리듬을 기록하는 파이프라인 |
 | `rough/` | 장면 비트와 원하는 리듬을 넣으면 DB의 실제 5컷 패턴을 골라 세로 러프를 그리는 웹 툴 (v0) |
 | `docs/codebook.md` | 두 쪽이 함께 쓰는 코드표와 판정 규칙 |
+| `cutlink.py` | 컷 ID로 원본 컷 이미지를 찾는 함수 (`cuts/` 필요) |
+| `cuts/` | 원본 컷 이미지 (비공개 저장소 `webtoon-cut` 서브모듈) |
+
+## 받기
+```
+git clone --recurse-submodules https://github.com/360-degree-parallax/webtoon
+```
+`cuts/`는 비공개 저장소라 접근 권한이 있어야 내려받아집니다. 권한이 없으면 비어 있고, 나머지 기능은 그대로 쓸 수 있습니다. 이미 받았다면 `git submodule update --init --depth 1`.
 
 ## 러프 툴 실행
 ```
-cd rough && python3 -m http.server 8000
+python3 rough/serve.py
 ```
-브라우저에서 `http://localhost:8000` 을 엽니다. `patterns.json`은 이두나!(DN)·녹빛자정의 연인(GM) 1~7화 244개 묶음의 구조 통계(샷·앵글·역할·감정·강도·컷 높이·여백 비율)만 담고, 작품 이미지나 대사는 담지 않습니다.
+`http://localhost:8000/rough/` 가 열립니다. `cuts/`가 있으면 고른 패턴의 원본 컷이 러프 아래에 함께 보입니다 (로컬에서만).
+
+## 컷 이미지 찾기
+```
+python3 cutlink.py GM-03-045
+``` `patterns.json`은 이두나!(DN)·녹빛자정의 연인(GM) 1~7화 244개 묶음의 구조 통계(샷·앵글·역할·감정·강도·컷 높이·여백 비율)만 담고, 작품 이미지나 대사는 담지 않습니다.
 
 ## 상태
 - 분석: 두 작품 1~7화 완료 (1,497컷, 244묶음)

@@ -24,6 +24,7 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 #info{font-size:12px;color:var(--soft);margin-bottom:8px}
 #canvasWrap{overflow:auto;max-height:80vh;background:light-dark(#e9e6e0,#111);border-radius:8px;padding:12px;text-align:center}
 #canvasWrap svg{background:#fff;max-width:100%;height:auto}
+#refs{margin-top:12px}#refs h3{font-size:13px;margin:8px 0 4px}#refs .strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}#refs figure{margin:0;flex:none;width:110px}#refs img{width:110px;border-radius:4px;display:block;background:var(--line)}#refs figcaption{font-size:11px;color:var(--soft)}
 table{border-collapse:collapse;width:100%;font-size:12px;margin-top:10px}
 td,th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
 td select{min-height:28px;padding:2px 4px;font-size:12px}
@@ -60,6 +61,7 @@ td select{min-height:28px;padding:2px 4px;font-size:12px}
 <section>
 <div id="info">패턴을 불러오는 중…</div>
 <div id="canvasWrap"></div>
+<div id="refs"></div>
 </section>
 </main>
 <script>
@@ -67,7 +69,10 @@ const W=690;const $=s=>document.querySelector(s);
 const OPT={dist:['아무거나','좁혀감','넓혀감','좁혔다 넓힘','넓혔다 좁힘','교차','유지·좁게','유지·넓게'],tempo:['아무거나','빠름','보통','느림'],narr:['아무거나','끝 정점','중간 정점','정점 선행','정점 연속','무정점'],goal:['아무거나','몰입 유도','여운','감정 지속','궁금증 유발','충격 강조','긴장 고조','정보 강조','관계 대비','시점 동일시','장면 전환','시간 압축']};
 const SHOTS=['설정','전경','전신','중경','클로즈업','디테일','효과 배경'];const ANGLES=['아이레벨','하이앵글','로우앵글','탑뷰'];
 for(const k in OPT)$('#'+k).innerHTML=OPT[k].map(v=>`<option>${v}</option>`).join('');
-let PATS=[],state={chunks:[],pick:[]};
+let PATS=[],state={chunks:[],pick:[]},CUTS=null;
+// 참고 원본 컷: cuts/ 서브모듈(비공개 저장소)이 있을 때만 보임
+fetch('../cuts/manifest.csv').then(r=>r.ok?r.text():Promise.reject()).then(t=>{const L=t.replace(/^\ufeff/,'').trim().split('\n');const H=L.shift().split(',');CUTS={};for(const l of L){const v=l.split(',');CUTS[v[0]]=v[H.indexOf('file')]}if(state.used)renderRefs()}).catch(()=>{CUTS=false;renderRefs()});
+function renderRefs(){const el=document.querySelector('#refs');if(CUTS===false){el.innerHTML='<p class="hint">참고 원본 컷은 cuts/ 서브모듈이 있을 때 보입니다 (비공개 저장소 권한 필요).</p>';return}if(!CUTS||!state.used)return;el.innerHTML=state.used.map(p=>`<h3>${esc(p.src+'-'+p.id)} ${esc(p.name||'')}</h3><div class="strip">${p.cuts.filter(c=>c.t==='그림'&&CUTS[c.id]).map(c=>`<figure><img loading="lazy" src="../cuts/${CUTS[c.id]}" alt="${esc(c.id)}"><figcaption>${esc(c.id)} · ${esc(c.shot)}</figcaption></figure>`).join('')}</div>`).join('')}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function parseBeats(){return $('#beats').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const [who,...rest]=l.split('|');const act=rest.join('|').trim()||who.trim();const said=(act.match(/"([^"]+)"/)||[])[1]||'';return {who:rest.length?who.trim():'',act,said}})}
@@ -78,12 +83,12 @@ function candidates(n){return PATS.map(p=>({p,s:score(p,n)})).sort((a,b)=>b.s-a.
 
 function generate(reset=true){const beats=parseBeats();state.chunks=[];for(let i=0;i<beats.length;i+=5)state.chunks.push(beats.slice(i,i+5));
   if(reset)state.pick=state.chunks.map(()=>0);build()}
-function build(){state.panels=[];const infos=[];
-  state.chunks.forEach((ch,ci)=>{const cand=candidates(ch.length);const p=cand[state.pick[ci]%cand.length];const pics=p.cuts.filter(c=>c.t==='그림');
+function build(){state.panels=[];state.used=[];const infos=[];
+  state.chunks.forEach((ch,ci)=>{const cand=candidates(ch.length);const p=cand[state.pick[ci]%cand.length];const pics=p.cuts.filter(c=>c.t==='그림');state.used.push(p);
     infos.push(`${ci+1}묶음 ← ${p.src}-${p.id} ${p.name||'(연출명 없음)'} · ${p.dist} · ${p.tempo} · ${p.narr} · ${p.goal}`);
     ch.forEach((b,i)=>{const c=pics[Math.round(i*(pics.length-1)/Math.max(1,ch.length-1))]||pics[0]||{shot:'중경',ang:'아이레벨',h:1,gap:.3,role:'전개',emo:'평온',i:1};
       state.panels.push({...b,shot:SHOTS.includes(c.shot)?c.shot:'중경',ang:ANGLES.includes(c.ang)?c.ang:'아이레벨',h:Math.max(.45,Math.min(2.2,c.h||1)),gap:Math.max(.08,Math.min(1,c.gap||.3)),role:c.role,emo:c.emo,src:`${p.src}-${p.id}`})})});
-  $('#info').innerHTML=infos.map(esc).join('<br>');renderTable();render()}
+  $('#info').innerHTML=infos.map(esc).join('<br>');renderTable();render();renderRefs()}
 function renderTable(){$('#cutTable').innerHTML='<table><tr><th>#</th><th>비트</th><th>샷</th><th>앵글</th><th>높이</th></tr>'+state.panels.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.act.slice(0,16))}</td><td><select data-i="${i}" data-k="shot">${SHOTS.map(s=>`<option${s===p.shot?' selected':''}>${s}</option>`).join('')}</select></td><td><select data-i="${i}" data-k="ang">${ANGLES.map(s=>`<option${s===p.ang?' selected':''}>${s}</option>`).join('')}</select></td><td><input data-i="${i}" data-k="h" type="number" step="0.1" min="0.4" max="3" value="${p.h}" style="width:56px"></td></tr>`).join('')+'</table>'}
 $('#cutTable').addEventListener('change',e=>{const t=e.target;const i=+t.dataset.i,k=t.dataset.k;if(isNaN(i))return;state.panels[i][k]=k==='h'?+t.value:t.value;render()});
 
