@@ -195,6 +195,8 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .reader .tail-handle{visibility:hidden;cursor:crosshair;touch-action:none}
 .reader .balloon-selected .tail-handle{visibility:visible}
 .reader .balloon-selected .balloon-art{outline:1px dashed #2d71f7;outline-offset:4px}
+.balloon-swatch{display:inline-flex;width:36px;height:36px;border-radius:5px;background:#fff}
+.balloon-swatch svg{width:100%;height:100%}
 .page-editor input[type="range"]{width:120px;vertical-align:middle}
 .reader [data-letter]:active{cursor:grabbing}
 .reader [data-letter]:focus-visible{outline:2px solid #2d71f7}
@@ -517,6 +519,12 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <button class="btn" id="wbgreset">배경 초기화</button>
     <div class="bg-presets" id="wbgpresets" role="group" aria-label="컷 아래 전환 질감"></div>
   </div>
+  <div class="toolbar" id="wballoonstyletools" hidden>
+    <span class="balloon-swatch" id="wballoonswatch" aria-hidden="true"></span>
+    <label>식자 형태 <select id="wballoonstyle"></select></label>
+    <label id="wballoonlinklabel" hidden><input id="wballoonlinked" type="checkbox"> 두 칸 연결</label>
+    <label id="wballoontaillabel" hidden><input id="wballoontail" type="checkbox"> 꼬리 표시</label>
+  </div>
   <div class="toolbar" id="wballoon" hidden>
     <label>말풍선 크기 <input id="wballoonsize" type="range" min="50" max="200" step="1" value="100"> <output id="wballoonvalue">100%</output></label>
     <button class="btn" id="wballoonreset">크기·꼬리 초기화</button>
@@ -715,8 +723,87 @@ function shapePath(cx,cy,rx,ry,kind,R){const pts=[];
   if(kind==='thought'||kind==='shaky'){const n=kind==='thought'?9:14,amp=kind==='thought'?.16:.06;let d='';for(let k=0;k<=n;k++){const a=k/n*Math.PI*2,x=cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry;
       if(!k){d=`M${x.toFixed(1)} ${y.toFixed(1)}`;continue}const am=(a+(k-1)/n*Math.PI*2)/2,o=1+amp*2+R()*amp;d+=` Q${(cx+Math.cos(am)*rx*o).toFixed(1)} ${(cy+Math.sin(am)*ry*o).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`}return d+'Z'}
   const n=36;for(let k=0;k<n;k++){const a=k/n*Math.PI*2,j=1+(R()-.5)*.025;pts.push([cx+Math.cos(a)*rx*j,cy+Math.sin(a)*ry*j])}return'M'+pts.map(q=>q.map(v=>v.toFixed(1)).join(' ')).join(' L')+'Z'}
+const BALLOON_STYLES=[
+  ['round-box','둥근 네모','M -1 0 C -1 -.69 -.74 -1 0 -1 C .77 -1 1 -.64 1 0 C 1 .72 .70 1 0 1 C -.72 1 -1 .72 -1 0Z',1.7],
+  ['breath','거친 호흡','M -.07 -1 Q .02 -1.04 .1 -.96 L .91 -.57 Q 1 -.54 .97 -.37 L 1 .4 L .91 .68 L .04 .99 Q -.04 1.03 -.16 .98 L -.78 .84 L -.94 .44 Q -1.04 .13 -1 -.13 L -.94 -.42 Q -1 -.55 -.88 -.58Z',2.1],
+  ['torn','찢어진 외침','M -.83 -.87 Q -.67 -.73 -.13 -.84 Q .33 -.87 .53 -1.12 Q .46 -.82 .65 -.94 Q .62 -.75 .81 -.96 Q .75 -.62 .84 -.14 Q .85 .07 .99 -.10 Q .88 .33 1 .76 Q .85 .62 .76 .70 Q .40 .84 .17 1.06 Q -.2 .87 -.48 .91 Q -.50 .71 -.60 .76 Q -.63 .62 -.85 .65 Q -.81 .36 -.86 .18 L -.97 -.44 Q -.85 -.29 -.83 -.87Z',2],
+  ['phone','전화 · 겹선 육각','M 0 -1 L .92 -.5 L .92 .5 L 0 1 L -.92 .5 L -.92 -.5Z',1.4],
+  ['hazy','아련한 생각 · 입자','M -1 0 A 1 1 0 1 0 1 0 A 1 1 0 1 0 -1 0Z',.8],
+  ['radial','의미심장 · 집중선','M -1 0 A 1 1 0 1 0 1 0 A 1 1 0 1 0 -1 0Z',0],
+  ['charcoal','분노 · 거친 원','M -.99 .03 C -1 -.54 -.57 -.99 -.02 -1 C .56 -.98 .99 -.54 .99 -.01 C 1 .58 .56 1 -.04 1 C -.61 .98 -.98 .54 -.99 .03Z',3.3],
+  ['narration','나레이션 · 사각','M -1 -1 H 1 V 1 H -1Z',1.8],
+  ['tight-wave','잘게 떨리는 원','',1.9],
+  ['even','반듯한 각진 원','M -1 -.02 C -1 -.55 -.72 -.89 -.31 -.96 C .17 -1.07 .59 -1 .84 -.64 C 1 -.43 1.02 -.10 .99 .22 C .92 .73 .66 1 .05 1 C -.49 1 -.98 .83 -1 -.02Z',1.5],
+  ['pressure','강한 필압 원','M -.99 -.09 C -.97 -.61 -.65 -1.02 -.08 -.99 C .44 -1.03 .91 -.60 .99 -.10 C 1.06 .49 .67 1.01 .09 1 C -.55 1.04 -1.01 .70 -.99 -.09Z',2.8],
+  ['soft-wave','잔잔한 울퉁불퉁 원','M -.97 -.25 C -.86 -.56 -.55 -.99 -.21 -1 C .19 -1.04 .64 -.78 .84 -.50 C 1.05 -.28 1.03 .22 .87 .44 C .70 .67 .43 .96 .11 1 C -.22 1.04 -.51 .86 -.78 .65 C -1 .47 -1.06 .02 -.97 -.25Z',1.55],
+  ['angular','각진 필압 원','M -.97 -.12 Q -.97 -.41 -.70 -.70 Q -.44 -1 -.29 -1 Q .21 -.99 .62 -.74 Q .94 -.52 .99 -.19 Q 1 .19 .89 .53 Q .84 .73 .54 .84 Q .13 1 -.22 .98 Q -.40 .94 -.58 .79 Q -.91 .51 -.97 -.12Z',2],
+  ['whisper','속삭임 · 점선','M -1 0 C -1 -.55 -.75 -1 -.04 -1 C .62 -1 1 -.69 1 -.02 C 1 .60 .72 1 -.04 1 C -.67 1 -1 .63 -1 0Z',1.9],
+  ['heavy-wave','크게 울퉁불퉁한 원','',2.5]
+];
+const balloonPreset=key=>BALLOON_STYLES.find(style=>style[0]===key);
+const CAN_LINK=new Set(BALLOON_STYLES.slice(9).map(style=>style[0]));
+const DRAW_RAYS=240;
+function presetContour(style,R,linked){
+  const [key,,path]=style;
+  const polar=(a,r)=>[(Math.cos(a)*r).toFixed(3),(Math.sin(a)*r).toFixed(3)].join(' ');
+  if(linked){
+    const outline='M -.27 -1.70 C -.17 -1.69 -2.04 -2.06 -1.87 -.63 C -1.82 .12 -1.12 .49 -.38 .23 C -.62 1.03 -.29 1.70 .49 1.87 C 1.30 2.07 1.88 1.49 1.86 .75 C 1.85 .02 1.27 -.44 .32 -.20 C .54 -.85 .32 -1.51 -.27 -1.70Z';
+    if(key==='even'||key==='pressure'||key==='whisper')return outline;
+    if(key==='angular')return 'M -.3 -1.74 Q -1.29 -1.9 -1.84 -1 Q -2.01 -.36 -1.59 -.03 Q -1.12 .51 -.4 .21 Q -.5 .76 -.39 1.35 Q .02 1.8 .51 1.92 Q 1.41 2.02 1.84 1.29 Q 2.05 .62 1.57 .13 Q 1.12 -.35 .34 -.19 Q .49 -.88 -.3 -1.74Z';
+    if(key==='heavy-wave')return 'M -.35 -1.77 Q -.53 -1.85 -.70 -1.76 Q -.89 -1.84 -1.01 -1.68 Q -1.25 -1.69 -1.33 -1.49 Q -1.59 -1.44 -1.62 -1.18 Q -1.88 -1.04 -1.82 -.87 Q -1.99 -.64 -1.81 -.45 Q -1.87 -.18 -1.61 -.04 Q -1.51 .23 -1.24 .23 Q -.97 .44 -.77 .31 Q -.55 .35 -.34 .20 Q -.59 .52 -.43 .67 Q -.56 .94 -.37 1.10 Q -.38 1.34 -.12 1.42 Q -.04 1.62 .23 1.67 Q .46 1.92 .68 1.80 Q .95 1.95 1.07 1.77 Q 1.39 1.82 1.47 1.55 Q 1.74 1.51 1.75 1.24 Q 1.97 1.12 1.82 .87 Q 1.99 .64 1.77 .47 Q 1.83 .21 1.58 .08 Q 1.50 -.15 1.22 -.17 Q .96 -.35 .72 -.21 Q .55 -.28 .36 -.19 Q .47 -.38 .36 -.51 Q .47 -.78 .32 -.88 Q .38 -1.23 .14 -1.35 Q .05 -1.62 -.17 -1.61Z';
+    const wave=.12;
+    return outline.replace(/-?(?:[0-9]*\.)?[0-9]+/g,n=>(Number(n)+(R()-.5)*wave).toFixed(3));
+  }
+  if(path)return path;
+  const count=key==='tight-wave'?28:15;
+  let d='M 1 0';
+  for(let i=1;i<=count;i++){
+    const a=i*Math.PI*2/count,r=key==='tight-wave'?(.958+R()*.088):(i%3?.92:1.07);
+    d+=' Q '+polar(a-Math.PI/count,1+(R()-.5)*.22)+' '+(i===count?'1 0':polar(a,r));
+  }
+  return d+'Z';
+}
+function presetBalloon(style,cx,cy,rx,ry,k,R,linked){
+  const [key,,,width]=style,path=presetContour(style,R,linked),weight=width*k;
+  const polar=(a,r)=>`${(Math.cos(a)*r).toFixed(3)} ${(Math.sin(a)*r).toFixed(3)}`;
+  const draw=(w,fill,extra='')=>`<path d="${path}" fill="${fill}" stroke="#161616" stroke-width="${w}" vector-effect="non-scaling-stroke" stroke-linejoin="round" ${extra}/>`;
+  let outline=draw(weight,'#fff',key==='whisper'?'stroke-dasharray="4 3.5"':''),trim='';
+  if(key==='phone'){
+    outline=draw(0,'#fff');
+    const verts=[[0,-1],[.92,-.5],[.92,.5],[0,1],[-.92,.5],[-.92,-.5]];
+    for(let i=0;i<6;i++){
+      const [x,y]=verts[i],[x2,y2]=verts[(i+1)%6],dx=x2-x,dy=y2-y;
+      for(const inset of [-.033,0,.033]){
+        const extend=.075,xx=-dy*inset,yy=dx*inset;
+        const coords=[x-dx*extend+xx,y-dy*extend+yy,x2+dx*extend+xx,y2+dy*extend+yy].map(v=>v.toFixed(3));
+        trim+='<path d="M '+coords.slice(0,2).join(' ')+' L '+coords.slice(2).join(' ')+'" stroke="#232323" stroke-width="'+(inset?weight*.55:weight*.8)+'" vector-effect="non-scaling-stroke"/>';
+      }
+    }
+  }
+  if(key==='radial'){
+    for(let i=0;i<DRAW_RAYS;i++){
+      const a=i*Math.PI*2/DRAW_RAYS+(R()-.5)*.013,r=1.18+R()*.37;
+      trim+=`<path d="M ${polar(a-.007,.95)} L ${polar(a,r)} L ${polar(a+.007,.95)}Z" fill="#171717" opacity="${(.66+R()*.34).toFixed(2)}"/>`;
+    }
+    outline=trim+outline;trim='';
+  }
+  if(key==='hazy'||key==='charcoal'){
+    const haze=key==='hazy';
+    outline=draw(weight,'#fff',haze?'stroke-opacity=".18"':'stroke-opacity=".86"');
+    for(let i=0;i<(haze?620:390);i++){
+      const a=R()*Math.PI*2,r=1+(R()+R()-1)*(haze?.09:.04);
+      const [x,y]=polar(a,r).split(' ');
+      trim+=`<circle cx="${x}" cy="${y}" r="${(.003+R()*.011).toFixed(3)}" fill="#121212" opacity="${(R()*(haze?.27:.66)).toFixed(2)}"/>`;
+    }
+  }
+  if(key==='pressure'||key==='angular')outline+=draw(weight*.68,'none','opacity=".54" stroke-dasharray="17 10 29 36 8 18" transform="translate(-.01 .009)"');
+  const transform=`translate(${cx} ${cy}) scale(${rx} ${ry})`;
+  return {body:`<g transform="${transform}">${outline+trim}</g>`,cover:`<path d="${path}" fill="#fff" transform="${transform}"/>`};
+}
 function balloonTail(meta,tip){
-  const {cx,cy,rx,ry,k,kind,bx,by,ex,ey,tx,ty}=meta;
+  const {rx,ry,k,kind,bx,by,ex,ey,tx,ty}=meta;
+  const cx=meta.anchorX??meta.cx,cy=meta.anchorY??meta.cy;
+  if(meta.showTail===false)return {svg:'',end:{x:ex,y:ey}};
   if(kind==='thought'){
     const end=tip||{x:cx+(tx-cx)*.45,y:cy+ry+(ty-cy-ry)*.45};
     const angle=Math.atan2(end.y-cy,end.x-cx);
@@ -734,7 +821,7 @@ function balloonTail(meta,tip){
   const mx=(x+end.x)/2,my=(y+end.y)/2;
   const pair=(px,py)=>`${px.toFixed(1)} ${py.toFixed(1)}`;
   const path=`M${pair(x-wx,y-wy)} Q${pair(mx-wx*.4,my-wy*.4)} ${pair(end.x,end.y)} Q${pair(mx+wx*.6,my+wy*.6)} ${pair(x+wx,y+wy)}Z`;
-  return {end,svg:`<path d="${path}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${2*k}" stroke-linejoin="round"/>`};
+  return {end,svg:`<path d="${path}" fill="${meta.preset?'#fff':LT.paper}" stroke="${meta.preset?'#161616':LT.ink}" stroke-width="${2*k}" stroke-linejoin="round"${meta.preset==='whisper'?' stroke-dasharray="4 3.5"':''}/>`};
 }
 function balloonTransform(meta,scale){
   return `translate(${meta.cx} ${meta.cy}) scale(${scale}) translate(${-meta.cx} ${-meta.cy})`;
@@ -744,34 +831,53 @@ function balloonTip(meta,offset){
   return {x:meta.cx+offset.x,y:meta.cy+offset.y};
 }
 function tailTransform(end){return `translate(${end.x} ${end.y})`}
-function balloonSVG(d,p,box,slot,R,edit,interactive){const kind=balloonKind(d,p),small=kind==='small',k=box.w/630;
+function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(edit?.style);
+  const kind=preset?'normal':balloonKind(d,p),small=kind==='small',k=box.w/630;
   const punch=(d.text||'').length<=6&&p.i>=2&&kind!=='small';const fs=(small?16:punch?26:21)*k,lh=fs*1.4;
-  const lines=wrapKo(d.text||'',small?10:9).slice(0,5);const tw=Math.max(...lines.map(l=>l.length))*fs*.98,th=lines.length*lh;
-  const rx=Math.max(tw/2+fs*1.5,fs*3.2),ry=Math.max(th/2+fs*1.3,fs*2.2);
+  const linked=!!(preset&&CAN_LINK.has(preset[0])&&edit?.linked&&Array.from(d.text.trim()).length>1);
+  const showTail=edit?.showTail??(!preset||linked);
+  const lines=wrapKo(d.text||'',small?10:9);
+  const midpoint=Math.ceil(lines.length/2);
+  const groups=!linked?[preset?lines:lines.slice(0,5)]:lines.length>1?
+    [lines.slice(0,midpoint),lines.slice(midpoint)]:[lines[0].slice(0,Math.ceil(lines[0].length/2)),lines[0].slice(Math.ceil(lines[0].length/2))].map(line=>[line]);
+  const tw=Math.max(...groups.flat().map(l=>l.length))*fs*.98,th=Math.max(...groups.map(l=>l.length))*lh;
+  const rx=Math.max(tw/2+fs*1.5,fs*3.2);
+  const aspect=preset?.[0]==='narration'?1.32:1.13;
+  const ry=Math.max(th/2+fs*1.3,fs*2.2,preset?rx/aspect:0);
+  const ext=rx*(linked?1.9:preset?.[0]==='radial'?1.55:1);
   const side=d.who&&p.who&&d.who!==p.who?(p.side==='left'?'right':'left'):(p.side||'right');
-  const cx=Math.min(Math.max(box.x+box.w*(slot%2?(side==='left'?.7:.3):(side==='left'?.3:.7)),box.x+rx+6),box.x+box.w-rx-6);
-  const breakTop=box.frame&&slot===0&&box.y>60&&ry*2<box.h*.5;const cy=breakTop?box.y+ry*.25:box.y+ry+14+slot*ry*1.55;
+  const cx=Math.min(Math.max(box.x+box.w*(slot%2?(side==='left'?.7:.3):(side==='left'?.3:.7)),box.x+ext+6),box.x+box.w-ext-6);
+  const breakTop=box.frame&&slot===0&&box.y>60&&ry*2<box.h*.5;const cy=(breakTop?box.y+ry*.25:box.y+ry+14+slot*ry*1.55)+(linked?ry*.69:0);
   const tx=box.x+box.w*(side==='left'?.3:.7),ty=Math.min(box.y+box.h*.55,cy+ry+Math.max(40,box.h*.18));
-  const bx=cx+(tx-cx)*.2,by=cy+ry*.86,len=Math.hypot(tx-bx,ty-by);
+  const anchorX=cx+(linked?.84*rx:0),anchorY=cy+(linked?.82*ry:0);
+  const bx=linked?anchorX+.48*rx:cx+(tx-cx)*.2,by=anchorY+ry*.86,len=Math.hypot(tx-bx,ty-by)||1;
   const r=Math.min(1,(kind==='shout'?60:80)*k/len);
-  const meta={cx,cy,rx,ry,k,kind,bx,by,tx,ty,ex:bx+(tx-bx)*r,ey:by+(ty-by)*r};
+  const meta={cx,cy,anchorX,anchorY,rx,ry,k,kind,bx,by,tx,ty,showTail,preset:preset?.[0],
+    ex:linked?bx+.58*rx:bx+(tx-bx)*r,ey:linked?by+.38*ry:by+(ty-by)*r};
   const tail=balloonTail(meta,balloonTip(meta,edit?.tail));
-  const path=shapePath(cx,cy,rx,ry,kind,R),sw=(small?1.6:2.2)*k;
-  const body=`<path d="${path}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${sw}" stroke-linejoin="round"/><path d="${path}" fill="none" stroke="${LT.ink}" stroke-width="${sw*.5}" opacity=".45" transform="translate(${(.8*k).toFixed(1)} ${(-.6*k).toFixed(1)})"/>`;
+  const path=preset?null:shapePath(cx,cy,rx,ry,kind,R),sw=(small?1.6:2.2)*k;
+  const styled=preset?presetBalloon(preset,cx,cy,rx,ry,k,rngL((p.key||p.act)+slot),linked):null;
+  const body=styled?.body||`<path d="${path}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${sw}" stroke-linejoin="round"/><path d="${path}" fill="none" stroke="${LT.ink}" stroke-width="${sw*.5}" opacity=".45" transform="translate(${(.8*k).toFixed(1)} ${(-.6*k).toFixed(1)})"/>`;
   // 꼬리 위에 몸통을 다시 덮어 이음새를 지움
-  const cover=kind==='thought'?'':`<path d="${path}" fill="${LT.paper}" stroke="none"/>`;
-  const text=lines.map((l,n)=>`<text x="${cx.toFixed(1)}" y="${(cy-th/2+lh*(n+.72)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="${punch?800:500}" text-anchor="middle" fill="${LT.text}" letter-spacing="-0.3">${esc(l)}</text>`).join('');
+  const cover=!showTail||kind==='thought'?'':styled?.cover||`<path d="${path}" fill="${LT.paper}" stroke="none"/>`;
+  const serif=preset?.[0]==='narration'?' font-family="Noto Serif KR, Batang, serif"':'';
+  const weight=['pressure','torn'].includes(preset?.[0])||punch?800:preset?.[0]==='whisper'?400:500;
+  const text=groups.map((group,j)=>{
+    const x=cx+(linked?(j?.85:-.76)*rx:0),y=cy+(linked?(j?.81:-.73)*ry:0);
+    return group.map((l,n)=>`<text x="${x.toFixed(1)}" y="${(y-group.length*lh/2+lh*(n+.72)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="${weight}" text-anchor="middle" fill="${LT.text}"${serif} letter-spacing="-0.3">${esc(l)}</text>`).join('');
+  }).join('');
   const scale=edit?.scale||1;
   if(!interactive&&scale===1)return body+tail.svg+cover+text;
   const data=interactive?` class="balloon-art" data-balloon="${esc(JSON.stringify(meta))}"`:'';
-  const suffix=interactive?`<g class="tail-handle" data-tail-handle tabindex="0" role="button" aria-label="꼬리 끝점 · 방향키로 이동" transform="${tailTransform(tail.end)}"><circle r="8" fill="transparent" stroke="transparent" stroke-width="28" vector-effect="non-scaling-stroke"/><circle r="8" fill="#fff" stroke="#2d71f7" stroke-width="2" vector-effect="non-scaling-stroke"/><circle r="2.5" fill="#2d71f7"/></g>`:'';
+  const suffix=interactive&&showTail?`<g class="tail-handle" data-tail-handle tabindex="0" role="button" aria-label="꼬리 끝점 · 방향키로 이동" transform="${tailTransform(tail.end)}"><circle r="8" fill="transparent" stroke="transparent" stroke-width="28" vector-effect="non-scaling-stroke"/><circle r="8" fill="#fff" stroke="#2d71f7" stroke-width="2" vector-effect="non-scaling-stroke"/><circle r="2.5" fill="#2d71f7"/></g>`:'';
   const tailArt=interactive?`<g data-tail-art>${tail.svg}</g>`:tail.svg;
   return `<g${data} transform="${balloonTransform(meta,scale)}">${body+tailArt+cover+text+suffix}</g>`;
 }
-function captionSVG(t,p,box,first){const k=box.w/630,fs=19*k,lines=wrapKo(t,16).slice(0,3),lh=fs*1.5;const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
+function captionSVG(t,p,box,first,edit){const k=box.w/630,fs=19*k,lines=wrapKo(t,16).slice(0,3),lh=fs*1.5;const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
   const style=/그날|이후|후|전|밤|아침|저녁|년|일 뒤|며칠|다음 날|그때/.test(t)&&(first||p.role==='설정'||p.role==='전환')?'deco':(p.vng==='R'||p.shot==='효과 배경')?'plain':'box';
   const w=tw+fs*2.6,h=th+fs*1.6,x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06);
   const txt=(fill,extra='')=>lines.map((l,n)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+fs*.8+lh*(n+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" text-anchor="middle" fill="${fill}"${extra}>${esc(l)}</text>`).join('');
+  if(edit?.style==='narration')return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#161616" stroke-width="${1.8*k}"/>`+txt('#24201c',' font-family="Noto Serif KR, Batang, serif"');
   if(style==='plain')return txt('#f7f2e6',` stroke="rgba(20,16,12,.55)" stroke-width="${3*k}" paint-order="stroke"`);
   if(style==='deco'){const leaf=(cx,cy,r)=>`<path d="M${cx} ${cy} q${4*k*r} ${-6*k} ${9*k*r} ${-3*k} q${-3*k*r} ${5*k} ${-9*k*r} ${3*k}z" fill="#2f5a3a"/>`;
     return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#86c99c" stroke="#2f5a3a" stroke-width="${2*k}"/><rect x="${x+4*k}" y="${y+4*k}" width="${w-8*k}" height="${h-8*k}" fill="none" stroke="#2f5a3a" stroke-width="${1*k}" opacity=".6"/>`+
@@ -791,7 +897,7 @@ function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);l
     const access=interactive?` data-letter="${key}" tabindex="0" aria-label="${esc(label)}"`:'';
     o+=move||access?`<g${move}${access}>${svg}</g>`:svg;
   };
-  if(p.caption)add('caption','나레이션 '+p.caption,captionSVG(p.caption,p,box,idx===0));
+  if(p.caption)add('caption','나레이션 '+p.caption,captionSVG(p.caption,p,box,idx===0,positions?.caption));
   (p.sfx||[]).slice(0,2).forEach((x,n)=>add('effect-'+n,'효과음 '+x,sfxSVG(x,p,box,n,R)));
   const ds=(p.dialogs||[]).filter(d=>d.text).slice(0,3);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
   ds.forEach((d,n)=>{
@@ -1230,12 +1336,42 @@ const balloonSize=$('#wballoonsize'),balloonValue=$('#wballoonvalue');
 function selectBalloon(letter){
   const art=letter?.querySelector('[data-balloon]');
   selectedBalloon?.classList.remove('balloon-selected');
-  selectedBalloon=art?letter:null;
+  const caption=letter?.dataset.letter==='caption';
+  selectedBalloon=art||caption?letter:null;
   $('#wballoon').hidden=!art;
-  if(!art)return;
+  $('#wballoonstyletools').hidden=!selectedBalloon;
+  if(!selectedBalloon)return;
   letter.classList.add('balloon-selected');
-  showBalloonSize(letterPosition(letter).scale||1);
+  const edit=letterPosition(letter);
+  showBalloonStyle(edit,caption,art);
+  if(art)showBalloonSize(edit.scale||1);
 }
+const balloonStyle=$('#wballoonstyle'),balloonLinked=$('#wballoonlinked'),balloonTailToggle=$('#wballoontail');
+const styleOptions=styles=>styles.map(([key,label],i)=>`<option value="${key}">${i+1}. ${label}</option>`).join('');
+function showBalloonStyle(edit,caption,art){
+  balloonStyle.innerHTML='<option value="auto">자동 · 기존 식자</option>'+
+    (caption?'<option value="narration">나레이션 · 사각</option>':
+      `<optgroup label="용도별 · 자료 1">${styleOptions(BALLOON_STYLES.slice(0,9))}</optgroup><optgroup label="외곽선별 · 자료 2">${styleOptions(BALLOON_STYLES.slice(9))}</optgroup>`);
+  const preset=balloonPreset(edit.style);
+  balloonStyle.value=preset?.[0]||'auto';
+  const linked=!caption&&CAN_LINK.has(balloonStyle.value);
+  $('#wballoonlinklabel').hidden=!linked;
+  balloonLinked.checked=linked&&!!edit.linked;
+  $('#wballoontaillabel').hidden=caption;
+  balloonTailToggle.checked=caption?false:JSON.parse(art.dataset.balloon).showTail!==false;
+  const extent=balloonLinked.checked?12:17;
+  $('#wballoonswatch').innerHTML=preset?`<svg viewBox="-29 -29 58 58">${presetBalloon(preset,0,0,extent,extent,.85,rngL(preset[0]),balloonLinked.checked).body}</svg>`:'';
+}
+function updateBalloonStyle(edit){
+  if(!selectedBalloon)return;
+  saveLetter(selectedBalloon,edit);
+  renderWebtoon();
+  const input=edit.style?balloonStyle:'linked' in edit?balloonLinked:balloonTailToggle;
+  input.focus({preventScroll:true});
+}
+balloonStyle.addEventListener('change',()=>updateBalloonStyle({style:balloonStyle.value}));
+balloonLinked.addEventListener('change',()=>updateBalloonStyle({linked:balloonLinked.checked}));
+balloonTailToggle.addEventListener('change',()=>updateBalloonStyle({showTail:balloonTailToggle.checked}));
 function showBalloonSize(scale){
   balloonSize.value=Math.round(scale*100);
   balloonValue.textContent=`${balloonSize.value}%`;
@@ -1243,7 +1379,7 @@ function showBalloonSize(scale){
 function showTail(art,meta,offset){
   const tail=balloonTail(meta,balloonTip(meta,offset));
   art.querySelector('[data-tail-art]').innerHTML=tail.svg;
-  art.querySelector('[data-tail-handle]').setAttribute('transform',tailTransform(tail.end));
+  art.querySelector('[data-tail-handle]')?.setAttribute('transform',tailTransform(tail.end));
 }
 balloonSize.addEventListener('input',()=>{
   if(!selectedBalloon)return;
