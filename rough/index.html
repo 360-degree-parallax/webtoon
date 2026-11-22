@@ -191,6 +191,9 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scside .bgcards .slot{width:120px}.scside .bgcards .drop{width:120px;height:80px}
 .insp-note{margin:0;font-size:12px;color:var(--t3);line-height:1.5}
 .insp-h .link{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:0;text-decoration:none;opacity:.8}.insp-h .link:hover{color:var(--t1);opacity:1;text-decoration:underline}
+.worldline{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:13px;color:var(--t2)}
+.worldline .av{width:24px;height:24px;border-radius:6px;flex:none;overflow:hidden;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700}.worldline .av img{width:100%;height:100%;object-fit:cover}
+.worldline .wl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.worldline b{color:var(--t1)}.worldline .btn{display:none}
 .castgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .castbox{display:flex;align-items:center;gap:8px;min-width:0;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
 .castbox.off{opacity:.55}
@@ -658,8 +661,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   </main>
   <aside class="scside" aria-label="씬 정보">
     <section class="insp"><div class="insp-h"><span>등장인물</span><button class="link" data-view="chars">편집</button></div><div class="castgrid" id="castsum"></div><div class="sugg" id="sugg"></div></section>
-    <section class="insp"><div class="insp-h"><span>세계관</span><button class="link" data-view="world">편집</button></div><div class="refsum" id="worldsum"></div></section>
-    <section class="insp"><div class="insp-h"><span>배경·분위기</span></div><p class="insp-note">장소 이미지는 색과 분위기로 쓰여요. 이름이 글에 나오면 그 묶음에 연결돼요.</p><div class="bgcards" id="bgs"></div></section>
+    <section class="insp"><div class="insp-h"><span>세계관</span><button class="link" data-view="world">편집</button></div><div class="worldline" id="worldsum"></div></section>
     <section class="insp"><div class="insp-h"><span>쓰는 법</span></div>
       <dl class="syntax"><dt><code>[그날 밤]</code></dt><dd>식자(내레이션)</dd><dt><code>@준 "(놀라서)에드가?"</code></dt><dd>대사 · 괄호는 연기</dd><dt><code>-툭-</code></dt><dd>효과음</dd><dt>그 밖의 글</dt><dd>행동·장면 묘사</dd><dt><code>@</code></dt><dd>인물 목록</dd><dt><kbd>Ctrl+Enter</kbd></dt><dd>아래에 새 컷</dd></dl></section>
   </aside>
@@ -1286,7 +1288,7 @@ function underlay(p){if(!showUnder)return null;
 function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parseCuts(CUTS,engineChars()).map(b=>b.who).filter(Boolean)])]}
 function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
   <div class="nm">${kind==='scene'&&ref?`<input value="${esc(ref.name)}" data-rename="${esc(key)}" aria-label="장면 이름">`:esc(label)}</div>${ref?`<div class="pal">${ref.palette.map(c=>`<i style="background:${c}" title="${c}"></i>`).join('')}</div>`:''}</div>`}
-function renderBgs(){$('#bgs').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,r,r.name,false)).join('')+slotHTML('scene','__new',null,'배경 추가',false)}
+function renderBgs(){if(!$('#bgs'))return;$('#bgs').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,r,r.name,false)).join('')+slotHTML('scene','__new',null,'배경 추가',false)}
 function renderRefSum(){const ns=CHARS.map(c=>c.name.trim()).filter(Boolean);const el=$('#refsum');if(!el)return;
   el.innerHTML=ns.map(n=>`<span class="av" title="${esc(n)}${IMG.char[n]?'':' · 이미지 없음'}" style="${IMG.char[n]?'':`background:${avBg(n)}`}">${IMG.char[n]?`<img src="${IMG.char[n].src}" alt="${esc(n)}">`:esc(n.slice(0,1))}</span>`).join('')+
     `<span>인물 이미지 ${ns.filter(n=>IMG.char[n]).length}/${ns.length} · 배경 ${IMG.scene.length}장</span><button class="btn" data-view="write">씬에서 편집</button>`}
@@ -1300,7 +1302,7 @@ async function attach(file,slot){if(!file||!file.type.startsWith('image/'))retur
     if(old)Object.assign(old,o);else IMG.scene.push(o);idb.put(o);toast('장면 이미지를 넣었어요')}
   renderSlots();render()}
 $('#file').addEventListener('change',e=>{if(target)attach(e.target.files[0],target);e.target.value=''});
-const slotsEl=[$('#bgs')];
+const slotsEl=[$('#bgs')].filter(Boolean);
 slotsEl.forEach(el=>{
   el.addEventListener('click',e=>{const d=e.target.closest('[data-del]');if(d){e.stopPropagation();if(d.dataset.del==='char'){delete IMG.char[d.dataset.key];idb.del('char:'+d.dataset.key)}else{IMG.scene=IMG.scene.filter(r=>r.id!==d.dataset.key);idb.del(d.dataset.key)}renderSlots();render();return}
     const s=e.target.closest('[data-slot]');if(s){target={kind:s.dataset.slot,key:s.dataset.key};$('#file').click()}});
@@ -1518,7 +1520,8 @@ function renderWorld(){if(!$('#worldov'))return;$('#worldov').innerHTML=worldRow
   $('#lore').innerHTML=rows.map(([e,i])=>loreRow(e,i)).join('')+`<button class="ccadd" data-act="loreadd">+ 새 설정 항목${LORECAT?` (${LORE_CAT[LORECAT][0]})`:''}</button>`;
   document.querySelectorAll('#worldov .cedit,#lore .cedit').forEach(updateWRow);
   const k=LORE.filter(e=>wState(e,'lore')==='same').length;$('#lorest').textContent=`항목 ${LORE.length}개 · 보관함 저장 ${k}`;renderWlib();renderWorldSum()}
-function renderWorldSum(){const el=$('#worldsum');if(!el)return;el.innerHTML=`<span class="av" style="border-radius:10px;${IMG.world?'':`background:${avBg(WORLD.name||'?')}`}">${IMG.world?`<img src="${IMG.world.src}" alt="">`:esc((WORLD.name||'?').slice(0,1))}</span><span>세계관 <b>${esc(WORLD.name||'이름 없음')}</b> · 설정 항목 ${LORE.length}개${LORE.length?` (${LORE.slice(0,4).map(e=>esc(e.name)).join(', ')}${LORE.length>4?' …':''})`:''}</span><button class="btn" data-view="world">세계관 페이지에서 편집</button>`}
+function renderWorldSum(){const el=$('#worldsum');if(!el)return;const w=WORLD,bits=[w.genre,w.era].filter(Boolean).join(' · ');
+  el.innerHTML=`<span class="av" style="${IMG.world?'':`background:${avBg(w.name||'?')}`}">${IMG.world?`<img src="${IMG.world.src}" alt="">`:esc((w.name||'?').slice(0,1))}</span><span class="wl" title="${esc([w.name,bits,w.summary].filter(Boolean).join(' · '))}"><b>${esc(w.name||'이름 없음')}</b>${bits?` · ${esc(bits)}`:''} · 설정 ${LORE.length}개${LORE.length?` (${LORE.map(e=>esc(e.name)).join(', ')})`:''}</span><button class="btn" data-view="world">세계관 페이지에서 편집</button>`}
 // 보관함: 개요(kind world)와 항목(kind lore)을 함께 보관
 function wlibSave(x,kind,quiet){const nm=(x.name||'').trim();if(!nm){toast('이름을 먼저 정해 주세요');return}
   let L=wlibOf(x);if(!L){L={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind};WLIB.unshift(L);x.lib=L.id}
