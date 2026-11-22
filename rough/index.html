@@ -171,7 +171,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scbar .ib{width:32px;height:32px}
 .scbar select{height:32px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);padding:0 8px;font-size:14px;font-weight:600;max-width:60vw}
 .page-editor{position:sticky;top:104px;z-index:10;max-width:690px;margin:0 auto;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
-.page-editor[hidden]{display:none}
+.page-editor[hidden],.page-editor [hidden]{display:none}
 .page-editor .toolbar{margin-top:0}
 .page-editor small{display:block;margin-top:6px;color:var(--t2)}
 .reader [data-page-gap]{cursor:ns-resize;outline:none}
@@ -184,6 +184,10 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .reader [data-page-gap]:focus .gap-track{opacity:1}
 .reader:has([data-page-gap]){overflow-anchor:none}
 .reader [data-letter]{cursor:grab;touch-action:none}
+.reader .tail-handle{visibility:hidden;cursor:crosshair;touch-action:none}
+.reader .balloon-selected .tail-handle{visibility:visible}
+.reader .balloon-selected .balloon-art{outline:1px dashed #2d71f7;outline-offset:4px}
+.page-editor input[type="range"]{width:120px;vertical-align:middle}
 .reader [data-letter]:active{cursor:grabbing}
 .reader [data-letter]:focus-visible{outline:2px solid #2d71f7}
 .reader .cut-selected{outline:3px solid #2d71f7;outline-offset:-3px}
@@ -464,9 +468,13 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div id="wtools" class="page-editor" hidden>
   <div class="toolbar">
     <label>편집할 컷 <select id="wcut"></select></label>
-    <button class="btn" id="wletterreset">식자 위치 초기화</button>
+    <button class="btn" id="wletterreset">식자 편집 초기화</button>
   </div>
-  <small>컷 사이 손잡이를 위아래로 끌어 간격을 조절하세요. 두 번 클릭하면 기본 간격으로 돌아가요. 식자도 드래그해서 옮길 수 있어요.</small>
+  <div class="toolbar" id="wballoon" hidden>
+    <label>말풍선 크기 <input id="wballoonsize" type="range" min="50" max="200" step="1" value="100"> <output id="wballoonvalue">100%</output></label>
+    <button class="btn" id="wballoonreset">크기·꼬리 초기화</button>
+  </div>
+  <small>컷 사이 손잡이를 위아래로 끌어 간격을 조절하세요. 두 번 클릭하면 기본 간격으로 돌아가요. 말풍선을 선택하면 꼬리 끝점과 크기를 조절할 수 있어요.</small>
 </div>
 <div class="reader" id="reader"></div>
 </div>
@@ -638,7 +646,36 @@ function shapePath(cx,cy,rx,ry,kind,R){const pts=[];
   if(kind==='thought'||kind==='shaky'){const n=kind==='thought'?9:14,amp=kind==='thought'?.16:.06;let d='';for(let k=0;k<=n;k++){const a=k/n*Math.PI*2,x=cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry;
       if(!k){d=`M${x.toFixed(1)} ${y.toFixed(1)}`;continue}const am=(a+(k-1)/n*Math.PI*2)/2,o=1+amp*2+R()*amp;d+=` Q${(cx+Math.cos(am)*rx*o).toFixed(1)} ${(cy+Math.sin(am)*ry*o).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`}return d+'Z'}
   const n=36;for(let k=0;k<n;k++){const a=k/n*Math.PI*2,j=1+(R()-.5)*.025;pts.push([cx+Math.cos(a)*rx*j,cy+Math.sin(a)*ry*j])}return'M'+pts.map(q=>q.map(v=>v.toFixed(1)).join(' ')).join(' L')+'Z'}
-function balloonSVG(d,p,box,slot,R){const kind=balloonKind(d,p),small=kind==='small',k=box.w/630;
+function balloonTail(meta,tip){
+  const {cx,cy,rx,ry,k,kind,bx,by,ex,ey,tx,ty}=meta;
+  if(kind==='thought'){
+    const end=tip||{x:cx+(tx-cx)*.45,y:cy+ry+(ty-cy-ry)*.45};
+    const angle=Math.atan2(end.y-cy,end.x-cx);
+    const start=tip?{x:cx+Math.cos(angle)*rx*.88,y:cy+Math.sin(angle)*ry*.88}:{x:cx,y:cy+ry};
+    const svg=[1,2,3].map(n=>{
+      const x=start.x+(end.x-start.x)*n/3,y=start.y+(end.y-start.y)*n/3;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(7.5-n*1.5)*k}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${1.8*k}"/>`;
+    }).join('');
+    return {svg,end};
+  }
+  const end=tip||{x:ex,y:ey};
+  const angle=Math.atan2(end.y-cy,end.x-cx);
+  const x=tip?cx+Math.cos(angle)*rx*.84:bx,y=tip?cy+Math.sin(angle)*ry*.84:by;
+  const w=(kind==='small'?6:10)*k,wx=tip?Math.sin(angle)*w:w,wy=tip?-Math.cos(angle)*w:0;
+  const mx=(x+end.x)/2,my=(y+end.y)/2;
+  const pair=(px,py)=>`${px.toFixed(1)} ${py.toFixed(1)}`;
+  const path=`M${pair(x-wx,y-wy)} Q${pair(mx-wx*.4,my-wy*.4)} ${pair(end.x,end.y)} Q${pair(mx+wx*.6,my+wy*.6)} ${pair(x+wx,y+wy)}Z`;
+  return {end,svg:`<path d="${path}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${2*k}" stroke-linejoin="round"/>`};
+}
+function balloonTransform(meta,scale){
+  return `translate(${meta.cx} ${meta.cy}) scale(${scale}) translate(${-meta.cx} ${-meta.cy})`;
+}
+function balloonTip(meta,offset){
+  if(!Number.isFinite(offset?.x)||!Number.isFinite(offset?.y))return;
+  return {x:meta.cx+offset.x,y:meta.cy+offset.y};
+}
+function tailTransform(end){return `translate(${end.x} ${end.y})`}
+function balloonSVG(d,p,box,slot,R,edit,interactive){const kind=balloonKind(d,p),small=kind==='small',k=box.w/630;
   const punch=(d.text||'').length<=6&&p.i>=2&&kind!=='small';const fs=(small?16:punch?26:21)*k,lh=fs*1.4;
   const lines=wrapKo(d.text||'',small?10:9).slice(0,5);const tw=Math.max(...lines.map(l=>l.length))*fs*.98,th=lines.length*lh;
   const rx=Math.max(tw/2+fs*1.5,fs*3.2),ry=Math.max(th/2+fs*1.3,fs*2.2);
@@ -646,16 +683,22 @@ function balloonSVG(d,p,box,slot,R){const kind=balloonKind(d,p),small=kind==='sm
   const cx=Math.min(Math.max(box.x+box.w*(slot%2?(side==='left'?.7:.3):(side==='left'?.3:.7)),box.x+rx+6),box.x+box.w-rx-6);
   const breakTop=box.frame&&slot===0&&box.y>60&&ry*2<box.h*.5;const cy=breakTop?box.y+ry*.25:box.y+ry+14+slot*ry*1.55;
   const tx=box.x+box.w*(side==='left'?.3:.7),ty=Math.min(box.y+box.h*.55,cy+ry+Math.max(40,box.h*.18));
-  let tail='';
-  if(kind==='thought'){for(let n=0;n<3;n++){const t=(n+1)/4,x=cx+(tx-cx)*t*.6,y=cy+ry+(ty-cy-ry)*t*.6;tail+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(6-n*1.5)*k}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${1.8*k}"/>`}}
-  else{const bx=cx+(tx-cx)*.2,by=cy+ry*.86,w=(small?6:10)*k,len=Math.hypot(tx-bx,ty-by),ex=bx+(tx-bx)*Math.min(1,(kind==='shout'?60:80)*k/len),ey=by+(ty-by)*Math.min(1,(kind==='shout'?60:80)*k/len);
-    tail=`<path d="M${(bx-w).toFixed(1)} ${by.toFixed(1)} Q${((bx+ex)/2-w*.4).toFixed(1)} ${((by+ey)/2).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)} Q${((bx+ex)/2+w*.6).toFixed(1)} ${((by+ey)/2).toFixed(1)} ${(bx+w).toFixed(1)} ${by.toFixed(1)}Z" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${2*k}" stroke-linejoin="round"/>`}
+  const bx=cx+(tx-cx)*.2,by=cy+ry*.86,len=Math.hypot(tx-bx,ty-by);
+  const r=Math.min(1,(kind==='shout'?60:80)*k/len);
+  const meta={cx,cy,rx,ry,k,kind,bx,by,tx,ty,ex:bx+(tx-bx)*r,ey:by+(ty-by)*r};
+  const tail=balloonTail(meta,balloonTip(meta,edit?.tail));
   const path=shapePath(cx,cy,rx,ry,kind,R),sw=(small?1.6:2.2)*k;
   const body=`<path d="${path}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${sw}" stroke-linejoin="round"/><path d="${path}" fill="none" stroke="${LT.ink}" stroke-width="${sw*.5}" opacity=".45" transform="translate(${(.8*k).toFixed(1)} ${(-.6*k).toFixed(1)})"/>`;
   // 꼬리 위에 몸통을 다시 덮어 이음새를 지움
   const cover=kind==='thought'?'':`<path d="${path}" fill="${LT.paper}" stroke="none"/>`;
   const text=lines.map((l,n)=>`<text x="${cx.toFixed(1)}" y="${(cy-th/2+lh*(n+.72)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="${punch?800:500}" text-anchor="middle" fill="${LT.text}" letter-spacing="-0.3">${esc(l)}</text>`).join('');
-  return{svg:body+tail+cover+text,bottom:cy+ry}}
+  const scale=edit?.scale||1;
+  if(!interactive&&scale===1)return body+tail.svg+cover+text;
+  const data=interactive?` class="balloon-art" data-balloon="${esc(JSON.stringify(meta))}"`:'';
+  const suffix=interactive?`<g class="tail-handle" data-tail-handle tabindex="0" role="button" aria-label="꼬리 끝점 · 방향키로 이동" transform="${tailTransform(tail.end)}"><circle r="8" fill="transparent" stroke="transparent" stroke-width="28" vector-effect="non-scaling-stroke"/><circle r="8" fill="#fff" stroke="#2d71f7" stroke-width="2" vector-effect="non-scaling-stroke"/><circle r="2.5" fill="#2d71f7"/></g>`:'';
+  const tailArt=interactive?`<g data-tail-art>${tail.svg}</g>`:tail.svg;
+  return `<g${data} transform="${balloonTransform(meta,scale)}">${body+tailArt+cover+text+suffix}</g>`;
+}
 function captionSVG(t,p,box,first){const k=box.w/630,fs=19*k,lines=wrapKo(t,16).slice(0,3),lh=fs*1.5;const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
   const style=/그날|이후|후|전|밤|아침|저녁|년|일 뒤|며칠|다음 날|그때/.test(t)&&(first||p.role==='설정'||p.role==='전환')?'deco':(p.vng==='R'||p.shot==='효과 배경')?'plain':'box';
   const w=tw+fs*2.6,h=th+fs*1.6,x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06);
@@ -682,7 +725,10 @@ function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);l
   if(p.caption)add('caption','나레이션 '+p.caption,captionSVG(p.caption,p,box,idx===0));
   (p.sfx||[]).slice(0,2).forEach((x,n)=>add('effect-'+n,'효과음 '+x,sfxSVG(x,p,box,n,R)));
   const ds=(p.dialogs||[]).filter(d=>d.text).slice(0,3);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
-  ds.forEach((d,n)=>add('dialog-'+n,'말풍선 '+d.text,balloonSVG(d,p,box,n,R).svg));
+  ds.forEach((d,n)=>{
+    const key='dialog-'+n;
+    add(key,'말풍선 '+d.text,balloonSVG(d,p,box,n,R,positions?.[key],interactive));
+  });
   return o;
 }
 function cutSlot(p,i){const slot=/^#(\d+):/.exec(p.key||'');return slot?Number(slot[1]):i}
@@ -940,7 +986,7 @@ function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerH
 }
 $('#wtoc').addEventListener('click',e=>{const a=e.target.closest('[data-toc]');if(!a)return;e.preventDefault();document.getElementById('ws-'+a.dataset.toc)?.scrollIntoView({behavior:'smooth'})});
 const pageReader=$('#reader'),pageCut=$('#wcut');
-let gapDrag=null;
+let gapDrag=null,tailDrag=null,selectedBalloon=null;
 function pageKey(group){return group.closest('section').dataset.pageScene+':'+group.dataset.slotIndex}
 function pageSettings(create=false,key=pageSelection){
   const [scene,slot]=key.split(':').map(Number);
@@ -949,14 +995,19 @@ function pageSettings(create=false,key=pageSelection){
   return edits[slot];
 }
 function refreshPageTools(){
+  const previous=selectedBalloon&&{key:pageKey(selectedBalloon.closest('[data-slot-index]')),letter:selectedBalloon.dataset.letter};
+  selectBalloon(null);
   $('#wtools').hidden=!pageEditing;
   if(!pageEditing)return;
   const groups=[...pageReader.querySelectorAll('[data-slot-index]')];
   pageCut.replaceChildren(...groups.map(group=>new Option(
     `씬 ${Number(group.closest('section').dataset.pageScene)+1} · ${Number(group.dataset.p)+1}컷`,pageKey(group))));
-  selectPageCut(groups.find(group=>pageKey(group)===pageSelection)||groups[0]);
+  const group=groups.find(group=>pageKey(group)===pageSelection)||groups[0];
+  selectPageCut(group);
+  if(group&&previous?.key===pageKey(group))selectBalloon(group.querySelector(`[data-letter="${previous.letter}"]`));
 }
 function selectPageCut(group){
+  if(selectedBalloon?.closest('[data-slot-index]')!==group)selectBalloon(null);
   const buttons=[pageCut,$('#wletterreset')];
   buttons.forEach(el=>el.disabled=!group);
   if(!group){pageSelection='';return}
@@ -982,14 +1033,60 @@ $('#wletterreset').addEventListener('click',()=>{
   if(settings)delete settings.letters;
   saveScenes();renderWebtoon();
 });
-function letterPosition(letter){return pageSettings()?.letters?.[letter.dataset.letter]||{x:0,y:0}}
+function letterPosition(letter){return {x:0,y:0,...pageSettings()?.letters?.[letter.dataset.letter]}}
 function moveLetter(letter,position){letter.setAttribute('transform',`translate(${position.x} ${position.y})`)}
 function saveLetter(letter,position){
   const settings=pageSettings(true);
-  (settings.letters||={})[letter.dataset.letter]=position;
+  (settings.letters||={})[letter.dataset.letter]={...settings.letters?.[letter.dataset.letter],...position};
   saveScenes();
 }
 function pagePoint(svg,e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse())}
+const balloonSize=$('#wballoonsize'),balloonValue=$('#wballoonvalue');
+function selectBalloon(letter){
+  const art=letter?.querySelector('[data-balloon]');
+  selectedBalloon?.classList.remove('balloon-selected');
+  selectedBalloon=art?letter:null;
+  $('#wballoon').hidden=!art;
+  if(!art)return;
+  letter.classList.add('balloon-selected');
+  showBalloonSize(letterPosition(letter).scale||1);
+}
+function showBalloonSize(scale){
+  balloonSize.value=Math.round(scale*100);
+  balloonValue.textContent=`${balloonSize.value}%`;
+}
+function showTail(art,meta,offset){
+  const tail=balloonTail(meta,balloonTip(meta,offset));
+  art.querySelector('[data-tail-art]').innerHTML=tail.svg;
+  art.querySelector('[data-tail-handle]').setAttribute('transform',tailTransform(tail.end));
+}
+balloonSize.addEventListener('input',()=>{
+  if(!selectedBalloon)return;
+  const scale=Number(balloonSize.value)/100;
+  const art=selectedBalloon.querySelector('[data-balloon]');
+  art.setAttribute('transform',balloonTransform(JSON.parse(art.dataset.balloon),scale));
+  showBalloonSize(scale);
+  saveLetter(selectedBalloon,{scale});
+});
+$('#wballoonreset').addEventListener('click',()=>{
+  if(!selectedBalloon)return;
+  const art=selectedBalloon.querySelector('[data-balloon]'),meta=JSON.parse(art.dataset.balloon);
+  art.setAttribute('transform',balloonTransform(meta,1));
+  showTail(art,meta,null);
+  showBalloonSize(1);
+  saveLetter(selectedBalloon,{scale:1,tail:null});
+});
+function startTailDrag(letter,art,e){
+  const meta=JSON.parse(art.dataset.balloon),initial=letterPosition(letter).tail;
+  tailDrag={letter,art,meta,initial,id:e.pointerId,start:pagePoint(art,e),end:balloonTail(meta,balloonTip(meta,initial)).end};
+  pageReader.setPointerCapture(e.pointerId);
+}
+pageReader.addEventListener('focusin',e=>{
+  const letter=e.target.closest('[data-letter]');
+  if(!pageEditing||!letter)return;
+  selectPageCut(letter.closest('[data-slot-index]'));
+  selectBalloon(letter);
+});
 function gapLayout(gap){
   const svg=gap.ownerSVGElement,index=Number(gap.dataset.pageGap);
   const following=[...svg.querySelectorAll('[data-slot-index],[data-page-gap]')]
@@ -1034,7 +1131,7 @@ pageReader.addEventListener('dblclick',e=>{
   saveGap(layout,true);
 });
 pageReader.addEventListener('pointerdown',e=>{
-  if(!pageEditing||e.button!==0||pageDrag||gapDrag)return;
+  if(!pageEditing||e.button!==0||pageDrag||gapDrag||tailDrag)return;
   const gap=e.target.closest('[data-page-gap]');
   if(gap){
     if(e.pointerType!=='touch'||e.target.closest('.gap-grip'))startGapDrag(gap,e);
@@ -1044,14 +1141,27 @@ pageReader.addEventListener('pointerdown',e=>{
   if(!group)return;
   selectPageCut(group);
   const letter=e.target.closest('[data-letter]');
+  selectBalloon(letter);
   if(!letter)return;
   e.preventDefault();
+  const handle=e.target.closest('[data-tail-handle]');
+  if(handle){
+    handle.focus({preventScroll:true});
+    startTailDrag(letter,handle.closest('[data-balloon]'),e);
+    return;
+  }
   letter.focus({preventScroll:true});
   const svg=letter.ownerSVGElement;
   pageDrag={letter,svg,id:e.pointerId,start:pagePoint(svg,e),initial:letterPosition(letter)};
   pageReader.setPointerCapture(e.pointerId);
 });
 pageReader.addEventListener('pointermove',e=>{
+  if(tailDrag?.id===e.pointerId){
+    const {art,meta,start,end}=tailDrag,point=pagePoint(art,e);
+    tailDrag.offset={x:Math.round(end.x+point.x-start.x-meta.cx),y:Math.round(end.y+point.y-start.y-meta.cy)};
+    showTail(art,meta,tailDrag.offset);
+    return;
+  }
   if(gapDrag?.id===e.pointerId){
     const next=clampGap(gapDrag.size+(e.clientY-gapDrag.clientY)*gapDrag.scale*2);
     resizeGap(gapDrag,next);
@@ -1064,6 +1174,11 @@ pageReader.addEventListener('pointermove',e=>{
   moveLetter(letter,pageDrag.position);
 });
 pageReader.addEventListener('pointerup',e=>{
+  if(tailDrag?.id===e.pointerId){
+    if(tailDrag.offset)saveLetter(tailDrag.letter,{tail:tailDrag.offset});
+    tailDrag=null;
+    return;
+  }
   if(gapDrag?.id===e.pointerId){
     if(Number(gapDrag.gap.dataset.gapSize)!==gapDrag.size)saveGap(gapDrag);
     gapDrag=null;
@@ -1074,6 +1189,11 @@ pageReader.addEventListener('pointerup',e=>{
   pageDrag=null;
 });
 pageReader.addEventListener('lostpointercapture',e=>{
+  if(tailDrag?.id===e.pointerId){
+    showTail(tailDrag.art,tailDrag.meta,tailDrag.initial);
+    tailDrag=null;
+    return;
+  }
   if(gapDrag?.id===e.pointerId){
     resizeGap(gapDrag,gapDrag.size);
     gapDrag=null;
@@ -1085,7 +1205,7 @@ pageReader.addEventListener('lostpointercapture',e=>{
 });
 pageReader.addEventListener('keydown',e=>{
   const gap=e.target.closest('[data-page-gap]');
-  if(pageEditing&&gap&&!gapDrag&&!pageDrag){
+  if(pageEditing&&gap&&!gapDrag&&!pageDrag&&!tailDrag){
     const layout=gapLayout(gap),n=e.shiftKey?16:4;
     const value={ArrowUp:layout.size+n,ArrowDown:layout.size-n,Home:0,End:MAX_PAGE_GAP,Escape:Number(gap.dataset.gapBase)}[e.key];
     if(value!==undefined){
@@ -1097,10 +1217,18 @@ pageReader.addEventListener('keydown',e=>{
   }
   const step={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
   const letter=e.target.closest('[data-letter]');
-  if(!pageEditing||!letter||!step||pageDrag)return;
+  if(!pageEditing||!letter||!step||pageDrag||gapDrag||tailDrag)return;
   e.preventDefault();
   selectPageCut(letter.closest('[data-slot-index]'));
   const pos=letterPosition(letter),n=e.shiftKey?16:4;
+  const handle=e.target.closest('[data-tail-handle]');
+  if(handle){
+    const art=handle.closest('[data-balloon]'),meta=JSON.parse(art.dataset.balloon);
+    const {end}=balloonTail(meta,balloonTip(meta,pos.tail));
+    const offset={x:end.x-meta.cx+n*step[0],y:end.y-meta.cy+n*step[1]};
+    showTail(art,meta,offset);saveLetter(letter,{tail:offset});
+    return;
+  }
   const next={x:pos.x+n*step[0],y:pos.y+n*step[1]};
   moveLetter(letter,next);saveLetter(letter,next);
 });
@@ -1126,7 +1254,7 @@ function showView(v){if(!['write','layout','nai','webtoon','db'].includes(v))v='
   scrollTo(0,0);try{localStorage.setItem('rough-view',v)}catch(_){}}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
 {const _c=compute;compute=function(...a){_c(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon')renderWebtoon()}}
-{const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon'&&!pageDrag&&!gapDrag)renderWebtoon()}}
+{const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon'&&!pageDrag&&!gapDrag&&!tailDrag)renderWebtoon()}}
 
 // ---------- 프롬프트 시안 ----------
 function copyText(t){navigator.clipboard?.writeText(t).then(()=>toast('프롬프트를 복사했어요'),()=>toast('복사가 막혀 있어요. 글을 직접 선택해 복사하세요'))}
