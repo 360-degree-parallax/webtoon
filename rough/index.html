@@ -548,7 +548,7 @@ let DB=null,DBM={},dbSheet='컷표',dbLimit=200,dbSel=-1,dbF={work:'',ep:'',q:''
 const DB_ORDER=['작품 정보','컷표','장면','5컷 리듬','코드표','명경 1화 컷표','명경 1화 묶음','작업 방법'];
 const LONG=/내용|메모|원문|대사|의도|리듬 한 줄|설명|비고|상태|연출명 설명/;
 async function loadDB(){if(DB===null){$('#dbscroll').innerHTML='<p class="empty" style="padding:24px">불러오는 중</p>';
-    try{const r=await fetch('../cuts/db/db.json');if(!r.ok)throw 0;DB=await r.json()}catch(_){DB=false}
+    for(const u of ['db/db.json','../cuts/db/db.json']){try{const r=await fetch(u);if(!r.ok)continue;DB=await r.json();break}catch(_){}}if(!DB)DB=false
     try{const t=await (await fetch('../cuts/manifest.csv')).text();const L=t.replace(/^﻿/,'').trim().split('\n');const H=L.shift().split(',');const fi=H.indexOf('file');for(const l of L){const v=l.split(',');DBM[v[0]]=v[fi]}}catch(_){}}
   renderDB()}
 function dbImgId(sheet,cols,row){const g=n=>row[cols.indexOf(n)];
@@ -556,7 +556,7 @@ function dbImgId(sheet,cols,row){const g=n=>row[cols.indexOf(n)];
 function dbRows(){const t=DB[dbSheet];const c=t.columns;const wi=c.indexOf('작품'),ei=c.indexOf('화'),q=dbF.q.trim().toLowerCase();
   return t.rows.map((r,i)=>[r,i]).filter(([r])=>(wi<0||!dbF.work||r[wi]===dbF.work)&&(ei<0||!dbF.ep||String(r[ei])===dbF.ep)&&(!q||r.join(' ').toLowerCase().includes(q)))}
 function renderDB(){
-  if(DB===false){$('#dbtabs').innerHTML='';$('#dbfilter').innerHTML='';$('#dbscroll').innerHTML='<p class="empty" style="padding:24px">비공개 컷 저장소(cuts/)에 DB 사본이 있어요. <code>git submodule update --init</code>로 받은 뒤 <code>python3 rough/serve.py</code>로 열어주세요.</p>';return}
+  if(DB===false){$('#dbtabs').innerHTML='';$('#dbfilter').innerHTML='';$('#dbscroll').innerHTML='<p class="empty" style="padding:24px">DB 파일(rough/db/db.json)을 읽지 못했어요. <code>python3 rough/serve.py</code>로 열어주세요.</p>';return}
   if(!DB[dbSheet])dbSheet=DB_ORDER.find(n=>DB[n]);
   $('#dbdesc').textContent=`웹툰 연출 DB 시트를 그대로 조회해요. 시트 리비전 ${DB.__meta?.revision??''} · 내보낸 날 ${DB.__meta?.exported??''}`;
   $('#dbtabs').innerHTML=DB_ORDER.filter(n=>DB[n]).map(n=>`<button data-s="${esc(n)}" aria-pressed="${n===dbSheet}">${esc(n)}<small>${DB[n].rows.length}</small></button>`).join('');
