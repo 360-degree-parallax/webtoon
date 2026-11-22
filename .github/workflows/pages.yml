@@ -1,0 +1,35 @@
+# GitHub Pages 배포: 비공개 서브모듈(cuts/) 없이 저장소 그대로 올린다.
+# 주소: https://360-degree-parallax.github.io/webtoon/rough/
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: 올릴 파일만 모으기
+        run: |
+          mkdir -p _site
+          cp -r rough docs README.md _site/
+          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=rough/"><a href="rough/">러프 툴 열기</a>' > _site/index.html
+          touch _site/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
