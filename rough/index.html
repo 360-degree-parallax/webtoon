@@ -1040,6 +1040,8 @@ async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷
     NAIVIEW='ai';st(`다듬었어요 · ${r.model}`);if(SCENES[SCUR].id===sid&&VIEW==='nai')renderNai()}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';st(m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false}}
 $('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;NAIVIEW=b.dataset.v;renderNai()});
+// 전체 복사: 기본 프롬프트와 캐릭터 프롬프트만, 각 줄 끝에 쉼표, 빈 줄로 구분
+const naiCopy=o=>[o.base,...o.chars.map(c=>c.prompt)].map(t=>t.trim().replace(/,\s*$/,'')+',').join('\n\n');
 function naiText(){const L=naiCuts();return L.map(({p,i,o})=>NAI.text(o,i,L.length,cutHead(p,i))).join('\n\n────────\n\n')}
 function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
@@ -1070,7 +1072,7 @@ async function naiBase(i){const p=state.panels[i];if(!p)return;const o=NAI.cut(p
 function dataUrlDownload(name,src){fetch(src).then(r=>r.blob()).then(b=>download(name,URL.createObjectURL(b)))}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   if(a==='ncopy')copyText(el.closest('.nf').querySelector('pre').textContent);
-  else if(a==='ncopyall'){const i=+el.closest('.pcard').querySelector('[data-cutslot]').dataset.cutslot;const L=naiCuts();copyText(NAI.text(L[i].o,i,L.length,cutHead(L[i].p,i)))}
+  else if(a==='ncopyall'){const i=+el.closest('.pcard').querySelector('[data-cutslot]').dataset.cutslot;copyText(naiCopy(naiCuts()[i].o))}
   else if(a==='naidown'){download(`${sceneLabel(SCENES[SCUR],SCUR)}-novelai.txt`,URL.createObjectURL(new Blob([naiText()],{type:'text/plain'})));toast('txt로 저장했어요')}
   else if(a==='naimulti'){target=null;$('#filem').click()}
   else if(a==='naibase')naiBase(+el.dataset.i);
