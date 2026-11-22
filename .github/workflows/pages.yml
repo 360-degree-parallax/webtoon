@@ -13,11 +13,8 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,5 +28,13 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+  # 업로드와 배포를 다른 작업으로 나눠야 배포 단계가 방금 올린 결과물을 안정적으로 찾는다
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4
