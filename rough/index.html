@@ -189,6 +189,8 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scside{position:sticky;top:156px;max-height:calc(100vh - 156px);min-height:calc(100vh - 156px);overflow:auto;padding:16px;border-left:1px solid var(--line);background:var(--bg)}
 .scside .refsum{gap:6px;font-size:13px}.scside .refsum .btn{display:none}
 .scside .bgcards .slot{width:120px}.scside .bgcards .drop{width:120px;height:80px}
+.dbpair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px}.dbpair figure{margin:0}.dbpair img{width:100%;display:block;border:1px solid var(--line);border-radius:6px}.dbpair figcaption{font-size:11px;color:var(--t3);margin-top:4px}
+.dbmeta{font-size:12px;color:var(--t2);margin:0 0 12px}
 .insp-note{margin:0;font-size:12px;color:var(--t3);line-height:1.5}
 .insp-h .link{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:0;text-decoration:none;opacity:.8}.insp-h .link:hover{color:var(--t1);opacity:1;text-decoration:underline}
 .worldline{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:13px;color:var(--t2)}
@@ -829,13 +831,13 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script>
 const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const CUT_BASE='cuts/'; // 네이버 원본 컷 전체(권리자 허락, 비상업 공개)
+const CUT_BASE='cuts/',CLEAN_BASE='cuts-clean/'; // 원본(말풍선 있음) / 같은 이름의 말풍선 제거본(러프용)
 const LEN=[['짧게',.6],['보통',1],['길게',1.5],['아주 길게',2.2]];
 const lenWord=h=>h<.7?'짧게':h<1.2?'보통':h<2?'길게':'아주 길게';
 const NARR={'끝 정점':'마지막 컷에서 터지는 장면','중간 정점':'가운데서 터지고 가라앉는 장면','정점 선행':'처음부터 터지고 수습하는 장면','정점 연속':'계속 몰아치는 장면','무정점':'큰 고비 없이 흐르는 장면'};
 const CURVE={'상승':'감정이 점점 올라가요','하강':'감정이 점점 가라앉아요','산형':'감정이 올랐다 내려와요','골형':'가라앉았다 다시 올라요','평탄':'감정이 고르게 이어져요'};
 const PART={narr:'서사 형태',curve:'감정 곡선',goal:'연출 목적',vng:'VNG 순서',count:'컷 수',trans:'컷 전환',tempo:'템포',dist:'거리 흐름',emo:'감정'};
-let PATS=[],REFS=[],REF_ALL=0;
+let PATS=[],REFS=[],REF_ALL=0,CUTMETA={};
 const locks={};              // 문장(key) → {shot, ang, h}
 const state={an:[],ranks:[],pick:[],panels:[],sel:-1,svg:''};
 
@@ -1245,8 +1247,10 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     if(u){const c=u.crop&&u.w?u.crop:null;const vb=c?`${(c[0]*u.w).toFixed(0)} ${(c[1]*u.h).toFixed(0)} ${((c[2]-c[0])*u.w).toFixed(0)} ${((c[3]-c[1])*u.h).toFixed(0)}`:null;
       art=c?`<svg x="${bx}" y="${y}" width="${bw}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${u.src}" width="${u.w}" height="${u.h}" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/></svg>`:`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`}
     else if(!im)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;
+    // 원본 칸이 사선이면 칸 모양도 그 꼭짓점대로(그림 영역 상자 기준으로 옮김)
+    const poly=u&&u.quad&&u.crop?u.quad.map(([qx,qy])=>[(bx+(qx-u.crop[0])/(u.crop[2]-u.crop[0])*bw).toFixed(1),(y+(qy-u.crop[1])/(u.crop[3]-u.crop[1])*h).toFixed(1)].join(',')).join(' '):null;
     const c=!clean&&!im&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame?`stroke="#222" stroke-width="3"`:'stroke="none"';
-    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}><rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
+    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g clip-path="url(#${pre}${i})">${art}</g>`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
       (clean?'':letterSVG(rough?{...p,dialogs:[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame},i,edit?.letters,interactive))+`</g>`;
@@ -1286,7 +1290,7 @@ function underlay(p){if(!showUnder)return null;
   if(p.shot==='클로즈업'){const c=p.who&&IMG.char[p.who];if(c)return{src:c.src,op:.32}}
   if(['설정','전경','전신','중경','효과 배경'].includes(p.shot)){const sc=sceneFor(p);if(sc)return{src:sc.src,op:p.shot==='설정'||p.shot==='전경'?.38:.22}}
   // 직접 넣은 참고 이미지가 없으면 엔진이 고른 구도 레퍼런스를 컬러로 깔기
-  if(p.ref)return{src:p.ref.src,op:1,color:true,crop:p.ref.art,w:p.ref.w,h:p.ref.h};
+  if(p.ref)return{src:p.ref.src,op:1,color:true,crop:p.ref.art,w:p.ref.w,h:p.ref.h,quad:p.ref.frame==='slant'?p.ref.quad:null};
   return null}
 function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parseCuts(CUTS,engineChars()).map(b=>b.who).filter(Boolean)])]}
 function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
@@ -2285,7 +2289,8 @@ function renderDBTable(){const t=DB[dbSheet],c=t.columns,rows=dbRows();const sho
   $('#dbscroll').innerHTML=`<table class="db"><thead><tr>${showImg?'<th></th>':''}${c.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,dbLimit).map(([r,i])=>{const id=dbImgId(dbSheet,c,r);
     return `<tr data-i="${i}"${i===dbSel?' class="on"':''}>${showImg?`<td>${DBM[id]?`<img loading="lazy" src="${DBBASE}${DBM[id]}" alt="">`:''}</td>`:''}${r.map((v,k)=>cell(v,c[k])).join('')}</tr>`}).join('')}</tbody></table>`+(rows.length>dbLimit?`<button class="more" data-act="dbmore">${rows.length-dbLimit}행 더 보기</button>`:'')}
 function renderDBSide(i){const t=DB[dbSheet],c=t.columns,r=t.rows[i];const id=dbImgId(dbSheet,c,r);
-  $('#dbside').innerHTML=(DBM[id]?`<img src="${DBBASE}${DBM[id]}" alt="${esc(id)}">`:'')+`<dl>${c.map((h,k)=>r[k]===null||r[k]===undefined||r[k]===''?'':`<dt>${esc(h)}</dt><dd>${esc(r[k])}</dd>`).join('')}</dl>`}
+  const cm=CUTMETA[id],FIT={ok:'그림 위주 · 레퍼런스로 씀',partial:'말풍선 위주·그림이 덜 차지 · 레퍼런스 제외',multi:'여러 칸 섞임·잘림 · 레퍼런스 제외'};
+  $('#dbside').innerHTML=(cm?`<div class="dbpair"><figure><img src="${CUT_BASE}${cm.file}" alt="${esc(id)} 원본"><figcaption>원본 · cuts/</figcaption></figure><figure><img src="${CLEAN_BASE}${cm.clean||cm.file}" alt="${esc(id)} 말풍선 제거본"><figcaption>말풍선 제거본 · cuts-clean/${cm.balloons_removed?` (${cm.balloons_removed}개 지움)`:' (지운 것 없음)'}</figcaption></figure></div><p class="dbmeta">칸 모양 <b>${cm.frame==='slant'?'사선':'사각'}</b> · ${FIT[cm.fit]||''}</p>`:DBM[id]?`<img src="${DBBASE}${DBM[id]}" alt="${esc(id)}">`:'')+`<dl>${c.map((h,k)=>r[k]===null||r[k]===undefined||r[k]===''?'':`<dt>${esc(h)}</dt><dd>${esc(r[k])}</dd>`).join('')}</dl>`}
 $('#dbtabs').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b)return;dbSheet=b.dataset.s;dbLimit=200;dbSel=-1;dbF={work:dbF.work,ep:'',q:''};renderDB();$('#dbside').innerHTML='<p class="empty" style="padding:0">행을 누르면 자세히 보여요</p>'});
 $('#dbfilter').addEventListener('input',e=>{const f=e.target.dataset.f;if(!f)return;dbF[f]=e.target.value;if(f==='work')dbF.ep='';dbLimit=200;if(f==='q'){clearTimeout(renderDB.t);renderDB.t=setTimeout(renderDBTable,200)}else renderDB()});
 $('#dbscroll').addEventListener('click',e=>{const tr=e.target.closest('tr[data-i]');if(tr){dbSel=+tr.dataset.i;document.querySelectorAll('table.db tr.on').forEach(x=>x.classList.remove('on'));tr.classList.add('on');renderDBSide(dbSel)}
@@ -2298,7 +2303,7 @@ Promise.all([
 ]).then(([pt,cuts])=>{
   PATS=pt.patterns;
   // 그림 위주 컷만 레퍼런스로(말풍선 위주·덜 차지·여러 칸 섞인 컷은 자동 판정으로 제외)
-  REFS=cuts.items.filter(g=>g.fit==='ok').map(g=>({...g,kind:'cut',src:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}`}));REF_ALL=cuts.items.length;
+  REFS=cuts.items.filter(g=>g.fit==='ok').map(g=>({...g,kind:'cut',src:CLEAN_BASE+(g.clean||g.file),orig:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));
   compute(true)}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 </script>
 </body>
