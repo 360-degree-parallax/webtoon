@@ -224,16 +224,50 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .tr .cap.sfx{font-weight:800;border-style:dashed}
 .tr .cap{display:inline-block;margin-top:3px;font-size:12px;color:var(--t2);border:1px solid var(--line2);border-radius:4px;padding:0 5px}
 /* characters */
-.chars{display:grid;gap:10px}
-.chr{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;grid-template-columns:minmax(90px,140px) minmax(0,1fr) auto auto;gap:8px 10px;align-items:center}
-.chr input{height:34px;padding:0 10px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);font-size:14px;min-width:0}
-.chr input.nm{font-weight:700}
-.chr textarea{grid-column:1/-1;min-height:0;height:58px;padding:8px 10px;font-size:14px;line-height:1.6}
-.chr .x{width:30px;height:30px;border-radius:8px;color:var(--t3);font-size:18px}
-.chr .x:hover{background:var(--hover);color:var(--t1)}
+.ccards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.ccard{position:relative;display:flex;flex-direction:column;text-align:left;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);transition:border-color .12s,transform .12s}
+.ccard:hover{border-color:var(--t1);transform:translateY(-2px)}
+.ccard .cav{position:relative;aspect-ratio:3/4;background:var(--surface);display:grid;place-items:center;overflow:hidden}
+.ccard .cav img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.ccard .cav .ini{font-size:44px;font-weight:800;color:#fff}
+.ccard .cav::after{content:"";position:absolute;inset:auto 0 0;height:55%;background:linear-gradient(transparent,rgba(0,0,0,.62))}
+.ccard .cname{position:absolute;left:12px;right:12px;bottom:10px;z-index:1;color:#fff}
+.ccard .cname b{display:block;font-size:17px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ccard .cname small{font-size:12px;opacity:.85}
+.ccard .cbody{padding:10px 12px 12px;display:grid;gap:6px}
+.ccard .clook{font-size:13px;line-height:1.45;color:var(--t2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:38px}
+.ccard .ctags{display:flex;flex-wrap:wrap;gap:4px;max-height:44px;overflow:hidden}
+.ccard .ctags i{font-style:normal;font-size:11px;padding:2px 6px;border-radius:10px;background:var(--surface);color:var(--t2)}
+.ccard .cstat{font-size:12px;color:var(--t3)}
+.ccard.add{border-style:dashed;align-items:center;justify-content:center;min-height:240px;color:var(--t2);font-weight:600;gap:8px}
+.ccard.add span{font-size:30px;line-height:1}
+.bgcards{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}
+.bgcards .slot{width:180px}.bgcards .drop{width:180px;height:120px}
+.refsum{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:14px;color:var(--t2)}
+.refsum .av{width:40px;height:40px;border-radius:20px;overflow:hidden;background:var(--surface);display:grid;place-items:center;font-weight:700;color:#fff;border:2px solid var(--bg);box-shadow:0 0 0 1px var(--line)}
+.refsum .av img{width:100%;height:100%;object-fit:cover;object-position:top}
+.chdlg{width:min(820px,calc(100vw - 32px));padding:0}
+.chhead{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line)}
+.chhead h3{margin:0}.ix{width:36px;height:36px;border-radius:18px;font-size:22px;color:var(--t2)}.ix:hover{background:var(--hover)}
+.chbody{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;padding:20px 24px;max-height:calc(100vh - 220px);overflow:auto}
+.chimg{width:220px;height:auto;aspect-ratio:3/4;border-radius:12px}
+.chimg img{object-position:top}
+.chnote{margin:8px 0!important;font-size:12px!important;line-height:1.5}
+.chfields{display:grid;gap:14px;align-content:start}
+.cf{display:grid;gap:6px}.cf .seg3{justify-self:start}.cf>span{font-size:13px;font-weight:700}.cf>span small{font-weight:500;color:var(--t3);margin-left:6px}
+.cf input,.cf textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px}
+.cf textarea{line-height:1.6;resize:vertical;min-height:96px}
+.chat{display:grid;gap:10px;padding:14px;border-radius:12px;background:var(--surface)}
+.msg{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:start}
+.msg .av{width:36px;height:36px;border-radius:18px;overflow:hidden;background:#999;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px}
+.msg .av img{width:100%;height:100%;object-fit:cover;object-position:top}
+.msg b{display:block;font-size:12px;margin-bottom:4px}
+.msg .bub{display:inline-block;max-width:100%;padding:9px 13px;border-radius:4px 16px 16px 16px;background:var(--bg);font-size:14px;line-height:1.5;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.msg .bub em{display:block;font-style:normal;font-size:12px;color:var(--t3);margin-bottom:2px}
+.chdlg .acts{padding:14px 24px;border-top:1px solid var(--line);margin:0}
+@media(max-width:640px){.chbody{grid-template-columns:1fr}.chimg{width:160px}.ccards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .sugg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:13px;color:var(--t2)}
 .sugg button{height:30px;padding:0 10px;border:1px dashed var(--line2);border-radius:15px;font-size:13px;font-weight:600;color:var(--t1)}
-@media(max-width:640px){.chr{grid-template-columns:minmax(0,1fr) auto}.chr .al{grid-column:1/-1;grid-row:2}.chr .seg3{grid-column:1;grid-row:3;justify-self:start}.chr .x{grid-column:2;grid-row:1}}
 /* top tabs */
 .topnav{position:sticky;top:56px;z-index:19;display:flex;gap:4px;padding:0 24px;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto}
 .topnav button{height:48px;padding:0 14px;font-size:15px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
@@ -372,10 +406,13 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <h1>작성</h1>
     <p class="desc">인물을 정하고, 씬마다 컷을 적어요. 다 적으면 연출을 확인해요.</p>
   <section>
-    <div class="sh"><h2>인물</h2><span>이름·다른 호칭으로 장면 글에서 인물을 찾아요 · 외형은 프롬프트에, 성별은 NovelAI 인원 태그에 쓰여요</span></div>
-    <div class="chars" id="chars"></div>
+    <div class="sh"><h2>등장인물</h2><span>카드를 눌러 프로필을 편집해요 · 대표 이미지와 외형은 프롬프트·참고 시트·NovelAI에 그대로 쓰여요</span></div>
+    <div class="ccards" id="chars"></div>
     <div class="sugg" id="sugg"></div>
-    <div class="toolbar" style="margin-top:10px"><button class="btn" data-act="addchar">+ 인물 추가</button></div>
+  </section>
+  <section>
+    <div class="sh"><h2>배경·분위기</h2><span>장소 이미지를 올리면 색과 분위기가 프롬프트에 들어가요 · 이름이 장면 글에 나오면 그 묶음에 연결</span></div>
+    <div class="bgcards" id="bgs"></div>
   </section>
 
   <section>
@@ -441,15 +478,12 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="naichars" id="naichars"></div>
   </section>
   <section>
-    <div class="sh"><h2>레퍼런스</h2></div>
+    <div class="sh"><h2>레퍼런스</h2><span>인물·배경 이미지는 작성 단계에서 등록해요</span></div>
     <div class="naiterms" id="nairefs"></div>
   </section>
   <section>
-    <div class="sh"><h2>캐릭터·장면 이미지</h2><span>끌어다 놓기·붙여넣기·클릭 · 이 브라우저에만 저장돼요</span></div>
-    <div class="refrow"><div class="rlabel">캐릭터<small>장면 글의 인물 이름과 자동 연결</small></div><div class="slots" id="charSlots"></div></div>
-    <div class="refrow"><div class="rlabel">장면<small>배경·분위기. 색이 프롬프트에 들어가요</small></div><div class="slots" id="sceneSlots"></div></div>
-    <input type="file" id="file" accept="image/*" hidden>
-    <input type="file" id="filem" accept="image/*" multiple hidden>
+    <div class="sh"><h2>캐릭터·장면 이미지</h2><span>인물·배경 이미지는 작성 단계에서 관리해요</span></div>
+    <div class="refsum" id="refsum"></div>
   </section>
   <section>
     <div class="sh"><h2>Claude로 다듬기</h2><span>씬 전체를 읽고 연속성·위치·소품을 추론해 태그와 캐릭터 위치를 다시 짜요</span></div>
@@ -520,6 +554,28 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
         <div class="acts"><button type="button" class="btn" data-act="keydel" id="keydel">키 지우기</button><span class="grow"></span><button type="button" class="btn" data-act="keycancel">취소</button><button type="submit" class="btn dark" id="keyok">확인하고 저장</button></div>
       </form>
     </dialog>
+<input type="file" id="file" accept="image/*" hidden>
+<input type="file" id="filem" accept="image/*" multiple hidden>
+<dialog id="chdlg" class="chdlg" aria-labelledby="cht">
+  <div class="chhead"><h3 id="cht">캐릭터 프로필</h3><button type="button" class="ix" data-act="chclose" aria-label="닫기">×</button></div>
+  <div class="chbody">
+    <div class="chside">
+      <div class="drop chimg" data-cimg tabindex="0" role="button" aria-label="대표 이미지"></div>
+      <div class="pal" id="chpal"></div>
+      <p class="chnote">끌어다 놓기 · 붙여넣기 · 클릭<br>캐릭터 레퍼런스로 쓰여요</p>
+      <button type="button" class="btn" data-act="chimgdel" id="chimgdel">이미지 지우기</button>
+    </div>
+    <div class="chfields">
+      <label class="cf"><span>이름</span><input data-ck="name" maxlength="20" placeholder="예: 에드가" spellcheck="false"></label>
+      <label class="cf"><span>다른 호칭 <small>쉼표로 구분 · 줄글에서 이 이름들도 같은 인물로 찾아요</small></span><input data-ck="aliases" placeholder="예: 도련님, 에드" spellcheck="false"></label>
+      <div class="cf"><span>성별 <small>NovelAI 인원 태그(1girl·1boy)</small></span><div class="seg3" id="chbody"><button type="button" data-cbody="female">여자</button><button type="button" data-cbody="male">남자</button></div></div>
+      <label class="cf"><span>외형 <small id="chcnt"></small></span><textarea data-ck="look" rows="4" maxlength="300" placeholder="머리 모양·색, 눈, 체격, 옷차림, 특징"></textarea></label>
+      <label class="cf"><span>NovelAI 태그 <small>비우면 외형에서 자동으로 만들어요</small></span><input data-ck="tags" spellcheck="false" placeholder="blonde hair, short hair, green eyes, black tailcoat"></label>
+      <div class="cf"><span>대사 미리보기</span><div class="chat" id="chchat"></div></div>
+    </div>
+  </div>
+  <div class="acts"><button type="button" class="btn" data-act="chdel">캐릭터 삭제</button><span class="grow"></span><button type="button" class="btn dark" data-act="chclose">완료</button></div>
+</dialog>
 <script src="engine.js"></script>
 <script src="prompt.js"></script>
 <script src="nai.js"></script>
@@ -860,17 +916,19 @@ function underlay(p){if(!showUnder)return null;
 function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parseCuts(CUTS,engineChars()).map(b=>b.who).filter(Boolean)])]}
 function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
   <div class="nm">${kind==='scene'&&ref?`<input value="${esc(ref.name)}" data-rename="${esc(key)}" aria-label="장면 이름">`:esc(label)}</div>${ref?`<div class="pal">${ref.palette.map(c=>`<i style="background:${c}" title="${c}"></i>`).join('')}</div>`:''}</div>`}
-function renderSlots(){const ns=names();const extra=Object.keys(IMG.char).filter(n=>!ns.includes(n));
-  $('#charSlots').innerHTML=ns.map(n=>slotHTML('char',n,IMG.char[n],n,false)).join('')+extra.map(n=>slotHTML('char',n,IMG.char[n],`${n} (글에 없음)`,true)).join('')||'<p class="empty" style="padding:8px 0">글에 <b>인물 | 행동</b> 형식으로 이름을 적으면 칸이 생겨요.</p>';
-  $('#sceneSlots').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,r,r.name,false)).join('')+slotHTML('scene','__new',null,'장면 추가',false);
-  $('#under').hidden=false}
+function renderBgs(){$('#bgs').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,r,r.name,false)).join('')+slotHTML('scene','__new',null,'배경 추가',false)}
+function renderRefSum(){const ns=CHARS.map(c=>c.name.trim()).filter(Boolean);const el=$('#refsum');if(!el)return;
+  el.innerHTML=ns.map(n=>`<span class="av" title="${esc(n)}${IMG.char[n]?'':' · 이미지 없음'}" style="${IMG.char[n]?'':`background:${avBg(n)}`}">${IMG.char[n]?`<img src="${IMG.char[n].src}" alt="${esc(n)}">`:esc(n.slice(0,1))}</span>`).join('')+
+    `<span>인물 이미지 ${ns.filter(n=>IMG.char[n]).length}/${ns.length} · 배경 ${IMG.scene.length}장</span><button class="btn" data-view="write">작성에서 편집</button>`}
+function renderSlotsLite(){renderBgs();renderRefSum();$('#under').hidden=false}
+function renderSlots(){renderChars();renderSlotsLite()}
 async function attach(file,slot){if(!file||!file.type.startsWith('image/'))return;const im=await shrink(file);
   if(slot.kind==='char'){const o={id:'char:'+slot.key,kind:'char',name:slot.key,...im};IMG.char[slot.key]=o;idb.put(o);toast(`${slot.key} 캐릭터 이미지를 연결했어요`)}
   else{const id=slot.key==='__new'?'scene:'+Date.now():slot.key;const old=IMG.scene.find(r=>r.id===id);const o={id,kind:'scene',name:old?.name||file.name.replace(/\.[^.]+$/,'').slice(0,20)||`장면 ${IMG.scene.length+1}`,...im};
     if(old)Object.assign(old,o);else IMG.scene.push(o);idb.put(o);toast('장면 이미지를 넣었어요')}
   renderSlots();render()}
 $('#file').addEventListener('change',e=>{if(target)attach(e.target.files[0],target);e.target.value=''});
-const slotsEl=[$('#charSlots'),$('#sceneSlots')];
+const slotsEl=[$('#bgs')];
 slotsEl.forEach(el=>{
   el.addEventListener('click',e=>{const d=e.target.closest('[data-del]');if(d){e.stopPropagation();if(d.dataset.del==='char'){delete IMG.char[d.dataset.key];idb.del('char:'+d.dataset.key)}else{IMG.scene=IMG.scene.filter(r=>r.id!==d.dataset.key);idb.del(d.dataset.key)}renderSlots();render();return}
     const s=e.target.closest('[data-slot]');if(s){target={kind:s.dataset.slot,key:s.dataset.key};$('#file').click()}});
@@ -932,23 +990,56 @@ const DEFAULT_CHARS=[{name:'에드가',aliases:'',body:'male',look:'금발 짧�
 try{const v=localStorage.getItem('rough-chars');CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){CHARS=DEFAULT_CHARS.map(c=>({...c}))}
 function saveChars(){try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}}
 function engineChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
+// 등장인물 카드 (캐릭터챗 프로필 카드 형태) + 프로필 편집 창
+var NAITAGS;try{NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){NAITAGS={}}
+const saveNaiTags=()=>{try{localStorage.setItem('rough-nai-tags',JSON.stringify(NAITAGS))}catch(_){}};
+const hueOf=n=>{let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))%360;return h};
+const avBg=n=>`hsl(${hueOf(n)} 32% 52%)`;
+function charTags(c){return (NAITAGS[c.name]??window.RoughNAI.lookTags(c.look).join(', ')).split(',').map(t=>t.trim()).filter(Boolean)}
+function charLines(name){const out=[];SCENES.forEach(sc=>RE.parseCuts(sc.cuts,engineChars()).forEach(b=>(b.dialogs||[]).forEach(d=>{if(d.who===name&&d.text)out.push(d)})));return out}
+function charStat(name){const bs=RE.parseCuts(CUTS,engineChars());return{cuts:bs.filter(b=>b.who===name||(b.act||'').includes(name)).length,lines:bs.reduce((a,b)=>a+(b.dialogs||[]).filter(d=>d.who===name).length,0)}}
 function renderChars(){
-  $('#chars').innerHTML=CHARS.length?CHARS.map((c,i)=>`<div class="chr" data-i="${i}">
-    <input class="nm" data-k="name" value="${esc(c.name)}" placeholder="이름" aria-label="이름">
-    <input class="al" data-k="aliases" value="${esc(c.aliases||'')}" placeholder="다른 호칭 (쉼표로) 예: 준이, 준 씨" aria-label="다른 호칭">
-    <div class="seg3">${[['female','여자'],['male','남자']].map(([v,l])=>`<button data-body="${v}" aria-pressed="${c.body===v}">${l}</button>`).join('')}</div>
-    <button class="x" data-del="${i}" aria-label="${esc(c.name)} 삭제">×</button>
-    <textarea data-k="look" placeholder="외형: 머리 모양·색, 눈, 체격, 옷차림, 특징" aria-label="외형">${esc(c.look||'')}</textarea></div>`).join(''):'<p class="empty" style="padding:4px 0">인물을 추가하면 줄글에서도 정확하게 인물을 찾아요. 비워두면 반복되는 이름을 추정해요.</p>';
-  renderSugg()}
+  $('#chars').innerHTML=CHARS.map((c,i)=>{const n=c.name.trim(),im=n&&IMG.char[n],st=n?charStat(n):{cuts:0,lines:0},tags=n?charTags(c).slice(0,5):[];
+    return `<button class="ccard" data-ci="${i}" aria-label="${esc(n||'이름 없음')} 프로필 편집"><span class="cav" style="${im?'':`background:${avBg(n||'?')}`}">${im?`<img src="${im.src}" alt="">`:`<span class="ini">${esc((n||'?').slice(0,1))}</span>`}<span class="cname"><b>${esc(n||'이름 없음')}</b><small>${c.body==='male'?'남자':'여자'}${c.aliases?` · ${esc(c.aliases)}`:''}</small></span></span>
+      <span class="cbody"><span class="clook">${esc(c.look||'외형을 적어 주세요')}</span>${tags.length?`<span class="ctags">${tags.map(t=>`<i>#${esc(t)}</i>`).join('')}</span>`:''}<span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span></span></button>`}).join('')+
+    `<button class="ccard add" data-act="addchar"><span>+</span>새 캐릭터</button>`;
+  renderSugg();if($('#chdlg').open)renderEditor()}
 function renderSugg(){const have=new Set(CHARS.map(c=>c.name.trim()));
   const found=[...new Set(RE.parseCuts(CUTS,engineChars()).map(b=>b.who))].filter(n=>n&&!have.has(n)&&!NOTP.test(n));
-  $('#sugg').innerHTML=found.length?`인물 칸에 없는 이름 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
+  $('#sugg').innerHTML=found.length?`글에서 찾은 인물 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
+let CED=-1,cedOld='';
+function openEditor(i){CED=i;const c=CHARS[i];cedOld=c.name.trim();target={kind:'char',key:cedOld};
+  for(const el of document.querySelectorAll('#chdlg [data-ck]'))el.value=el.dataset.ck==='tags'?(NAITAGS[c.name.trim()]??''):(c[el.dataset.ck]||'');
+  renderEditor();if(!$('#chdlg').open)$('#chdlg').showModal();if(!c.name.trim())setTimeout(()=>$('#chdlg [data-ck=name]').focus(),30)}
+function renderEditor(){const c=CHARS[CED];if(!c)return;const n=c.name.trim(),im=n&&IMG.char[n];
+  const d=$('#chdlg [data-cimg]');d.classList.toggle('has',!!im);d.style.background=im?'':avBg(n||'?');d.innerHTML=im?`<img src="${im.src}" alt="">`:`<span style="color:#fff;font-size:15px;font-weight:700;line-height:1.5">+ 대표 이미지<br><small style="font-weight:500;opacity:.85">${n?'':'이름을 먼저 정해 주세요'}</small></span>`;
+  $('#chpal').innerHTML=im?im.palette.map(h=>`<i style="background:${h}" title="${h}"></i>`).join(''):'';$('#chimgdel').hidden=!im;
+  document.querySelectorAll('#chbody button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.cbody===c.body));
+  $('#chcnt').textContent=`${(c.look||'').length}/300`;$('#chdlg [data-ck=tags]').placeholder=window.RoughNAI.lookTags(c.look).join(', ')||'blonde hair, short hair, green eyes';
+  const av=`<span class="av" style="${im?'':`background:${avBg(n||'?')}`}">${im?`<img src="${im.src}" alt="">`:esc((n||'?').slice(0,1))}</span>`;
+  const ls=n?charLines(n).slice(-3):[];
+  $('#chchat').innerHTML=ls.length?ls.map(l=>`<div class="msg">${av}<div><b>${esc(n)}</b><span class="bub">${l.note?`<em>(${esc(l.note)})</em>`:''}${esc(l.text)}</span></div></div>`).join(''):`<div class="msg">${av}<div><b>${esc(n||'이름 없음')}</b><span class="bub"><em>아직 대사가 없어요</em>컷 칸에 @${esc(n||'이름')} "(감정)대사" 형식으로 쓰면 여기 보여요.</span></div></div>`}
+function renameChar(oldN,newN){if(!oldN||oldN===newN)return;
+  if(IMG.char[oldN]&&!IMG.char[newN]){const o={...IMG.char[oldN],id:'char:'+newN,name:newN};delete IMG.char[oldN];idb.del('char:'+oldN);IMG.char[newN]=o;idb.put(o)}
+  if(NAITAGS[oldN]!=null&&NAITAGS[newN]==null){NAITAGS[newN]=NAITAGS[oldN];delete NAITAGS[oldN];saveNaiTags()}}
 let ctmr;
-$('#chars').addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;const i=+e.target.closest('.chr').dataset.i;CHARS[i][k]=e.target.value;saveChars();clearTimeout(ctmr);ctmr=setTimeout(()=>{compute(false);renderSugg();renderSlots()},400)});
-$('#chars').addEventListener('click',e=>{const b=e.target.closest('[data-body]');if(b){const i=+b.closest('.chr').dataset.i;CHARS[i].body=b.dataset.body;saveChars();renderChars();dirty3d=true;return}
-  const d=e.target.closest('[data-del]');if(d){CHARS.splice(+d.dataset.del,1);saveChars();renderChars();compute(false);renderSlots()}});
-$('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderChars();compute(false);renderSlots()});
-document.addEventListener('click',e=>{if(e.target.closest('[data-act="addchar"]')){CHARS.push({name:'',aliases:'',body:'female',look:''});renderChars();const ins=document.querySelectorAll('#chars .nm');ins[ins.length-1]?.focus()}});
+$('#chdlg').addEventListener('input',e=>{const k=e.target.dataset.ck;if(!k||CED<0)return;const c=CHARS[CED];
+  if(k==='tags'){const v=e.target.value.trim();if(v)NAITAGS[c.name.trim()]=v;else delete NAITAGS[c.name.trim()];saveNaiTags()}else c[k]=e.target.value;
+  saveChars();renderEditor();clearTimeout(ctmr);ctmr=setTimeout(()=>{if(k==='name')return;compute(false);renderChars();renderSlotsLite()},350)});
+$('#chdlg').addEventListener('change',e=>{if(e.target.dataset.ck!=='name'||CED<0)return;const n=CHARS[CED].name.trim();renameChar(cedOld,n);cedOld=n;target={kind:'char',key:n};compute(false);renderSlots()});
+$('#chdlg').addEventListener('click',e=>{const b=e.target.closest('[data-cbody]');if(b&&CED>=0){CHARS[CED].body=b.dataset.cbody;saveChars();renderEditor();renderChars();return}
+  const im=e.target.closest('[data-cimg]');if(im&&CED>=0){const n=CHARS[CED].name.trim();if(!n){toast('이름을 먼저 정해 주세요');$('#chdlg [data-ck=name]').focus();return}target={kind:'char',key:n};$('#file').click()}});
+$('#chdlg').addEventListener('keydown',e=>{if(e.target.closest('[data-cimg]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.target.click()}});
+for(const ev of ['dragover','dragleave','drop'])$('#chdlg').addEventListener(ev,e=>{const d=e.target.closest('[data-cimg]');if(!d)return;e.preventDefault();d.classList.toggle('over',ev==='dragover');
+  if(ev==='drop'){const n=CED>=0&&CHARS[CED].name.trim();const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!n){toast('이름을 먼저 정해 주세요');return}if(f)attach(f,{kind:'char',key:n})}});
+$('#chdlg').addEventListener('close',()=>{if(CED>=0){const n=CHARS[CED]?.name.trim();if(CHARS[CED]&&cedOld!==n)renameChar(cedOld,n)}CED=-1;target=null;compute(false);renderSlots()});
+$('#chars').addEventListener('click',e=>{const c=e.target.closest('[data-ci]');if(c)openEditor(+c.dataset.ci)});
+$('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderChars();compute(false);renderSlots();openEditor(CHARS.length-1)});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
+  if(k==='addchar'){CHARS.push({name:'',aliases:'',body:'female',look:''});saveChars();renderChars();openEditor(CHARS.length-1)}
+  else if(k==='chclose')$('#chdlg').close();
+  else if(k==='chimgdel'&&CED>=0){const n=CHARS[CED].name.trim();if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n);renderSlots();render()}}
+  else if(k==='chdel'&&CED>=0){const c=CHARS[CED],n=c.name.trim();if(!confirm(`${n||'이 캐릭터'}을(를) 지울까요? 대표 이미지도 함께 지워져요.`))return;if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n)}CHARS.splice(CED,1);saveChars();CED=-1;$('#chdlg').close();toast('캐릭터를 지웠어요')}});
 
 // ---------- @ 자동완성 ----------
 const mbox=document.createElement('div');mbox.className='menu';mbox.id='mbox';mbox.setAttribute('role','listbox');mbox.hidden=true;document.body.appendChild(mbox);
@@ -1374,9 +1465,8 @@ const rerenderCuts=()=>renderNai();
 // ---------- NovelAI V4.5 시안 ----------
 const NAI=window.RoughNAI;
 const NAI_STYLE_DEF='webtoon, korean webtoon, soft shading, flat color, thin lineart, muted colors, watercolor (medium)';
-let NAISTYLE=NAI_STYLE_DEF,NAITAGS={};
-try{NAISTYLE=localStorage.getItem('rough-nai-style')||NAI_STYLE_DEF;NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){}
-const saveNaiTags=()=>{try{localStorage.setItem('rough-nai-tags',JSON.stringify(NAITAGS))}catch(_){}};
+let NAISTYLE=NAI_STYLE_DEF;
+try{NAISTYLE=localStorage.getItem('rough-nai-style')||NAI_STYLE_DEF}catch(_){}
 function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),body:c.body||'female',look:c.look||''}))}
 function naiRuleCuts(){const ps=state.panels,chars=naiChars(),sc=ps.length?sceneFor(ps[0]):null;
   const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc}};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
@@ -1406,7 +1496,7 @@ function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
   $('#naichars').innerHTML=chars.length?chars.map(c=>`<div class="naichar"><b>${esc(c.name)}</b><input data-naitag="${esc(c.name)}" value="${esc(NAITAGS[c.name]??NAI.lookTags(c.look).join(', '))}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="btn" data-act="naireset" data-n="${esc(c.name)}">외형에서 다시</button></div>`).join(''):'<p class="empty">작성 단계의 인물 설정에 인물을 넣어주세요.</p>';
   const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
-  $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span>`;
+  $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="write">작성에서 이미지 등록</button>`;
   const ai=ainFor();$('#naiview').hidden=!ai;document.querySelectorAll('#naiview button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===NAIVIEW));
   if(ai&&!naiBusy)$('#naist').textContent=ai.stale?'글이나 태그가 바뀌었어요. 다시 다듬으면 반영돼요':`다듬은 결과 · ${new Date(ai.at).toLocaleString()}`;
   if(!ps.length){$('#ncards').innerHTML='<p class="empty">작성 단계에서 컷을 적어주세요.</p>';$('#naicount').textContent='';return}
