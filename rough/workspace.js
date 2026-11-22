@@ -32,6 +32,9 @@ const TOOLS=[
   {id:'focus',name:'집중선',key:'L',icon:'<circle cx="12" cy="12" r="2.2"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5M5.3 5.3l3.5 3.5M15.2 15.2l3.5 3.5M18.7 5.3l-3.5 3.5M8.8 15.2l-3.5 3.5"/>',hint:'컷 안에서 강조할 지점을 누르세요'},
   {id:'speed',name:'속도선',key:'J',icon:'<path d="M3 7h11M7 12h14M3 17h11"/>',hint:'컷 안에서 움직임 방향으로 끌어 주세요'},
 ];
+// 아이콘: 직접 그린 면 아이콘(24 격자, 배경 투명)
+const SOLID={"select": "<path d=\"M5 2.5v17.2l4.6-4.4 2.9 6.6 3-1.3-2.9-6.5H19z\"/>", "hand": "<path d=\"M9.2 3.3a1.5 1.5 0 0 1 2.8.7V10h.7V2.9a1.5 1.5 0 0 1 3 0V10h.7V4.6a1.5 1.5 0 0 1 3 0v9.1c0 4.4-3 7.8-7.3 7.8h-1c-2.2 0-4.1-1-5.4-2.8l-2.9-4.5a1.6 1.6 0 0 1 2.6-1.9L8 14.9V4.6a1.5 1.5 0 0 1 1.2-1.3z\"/>", "zoom": "<path fill-rule=\"evenodd\" d=\"M10.5 3a7.5 7.5 0 0 1 6 12l4.8 4.8-2 2-4.8-4.8A7.5 7.5 0 1 1 10.5 3zm0 2.6a4.9 4.9 0 1 0 0 9.8 4.9 4.9 0 0 0 0-9.8z\"/>", "split": "<path d=\"M3.5 3.5h17v4.8l-17 4.5zM3.5 15.3l17-4.5v9.7h-17z\"/>", "crop": "<path d=\"M5.5 2h2.6v13.9H22v2.6h-3.9V22h-2.6v-3.5h-10zM2 5.5h3.5v2.6H2zM10 5.5h8.1v8h-2.6V8.1H10z\"/>", "balloon": "<path d=\"M12 3c5.2 0 9.4 3.3 9.4 7.5S17.2 18 12 18c-.9 0-1.8-.1-2.6-.3L3.8 21l1.7-4.5a7 7 0 0 1-2.9-6C2.6 6.3 6.8 3 12 3z\"/>", "caption": "<path fill-rule=\"evenodd\" d=\"M2.5 5h19v14h-19zM6 9v1.9h12V9zm0 4.1V15h8v-1.9z\"/>", "sfx": "<path d=\"M12 1.8l2.3 5.6 5.8-2.2-2.9 5.4 5 3.1-5.9.9.9 6-4.4-4.1L8.4 21l.9-6-5.9-.9 5-3.1L5.5 5.2l5.8 2.2z\"/>", "focus": "<circle cx=\"12\" cy=\"12\" r=\"2.5\"/><path d=\"M10.9 1h2.2l-.4 6.2h-1.4zM10.9 23h2.2l-.4-6.2h-1.4zM1 10.9v2.2l6.2-.4v-1.4zM23 10.9v2.2l-6.2-.4v-1.4zM4.1 5.7l1.6-1.6 4.1 4.6-1.1 1.1zM19.9 18.3l-1.6 1.6-4.1-4.6 1.1-1.1zM18.3 4.1l1.6 1.6-4.6 4.1-1.1-1.1zM5.7 19.9l-1.6-1.6 4.6-4.1 1.1 1.1z\"/>", "speed": "<path d=\"M2 5.8h12.3l2.2 1.4-2.2 1.4H2zM6 10.6h14l2.2 1.4-2.2 1.4H6zM2 15.4h12.3l2.2 1.4-2.2 1.4H2z\"/>"};
+TOOLS.filter(Boolean).forEach(t=>t.icon=SOLID[t.id]||t.icon);
 const TOOL=Object.fromEntries(TOOLS.filter(Boolean).map(t=>[t.id,t]));
 const RESERVED=new Set(['P','?','[',']',' ','ESCAPE']);
 let KEYS={...Object.fromEntries(TOOLS.filter(Boolean).map(t=>[t.id,t.key])),...LS('rough-tool-keys',{})};
@@ -41,7 +44,7 @@ const BSTYLES=[['auto','자동 · 기존 식자'],...BALLOON_STYLES.map(s=>[s[0]
 
 const rail=document.createElement('nav');rail.className='toolrail';rail.setAttribute('aria-label','도구');
 function renderRail(){rail.innerHTML=TOOLS.map(t=>t?`<button class="tr-btn" data-tool="${t.id}" aria-pressed="${t.id===tool}" title="${t.name} (${KEYS[t.id]})" aria-label="${t.name} 도구, 단축키 ${KEYS[t.id]}">${ico(t.icon)}${t.sub?'<i class="tr-more"></i>':''}</button>`:'<span class="tr-sep"></span>').join('')+
-  `<span class="tr-grow"></span><button class="tr-btn" data-rail="keys" title="도구 단축키 바꾸기" aria-label="도구 단축키 바꾸기">${ico('<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h1M10 10h1M14 10h1M18 10h1M7.5 14h9"/>')}</button>`}
+  `<span class="tr-grow"></span><button class="tr-btn" data-rail="keys" title="도구 단축키 바꾸기" aria-label="도구 단축키 바꾸기">${ico('<path fill-rule="evenodd" d="M2 6h20v12H2zm3 3v2.2h2.2V9zm4 0v2.2h2.2V9zm4 0v2.2h2.2V9zm4 0v2.2h2.2V9zM7 13.6v2h10v-2z"/>')}</button>`}
 renderRail();grid.prepend(rail);
 // ? 단축키 창에 도구 단축키도 보이게
 function syncHelp(){const d=[...document.querySelectorAll('.keysdlg')].find(x=>x.getAttribute('aria-labelledby')!=='wskt');if(!d)return;d.querySelector('.ws-toolkeys')?.remove();
@@ -179,7 +182,7 @@ const fromPreset=id=>{const P=PRESETS[id],panels={};['L','R'].forEach(d=>P[d].fo
 let LAYOUT=LS('rough-ws-layout',null);if(!LAYOUT||!LAYOUT.panels||Object.keys(PANELS).some(k=>!LAYOUT.panels[k]))LAYOUT=fromPreset('edit');
 const saveLayout=()=>SS('rough-ws-layout',LAYOUT);
 for(const [id,P] of Object.entries(PANELS)){const s=document.createElement('section');s.className='wpanel';s.dataset.panel=id;
-  s.innerHTML=`<header class="wp-h"><button class="wp-col" aria-expanded="true" aria-label="${P.title} 접기·펼치기">${ico('<path d="M6 9l6 6 6-6"/>')}</button><b>${P.title}</b><span class="wp-acts"><button data-wp="move" title="반대쪽으로 옮기기" aria-label="${P.title} 패널 반대쪽으로">${ico('<path d="M7 7h13l-4-4M17 17H4l4 4"/>')}</button><button data-wp="float" title="떼어 띄우기 / 다시 붙이기" aria-label="${P.title} 패널 떼어 띄우기">${ico('<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>')}</button></span></header><div class="wp-body"></div>`;
+  s.innerHTML=`<header class="wp-h"><button class="wp-col" aria-expanded="true" aria-label="${P.title} 접기·펼치기">${ico('<path d="M5.5 8.5h13L12 16z"/>')}</button><b>${P.title}</b><span class="wp-acts"><button data-wp="move" title="반대쪽으로 옮기기" aria-label="${P.title} 패널 반대쪽으로">${ico('<path d="M15 2.5l6 5-6 5V9.2H4V5.8h11zM9 11.5v3.3h11v3.4H9v3.3l-6-5z"/>')}</button><button data-wp="float" title="떼어 띄우기 / 다시 붙이기" aria-label="${P.title} 패널 떼어 띄우기">${ico('<path fill-rule="evenodd" d="M8 8h13v13H8zm2.3 2.3v8.4h8.4v-8.4zM3 3h13v3.6h-2.3V5.3H5.3v8.4h1.3V16H3z"/>')}</button></span></header><div class="wp-body"></div>`;
   s.querySelector('.wp-body').appendChild(P.el);P.sec=s}
 function renderDocks(){
   for(const d of ['L','R']){const dock=d==='L'?leftDock:rightDock;
@@ -301,9 +304,9 @@ textBody.addEventListener('click',e=>{const a=e.target.closest('[data-text]')?.d
 
 // ---------- 정렬 ----------
 function renderAlign(){const n=MULTI.size;alignBody.innerHTML=`<p class="wsn">${n>1?`식자 ${n}개를 골랐어요.`:'Shift+클릭으로 식자를 2개 이상 고르세요.'}</p><div class="algrid">${[
-  ['left','왼쪽','<path d="M4 3v18M8 7h10M8 12h6M8 17h12"/>'],['hcenter','가로 가운데','<path d="M12 3v18M6 7h12M8 12h8M5 17h14"/>'],['right','오른쪽','<path d="M20 3v18M6 7h10M10 12h6M4 17h12"/>'],
-  ['top','위','<path d="M3 4h18M7 8v10M12 8v6M17 8v12"/>'],['vcenter','세로 가운데','<path d="M3 12h18M7 6v12M12 8v8M17 5v14"/>'],['bottom','아래','<path d="M3 20h18M7 6v10M12 10v6M17 4v12"/>'],
-  ['vdist','세로 간격 고르게','<path d="M4 4h16M4 20h16M8 10h8M8 14h8"/>'],['hdist','가로 간격 고르게','<path d="M4 4v16M20 4v16M10 8v8M14 8v8"/>']].map(([k,n2,d])=>`<button class="al" data-align="${k}" title="${n2}" aria-label="${n2}"${n<2||(k.endsWith('dist')&&n<3)?' disabled':''}>${ico(d)}</button>`).join('')}</div>
+  ['left','왼쪽','<path d="M3 2h2.2v20H3zM7.2 5H18v5H7.2zM7.2 14H14v5H7.2z"/>'],['hcenter','가로 가운데','<path d="M10.9 2h2.2v20h-2.2zM5 5h14v5H5zM7.5 14h9v5h-9z"/>'],['right','오른쪽','<path d="M18.8 2H21v20h-2.2zM6 5h10.8v5H6zM10 14h6.8v5H10z"/>'],
+  ['top','위','<path d="M2 3h20v2.2H2zM5 7.2h5V18H5zM14 7.2h5V14h-5z"/>'],['vcenter','세로 가운데','<path d="M2 10.9h20v2.2H2zM5 5h5v14H5zM14 7.5h5v9h-5z"/>'],['bottom','아래','<path d="M2 18.8h20V21H2zM5 6h5v10.8H5zM14 10h5v6.8h-5z"/>'],
+  ['vdist','세로 간격 고르게','<path d="M2 2h20v2.2H2zM2 19.8h20V22H2zM6 7.6h12v3.2H6zM6 13.2h12v3.2H6z"/>'],['hdist','가로 간격 고르게','<path d="M2 2h2.2v20H2zM19.8 2H22v20h-2.2zM7.6 6h3.2v12H7.6zM13.2 6h3.2v12h-3.2z"/>']].map(([k,n2,d])=>`<button class="al" data-align="${k}" title="${n2}" aria-label="${n2}"${n<2||(k.endsWith('dist')&&n<3)?' disabled':''}>${ico(d)}</button>`).join('')}</div>
   ${n?'<button class="btn sm" data-align="clear">선택 해제</button>':''}`}
 alignBody.addEventListener('click',e=>{const k=e.target.closest('[data-align]')?.dataset.align;if(k==='clear')clearMulti();else if(k)alignLetters(k)});
 
@@ -330,7 +333,7 @@ reader.addEventListener('drop',e=>{const raw=e.dataTransfer.getData('application
   const {k,v}=JSON.parse(raw),pt=pagePoint(g.ownerSVGElement,e);useMat(k,v,g,{x:pt.x,y:pt.y},e.target)});
 
 // ---------- 레이어: 썸네일·잠금 ----------
-const LOCK='<path d="M7 11V8a5 5 0 0 1 10 0v3"/><rect x="5" y="11" width="14" height="10" rx="2"/>',UNLOCK='<path d="M7 11V8a5 5 0 0 1 9.6-2"/><rect x="5" y="11" width="14" height="10" rx="2"/>';
+const LOCK='<path fill-rule="evenodd" d="M7 10V7.5a5 5 0 0 1 10 0V10h1.5v11h-13V10zm2.5 0h5V7.5a2.5 2.5 0 0 0-5 0z"/>',UNLOCK='<path d="M7 10V7.5a5 5 0 0 1 9.7-1.8l-2.3 1A2.5 2.5 0 0 0 9.5 7.5V10h9v11h-13V10z"/>';
 {const _et=editTree;editTree=function(...a){const r=_et(...a);decorateTree();return r}}
 function decorateTree(){const el=PANELS.layers.el;if(!el)return;
   el.querySelectorAll('.tcutrow').forEach(row=>{const b=row.querySelector('[data-tcut]');if(!b||row.querySelector('.tthumb'))return;const key=b.dataset.tcut,g=groupBy(key);if(!g)return;
