@@ -318,7 +318,9 @@
       d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
     return d[a.length][b.length];
   }
-  const W = { narr: 3, curve: 2, goal: 2, vng: 2, count: 1.5, trans: 1, tempo: 1, dist: 1, emo: 1 };
+  // 가중치: tools/eval_engine.js로 연출 DB 732묶음 평가(2026-11-22). 글만으로 흔들리는 서사 형태·목적·전환은 낮추고
+  // 구조(컷 수·VNG·곡선·거리)를 올림 — 연출명 3위 안 14.3% → 25.8%, 초기 예시의 연출(Delayed Reveal·Reaction Framing)은 그대로
+  const W = { narr: 1.5, curve: 3, goal: 1, vng: 3, count: 4, trans: 0.5, tempo: 1, dist: 2, emo: 1.5 };
   const WSUM = Object.values(W).reduce((a, c) => a + c, 0);
   function score(an, p) {
     const pics = p.cuts.filter(c => c.t === '그림');
