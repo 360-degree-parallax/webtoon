@@ -392,7 +392,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 </main>
 
 <aside class="pv" aria-label="미리보기">
-  <div class="sh"><h2>미리보기</h2><span><button class="toggle" id="under" aria-pressed="true" hidden>밑그림</button> <span id="pvsize"></span></span></div>
+  <div class="sh"><h2>미리보기</h2><span><button class="toggle" id="under" aria-pressed="true">레퍼런스</button> <span id="pvsize"></span></span></div>
   <div class="canvas" id="canvas"><div id="preview"></div></div>
   <div class="bar">
     <button class="ib" data-act="prev" aria-label="이전 안"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
@@ -643,7 +643,7 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
 function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false){let y=40,o='';const ws=W-60;
   panels.forEach((p,i)=>{const im=imgs&&imgs[i];const h=Math.round(im&&im.w?ws*im.h/im.w:p.h*ws);const on=i===sel;const u=im?null:underlay(p);
     let art=im?`<image href="${im.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel(clean?{...p,said:''}:p,30,y,ws,h,i);
-    if(u){art=`<image href="${u.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}" filter="url(#gs)"/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
+    if(u){art=`<image href="${u.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
     const c=!clean&&!im&&p.who&&charRef(p.who);
     o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${on?'#2d71f7':'#222'}" stroke-width="${on?6:3}"/><clipPath id="${pre}${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
       (nums?`<circle cx="52" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
@@ -674,6 +674,8 @@ function sceneFor(p){if(!IMG.scene.length)return null;const a=state.an[p.chunk];
 function underlay(p){if(!showUnder)return null;
   if(p.shot==='클로즈업'){const c=p.who&&IMG.char[p.who];if(c)return{src:c.src,op:.32}}
   if(['설정','전경','전신','중경','효과 배경'].includes(p.shot)){const sc=sceneFor(p);if(sc)return{src:sc.src,op:p.shot==='설정'||p.shot==='전경'?.38:.22}}
+  // 직접 넣은 참고 이미지가 없으면 엔진이 고른 구도 레퍼런스를 컬러로 깔기
+  if(p.ref)return{src:p.ref.src,op:.55,color:true};
   return null}
 function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parseCuts(CUTS,engineChars()).map(b=>b.who).filter(Boolean)])]}
 function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
@@ -681,7 +683,7 @@ function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':'
 function renderSlots(){const ns=names();const extra=Object.keys(IMG.char).filter(n=>!ns.includes(n));
   $('#charSlots').innerHTML=ns.map(n=>slotHTML('char',n,IMG.char[n],n,false)).join('')+extra.map(n=>slotHTML('char',n,IMG.char[n],`${n} (글에 없음)`,true)).join('')||'<p class="empty" style="padding:8px 0">글에 <b>인물 | 행동</b> 형식으로 이름을 적으면 칸이 생겨요.</p>';
   $('#sceneSlots').innerHTML=IMG.scene.map(r=>slotHTML('scene',r.id,r,r.name,false)).join('')+slotHTML('scene','__new',null,'장면 추가',false);
-  $('#under').hidden=!(Object.keys(IMG.char).length||IMG.scene.length)}
+  $('#under').hidden=false}
 async function attach(file,slot){if(!file||!file.type.startsWith('image/'))return;const im=await shrink(file);
   if(slot.kind==='char'){const o={id:'char:'+slot.key,kind:'char',name:slot.key,...im};IMG.char[slot.key]=o;idb.put(o);toast(`${slot.key} 캐릭터 이미지를 연결했어요`)}
   else{const id=slot.key==='__new'?'scene:'+Date.now():slot.key;const old=IMG.scene.find(r=>r.id===id);const o={id,kind:'scene',name:old?.name||file.name.replace(/\.[^.]+$/,'').slice(0,20)||`장면 ${IMG.scene.length+1}`,...im};
@@ -701,7 +703,8 @@ slotsEl.forEach(el=>{
   el.addEventListener('change',e=>{const r=e.target.closest('[data-rename]');if(!r)return;const o=IMG.scene.find(x=>x.id===r.dataset.rename);if(o){o.name=r.value.trim()||o.name;idb.put(o);render()}});
 });
 document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
-$('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);render()};
+try{showUnder=localStorage.getItem('rough-under')!=='0'}catch(_){}$('#under').setAttribute('aria-pressed',showUnder);
+$('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);try{localStorage.setItem('rough-under',showUnder?'1':'0')}catch(_){}render()};
 idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
 
 // ---------- prompt export ----------
@@ -921,7 +924,7 @@ try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정�
 $('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
 $('#wmode').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;WMODE=b.dataset.m;document.querySelectorAll('#wmode button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderWebtoon()});
 function scenePanels(i){if(i===SCUR)return state.panels;const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
-  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;out.push(c)})});return out}
+  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);out.push(c)})});return out}
 // 완성본: 등록한 컷 이미지를 쓰고, 없는 컷은 러프
 function sceneArt(i,ps,pre){if(WMODE!=='final')return{kind:'rough',svg:renderSVG(ps,-1,pre,false)};
   const imgs=ps.map((p,k)=>cutImg(i,k,p)||null),n=imgs.filter(Boolean).length;
