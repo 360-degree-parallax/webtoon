@@ -174,7 +174,15 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .page-editor[hidden]{display:none}
 .page-editor .toolbar{margin-top:0}
 .page-editor small{display:block;margin-top:6px;color:var(--t2)}
-.page-editor input{width:80px}
+.reader [data-page-gap]{cursor:ns-resize;outline:none}
+.reader .gap-grip{touch-action:none}
+.reader .gap-area{fill:#2d71f7;fill-opacity:0}
+.reader .gap-track{pointer-events:none;opacity:.55}
+.reader [data-page-gap]:hover .gap-area,
+.reader [data-page-gap]:focus .gap-area{fill-opacity:.10}
+.reader [data-page-gap]:hover .gap-track,
+.reader [data-page-gap]:focus .gap-track{opacity:1}
+.reader:has([data-page-gap]){overflow-anchor:none}
 .reader [data-letter]{cursor:grab;touch-action:none}
 .reader [data-letter]:active{cursor:grabbing}
 .reader [data-letter]:focus-visible{outline:2px solid #2d71f7}
@@ -456,11 +464,9 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div id="wtools" class="page-editor" hidden>
   <div class="toolbar">
     <label>편집할 컷 <select id="wcut"></select></label>
-    <label>컷 뒤 간격 <input id="wgap" type="number" min="0" max="1600" step="1"> px</label>
-    <button class="btn" id="wgapreset">기본 간격</button>
     <button class="btn" id="wletterreset">식자 위치 초기화</button>
   </div>
-  <small>컷을 선택하고 말풍선, 나레이션, 효과음을 드래그하세요. 방향키로도 옮길 수 있어요.</small>
+  <small>컷 사이 손잡이를 위아래로 끌어 간격을 조절하세요. 두 번 클릭하면 기본 간격으로 돌아가요. 식자도 드래그해서 옮길 수 있어요.</small>
 </div>
 <div class="reader" id="reader"></div>
 </div>
@@ -681,12 +687,27 @@ function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);l
 }
 function cutSlot(p,i){const slot=/^#(\d+):/.exec(p.key||'');return slot?Number(slot[1]):i}
 function defaultPageGap(p){return Math.round(p.gap*(W-60)*.45)+24}
+const MAX_PAGE_GAP=1600;
+function gapMarkup(y,size,base,slot,i){
+  return `<g data-page-gap="${i}" data-slot="${slot}" data-gap-size="${size}" data-gap-base="${base}" data-gap-y="${y}" role="slider" tabindex="0" aria-label="${i+1}컷과 ${i+2}컷 사이 간격" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="${MAX_PAGE_GAP}" aria-valuenow="${size}">
+    <rect class="gap-area" width="${W}" y="${y}" height="${size}"/>
+    <g class="gap-grip" transform="translate(${W/2} ${y+size/2})">
+      <rect x="-64" y="-40" width="128" height="80" fill="transparent"/>
+      <g class="gap-track">
+        <path d="M-78 0H78" stroke="#2d71f7" stroke-width="2" stroke-dasharray="4 4"/>
+        <rect x="-52" y="-17" width="104" height="34" rx="17" fill="#fff" stroke="#2d71f7"/>
+        <path d="M-42 -3l4 -4 4 4M-42 3l4 4 4 -4" fill="none" stroke="#2d71f7" stroke-width="1.5"/>
+        <text y="5" text-anchor="middle" fill="#234eab" font-size="15" font-weight="700">${size} px</text>
+      </g>
+    </g>
+  </g>`;
+}
 // 패널 배치: 여러 컷을 이어 그릴 때 설정·효과 배경 컷은 좌우 끝까지(테두리 없음), 디테일 인서트는 좁게 번갈아
 function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true};
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false}={}){let y=40,o='';const multi=panels.length>1;
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false}={}){let y=40,o='',gaps='';const multi=panels.length>1;
   panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi),bx=B.x,bw=B.w;const h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);const on=i===sel;const u=im?null:underlay(p);
     let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel({...p,said:''},bx,y,bw,h,i);
     if(u){art=`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
@@ -695,9 +716,12 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
       (clean?'':letterSVG(p,{x:bx,y,w:bw,h,frame:B.frame},i,edit?.letters,interactive))+`</g>`;
-    // 간격: 중요도 단계는 유지하되 화면에서는 압축(최대 약 360px)
-    y+=h+(edit?.gap??defaultPageGap(p))});
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
+    const base=defaultPageGap(p),size=edit?.gap??base;
+    y+=h;
+    if(interactive&&i<panels.length-1)gaps+=gapMarkup(y,size,base,slot,i);
+    y+=size;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}${gaps}</svg>`;
 }
 function render(){state.svg=renderSVG(state.panels,state.sel);$('#preview').innerHTML=state.svg}
 
@@ -915,10 +939,11 @@ function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerH
   $('#wtoc').innerHTML=SCENES.map((sc,i)=>`<a href="#ws-${i}" data-toc="${i}">${esc(sceneLabel(sc,i))}</a>`).join('');
 }
 $('#wtoc').addEventListener('click',e=>{const a=e.target.closest('[data-toc]');if(!a)return;e.preventDefault();document.getElementById('ws-'+a.dataset.toc)?.scrollIntoView({behavior:'smooth'})});
-const pageReader=$('#reader'),pageCut=$('#wcut'),pageGap=$('#wgap');
+const pageReader=$('#reader'),pageCut=$('#wcut');
+let gapDrag=null;
 function pageKey(group){return group.closest('section').dataset.pageScene+':'+group.dataset.slotIndex}
-function pageSettings(create=false){
-  const [scene,slot]=pageSelection.split(':').map(Number);
+function pageSettings(create=false,key=pageSelection){
+  const [scene,slot]=key.split(':').map(Number);
   const edits=SCENES[scene].pageEdits;
   if(create&&!edits[slot])edits[slot]={};
   return edits[slot];
@@ -932,13 +957,11 @@ function refreshPageTools(){
   selectPageCut(groups.find(group=>pageKey(group)===pageSelection)||groups[0]);
 }
 function selectPageCut(group){
-  const buttons=[pageCut,pageGap,$('#wgapreset'),$('#wletterreset')];
+  const buttons=[pageCut,$('#wletterreset')];
   buttons.forEach(el=>el.disabled=!group);
-  if(!group){pageSelection='';pageGap.value='';return}
+  if(!group){pageSelection='';return}
   pageSelection=pageKey(group);
   pageCut.value=pageSelection;
-  const [scene]=pageSelection.split(':').map(Number);
-  pageGap.value=pageSettings()?.gap??defaultPageGap(scenePanels(scene)[Number(group.dataset.p)]);
   pageReader.querySelector('.cut-selected')?.classList.remove('cut-selected');
   group.querySelector('.page-frame').classList.add('cut-selected');
 }
@@ -953,20 +976,12 @@ pageCut.addEventListener('change',()=>{
   selectPageCut(group);
   group?.scrollIntoView({block:'center'});
 });
-pageGap.addEventListener('change',()=>{
-  if(!pageSelection)return;
-  if(!pageGap.value||!Number.isFinite(pageGap.valueAsNumber)){refreshPageTools();return}
-  pageSettings(true).gap=Math.max(0,Math.min(1600,Math.round(pageGap.valueAsNumber)));
-  saveScenes();renderWebtoon();
-});
-$('#wgapreset').addEventListener('click',()=>resetPageSetting('gap'));
-$('#wletterreset').addEventListener('click',()=>resetPageSetting('letters'));
-function resetPageSetting(key){
+$('#wletterreset').addEventListener('click',()=>{
   if(!pageSelection)return;
   const settings=pageSettings();
-  if(settings)delete settings[key];
+  if(settings)delete settings.letters;
   saveScenes();renderWebtoon();
-}
+});
 function letterPosition(letter){return pageSettings()?.letters?.[letter.dataset.letter]||{x:0,y:0}}
 function moveLetter(letter,position){letter.setAttribute('transform',`translate(${position.x} ${position.y})`)}
 function saveLetter(letter,position){
@@ -975,9 +990,58 @@ function saveLetter(letter,position){
   saveScenes();
 }
 function pagePoint(svg,e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse())}
+function gapLayout(gap){
+  const svg=gap.ownerSVGElement,index=Number(gap.dataset.pageGap);
+  const following=[...svg.querySelectorAll('[data-slot-index],[data-page-gap]')]
+    .filter(el=>Number(el.dataset.p??el.dataset.pageGap)>index)
+    .map(el=>[el,Number(el.dataset.shift||0)]);
+  return {gap,svg,following,size:Number(gap.dataset.gapSize),height:svg.viewBox.baseVal.height,
+    y:Number(gap.dataset.gapY),key:gap.closest('section').dataset.pageScene+':'+gap.dataset.slot};
+}
+function resizeGap(layout,size){
+  const {gap,svg,following,y}=layout,delta=size-layout.size,height=layout.height+delta;
+  gap.dataset.gapSize=String(size);
+  gap.setAttribute('aria-valuenow',size);
+  gap.querySelector('.gap-area').setAttribute('height',size);
+  gap.querySelector('.gap-grip').setAttribute('transform',`translate(${W/2} ${y+size/2})`);
+  gap.querySelector('text').textContent=`${size} px`;
+  following.forEach(([el,offset])=>{
+    el.dataset.shift=String(offset+delta);
+    el.setAttribute('transform',`translate(0 ${offset+delta})`);
+  });
+  svg.setAttribute('height',height);
+  svg.setAttribute('viewBox',`0 0 ${W} ${height}`);
+}
+function saveGap(layout,reset=false){
+  const settings=pageSettings(!reset,layout.key);
+  if(reset){if(settings)delete settings.gap}
+  else settings.gap=Number(layout.gap.dataset.gapSize);
+  saveScenes();
+}
+function clampGap(size){return Math.max(0,Math.min(MAX_PAGE_GAP,Math.round(size)))}
+function startGapDrag(gap,e){
+  const layout=gapLayout(gap);
+  e.preventDefault();
+  gap.focus({preventScroll:true});
+  gapDrag={...layout,id:e.pointerId,clientY:e.clientY,scale:W/layout.svg.getBoundingClientRect().width};
+  gap.setPointerCapture(e.pointerId);
+}
+pageReader.addEventListener('dblclick',e=>{
+  const gap=e.target.closest('[data-page-gap]');
+  if(!pageEditing||!gap||gapDrag)return;
+  const layout=gapLayout(gap);
+  resizeGap(layout,Number(gap.dataset.gapBase));
+  saveGap(layout,true);
+});
 pageReader.addEventListener('pointerdown',e=>{
+  if(!pageEditing||e.button!==0||pageDrag||gapDrag)return;
+  const gap=e.target.closest('[data-page-gap]');
+  if(gap){
+    if(e.pointerType!=='touch'||e.target.closest('.gap-grip'))startGapDrag(gap,e);
+    return;
+  }
   const group=e.target.closest('[data-slot-index]');
-  if(!pageEditing||!group||e.button!==0||pageDrag)return;
+  if(!group)return;
   selectPageCut(group);
   const letter=e.target.closest('[data-letter]');
   if(!letter)return;
@@ -988,6 +1052,11 @@ pageReader.addEventListener('pointerdown',e=>{
   pageReader.setPointerCapture(e.pointerId);
 });
 pageReader.addEventListener('pointermove',e=>{
+  if(gapDrag?.id===e.pointerId){
+    const next=clampGap(gapDrag.size+(e.clientY-gapDrag.clientY)*gapDrag.scale*2);
+    resizeGap(gapDrag,next);
+    return;
+  }
   if(pageDrag?.id!==e.pointerId)return;
   const {svg,letter,start,initial}=pageDrag;
   const point=pagePoint(svg,e);
@@ -995,16 +1064,37 @@ pageReader.addEventListener('pointermove',e=>{
   moveLetter(letter,pageDrag.position);
 });
 pageReader.addEventListener('pointerup',e=>{
+  if(gapDrag?.id===e.pointerId){
+    if(Number(gapDrag.gap.dataset.gapSize)!==gapDrag.size)saveGap(gapDrag);
+    gapDrag=null;
+    return;
+  }
   if(pageDrag?.id!==e.pointerId)return;
   if(pageDrag.position)saveLetter(pageDrag.letter,pageDrag.position);
   pageDrag=null;
 });
 pageReader.addEventListener('lostpointercapture',e=>{
+  if(gapDrag?.id===e.pointerId){
+    resizeGap(gapDrag,gapDrag.size);
+    gapDrag=null;
+    return;
+  }
   if(pageDrag?.id!==e.pointerId)return;
   moveLetter(pageDrag.letter,pageDrag.initial);
   pageDrag=null;
 });
 pageReader.addEventListener('keydown',e=>{
+  const gap=e.target.closest('[data-page-gap]');
+  if(pageEditing&&gap&&!gapDrag&&!pageDrag){
+    const layout=gapLayout(gap),n=e.shiftKey?16:4;
+    const value={ArrowUp:layout.size+n,ArrowDown:layout.size-n,Home:0,End:MAX_PAGE_GAP,Escape:Number(gap.dataset.gapBase)}[e.key];
+    if(value!==undefined){
+      e.preventDefault();
+      resizeGap(layout,clampGap(value));
+      saveGap(layout,e.key==='Escape');
+    }
+    return;
+  }
   const step={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
   const letter=e.target.closest('[data-letter]');
   if(!pageEditing||!letter||!step||pageDrag)return;
@@ -1036,7 +1126,7 @@ function showView(v){if(!['write','layout','nai','webtoon','db'].includes(v))v='
   scrollTo(0,0);try{localStorage.setItem('rough-view',v)}catch(_){}}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
 {const _c=compute;compute=function(...a){_c(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon')renderWebtoon()}}
-{const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon'&&!pageDrag)renderWebtoon()}}
+{const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon'&&!pageDrag&&!gapDrag)renderWebtoon()}}
 
 // ---------- 프롬프트 시안 ----------
 function copyText(t){navigator.clipboard?.writeText(t).then(()=>toast('프롬프트를 복사했어요'),()=>toast('복사가 막혀 있어요. 글을 직접 선택해 복사하세요'))}
