@@ -5,7 +5,7 @@
 | 폴더 | 내용 |
 |---|---|
 | `analysis/` | 기존 웹툰 회차를 컷 단위로 나누고 샷·앵글·역할·감정·색·5컷 리듬을 기록하는 파이프라인 |
-| `rough/` | 장면 비트와 원하는 리듬을 넣으면 DB의 실제 5컷 패턴을 골라 세로 러프를 그리는 웹 툴 (v0) |
+| `rough/` | 장면 글만 넣으면 감정·정점·연출 목적을 계산하고 DB에서 가장 닮은 5컷 패턴으로 세로 러프를 그리는 웹 툴. 엔진은 `rough/engine.js`, 설계는 `docs/rough-plan.md` |
 | `docs/codebook.md` | 두 쪽이 함께 쓰는 코드표와 판정 규칙 |
 | `cutlink.py` | 컷 ID로 원본 컷 이미지를 찾는 함수 (`cuts/` 필요) |
 | `cuts/` | 원본 컷 이미지 (비공개 저장소 `webtoon-cut` 서브모듈) |
@@ -20,23 +20,40 @@ git clone --recurse-submodules https://github.com/360-degree-parallax/webtoon
 ```
 python3 rough/serve.py
 ```
-`http://localhost:8000/rough/` 가 열립니다. `cuts/`가 있으면 고른 패턴의 원본 컷이 러프 아래에 함께 보입니다 (로컬에서만).
+`http://localhost:8000/rough/` 가 열립니다. 장면만 적으면 판정·패턴·컷 배치가 자동으로 나오고, 틀린 값만 눌러서 고치면 됩니다.
+
+엔진 판정 검증:
+```
+node rough/test_engine.js
+```
 
 ## 컷 이미지 찾기
 ```
 python3 cutlink.py GM-03-045
-``` `patterns.json`은 이두나!(DN)·녹빛자정의 연인(GM) 1~7화 244개 묶음의 구조 통계(샷·앵글·역할·감정·강도·컷 높이·여백 비율)만 담고, 작품 이미지나 대사는 담지 않습니다.
+```
+
+`rough/patterns.json`은 이두나!(DN)·녹빛자정의 연인(GM) 1~7화 244개 묶음의 구조 통계(샷·앵글·역할·감정·강도·컷 높이·여백 비율)만 담고, 작품 이미지나 대사는 담지 않습니다.
 
 ## 상태
 - 분석: 두 작품 1~7화 완료 (1,497컷, 244묶음)
-- 러프 툴: v0. 결과물 형태는 개발 중
+- 러프 툴: v1. 선택 없이 연산으로 러프 생성, 결과물(그림) 형태는 개발 중
 
-### 컷 이미지 생성
+### 컷 색 러프 생성
 
-Cloudflare Workers AI의 **FLUX.2 [klein] 4B**로 이미지를 생성합니다. Workers Free 계정에서 하루 10,000 Neurons의 무료 할당량을 공유합니다. 무료 할당량을 넘기면 Free 계정의 생성 요청은 실패합니다. [Cloudflare 요금표](https://developers.cloudflare.com/workers-ai/platform/pricing/)
+기본 생성 서버는 같은 컴퓨터에서 실행 중인 **ComfyUI**입니다. [공식 FLUX.2 Klein 4B 가이드](https://docs.comfy.org/tutorials/flux/flux-2-klein)의 Distilled Image Edit에 쓰는 모델 파일 세 개를 ComfyUI에 설치해주세요.
 
-[Cloudflare Workers AI REST API 설정](https://developers.cloudflare.com/workers-ai/get-started/rest-api/)에서 계정 ID를 확인하고 Workers AI API 토큰을 생성합니다. `CLOUDFLARE_ACCOUNT_ID`와 `CLOUDFLARE_API_TOKEN`을 터미널 환경에 설정한 뒤 `python3 rough/serve.py`를 실행합니다. 토큰은 로컬 서버에서만 사용합니다.
+| ComfyUI 폴더 | 모델 파일 |
+| --- | --- |
+| `models/diffusion_models/` | `flux-2-klein-4b-fp8.safetensors` |
+| `models/text_encoders/` | `qwen_3_4b.safetensors` |
+| `models/vae/` | `flux2-vae.safetensors` |
 
-**컷** 목록에서 컷을 선택하고 **이미지 생성**을 누르면 스케치와 샷·앵글·비율을 바탕으로 컬러 러프가 콘티에 들어갑니다. **이미지 생성 설정**에서 장면 공통 묘사와 직접 만든 캐릭터 참고 이미지 한 장을 추가할 수 있습니다. 창작 연출 카드의 구도는 텍스트 지시로 적용되고 작품 원본 컷은 API로 전송되지 않습니다.
+ComfyUI의 주소가 `http://127.0.0.1:8188`이면, ComfyUI를 켠 상태에서 `python3 rough/serve.py`를 실행합니다. 예를 들어 ComfyUI가 8000번 포트에서 열린다면 러프 툴에는 다른 포트를 지정합니다.
 
-생성된 그림 위에 기존 대사를 별도 레이어로 표시합니다. 컷별로 재생성하거나 스케치로 돌아갈 수 있습니다. 작업 중 이미지는 열린 탭에 유지되므로 페이지를 닫기 전에 PNG 또는 SVG로 저장하세요.
+```bash
+COMFYUI_PORT=8000 python3 rough/serve.py --port 8001
+```
+
+**컷**에서 컷을 선택하고 **이미지 생성**을 누릅니다. 장면 공통 묘사와 캐릭터 참고 이미지는 선택 사항입니다. 스케치와 참고 이미지는 ComfyUI의 로컬 입력 폴더에 저장됩니다. 결과는 열린 러프 툴 탭에 유지되므로 PNG 또는 SVG로 저장해주세요.
+
+Cloudflare 설정을 이미 마쳤다면 `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`이 있는 터미널에서 `ROUGH_IMAGE_PROVIDER=cloudflare python3 rough/serve.py`로 실행할 수 있습니다.

@@ -1,4 +1,4 @@
-"""Render a rough panel with Cloudflare Workers AI FLUX.2 [klein] 4B."""
+"""Validate and render a rough panel with the selected image backend."""
 import base64
 import json
 import logging
@@ -8,6 +8,8 @@ import struct
 import urllib.error
 import urllib.request
 import uuid
+
+import comfy_image
 
 MAX_REQUEST = 4 * 1024 * 1024
 MODEL = "@cf/black-forest-labs/flux-2-klein-4b"
@@ -89,12 +91,6 @@ def cloudflare_error(error):
 
 
 def generate_panel(payload):
-    account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
-    token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
-    if not account or not token:
-        raise ImageRequestError(503, "CLOUDFLARE_ACCOUNT_ID와 CLOUDFLARE_API_TOKEN을 설정한 뒤 서버를 다시 실행해주세요.")
-    if not re.fullmatch(r"[0-9a-fA-F]{32}", account):
-        raise ImageRequestError(503, "CLOUDFLARE_ACCOUNT_ID에 Cloudflare 계정 ID를 입력했는지 확인해주세요.")
     if not isinstance(payload, dict):
         raise ImageRequestError(400, "컷 정보를 읽을 수 없어요.")
     direction = payload.get("direction")
@@ -105,19 +101,38 @@ def generate_panel(payload):
     reference_guide = ""
     if payload.get("reference") is not None:
         images.append(png(payload["reference"]))
-        reference_guide = "Image 1 is a character reference. Keep the character's facial features, hairstyle and costume consistent. "
+        reference_guide = "The second image is a character reference. Keep the character's facial features, hairstyle and costume consistent. "
 
-    fields = {
-        "prompt": (
-            "Draw one Korean scroll-webtoon storyboard panel as a loose color rough with gestural lines and broad color blocks. "
-            "Use image 0 as a loose placement sketch. Follow the panel direction for the camera, subject, and action. "
-            f"{reference_guide}Fill the panel edge to edge. Keep the focal point within the central frame. "
-            "Keep the artwork free of speech bubbles, caption boxes, letters, sound effects, panel numbers, and signatures. "
-            f"\n\nPanel direction:\n{direction}"
-        ),
-        "width": width,
-        "height": height,
-    }
+    prompt = (
+        "Draw one Korean scroll-webtoon storyboard panel as a loose color rough with gestural lines and broad color blocks. "
+        "Use the first image as a loose placement sketch. Follow the panel direction for the camera, subject, and action. "
+        f"{reference_guide}Fill the panel edge to edge. Keep the focal point within the central frame. "
+        "Keep the artwork free of speech bubbles, caption boxes, letters, sound effects, panel numbers, and signatures. "
+        f"\n\nPanel direction:\n{direction}"
+    )
+    provider = os.getenv("ROUGH_IMAGE_PROVIDER", "comfyui")
+    if provider == "cloudflare":
+        return generate_cloudflare(prompt, width, height, images)
+    if provider != "comfyui":
+        raise ImageRequestError(503, "ROUGH_IMAGE_PROVIDER에는 comfyui 또는 cloudflare를 입력해주세요.")
+    try:
+        data = comfy_image.render(prompt, width, height, images)
+        return image_type(data), data
+    except comfy_image.ComfyError as error:
+        raise ImageRequestError(error.status, str(error)) from None
+    except (AttributeError, KeyError, TypeError, ValueError):
+        logging.warning("Unexpected ComfyUI response", exc_info=True)
+        raise ImageRequestError(502, "ComfyUI에서 결과 이미지를 읽지 못했어요.") from None
+
+
+def generate_cloudflare(prompt, width, height, images):
+    account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+    if not account or not token:
+        raise ImageRequestError(503, "CLOUDFLARE_ACCOUNT_ID와 CLOUDFLARE_API_TOKEN을 설정한 뒤 서버를 다시 실행해주세요.")
+    if not re.fullmatch(r"[0-9a-fA-F]{32}", account):
+        raise ImageRequestError(503, "CLOUDFLARE_ACCOUNT_ID에 Cloudflare 계정 ID를 입력했는지 확인해주세요.")
+    fields = {"prompt": prompt, "width": width, "height": height}
     body, media_type = multipart(fields, images)
     request = urllib.request.Request(
         f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/{MODEL}",

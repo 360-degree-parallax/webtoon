@@ -24,31 +24,34 @@ async function asPng(source, maxEdge) {
 }
 
 function imageDirection(panel) {
-  const action = panel.act.replace(/"[^"]*"/g, '').trim();
+  const action = panel.act.replace(/"[^"]*"|“[^”]*”/g, '').trim();
   const style = $('#imageStyle').value.trim();
   return [
     panel.who && `인물: ${panel.who}`,
     action && `행동: ${action}`,
     `샷: ${panel.shot} / 앵글: ${panel.ang}`,
     `프레임의 높이/너비 비율: ${panel.h}`,
+    panel.emo && `감정: ${panel.emo} / 강도: ${panel.i}`,
     panel.composition && `구도: ${panel.composition}`,
     style && `이 장면의 공간·캐릭터·색감: ${style}`,
   ].filter(Boolean).join('\n');
 }
 
 function imageStatus(panel) {
-  if (panel.imagePending) return '이미지 생성 중…';
-  if (panel.imageError) return panel.imageError;
-  if (!panel.image) return '';
-  if (panel.image.direction !== imageDirection(panel) ||
-      panel.image.reference !== $('#imageReference').files[0]) {
+  const work = panel.imageWork;
+  if (work.pending) return '이미지 생성 중…';
+  if (work.error) return work.error;
+  if (!work.image) return '';
+  if (work.image.direction !== imageDirection(panel) ||
+      work.image.reference !== $('#imageReference').files[0]) {
     return '연출 또는 참고 설정이 바뀌었어요. 재생성하면 반영돼요.';
   }
   return '이미지가 콘티에 들어갔어요.';
 }
 
 async function generatePanelImage(panel, index) {
-  if (panel.imagePending) return;
+  const work = panel.imageWork;
+  if (work.pending) return;
   const direction = imageDirection(panel);
   const reference = $('#imageReference').files[0];
   const width = 630;
@@ -58,9 +61,9 @@ async function generatePanelImage(panel, index) {
     drawPanel(panel, 0, 0, width, height, index);
   const sketchUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(roughSvg(width, height, drawing));
 
-  panel.imagePending = true;
-  panel.imageError = '';
-  refreshImagePanel(panel);
+  work.pending = true;
+  work.error = '';
+  refreshImagePanel(work);
   try {
     if (reference && (reference.size > 16 * 1024 * 1024 ||
         !['image/png', 'image/jpeg', 'image/webp'].includes(reference.type))) {
@@ -83,17 +86,18 @@ async function generatePanelImage(panel, index) {
       throw new Error('서버에서 이미지 파일을 받지 못했어요.');
     }
     const src = await readImage(await response.blob());
-    panel.image = {src, direction, reference};
+    work.image = {src, direction, reference};
   } catch (error) {
-    panel.imageError = error instanceof TypeError ? '서버에 연결하지 못했어요. 연결을 확인해주세요.' : error.message;
+    work.error = error instanceof TypeError ? '서버에 연결하지 못했어요. 연결을 확인해주세요.' : error.message;
   } finally {
-    panel.imagePending = false;
-    refreshImagePanel(panel);
+    work.pending = false;
+    refreshImagePanel(work);
   }
 }
 
-function refreshImagePanel(panel) {
-  if (!state.panels.includes(panel)) return;
-  if (!$('#p-cuts').hidden) renderCuts();
+function refreshImagePanel(work) {
+  if (!state.panels.some(panel => panel.imageWork === work)) return;
+  renderImageControls();
+  renderTable();
   render();
 }

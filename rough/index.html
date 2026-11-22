@@ -20,134 +20,109 @@
   --ondark:light-dark(#ffffff,#16181c);
   --blue:#2d71f7;
   --blue-soft:light-dark(#eaf1ff,#1c2a45);
+  --peak:light-dark(#f33d4d,#ff6b77);
 }
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--t1);font:500 15px/1.6 "Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo",system-ui,sans-serif;-webkit-font-smoothing:antialiased;word-break:keep-all}
-button,input,textarea,select{font:inherit;color:inherit}
+button,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0;padding:0}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 [hidden]{display:none!important}
-svg.i{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+svg.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-/* GNB */
-.gnb{position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;gap:4px;padding:0 24px 0 12px;background:var(--bg);border-bottom:1px solid var(--line)}
-.ib{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;color:var(--t1)}
-.ib:hover{background:var(--hover)}
-.wordmark{margin-left:12px;font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--t1)}
-.wordmark span{font-weight:500;color:var(--t2);font-size:14px;margin-left:10px;letter-spacing:0}
+.gnb{position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;gap:8px;padding:0 24px;background:var(--bg);border-bottom:1px solid var(--line)}
+.wordmark{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.wordmark span{font-weight:500;color:var(--t2);font-size:14px;margin-left:10px}
 .gnb .right{margin-left:auto;display:flex;gap:8px;align-items:center}
-.btn{height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--line2);background:var(--bg);font-size:15px;font-weight:600;color:var(--t1);white-space:nowrap}
+.ib{width:40px;height:40px;border-radius:8px;display:grid;place-items:center}
+.ib:hover{background:var(--hover)}
+.btn{height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--line2);background:var(--bg);font-size:15px;font-weight:600;white-space:nowrap}
 .btn:hover{background:var(--hover)}
 .btn.dark{background:var(--dark);border-color:transparent;color:var(--ondark)}
-.btn.dark:hover{filter:brightness(1.12)}
 
-/* shell */
-.shell{display:grid;grid-template-columns:264px minmax(0,1fr)}
-.side{position:sticky;top:56px;height:calc(100vh - 56px);overflow:auto;padding:12px;border-right:1px solid var(--line);display:flex;flex-direction:column}
-.navi{display:flex;align-items:center;gap:24px;width:100%;height:40px;padding:0 13px;border-radius:8px;font-size:15px;font-weight:500;color:var(--t1);text-align:left}
-.navi:hover{background:var(--hover)}
-.navi.on{background:var(--hover);font-weight:600}
-.navi .cnt{margin-left:auto;font-size:13px;font-weight:500;color:var(--t2);font-variant-numeric:tabular-nums}
-.navi .lbl{white-space:nowrap}
-.divider{height:1px;background:var(--line);margin:12px 0}
-.sidehead{padding:4px 13px 8px;font-size:13px;font-weight:600;color:var(--t2)}
-.theme{margin-top:auto;padding:16px 12px 8px}
-.theme label{display:block;font-size:14px;color:var(--t1);margin-bottom:8px}
-select{width:100%;height:40px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--bg)}
-.shell.rail{grid-template-columns:72px minmax(0,1fr)}
-.rail .side{padding:12px 4px;align-items:center}
-.rail .navi{flex-direction:column;justify-content:center;gap:4px;height:68px;padding:0;font-size:10px;font-weight:500}
-.rail .navi .cnt,.rail .sidehead,.rail .theme,.rail .divider{display:none}
+.page{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,440px);gap:48px;max-width:1280px;margin:0 auto;padding:0 40px}
+.main{padding:32px 0 80px}
+h1{margin:0;font-size:28px;line-height:1.4;font-weight:700;letter-spacing:-.02em}
+.desc{margin:6px 0 0;font-size:15px;color:var(--t2)}
+section{margin-top:28px}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 12px}
+.sh h2{margin:0;font-size:18px;font-weight:700}
+.sh span{font-size:13px;color:var(--t2)}
 
-/* work area */
-.work{display:grid;grid-template-columns:minmax(0,640px) minmax(360px,1fr);gap:48px;padding:0 48px;max-width:1240px}
-.panel{padding:40px 0 120px}
-.crumb{font-size:14px;color:var(--t2);margin:0 0 8px}
-.panel h1{margin:0;font-size:28px;line-height:1.4;font-weight:700;letter-spacing:-.02em}
-.panel .desc{margin:8px 0 0;font-size:15px;color:var(--t2)}
-.sect{margin-top:32px}
-
-textarea{display:block;width:100%;min-height:320px;padding:16px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);font-size:16px;font-weight:400;line-height:1.85;resize:vertical;outline:none}
+textarea{display:block;width:100%;min-height:168px;padding:14px 16px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);font-size:16px;font-weight:400;line-height:1.8;resize:vertical;outline:none}
 textarea:focus{border-color:var(--t1)}
-.under{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;color:var(--t2)}
-.guide{margin-top:32px;border-top:1px solid var(--line);padding-top:24px}
-.guide h3,.group h3{margin:0 0 12px;font-size:16px;font-weight:600}
-.guide dl{display:grid;grid-template-columns:120px 1fr;gap:10px 16px;margin:0;font-size:14px}
-.guide dt{color:var(--t2)}.guide dd{margin:0}
-.guide code{font-family:inherit;font-weight:600;background:var(--surface);border-radius:6px;padding:2px 8px}
+.under{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:13px;color:var(--t2)}
+.under code{font-family:inherit;font-weight:600;color:var(--t1);background:var(--surface);border-radius:6px;padding:1px 6px}
 .link{font-size:13px;font-weight:600;color:var(--t2);text-decoration:underline;text-underline-offset:3px}
 
-.group{padding:24px 0;border-bottom:1px solid var(--line)}
-.group:last-child{border-bottom:0}
-.group h3 em{font-style:normal;font-weight:500;color:var(--t2);font-size:14px;margin-left:8px}
-.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
-.chip{display:flex;flex-direction:column;align-items:flex-start;padding:12px 14px;border:1px solid var(--line2);border-radius:8px;text-align:left;background:var(--bg);transition:background .12s}
-.chip:hover{background:var(--hover)}
-.chip b{font-size:15px;font-weight:600}
-.chip small{font-size:13px;color:var(--t2);margin-top:2px}
-.chip[aria-pressed=true]{border-color:var(--t1);box-shadow:inset 0 0 0 1px var(--t1)}
+/* reading */
+.read{border:1px solid var(--line);border-radius:8px;padding:20px}
+.read+.read{margin-top:12px}
+.read .chunkno{font-size:13px;font-weight:600;color:var(--blue);margin-bottom:6px}
+.read .sum{font-size:17px;font-weight:600;line-height:1.55}
+.kv{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;margin-top:16px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.kv div{background:var(--bg);padding:10px 12px}
+.kv div:last-child{grid-column-end:-1}
+.kv dt{font-size:12px;color:var(--t2)}
+.kv dd{margin:2px 0 0;font-size:15px;font-weight:600}
+.kv dd small{display:block;font-size:12px;font-weight:500;color:var(--t2);margin-top:2px;line-height:1.4}
+.match{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:14px;color:var(--t2)}
+.match b{color:var(--t1);font-weight:600}
+.meter{flex:none;width:72px;height:6px;border-radius:3px;background:var(--surface);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--blue)}
+.match .why{margin-left:auto}
 
-/* cuts */
-.cutrow{display:grid;grid-template-columns:28px minmax(0,1fr);gap:16px;padding:20px 8px;margin:0 -8px;border-bottom:1px solid var(--line);border-radius:8px;cursor:pointer}
-.cutrow:hover{background:var(--hover)}
-.cutrow.on{background:none;cursor:default}
-.n{width:28px;height:28px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-.cutrow.on .n{background:var(--dark);border-color:transparent;color:var(--ondark)}
-.ct{font-size:16px;font-weight:600;line-height:1.5}
-.cm{font-size:14px;color:var(--t2);margin-top:2px}
-.ed{margin-top:16px;display:grid;gap:16px}
-.ed .lb{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--t2);margin-bottom:8px}
-.pills{display:flex;flex-wrap:wrap;gap:6px}
-.pill{height:34px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;font-size:14px;font-weight:500;background:var(--bg)}
-.pill:hover{background:var(--hover)}
-.pill[aria-pressed=true]{background:var(--dark);border-color:transparent;color:var(--ondark);font-weight:600}
-input[type=range]{width:100%;margin:0;accent-color:var(--dark)}
-.ed .go{justify-self:start;font-size:13px;font-weight:600;color:var(--blue)}
+/* cut table */
+.tbl{border-top:1px solid var(--line)}
+.tr{display:grid;grid-template-columns:28px minmax(0,1.6fr) 74px 92px 84px 84px 70px 44px;gap:10px;align-items:start;padding:14px 8px;margin:0 -8px;border-bottom:1px solid var(--line);border-radius:8px}
+.tr.head{padding:10px 8px;font-size:12px;font-weight:600;color:var(--t2);border-radius:0}
+.tr:not(.head):hover{background:var(--hover)}
+.tr.on{background:var(--blue-soft)!important}
+.tr .n{width:28px;height:28px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:13px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+.tr.on .n{background:var(--dark);color:var(--ondark);border-color:transparent}
+.beat{cursor:pointer}
+.beat b{display:block;font-size:15px;font-weight:600;line-height:1.45}
+.beat small{display:block;font-size:13px;color:var(--t2)}
+.why{font-size:12px;color:var(--t3);line-height:1.45;margin-top:4px}
+.vng{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.vng em{font-style:normal;display:inline-grid;place-items:center;min-width:26px;height:22px;padding:0 5px;border-radius:6px;background:var(--surface);font-size:12px;font-weight:700}
+.vng em.P{background:var(--peak);color:#fff}
+.dots{display:flex;gap:3px;margin-top:4px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line2)}
+.dots i.on{background:var(--t1)}
+.dots.P i.on{background:var(--peak)}
+.val{position:relative;display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 8px;margin-left:-8px;border-radius:6px;font-size:14px;font-weight:600;white-space:nowrap}
+.val:hover{background:var(--hover)}
+.val.lock::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--blue)}
+.thumb{width:44px;height:58px;border-radius:6px;object-fit:cover;object-position:top;display:block;border:1px solid var(--line);cursor:pointer;background:var(--surface)}
+.thumb.empty{cursor:default}
+.menu{position:absolute;z-index:40;min-width:140px;padding:6px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.menu button{display:flex;justify-content:space-between;gap:12px;width:100%;height:34px;padding:0 10px;border-radius:6px;font-size:14px;text-align:left}
+.menu button:hover{background:var(--hover)}
+.menu button[aria-checked=true]{font-weight:700}
+.menu button small{color:var(--t3);font-size:12px}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
 
-/* refs */
-.tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin-top:24px}
-.tab{height:48px;font-size:16px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab:hover{color:var(--t2)}
-.tab[aria-selected=true]{color:var(--t1);border-color:var(--t1)}
-.target{display:flex;align-items:center;gap:8px;margin:20px 0 16px;font-size:14px;color:var(--t2)}
-.target b{color:var(--t1);font-weight:600}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 12px}
-.card{cursor:pointer;position:relative;margin:0}
-.card img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top;border-radius:8px;background:var(--surface);border:1px solid var(--line);transition:transform .15s}
-.grid{align-items:start}.card.cre img{aspect-ratio:auto;object-fit:initial}
-.card:hover img{transform:translateY(-2px)}
-.card figcaption{margin-top:8px;font-size:14px;font-weight:600;line-height:1.4}
-.card figcaption small{display:block;font-size:13px;font-weight:500;color:var(--t2)}
-.badge{position:absolute;top:8px;left:8px;padding:2px 8px;border-radius:6px;background:var(--blue);color:#fff;font-size:12px;font-weight:600}
-.empty{padding:40px 0;font-size:14px;color:var(--t2)}
-
-/* preview column */
-.pv{position:sticky;top:56px;height:calc(100vh - 56px);padding:40px 0 24px;display:flex;flex-direction:column}
-.pvhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.pvhead h2{margin:0;font-size:16px;font-weight:600}
-.pvhead span{font-size:13px;color:var(--t2)}
-.lead{margin:6px 0 0;font-size:14px;color:var(--t2)}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 16px}
-.tag{padding:3px 8px;border-radius:6px;background:var(--surface);font-size:13px;color:var(--t2)}
-.canvas{flex:1;overflow:auto;border-radius:8px;background:var(--surface);padding:24px 24px 96px;position:relative}
-.canvas svg{display:block;width:100%;max-width:460px;height:auto;margin:0 auto;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer}
-.bar{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;height:56px;padding:0 8px;border:1px solid var(--line2);border-radius:28px;background:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.08);white-space:nowrap}
-.bar .ib{width:40px;height:40px;border-radius:20px}
-.bar .pname{padding:0 10px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
-.bar .sep{width:1px;height:20px;background:var(--line2);margin:0 6px}
+/* preview */
+.pv{position:sticky;top:56px;height:calc(100vh - 56px);padding:32px 0 24px;display:flex;flex-direction:column}
+.pv .sh{margin-bottom:12px}
+.canvas{position:relative;flex:1;overflow:auto;border-radius:8px;background:var(--surface);padding:20px 20px 96px}
+.canvas svg{display:block;width:100%;max-width:420px;height:auto;margin:0 auto;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer}
+.bar{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;height:52px;padding:0 6px;border:1px solid var(--line2);border-radius:26px;background:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.08);white-space:nowrap}
+.bar .ib{border-radius:20px}
+.bar .pname{padding:0 8px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.bar .sep{width:1px;height:20px;background:var(--line2);margin:0 4px}
 .bar .tb{height:40px;padding:0 12px;border-radius:20px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
 .bar .tb:hover{background:var(--hover)}
-.bar .tb svg.i{width:20px;height:20px}
-
-.toast{position:fixed;left:50%;bottom:32px;z-index:30;transform:translate(-50%,8px);padding:12px 16px;border-radius:8px;background:#333840;color:#fff;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast{position:fixed;left:50%;bottom:28px;z-index:50;transform:translate(-50%,8px);padding:12px 16px;border-radius:8px;background:#333840;color:#fff;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+.empty{padding:32px 0;color:var(--t2);font-size:14px}
 
-@media(max-width:1279px){.shell{grid-template-columns:72px minmax(0,1fr)}.side{padding:12px 4px;align-items:center}.navi{flex-direction:column;justify-content:center;gap:4px;height:68px;padding:0;font-size:10px}.navi .cnt,.sidehead,.theme,.divider{display:none}.work{padding:0 32px;gap:32px}}
-@media(max-width:1023px){.work{grid-template-columns:1fr}.pv{position:relative;height:auto;padding-top:0}.canvas{max-height:80vh}.panel{padding-bottom:40px}}
-@media(max-width:640px){.shell{display:block}.side{position:sticky;top:56px;z-index:10;height:auto;flex-direction:row;overflow-x:auto;padding:4px 8px;border-right:0;border-bottom:1px solid var(--line);background:var(--bg)}.navi{flex:none;width:auto;flex-direction:row;height:40px;padding:0 12px;gap:8px;font-size:14px}.work{padding:0 16px}.gnb{padding:0 12px 0 4px}.wordmark span,.gnb .btn:not(.dark){display:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.guide dl{grid-template-columns:1fr}}
+@media(max-width:1180px){.page{grid-template-columns:minmax(0,1fr) 340px;gap:32px;padding:0 24px}.tr{grid-template-columns:28px minmax(0,1fr) 70px 86px 80px 80px 64px;}.tr>.ref{display:none}.kv{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.page{grid-template-columns:1fr}.pv{position:relative;height:auto;padding-top:0}.canvas{max-height:80vh}}
+@media(max-width:640px){.page{padding:0 16px}.gnb{padding:0 12px}.wordmark span,.gnb .btn:not(.dark){display:none}.tr.head{display:none}.tr{grid-template-columns:28px 1fr 1fr;row-gap:6px}.tr .beat{grid-column:2/-1}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-
 .image-settings{margin:20px 0}
 .image-settings summary{cursor:pointer;color:var(--t2);font-weight:600}
 .image-settings label{display:block;color:var(--t2);margin:12px 0 6px;font-size:14px}
@@ -160,200 +135,148 @@ input[type=range]{width:100%;margin:0;accent-color:var(--dark)}
 </head>
 <body>
 <header class="gnb">
-  <button class="ib" id="menu" aria-label="메뉴 접기"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <span class="wordmark">ROUGH<span>웹툰 연출 러프</span></span>
   <div class="right">
+    <button class="ib" id="theme" aria-label="테마 바꾸기" title="테마 바꾸기"><svg class="i" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
     <button class="btn" data-act="svg">SVG 저장</button>
     <button class="btn dark" data-act="png">PNG 저장</button>
   </div>
 </header>
 
-<div class="shell" id="shell">
-<nav class="side" aria-label="작업">
-  <div class="sidehead">작업</div>
-  <button class="navi" data-panel="scene"><svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg><span class="lbl">장면</span><span class="cnt" id="cScene"></span></button>
-  <button class="navi" data-panel="rhythm"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg><span class="lbl">리듬</span><span class="cnt" id="cRhythm"></span></button>
-  <button class="navi" data-panel="cuts"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="7" rx="1.5"/><rect x="5" y="13" width="14" height="8" rx="1.5"/></svg><span class="lbl">컷</span><span class="cnt" id="cCuts"></span></button>
-  <button class="navi" data-panel="refs"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg><span class="lbl">참고</span><span class="cnt" id="cRefs"></span></button>
-  <div class="divider"></div>
-  <div class="sidehead">도움말</div>
-  <button class="navi" data-panel="scene" data-guide="1"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17.2v.1"/></svg><span class="lbl">쓰는 법</span></button>
-  <div class="theme"><label for="themeSel">표시 테마</label><select id="themeSel"><option value="">시스템 설정</option><option value="light">라이트</option><option value="dark">다크</option></select></div>
-</nav>
+<div class="page">
+<main class="main">
+  <h1>장면만 적으면 러프가 나와요</h1>
+  <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB 244묶음 중 가장 닮은 패턴으로 컷을 짜요.</p>
 
-<div class="work">
-  <section class="panel" id="p-scene" aria-labelledby="h-scene">
-    <p class="crumb">작업 · 1 / 4</p>
-    <h1 id="h-scene">장면</h1>
-    <p class="desc">한 줄에 한 컷씩 적으면 오른쪽 러프가 바로 바뀌어요.</p>
-    <div class="sect">
-      <textarea id="beats" aria-label="장면" spellcheck="false" placeholder="에드가 | 복도 끝에서 걸어옴">에드가 | 복도 끝에서 걸어옴
+  <section>
+    <div class="sh"><h2>장면</h2><span id="count"></span></div>
+    <textarea id="beats" aria-label="장면" spellcheck="false" placeholder="에드가 | 복도 끝에서 걸어옴">에드가 | 복도 끝에서 걸어옴
 준 | 놀라 돌아봄 "에드가?"
 에드가 | 준의 손목을 잡음
 준 | 얼굴이 붉어짐
 에드가 | "같이 가자" 미소</textarea>
-      <div class="under"><span id="count"></span><div><button class="link" id="loadExample" type="button">명경도령 예시</button> · <button class="link" data-act="clear">모두 지우기</button></div></div>
-    </div>
-    <div class="guide" id="guide">
-      <h3>쓰는 법</h3>
-      <dl>
-        <dt>한 줄</dt><dd>컷 하나예요. <code>인물 | 행동</code> 순서로 적어요.</dd>
-        <dt>대사</dt><dd><code>"따옴표"</code> 안에 넣으면 말풍선이 생겨요.</dd>
-        <dt>다섯 줄</dt><dd>한 묶음이에요. 묶음마다 DB에서 연출 패턴 하나를 골라요.</dd>
-        <dt>두 사람</dt><dd>행동에 <code>,</code> <code>와</code> <code>둘</code>이 있으면 두 인물을 그려요.</dd>
-      </dl>
-    </div>
+    <div class="under"><span>한 줄에 한 컷 · <code>인물 | 행동</code> · 대사는 <code>"따옴표"</code> · 7줄 넘으면 5줄씩 묶음</span><div><button class="link" id="loadExample">명경도령 예시</button> · <button class="link" data-act="clear">지우기</button></div></div>
   </section>
 
-  <section class="panel" id="p-rhythm" aria-labelledby="h-rhythm" hidden>
-    <p class="crumb">작업 · 2 / 4</p>
-    <h1 id="h-rhythm">리듬</h1>
-    <p class="desc">고르지 않은 항목은 장면에 맞게 찾아요. 고를 때마다 러프가 다시 그려져요.</p>
-    <div class="sect" id="opts"></div>
+  <section>
+    <div class="sh"><h2>이렇게 읽었어요</h2><span>코드표 기준 자동 판정</span></div>
+    <div id="reading"></div>
   </section>
 
-  <section class="panel" id="p-cuts" aria-labelledby="h-cuts" hidden>
-    <p class="crumb">작업 · 3 / 4</p>
-    <h1 id="h-cuts">컷</h1>
-    <p class="desc">컷을 골라 샷·앵글·길이를 고쳐요. 미리보기에서 컷을 눌러도 돼요.</p>
+  <section>
+    <div class="sh"><h2>컷</h2><span>값을 누르면 바꿀 수 있어요 · <b style="color:var(--blue)">●</b> 직접 고른 값</span></div>
     <details class="image-settings">
       <summary>이미지 생성 설정</summary>
       <div class="field"><label for="imageStyle">장면 공통 묘사</label><input type="text" id="imageStyle" maxlength="800" placeholder="공간, 의상, 팔레트, 선의 느낌"></div>
       <div class="field"><label for="imageReference">캐릭터 참고 이미지 (선택)</label><input id="imageReference" type="file" accept="image/png,image/jpeg,image/webp"></div>
     </details>
-    <div class="sect" id="cutList"></div>
+    <div id="panelImage"></div>
+    <div class="tbl" id="tbl"></div>
   </section>
+</main>
 
-  <section class="panel" id="p-refs" aria-labelledby="h-refs" hidden>
-    <p class="crumb">작업 · 4 / 4</p>
-    <h1 id="h-refs">참고</h1>
-    <p class="desc">그림을 누르면 고른 컷에 그 그림의 샷·앵글·비율을 입혀요.</p>
-    <div class="tabs" role="tablist" id="tabs">
-      <button class="tab" role="tab" data-tab="color">컬러 러프</button>
-      <button class="tab" role="tab" data-tab="cre">창작 클로즈업</button>
-      <button class="tab" role="tab" data-tab="orig">원본 컷</button>
-    </div>
-    <div class="target" id="target"></div>
-    <div id="refGrid"></div>
-  </section>
-
-  <aside class="pv" aria-label="미리보기">
-    <div class="pvhead"><h2>미리보기</h2><span id="pvsize"></span></div>
-    <p class="lead" id="lead"></p>
-    <div class="tags" id="tags"></div>
-    <div class="canvas" id="canvas"><div id="preview"></div></div>
-    <div class="bar" id="bar">
-      <button class="ib" data-act="prev" aria-label="이전 패턴"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
-      <span class="pname" id="pname">패턴</span>
-      <button class="ib" data-act="next" aria-label="다음 패턴"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <span class="sep"></span>
-      <button class="tb" data-act="png"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>저장</button>
-    </div>
-  </aside>
+<aside class="pv" aria-label="미리보기">
+  <div class="sh"><h2>미리보기</h2><span id="pvsize"></span></div>
+  <div class="canvas" id="canvas"><div id="preview"></div></div>
+  <div class="bar">
+    <button class="ib" data-act="prev" aria-label="이전 안"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <span class="pname" id="pname">—</span>
+    <button class="ib" data-act="next" aria-label="다음 안"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <span class="sep"></span>
+    <button class="tb" data-act="png"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>저장</button>
+  </div>
+</aside>
 </div>
-</div>
+<div class="menu" id="menu" role="menu" hidden></div>
 <div class="toast" id="toast" role="status"></div>
 
+<script src="engine.js"></script>
 <script src="panel-image.js"></script>
 <script>
-const W=690;const $=s=>document.querySelector(s);
+const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const ANY='상관없어요';
-const OPTS=[
- {key:'dist',title:'카메라 거리',items:[[ANY,'장면에 맞게 골라요'],['좁혀감','멀리서 점점 다가가요'],['넓혀감','가까이서 점점 물러나요'],['넓혔다 좁힘','물러났다가 확 다가가요'],['좁혔다 넓힘','다가갔다가 다시 물러나요'],['교차','멀고 가까움을 오가요'],['유지·좁게','계속 가까이서 봐요'],['유지·넓게','계속 멀리서 봐요']]},
- {key:'tempo',title:'속도',items:[[ANY,'장면에 맞게 골라요'],['빠름','짧은 컷으로 빠르게'],['보통','적당한 호흡으로'],['느림','긴 컷으로 천천히']]},
- {key:'narr',title:'터지는 순간',items:[[ANY,'장면에 맞게 골라요'],['끝 정점','마지막에 터뜨려요'],['중간 정점','가운데서 터지고 여운을 남겨요'],['정점 선행','처음부터 터뜨려요'],['정점 연속','계속 몰아쳐요'],['무정점','잔잔하게 흘러가요']]},
- {key:'goal',title:'노리는 효과',items:[[ANY,'장면에 맞게 골라요'],['몰입 유도','장면 안으로 끌어들여요'],['궁금증 유발','보여줄 걸 미뤄요'],['충격 강조','한 방을 크게 보여줘요'],['긴장 고조','독자만 먼저 알게 해요'],['관계 대비','두 사람을 번갈아 보여줘요'],['감정 지속','감정을 오래 붙잡아요'],['여운','물러나며 마무리해요'],['시간 압축','여러 동작을 빠르게 넘겨요'],['장면 전환','다음 장면으로 넘어가요'],['정보 강조','손·소품을 크게 보여줘요']]},
-];
-const DESC=Object.fromEntries(OPTS.map(g=>[g.key,Object.fromEntries(g.items)]));
-const SHOTS=['설정','전경','전신','중경','클로즈업','디테일','효과 배경'];
-const ANGLES=['아이레벨','하이앵글','로우앵글','탑뷰'];
-const want={dist:ANY,tempo:ANY,narr:ANY,goal:ANY};
-const CRE_BASE='references/creative/green-midnight-closeups/';
-let PATS=[],CUTS=null,GAL=[],CRE=[],panel='scene',refTab='color';
-const state={chunks:[],pick:[],panels:[],used:[],sel:0,svg:''};
+const CRE_BASE='references/creative/green-midnight-closeups/',GAL_BASE='references/green-midnight/';
+const LEN=[['짧게',.6],['보통',1],['길게',1.5],['아주 길게',2.2]];
 const lenWord=h=>h<.7?'짧게':h<1.2?'보통':h<2?'길게':'아주 길게';
-const toAnd=s=>s.replace(/봐요$/,'보고').replace(/요$/,'고');
+const NARR={'끝 정점':'마지막 컷에서 터지는 장면','중간 정점':'가운데서 터지고 가라앉는 장면','정점 선행':'처음부터 터지고 수습하는 장면','정점 연속':'계속 몰아치는 장면','무정점':'큰 고비 없이 흐르는 장면'};
+const CURVE={'상승':'감정이 점점 올라가요','하강':'감정이 점점 가라앉아요','산형':'감정이 올랐다 내려와요','골형':'가라앉았다 다시 올라요','평탄':'감정이 고르게 이어져요'};
+const PART={narr:'서사 형태',curve:'감정 곡선',goal:'연출 목적',vng:'VNG 순서',count:'컷 수',trans:'컷 전환',tempo:'템포',dist:'거리 흐름',emo:'감정'};
+let PATS=[],REFS=[],CUTS=null;
+const locks={};              // 문장(key) → {shot, ang, h}
+const state={an:[],ranks:[],pick:[],panels:[],sel:-1,svg:''};
 
-// ---------- layout ----------
-function show(p){panel=p;['scene','rhythm','cuts','refs'].forEach(k=>$('#p-'+k).hidden=k!==p);
-  document.querySelectorAll('.navi[data-panel]').forEach(b=>b.classList.toggle('on',b.dataset.panel===p&&!b.dataset.guide));
-  if(p==='rhythm')renderOpts();if(p==='cuts')renderCuts();if(p==='refs')renderRefs();scrollTo({top:0})}
-document.querySelectorAll('.navi[data-panel]').forEach(b=>b.onclick=()=>{show(b.dataset.panel);if(b.dataset.guide)$('#guide').scrollIntoView({behavior:'smooth'})});
-$('#menu').onclick=()=>$('#shell').classList.toggle('rail');
-try{const t=localStorage.getItem('rough-theme');if(t){document.documentElement.dataset.theme=t;$('#themeSel').value=t}}catch(e){}
-$('#themeSel').onchange=e=>{const v=e.target.value;if(v)document.documentElement.dataset.theme=v;else delete document.documentElement.dataset.theme;try{localStorage.setItem('rough-theme',v)}catch(_){}};
-function counts(){const n=parseBeats().length;$('#cScene').textContent=n?`${n}컷`:'';$('#count').textContent=n?`${n}컷 · ${Math.ceil(n/5)}묶음`:'아직 적은 컷이 없어요';
-  const k=Object.values(want).filter(v=>v!==ANY).length;$('#cRhythm').textContent=k?`${k}개 고름`:'자동';$('#cCuts').textContent=state.panels.length||'';$('#cRefs').textContent=GAL.length+CRE.length||''}
-let tmr;$('#beats').addEventListener('input',()=>{counts();clearTimeout(tmr);tmr=setTimeout(()=>{if(PATS.length)generate()},350)});
-
-// ---------- rhythm ----------
-function renderOpts(){$('#opts').innerHTML=OPTS.map(g=>`<div class="group"><h3>${g.title}<em>${esc(want[g.key])}</em></h3><div class="chips" role="group" aria-label="${g.title}">${g.items.map(([v,d])=>`<button class="chip" data-k="${g.key}" data-v="${esc(v)}" aria-pressed="${want[g.key]===v}"><b>${esc(v)}</b><small>${esc(d)}</small></button>`).join('')}</div></div>`).join('')}
-$('#opts').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;want[b.dataset.k]=b.dataset.v;renderOpts();generate()});
-
-// ---------- matching ----------
-function parseBeats(){return $('#beats').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const [who,...rest]=l.split('|');const act=rest.join('|').trim()||who.trim();const said=(act.match(/"([^"]+)"/)||[])[1]||'';return {who:rest.length?who.trim():'',act,said}})}
-function score(p,n){let s=0;for(const k in want)if(want[k]!==ANY)s+=p[k]===want[k]?3:-1;const pics=p.cuts.filter(c=>c.t==='그림').length;return s-Math.abs(pics-n)*1.5}
-function candidates(n){return PATS.map(p=>({p,s:score(p,n)})).sort((a,b)=>b.s-a.s).slice(0,12).map(x=>x.p)}
-function generate(){const beats=parseBeats();state.chunks=[];for(let i=0;i<beats.length;i+=5)state.chunks.push(beats.slice(i,i+5));state.pick=state.chunks.map(()=>0);build()}
-function build(){const previous=state.panels;state.panels=[];state.used=[];
-  state.chunks.forEach((ch,ci)=>{const cand=candidates(ch.length);const p=cand[((state.pick[ci]%cand.length)+cand.length)%cand.length];const pics=p.cuts.filter(c=>c.t==='그림');state.used.push(p);
-    ch.forEach((b,i)=>{const c=pics[Math.round(i*(pics.length-1)/Math.max(1,ch.length-1))]||pics[0]||{shot:'중경',ang:'아이레벨',h:1,gap:.3};
+// ---------- compute ----------
+function compute(resetPick){
+  state.an=RE.analyze($('#beats').value);
+  if(resetPick||state.pick.length!==state.an.length)state.pick=state.an.map(()=>0);
+  state.ranks=state.an.map(a=>RE.rank(a,PATS,12));
+  const previous=state.panels;
+  state.panels=[];
+  state.an.forEach((a,ci)=>{const r=state.ranks[ci][state.pick[ci]];if(!r)return;
+    RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);
       const old=previous[state.panels.length];
-      const panel=old?.act===b.act&&old.who===b.who?old:{...b};
-      Object.assign(panel,{shot:SHOTS.includes(c.shot)?c.shot:'중경',ang:ANGLES.includes(c.ang)?c.ang:'아이레벨',h:+Math.max(.45,Math.min(2.2,c.h||1)).toFixed(2),gap:Math.max(.08,Math.min(1,c.gap||.3)),composition:'',src:`${p.src}-${p.id}`});
-      state.panels.push(panel)})});
-  state.sel=Math.min(state.sel,Math.max(0,state.panels.length-1));
-  renderHead();render();counts();if(panel==='cuts')renderCuts();if(panel==='refs')renderRefs()}
+      c.imageWork=old?.key===c.key?old.imageWork:{};
+      state.panels.push(c)})});
+  if(state.sel>=state.panels.length)state.sel=-1;
+  const n=state.panels.length;$('#count').textContent=n?`${n}컷 · ${state.an.length}묶음`:'';$('#pvsize').textContent=n?`${n}컷`:'';
+  renderReading();renderTable();renderImageControls();render();
+  $('#pname').textContent=state.ranks.length?state.ranks.map((r,i)=>`${state.pick[i]+1}/${r.length}`).join(' · ')+'안':'—'}
 
-// ---------- preview head ----------
-function renderHead(){const p=state.used[0];if(!p){$('#lead').textContent='장면을 적으면 러프가 여기 그려져요';$('#tags').innerHTML='';$('#pname').textContent='패턴 없음';return}
-  $('#lead').textContent=`${toAnd(DESC.dist[p.dist]||p.dist)}, ${DESC.narr[p.narr]||p.narr}`;
-  $('#tags').innerHTML=state.used.map((u,i)=>`${state.used.length>1?`<span class="tag">${i+1}묶음</span>`:''}${[u.dist,u.tempo,u.narr,u.goal].map(t=>`<span class="tag">${esc(t)}</span>`).join('')}`).join('');
-  $('#pname').textContent=state.used.map(u=>`${u.src}-${u.id}`).join(' · ');
-  $('#pvsize').textContent=`${state.panels.length}컷`}
+// ---------- reading ----------
+function renderReading(){
+  if(!state.an.length){$('#reading').innerHTML='<p class="empty">장면을 적으면 여기서 판정 결과를 보여줘요.</p>';return}
+  $('#reading').innerHTML=state.an.map((a,ci)=>{const r=state.ranks[ci][state.pick[ci]];const p=r?.p;
+    const top=r?Object.entries(r.parts).filter(([k,v])=>v>=.99).map(([k])=>PART[k]).slice(0,4).join('·'):'';
+    return `<div class="read">${state.an.length>1?`<div class="chunkno">${ci+1}묶음 · ${a.beats.length}컷</div>`:''}
+    <div class="sum">${esc(NARR[a.narr])}이에요. ${esc(CURVE[a.curve])}. ${p?`${esc(a.goal)}을 노려 <b>${esc(p.name)}</b>로 짰어요.`:''}</div>
+    <dl class="kv">
+      <div><dt>서사 형태</dt><dd>${esc(a.narr)}<small>${esc(a.narrWhy)}</small></dd></div>
+      <div><dt>연출 목적</dt><dd>${esc(a.goal)}<small>${esc(a.goalWhy)}</small></dd></div>
+      <div><dt>감정 곡선</dt><dd>${esc(a.curve)}<small>${a.beats.map(b=>b.i).join(' → ')}</small></dd></div>
+      <div><dt>템포</dt><dd>${esc(a.tempo)}<small>목표 거리 ${esc(a.dist)}</small></dd></div>
+      <div><dt>주된 전환</dt><dd>${esc(a.trans)}<small>VNG ${esc(a.vng)}</small></dd></div>
+    </dl>
+    ${p?`<div class="match"><span class="meter"><i style="width:${r.pct}%"></i></span><b>${r.pct}%</b> 참고 패턴 ${esc(p.src)}-${esc(p.id)} · ${esc(p.dist)} · ${esc(p.tempo)}<span class="why">${top?`${esc(top)} 일치`:''}</span></div>`:''}</div>`}).join('')}
 
-// ---------- cuts ----------
-const beatTitle=p=>p.act.replace(/"[^"]*"/,'').trim()||p.act;
-const meta=p=>[p.who,p.shot,p.ang,lenWord(p.h),p.imagePending?'생성 중':p.image?'이미지 있음':''].filter(Boolean).join(' · ');
-function renderCuts(){$('#cutList').innerHTML=state.panels.length?state.panels.map((p,i)=>`<div class="cutrow${i===state.sel?' on':''}" data-i="${i}" ${i===state.sel?'':'tabindex="0" role="button"'}>
-  <span class="n">${i+1}</span><div><div class="ct">${esc(beatTitle(p))}</div><div class="cm" id="cm${i}">${esc(meta(p))}${p.said?` · “${esc(p.said)}”`:''}</div>
-  ${i===state.sel?`<div class="ed">
-   <div><div class="lb">샷</div><div class="pills">${SHOTS.map(s=>`<button class="pill" data-set="shot" data-v="${s}" aria-pressed="${s===p.shot}">${s}</button>`).join('')}</div></div>
-   <div><div class="lb">앵글</div><div class="pills">${ANGLES.map(s=>`<button class="pill" data-set="ang" data-v="${s}" aria-pressed="${s===p.ang}">${s}</button>`).join('')}</div></div>
-   <div><label class="lb" for="hr">컷 길이 <span id="hv">${lenWord(p.h)}</span></label><input id="hr" type="range" min="0.4" max="3" step="0.05" value="${p.h}"></div>
-   <div>
-     <div class="image-actions">
-       <button class="btn dark" data-act="generate-image" ${p.imagePending?'disabled':''}>${p.imagePending?'생성 중…':p.image?'이미지 재생성':'이미지 생성'}</button>
-       ${p.image?`<button class="btn" data-act="remove-image" ${p.imagePending?'disabled':''}>스케치로 돌아가기</button>`:''}
-     </div>
-     <p class="image-status" id="imageStatus" role="status">${esc(imageStatus(p))}</p>
-   </div>
-   <button class="go" data-act="toRefs">참고 그림에서 구도 가져오기 →</button></div>`:''}</div></div>`).join(''):'<p class="empty">장면을 먼저 적어주세요.</p>'}
-function reveal(){const g=$(`#preview [data-p="${state.sel}"]`),c=$('#canvas');if(!g||!c)return;const gr=g.getBoundingClientRect(),cr=c.getBoundingClientRect();if(gr.top<cr.top||gr.bottom>cr.bottom-90)c.scrollBy({top:gr.top-cr.top-24,behavior:'smooth'})}
-function select(i){state.sel=i;render();reveal();if(panel==='cuts')renderCuts();if(panel==='refs')renderRefs()}
-$('#cutList').addEventListener('click',e=>{const row=e.target.closest('.cutrow');if(!row)return;const i=+row.dataset.i;const b=e.target.closest('[data-set]');
-  if(b){state.panels[i][b.dataset.set]=b.dataset.v;renderCuts();render();return}if(e.target.closest('.ed'))return;if(i!==state.sel)select(i)});
-$('#cutList').addEventListener('keydown',e=>{const row=e.target.closest('.cutrow[role=button]');if(row&&(e.key==='Enter'||e.key===' ')){e.preventDefault();select(+row.dataset.i)}});
-$('#cutList').addEventListener('input',e=>{if(e.target.id!=='hr')return;const p=state.panels[state.sel];p.h=+e.target.value;$('#hv').textContent=lenWord(p.h);updateImageStatus();$('#cm'+state.sel).textContent=meta(p)+(p.said?` · “${p.said}”`:'');render()});
-$('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(!g)return;state.sel=+g.dataset.p;if(panel!=='cuts'&&panel!=='refs')show('cuts');else select(state.sel)});
+// ---------- table ----------
+function renderTable(){
+  if(!state.panels.length){$('#tbl').innerHTML='';return}
+  const head=`<div class="tr head"><span></span><span>컷</span><span>구조</span><span>감정·강도</span><span>샷</span><span>앵글</span><span>길이</span><span class="ref">참고</span></div>`;
+  $('#tbl').innerHTML=head+state.panels.map((c,i)=>{const P=c.vng==='P';
+    const v=(f,label,why)=>`<div><button class="val${c.lock[f]!==undefined?' lock':''}" data-f="${f}" data-i="${i}" title="${esc(why)}">${esc(label)}</button><div class="why">${esc(why)}</div></div>`;
+    return `<div class="tr${i===state.sel?' on':''}" data-i="${i}">
+      <button class="n" data-sel="${i}" aria-label="${i+1}번 컷 선택">${i+1}</button>
+      <div class="beat" data-sel="${i}"><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`,c.imageWork.image&&'컬러 러프'].filter(Boolean).join(' · '))}</small></div>
+      <div><span class="vng"><em class="${c.vng}">${c.vng}</em>${esc(c.role)}</span><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.roleWhy||'')}</div></div>
+      <div><span style="font-size:14px;font-weight:600">${esc(c.emo)}</span><div class="dots${P?' P':''}">${[1,2,3].map(k=>`<i class="${c.i>=k?'on':''}"></i>`).join('')}</div><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.emoWhy||'')}</div></div>
+      ${v('shot',c.shot,c.lock.shot!==undefined?'직접 고름':c.why.shot.slice(1).join(' · ')||c.why.shot[0])}
+      ${v('ang',c.ang,c.lock.ang!==undefined?'직접 고름':c.why.ang.join(' · '))}
+      ${v('h',lenWord(c.h),c.lock.h!==undefined?'직접 고름':c.why.h.slice(1).join(' · ')||c.why.h[0])}
+      <div class="ref">${c.ref?`<img class="thumb" data-ref="${i}" src="${c.ref.src}" alt="" title="${esc(c.ref.label)} 구도 적용" loading="lazy">`:'<span class="thumb empty"></span>'}</div>
+    </div>`}).join('')}
 
-// ---------- refs ----------
-$('#tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;refTab=t.dataset.tab;renderRefs()});
-function renderRefs(){document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===refTab));
-  const p=state.panels[state.sel];$('#target').innerHTML=p&&refTab!=='orig'?`적용할 컷 <b>${state.sel+1}번 · ${esc(beatTitle(p))}</b>`:refTab==='orig'?'지금 패턴이 참고한 원본 컷이에요':'';
-  const used=new Set(state.used.flatMap(u=>u.cuts.map(c=>c.id)));let h='';
-  if(refTab==='color')h=GAL.length?`<div class="grid">${GAL.map((g,k)=>`<figure class="card" data-ref="color" data-g="${k}" tabindex="0" role="button">${used.has(g.source_cut)?'<span class="badge">이 패턴</span>':''}<img loading="lazy" src="references/green-midnight/${g.file}" alt=""><figcaption>${esc(g.shot)} · ${esc(g.angle)}<small>${esc(g.frame)} · ${esc(g.source_cut)}</small></figcaption></figure>`).join('')}</div>`:'<p class="empty">컬러 러프가 없어요.</p>';
-  else if(refTab==='cre')h=CRE.length?`<div class="grid">${CRE.map((g,k)=>`<figure class="card cre" data-ref="cre" data-g="${k}" tabindex="0" role="button"><img loading="lazy" src="${CRE_BASE}${esc(g.file)}" alt=""><figcaption>${esc(g.composition)}<small>${esc(g.shot)} · ${esc(g.angle)}</small></figcaption></figure>`).join('')}</div>`:'<p class="empty">창작 클로즈업이 없어요.</p>';
-  else if(CUTS===false)h='<p class="empty">비공개 컷 저장소(cuts/)를 받으면 참고한 패턴의 원본 컷이 여기 보여요.</p>';
-  else if(CUTS)h=`<div class="grid">${state.used.flatMap(u=>u.cuts.filter(c=>c.t==='그림'&&CUTS[c.id])).map(c=>`<figure class="card" style="cursor:default"><img loading="lazy" src="../cuts/${CUTS[c.id]}" alt="${esc(c.id)}"><figcaption>${esc(c.shot)} · ${esc(c.ang)}<small>${esc(c.id)}</small></figcaption></figure>`).join('')}</div>`;
-  $('#refGrid').innerHTML=h}
-function applyRef(el){const g=(el.dataset.ref==='color'?GAL:CRE)[+el.dataset.g];const p=state.panels[state.sel];if(!p)return;
-  Object.assign(p,{shot:SHOTS.includes(g.shot)?g.shot:'중경',ang:ANGLES.includes(g.angle)?g.angle:'아이레벨',h:Math.min(3,Math.max(.4,g.h_ratio)),composition:g.composition||''});render();reveal();toast(`${state.sel+1}번 컷에 ${g.shot} · ${g.angle} 구도를 입혔어요`)}
-$('#refGrid').addEventListener('click',e=>{const f=e.target.closest('[data-ref]');if(f)applyRef(f)});
-$('#refGrid').addEventListener('keydown',e=>{const f=e.target.closest('[data-ref]');if(f&&(e.key==='Enter'||e.key===' ')){e.preventDefault();applyRef(f)}});
+// ---------- menu (override) ----------
+let menuFor=null;
+function openMenu(btn){const i=+btn.dataset.i,f=btn.dataset.f,c=state.panels[i];menuFor={i,f};
+  const opts=f==='shot'?RE.SHOTS.map(s=>[s,s]):f==='ang'?RE.ANGLES.map(s=>[s,s]):LEN.map(([w,h])=>[w,h]);
+  const cur=f==='h'?lenWord(c.h):c[f],auto=f==='h'?lenWord(c.auto.h):c.auto[f];
+  $('#menu').innerHTML=opts.map(([l,v])=>`<button role="menuitemradio" aria-checked="${l===cur}" data-v="${v}">${esc(l)}${l===auto?'<small>자동</small>':''}</button>`).join('')+(c.lock[f]!==undefined?`<hr><button data-v="__auto">자동으로 되돌리기</button>`:'');
+  const r=btn.getBoundingClientRect();const m=$('#menu');m.hidden=false;m.style.left=Math.min(innerWidth-m.offsetWidth-8,r.left+scrollX)+'px';m.style.top=(r.bottom+scrollY+4)+'px'}
+function closeMenu(){$('#menu').hidden=true;menuFor=null}
+$('#menu').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!menuFor)return;const mi=menuFor.i,c=state.panels[mi],f=menuFor.f;const L=locks[c.key]||(locks[c.key]={});
+  if(b.dataset.v==='__auto')delete L[f];else L[f]=f==='h'?+b.dataset.v:b.dataset.v;closeMenu();state.sel=mi;compute(false)});
+document.addEventListener('click',e=>{if(!e.target.closest('#menu')&&!e.target.closest('.val'))closeMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
+
+$('#tbl').addEventListener('click',e=>{const v=e.target.closest('.val');if(v){e.stopPropagation();state.sel=+v.dataset.i;markSel();openMenu(v);return}
+  const t=e.target.closest('[data-ref]');if(t){const c=state.panels[+t.dataset.ref];const L=locks[c.key]||(locks[c.key]={});Object.assign(L,{shot:c.ref.shot,ang:c.ref.angle,h:Math.min(3,Math.max(.4,c.ref.h_ratio)),composition:c.ref.composition||''});state.sel=+t.dataset.ref;compute(false);toast(`${state.sel+1}번 컷에 ${c.ref.label} 구도를 입혔어요`);return}
+  const s=e.target.closest('[data-sel]');if(s){state.sel=+s.dataset.sel;markSel();reveal()}});
+function markSel(){renderImageControls();document.querySelectorAll('.tr[data-i]').forEach(r=>r.classList.toggle('on',+r.dataset.i===state.sel));render()}
+$('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(!g)return;state.sel=+g.dataset.p;markSel();document.querySelector(`.tr[data-i="${state.sel}"]`)?.scrollIntoView({block:'center',behavior:'smooth'})});
+function reveal(){const g=$(`#preview [data-p="${state.sel}"]`),c=$('#canvas');if(!g)return;const gr=g.getBoundingClientRect(),cr=c.getBoundingClientRect();if(gr.top<cr.top||gr.bottom>cr.bottom-90)c.scrollBy({top:gr.top-cr.top-20,behavior:'smooth'})}
 
 // ---------- actions ----------
+let tmr;$('#beats').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(()=>compute(true),350)});
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
 function download(name,blob){
   const url=URL.createObjectURL(blob);
@@ -362,8 +285,8 @@ function download(name,blob){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function exportPng(){
-  const button=$('[data-act="png"]');
-  if(button)button.disabled=true;
+  const buttons=[...document.querySelectorAll('[data-act="png"]')];
+  for(const button of buttons)button.disabled=true;
   const url=URL.createObjectURL(new Blob([state.svg],{type:'image/svg+xml'}));
   try{
     const image=new Image();
@@ -383,26 +306,29 @@ async function exportPng(){
     toast('PNG로 저장하지 못했어요. SVG 저장을 시도해주세요.');
   }finally{
     URL.revokeObjectURL(url);
-    if(button)button.disabled=false;
+    for(const button of buttons)button.disabled=false;
   }
 }
 
 
+
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
-  if(a==='clear'){$('#beats').value='';$('#beats').focus();counts();generate()}
-  else if(a==='next'||a==='prev'){state.pick=state.pick.map(v=>v+(a==='next'?1:-1));build()}
-  else if(a==='toRefs')show('refs')
-  else if(a==='generate-image')generatePanelImage(state.panels[state.sel],state.sel)
-  else if(a==='remove-image'){
-    const p=state.panels[state.sel];
-    delete p.image;
-    delete p.imageError;
-    renderCuts();
+  if(a==='clear'){$('#beats').value='';$('#beats').focus();compute(true)}
+  else if(a==='next'||a==='prev'){state.pick=state.pick.map((v,i)=>{const n=state.ranks[i].length;return (v+(a==='next'?1:-1)+n)%n});compute(false);toast(`${state.pick[0]+1}번째로 닮은 패턴으로 바꿨어요`)}
+  else if(a==='generate-image'&&state.panels[state.sel])generatePanelImage(state.panels[state.sel],state.sel)
+  else if(a==='remove-image'&&state.panels[state.sel]){
+    const work=state.panels[state.sel].imageWork;
+    delete work.image;
+    delete work.error;
+    renderImageControls();
+    renderTable();
     render();
   }
   else if(a==='svg'&&state.svg){download('rough.svg',new Blob([state.svg],{type:'image/svg+xml'}));toast('SVG로 저장했어요')}
-  else if(a==='png'&&state.svg)exportPng()
-});
+  else if(a==='png'&&state.svg)exportPng()});
+const THEMES=['','light','dark'];
+try{const t=localStorage.getItem('rough-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
+$('#theme').onclick=()=>{const cur=document.documentElement.dataset.theme||'';const nx=THEMES[(THEMES.indexOf(cur)+1)%3];if(nx)document.documentElement.dataset.theme=nx;else delete document.documentElement.dataset.theme;try{localStorage.setItem('rough-theme',nx)}catch(_){}toast(nx===''?'시스템 테마':nx==='light'?'라이트 테마':'다크 테마')};
 
 // ---------- drawing ----------
 function rng(seed){let a=0;for(const c of seed)a=Math.imul(a^c.charCodeAt(0),16777619)>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -438,8 +364,8 @@ function render(){
   const x=30,w=W-2*x;
   state.panels.forEach((p,i)=>{
     const h=Math.round(p.h*w),selected=i===state.sel;
-    const picture=p.image
-      ? `<image href="${esc(p.image.src)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`
+    const picture=p.imageWork.image
+      ? `<image href="${esc(p.imageWork.image.src)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`
       : drawPanel(p,x,y,w,h,i);
     const frame=`<rect x="${x}" y="${y}" width="${w}" height="${h}"`;
     art+=`<g data-p="${i}"><clipPath id="c${i}">${frame}/></clipPath><g clip-path="url(#c${i})">${picture}${drawLettering(p,x,y,w)}</g>${frame} fill="transparent" stroke="#222" stroke-width="3"/></g>`;
@@ -452,19 +378,6 @@ function render(){
 }
 
 
-// ---------- references ----------
-fetch('references/green-midnight/index.json').then(r=>r.json()).then(d=>{GAL=d.items;counts();if(panel==='refs')renderRefs()}).catch(()=>{});
-fetch(CRE_BASE+'index.json').then(r=>r.ok?r.json():Promise.reject()).then(d=>{CRE=d.items||[];counts();if(panel==='refs')renderRefs()}).catch(()=>{});
-fetch('../cuts/manifest.csv').then(r=>r.ok?r.text():Promise.reject()).then(t=>{const L=t.replace(/^﻿/,'').trim().split('\n');const H=L.shift().split(',');CUTS={};for(const l of L){const v=l.split(',');CUTS[v[0]]=v[H.indexOf('file')]}if(panel==='refs')renderRefs()}).catch(()=>{CUTS=false;if(panel==='refs')renderRefs()});
-
-function updateImageStatus(){
-  const status=$('#imageStatus');
-  if(status)status.textContent=imageStatus(state.panels[state.sel]);
-}
-$('#imageStyle').addEventListener('input',updateImageStatus);
-$('#imageReference').addEventListener('change',updateImageStatus);
-
-// ---------- start ----------
 $('#loadExample').onclick=()=>{
   $('#beats').value=[
     '상담객 | 비 내리는 밤, 어두운 상담방 문을 열고 들어선다.',
@@ -474,11 +387,36 @@ $('#loadExample').onclick=()=>{
     '명경도령 | 모른 척 시선을 피하며 따뜻한 찻잔을 밀어준다.',
   ].join('\n');
   $('#imageStyle').value='옛 한옥의 상담방. 먹빛과 낮은 청록 바탕에 등불의 호박색. 거친 펜선과 넓은 색면. 명경도령은 은발에 짙은 녹색 도포를 입은 성인 남성. 상담객은 검은 머리를 낮게 묶은 성인 여성.';
-  counts();
-  if(PATS.length)generate();
+  if(PATS.length)compute(true);
 };
-show('scene');counts();renderHead();
-fetch('patterns.json').then(r=>r.json()).then(d=>{PATS=d.patterns.filter(p=>p.cuts.some(c=>c.t==='그림'));generate()}).catch(()=>toast('패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요'));
+function renderImageControls(){
+  const p=state.panels[state.sel];
+  if(!p){
+    $('#panelImage').innerHTML='<p class="image-status">컷을 선택하면 이미지 생성 버튼이 나와요.</p>';
+    return;
+  }
+  const work=p.imageWork;
+  $('#panelImage').innerHTML=`<div class="image-actions">
+    <button class="btn dark" data-act="generate-image" ${work.pending?'disabled':''}>${state.sel+1}번 컷 · ${work.pending?'생성 중…':work.image?'이미지 재생성':'이미지 생성'}</button>
+    ${work.image?`<button class="btn" data-act="remove-image" ${work.pending?'disabled':''}>스케치로 돌아가기</button>`:''}
+  </div><p class="image-status" id="imageStatus" role="status">${esc(imageStatus(p))}</p>`;
+}
+function updateImageStatus(){
+  const status=$('#imageStatus');
+  if(status)status.textContent=imageStatus(state.panels[state.sel]);
+}
+$('#imageStyle').addEventListener('input',updateImageStatus);
+$('#imageReference').addEventListener('change',updateImageStatus);
+
+// ---------- data ----------
+Promise.all([
+  fetch('patterns.json').then(r=>r.json()),
+  fetch(GAL_BASE+'index.json').then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})),
+  fetch(CRE_BASE+'index.json').then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})),
+]).then(([pt,gal,cre])=>{
+  PATS=pt.patterns;
+  REFS=[...gal.items.map(g=>({...g,kind:'color',src:GAL_BASE+g.file,label:`컬러 러프 ${g.shot}·${g.angle}`})),...cre.items.map(g=>({...g,kind:'cre',src:CRE_BASE+g.file,label:`창작 ${g.composition}`}))];
+  compute(true)}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 </script>
 </body>
 </html>
