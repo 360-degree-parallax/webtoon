@@ -149,7 +149,7 @@
     const cue = [actText, ...dialogs.map(d => d.note), ...dialogs.map(d => d.text), ...captions, ...sfx].filter(Boolean).join(' ');
     const act = actText.replace(/@/g, '') || (dialogs[0] ? `${dialogs[0].who ? dialogs[0].who + ' ' : ''}대사` : captions[0] || (sfx[0] ? `효과음 ${sfx[0]}` : ''));
     const rcue = [actText, ...dialogs.map(d => d.note), said ? `"${said}"` : ''].filter(Boolean).join(' ').replace(/@/g, '');
-    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), sfx, dialogs, cue: cue.replace(/@/g, ''), rcue };
+    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), captions, sfx, dialogs, cue: cue.replace(/@/g, ''), rcue };
   }
   function parseCuts(cuts, chars) {
     const named = chars && chars.length ? chars.slice() : [];
@@ -399,7 +399,7 @@
       let gap = (0.35 * (pc.gap ?? 0.3) + 0.65 * base) * tf; why.gap.unshift(`${tag} · 패턴 여백 ${(pc.gap ?? 0.3).toFixed(2)} 섞음${tf !== 1 ? ` · 템포 ${an.tempo}` : ''}`);
       const band = { 붙임: [0.06, 0.12], 보통: [0.13, 0.32], 쉼: [0.33, 0.64], '큰 쉼': [0.65, 1.2] }[tag];
       gap = +clamp(gap, band[0], band[1]).toFixed(2);
-      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', sfx: b.sfx || [], dialogs: b.dialogs || [], key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
+      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || [], sfx: b.sfx || [], dialogs: b.dialogs || [], key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
     });
   }
 

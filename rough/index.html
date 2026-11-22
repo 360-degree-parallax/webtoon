@@ -529,6 +529,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       </form>
     </dialog>
 <script src="engine.js"></script>
+<script src="lettering.js"></script>
 <script src="prompt.js"></script>
 <script src="nai.js"></script>
 <script>
@@ -645,83 +646,27 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   else if(p.shot==='클로즈업'){const r=Math.min(w,h)*.4;o+=head(x+w*.5+j(w*.15),y+h*.55,r)}
   else if(p.shot==='디테일'){const r=Math.min(w,h)*.35;o+=`<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${r*1.3}" ry="${r*.8}" stroke="${st}" stroke-width="3" fill="none"/>`+C(x+w/2,y+h/2,r*.35,3)}
   else{for(let i=0;i<20;i++){const a=i/20*Math.PI*2;o+=L(x+w/2+Math.cos(a)*w*.15,y+h/2+Math.sin(a)*h*.15,x+w/2+Math.cos(a)*w,y+h/2+Math.sin(a)*h,1)}o+=head(x+w/2,y+h/2,Math.min(w,h)*.2)}
-  if(p.said){const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;o+=`<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`}
   return o}
-// ---------- 식자·말풍선·효과음 (녹빛 레퍼런스 54장 분석 기준) ----------
-// 말풍선: 크림색 바탕 + 손그림 느낌 잉크선, 패널 위쪽, 테두리를 걸치기도 함. 꼬리는 가늘고 길게 화자 쪽.
-// 종류: 보통(타원) / 떨림(울퉁불퉁) / 외침(뾰족) / 생각(구름 + 작은 원) / 작게(작은 타원, 작은 글자)
-// 식자: 장면 첫머리·시간 표시는 장식 상자(초록 계열 + 모서리 잎), 일반은 반투명 사각 상자, 여운 컷은 글자만. 아래 가운데.
-// 효과음: 큰 소리는 붉은 붓글씨처럼 크게 위쪽, 작은 소리는 진한 잉크로 작게 동작 옆 + 짧은 움직임 선. 기울임.
-const LT={ink:'#2a2622',paper:'#fbf8f1',text:'#24201c'};
-const rngL=seed=>{let h=2166136261;for(const ch of String(seed))h=Math.imul(h^ch.charCodeAt(0),16777619);return()=>((h=Math.imul(h^(h>>>15),2246822507)^Math.imul(h^(h>>>13),3266489909))>>>0)/4294967296};
-function wrapKo(t,max){const words=String(t).trim().split(/\s+/);const out=[];let cur='';for(const w of words){if(!cur)cur=w;else if((cur+' '+w).length<=max)cur+=' '+w;else{out.push(cur);cur=w}}if(cur)out.push(cur);
-  return out.flatMap(l=>l.length>max+3?l.match(new RegExp(`.{1,${max}}`,'g')):[l])}
-function balloonKind(d,p){const n=d.note||'',t=d.text||'';
-  if(/속으로|생각|독백|마음속/.test(n))return'thought';
-  if(/작게|속삭|조용히|혼잣말|중얼/.test(n)||/^[.…·\s]+$/.test(t))return'small';
-  if(/외치|소리치|버럭|화나|고함|비명/.test(n)||(/!/.test(t)&&(p.i>=2||/분노|놀람/.test(p.emo))))return'shout';
-  if(/떨|당황|머뭇|더듬|놀라|울먹|당황해/.test(n)||/^…|^\.\.\./.test(t)||/당황|긴장/.test(p.emo))return'shaky';
-  return'normal'}
-function shapePath(cx,cy,rx,ry,kind,R){const pts=[];
-  if(kind==='shout'){const n=16;for(let k=0;k<n*2;k++){const a=k/(n*2)*Math.PI*2,r=k%2?1:1.22+R()*.08;pts.push([cx+Math.cos(a)*rx*r,cy+Math.sin(a)*ry*r])}return'M'+pts.map(q=>q.map(v=>v.toFixed(1)).join(' ')).join(' L')+'Z'}
-  if(kind==='thought'||kind==='shaky'){const n=kind==='thought'?9:14,amp=kind==='thought'?.16:.06;let d='';for(let k=0;k<=n;k++){const a=k/n*Math.PI*2,x=cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry;
-      if(!k){d=`M${x.toFixed(1)} ${y.toFixed(1)}`;continue}const am=(a+(k-1)/n*Math.PI*2)/2,o=1+amp*2+R()*amp;d+=` Q${(cx+Math.cos(am)*rx*o).toFixed(1)} ${(cy+Math.sin(am)*ry*o).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`}return d+'Z'}
-  const n=36;for(let k=0;k<n;k++){const a=k/n*Math.PI*2,j=1+(R()-.5)*.025;pts.push([cx+Math.cos(a)*rx*j,cy+Math.sin(a)*ry*j])}return'M'+pts.map(q=>q.map(v=>v.toFixed(1)).join(' ')).join(' L')+'Z'}
-function balloonSVG(d,p,box,slot,R){const kind=balloonKind(d,p),small=kind==='small',k=box.w/630;
-  const punch=(d.text||'').length<=6&&p.i>=2&&kind!=='small';const fs=(small?16:punch?26:21)*k,lh=fs*1.4;
-  const lines=wrapKo(d.text||'',small?10:9).slice(0,5);const tw=Math.max(...lines.map(l=>l.length))*fs*.98,th=lines.length*lh;
-  const rx=Math.max(tw/2+fs*1.5,fs*3.2),ry=Math.max(th/2+fs*1.3,fs*2.2);
-  const side=d.who&&p.who&&d.who!==p.who?(p.side==='left'?'right':'left'):(p.side||'right');
-  const cx=Math.min(Math.max(box.x+box.w*(slot%2?(side==='left'?.7:.3):(side==='left'?.3:.7)),box.x+rx+6),box.x+box.w-rx-6);
-  const breakTop=box.frame&&slot===0&&box.y>60&&ry*2<box.h*.5;const cy=breakTop?box.y+ry*.25:box.y+ry+14+slot*ry*1.55;
-  const tx=box.x+box.w*(side==='left'?.3:.7),ty=Math.min(box.y+box.h*.55,cy+ry+Math.max(40,box.h*.18));
-  let tail='';
-  if(kind==='thought'){for(let n=0;n<3;n++){const t=(n+1)/4,x=cx+(tx-cx)*t*.6,y=cy+ry+(ty-cy-ry)*t*.6;tail+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(6-n*1.5)*k}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${1.8*k}"/>`}}
-  else{const bx=cx+(tx-cx)*.2,by=cy+ry*.86,w=(small?6:10)*k,len=Math.hypot(tx-bx,ty-by),ex=bx+(tx-bx)*Math.min(1,(kind==='shout'?60:80)*k/len),ey=by+(ty-by)*Math.min(1,(kind==='shout'?60:80)*k/len);
-    tail=`<path d="M${(bx-w).toFixed(1)} ${by.toFixed(1)} Q${((bx+ex)/2-w*.4).toFixed(1)} ${((by+ey)/2).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)} Q${((bx+ex)/2+w*.6).toFixed(1)} ${((by+ey)/2).toFixed(1)} ${(bx+w).toFixed(1)} ${by.toFixed(1)}Z" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${2*k}" stroke-linejoin="round"/>`}
-  const path=shapePath(cx,cy,rx,ry,kind,R),sw=(small?1.6:2.2)*k;
-  const body=`<path d="${path}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${sw}" stroke-linejoin="round"/><path d="${path}" fill="none" stroke="${LT.ink}" stroke-width="${sw*.5}" opacity=".45" transform="translate(${(.8*k).toFixed(1)} ${(-.6*k).toFixed(1)})"/>`;
-  // 꼬리 위에 몸통을 다시 덮어 이음새를 지움
-  const cover=kind==='thought'?'':`<path d="${path}" fill="${LT.paper}" stroke="none"/>`;
-  const text=lines.map((l,n)=>`<text x="${cx.toFixed(1)}" y="${(cy-th/2+lh*(n+.72)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="${punch?800:500}" text-anchor="middle" fill="${LT.text}" letter-spacing="-0.3">${esc(l)}</text>`).join('');
-  return{svg:body+tail+cover+text,bottom:cy+ry}}
-function captionSVG(t,p,box,first){const k=box.w/630,fs=19*k,lines=wrapKo(t,16).slice(0,3),lh=fs*1.5;const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
-  const style=/그날|이후|후|전|밤|아침|저녁|년|일 뒤|며칠|다음 날|그때/.test(t)&&(first||p.role==='설정'||p.role==='전환')?'deco':(p.vng==='R'||p.shot==='효과 배경')?'plain':'box';
-  const w=tw+fs*2.6,h=th+fs*1.6,x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06);
-  const txt=(fill,extra='')=>lines.map((l,n)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+fs*.8+lh*(n+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" text-anchor="middle" fill="${fill}"${extra}>${esc(l)}</text>`).join('');
-  if(style==='plain')return txt('#f7f2e6',` stroke="rgba(20,16,12,.55)" stroke-width="${3*k}" paint-order="stroke"`);
-  if(style==='deco'){const leaf=(cx,cy,r)=>`<path d="M${cx} ${cy} q${4*k*r} ${-6*k} ${9*k*r} ${-3*k} q${-3*k*r} ${5*k} ${-9*k*r} ${3*k}z" fill="#2f5a3a"/>`;
-    return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#86c99c" stroke="#2f5a3a" stroke-width="${2*k}"/><rect x="${x+4*k}" y="${y+4*k}" width="${w-8*k}" height="${h-8*k}" fill="none" stroke="#2f5a3a" stroke-width="${1*k}" opacity=".6"/>`+
-      leaf(x,y,1)+leaf(x+w,y,-1)+leaf(x,y+h,1)+leaf(x+w,y+h,-1)+txt('#1d2a20')}
-  return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(196,182,170,.93)" stroke="#3a332e" stroke-width="${1.6*k}"/>`+txt('#2a241f')}
-const LOUD=/쾅|쨍그랑|와장창|퍽|콰|쿵|펑|탕|빠직|으악|꺄/;
-function sfxSVG(t,p,box,n,R){const k=box.w/630,loud=LOUD.test(t)||p.i>=3;
-  if(loud){const fs=Math.min(box.w*.9/Math.max(1,t.length),box.h*.22),x=box.x+box.w*.5,y=box.y+fs*1.05+n*fs;
-    return`<text x="0" y="0" font-size="${fs.toFixed(1)}" font-weight="900" text-anchor="middle" fill="#a8232b" stroke="#fff" stroke-width="${5*k}" paint-order="stroke" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(-10) skewX(-12)">${esc(t)}</text>`}
-  const fs=Math.max(36*k,Math.min(box.w*.12,box.h*.16)),x=box.x+box.w*(p.side==='left'?.66:.34)+n*fs*.8,y=box.y+box.h*.7-n*fs*.9;
-  const mv=[0,1].map(m=>`<path d="M${(x-fs*1.1-m*7*k).toFixed(1)} ${(y-fs*(.9-m*.35)).toFixed(1)} l${(-9*k).toFixed(1)} ${(-8*k).toFixed(1)}" stroke="${LT.ink}" stroke-width="${2*k}" stroke-linecap="round"/>`).join('');
-  return mv+`<text x="0" y="0" font-size="${fs.toFixed(1)}" font-weight="900" text-anchor="middle" fill="#2b241f" stroke="#fff" stroke-width="${4*k}" paint-order="stroke" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(-14) skewX(-10)">${esc(t)}</text>`}
-function letterSVG(p,box,idx){const R=rngL(p.key||p.act);let o='';
-  if(p.caption)o+=captionSVG(p.caption,p,box,idx===0);
-  (p.sfx||[]).slice(0,2).forEach((x,n)=>o+=sfxSVG(x,p,box,n,R));
-  const ds=(p.dialogs||[]).filter(d=>d.text).slice(0,3);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
-  ds.forEach((d,n)=>o+=balloonSVG(d,p,box,n,R).svg);return o}
 // 패널 배치: 여러 컷을 이어 그릴 때 설정·효과 배경 컷은 좌우 끝까지(테두리 없음), 디테일 인서트는 좁게 번갈아
 function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true};
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false){let y=40,o='';const multi=panels.length>1;
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false){let y=40,o='',clearY=12;const multi=panels.length>1;
   panels.forEach((p,i)=>{const im=imgs&&imgs[i];const B=panelBox(p,i,multi),bx=B.x,bw=B.w;const h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);const on=i===sel;const u=im?null:underlay(p);
-    let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel({...p,said:''},bx,y,bw,h,i);
+    const lettering=clean?null:RoughLettering.panel(p,bw,h,i===0);
+    if(lettering)y=Math.max(y,clearY+lettering.above);
+    let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel(p,bx,y,bw,h,i);
     if(u){art=`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
     const c=!clean&&!im&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame?`stroke="#222" stroke-width="3"`:'stroke="none"';
     o+=`<g data-p="${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
-      (clean?'':letterSVG(p,{x:bx,y,w:bw,h,frame:B.frame},i))+`</g>`;
+      (lettering?.markup?`<g transform="translate(${bx} ${y})">${lettering.markup}</g>`:'')+`</g>`;
     // 간격: 중요도 단계는 유지하되 화면에서는 압축(최대 약 360px)
+    clearY=y+h+(lettering?.below||0)+12;
     y+=h+Math.round(p.gap*(W-60)*.45)+24});
+  y=Math.max(y,clearY);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
 }
 function render(){state.svg=renderSVG(state.panels,state.sel);$('#preview').innerHTML=state.svg}
