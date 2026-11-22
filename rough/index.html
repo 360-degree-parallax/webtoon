@@ -540,6 +540,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 #reader[data-material-mode]{cursor:crosshair;touch-action:none}
 #reader[data-material-mode] [data-letter]{cursor:crosshair}
 </style>
+<link rel="stylesheet" href="reveal.css">
 </head>
 <body>
 <header class="gnb">
@@ -696,6 +697,21 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <div class="scbar" data-scbar></div>
   <h1>콘티</h1>
   <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB 244묶음 중 가장 닮은 패턴으로 컷을 짰어요.</p>
+
+  <details class="reveal-panel" id="reveal">
+    <summary>등장 공개 연출</summary>
+    <div class="reveal-content">
+      <div class="reveal-mode" id="reveal-modes" role="group" aria-label="등장 공개 유형"></div>
+      <p id="reveal-hint"></p>
+      <div class="reveal-grid" id="reveal-cases"></div>
+      <div class="reveal-form">
+        <label><span id="reveal-cue"></span><select id="reveal-first"></select></label>
+        <label>공개 컷<select id="reveal-peak"></select></label>
+        <label>여운 컷<select id="reveal-after"></select></label>
+      </div>
+      <div class="reveal-actions"><button class="btn dark" id="reveal-apply" type="button">현재 씬 복제해 적용</button><output id="reveal-status" aria-live="polite"></output></div>
+    </div>
+  </details>
 
   <section>
     <div class="sh"><h2>이렇게 읽었어요</h2><span>코드표 기준 자동 판정</span></div>
@@ -871,6 +887,8 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script src="nai.js"></script>
 <script src="sfx.js"></script>
 <script src="materials.js"></script>
+<script src="reveal-cases.js"></script>
+<script src="reveal.js"></script>
 <script>
 const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -882,6 +900,9 @@ const CURVE={'상승':'감정이 점점 올라가요','하강':'감정이 점점
 const PART={narr:'서사 형태',curve:'감정 곡선',goal:'연출 목적',vng:'VNG 순서',count:'컷 수',trans:'컷 전환',tempo:'템포',dist:'거리 흐름',emo:'감정'};
 let PATS=[],REFS=[],REF_ALL=0,CUTMETA={};
 const locks={};              // 문장(key) → {shot, ang, h}
+function lockKey(panel,scene=SCENES[SCUR]){
+  return scene.revealVariant?scene.id+':'+panel.key:panel.key;
+}
 const state={an:[],ranks:[],pick:[],panels:[],sel:-1,svg:''};
 
 // ---------- compute ----------
@@ -891,11 +912,11 @@ function compute(resetPick){
   state.ranks=state.an.map(a=>RE.rank(a,PATS,12));
   state.panels=[];
   state.an.forEach((a,ci)=>{const r=state.ranks[ci][state.pick[ci]];if(!r)return;
-    RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);state.panels.push(c)})});
+    RE.layout(a,r.p).forEach(c=>{const L=locks[lockKey(c)]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};applyRevealFrame(c,SCENES[SCUR].pageEdits);Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);state.panels.push(c)})});
   state.panels.forEach((c,i)=>c.side=i%2?'left':'right');
   if(state.sel>=state.panels.length)state.sel=-1;
   const n=state.panels.length;$('#count').textContent=n?`${n}컷 · ${state.an.length}묶음`:'';$('#pvsize').textContent=n?`${n}컷`:'';
-  renderReading();renderTable();render();
+  renderReading();renderTable();render();refreshRevealChoices();
   $('#pname').textContent=state.ranks.length?state.ranks.map((r,i)=>`${state.pick[i]+1}/${r.length}`).join(' · ')+'안':'—'}
 
 // ---------- reading ----------
@@ -919,7 +940,7 @@ const gapWord=g=>g<0.13?'붙임':g<0.33?'보통':g<0.65?'쉼':'큰 쉼';
 function renderTable(){
   if(!state.panels.length){$('#tbl').innerHTML='';return}
   const head=`<div class="tr head"><span></span><span>컷</span><span>구조</span><span>감정·강도</span><span>샷</span><span>앵글</span><span>길이</span><span class="ref">참고</span></div>`;
-  $('#tbl').innerHTML=head+state.panels.map((c,i)=>{const P=c.vng==='P';
+  $('#tbl').innerHTML=head+state.panels.map((c,i)=>{const P=c.vng==='P',edit=SCENES[SCUR].pageEdits[cutSlot(c,i)];
     const v=(f,label,why)=>`<div><button class="val${c.lock[f]!==undefined?' lock':''}" data-f="${f}" data-i="${i}" title="${esc(why)}">${esc(label)}</button><div class="why">${esc(why)}</div></div>`;
     return `<div class="tr${i===state.sel?' on':''}" data-i="${i}">
       <button class="n" data-sel="${i}" aria-label="${i+1}번 컷 선택">${i+1}</button>
@@ -928,7 +949,7 @@ function renderTable(){
       <div><span style="font-size:14px;font-weight:600">${esc(c.emo)}</span><div class="dots${P?' P':''}">${[1,2,3].map(k=>`<i class="${c.i>=k?'on':''}"></i>`).join('')}</div><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.emoWhy||'')}</div></div>
       ${v('shot',c.shot,c.lock.shot!==undefined?'직접 고름':c.why.shot.slice(1).join(' · ')||c.why.shot[0])}
       ${v('ang',c.ang,c.lock.ang!==undefined?'직접 고름':c.why.ang.join(' · '))}
-      <div>${v('h',lenWord(c.h),c.lock.h!==undefined?'직접 고름':c.why.h.slice(1).join(' · ')||c.why.h[0])}<div class="gapw" title="${esc(c.why.gap.join(' · '))}">↓ <b>${gapWord(c.gap)}</b> ${esc(c.why.gap.slice(1).join(' · '))}</div></div>
+      <div>${v('h',lenWord(c.h),c.lock.h!==undefined?'직접 고름':c.why.h.slice(1).join(' · ')||c.why.h[0])}<div class="gapw" title="${edit?.reveal&&edit.gap!=null?'등장 공개에서 적용한 다음 컷까지의 간격':esc(c.why.gap.join(' · '))}">↓ <b>${edit?.reveal&&edit.gap!=null?edit.gap+'px · 등장 공개':gapWord(c.gap)}</b> ${edit?.reveal?'':esc(c.why.gap.slice(1).join(' · '))}</div></div>
       <div class="ref">${c.ref?`<img class="thumb" data-ref="${i}" src="${c.ref.src}" alt="" title="${esc(c.ref.label)} 구도 적용" loading="lazy">`:'<span class="thumb empty"></span>'}</div>
     </div>`}).join('')}
 
@@ -940,13 +961,13 @@ function openMenu(btn){const i=+btn.dataset.i,f=btn.dataset.f,c=state.panels[i];
   $('#menu').innerHTML=opts.map(([l,v])=>`<button role="menuitemradio" aria-checked="${l===cur}" data-v="${v}">${esc(l)}${l===auto?'<small>자동</small>':''}</button>`).join('')+(c.lock[f]!==undefined?`<hr><button data-v="__auto">자동으로 되돌리기</button>`:'');
   const r=btn.getBoundingClientRect();const m=$('#menu');m.hidden=false;m.style.left=Math.min(innerWidth-m.offsetWidth-8,r.left+scrollX)+'px';m.style.top=(r.bottom+scrollY+4)+'px'}
 function closeMenu(){$('#menu').hidden=true;menuFor=null}
-$('#menu').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!menuFor)return;const mi=menuFor.i,c=state.panels[mi],f=menuFor.f;const L=locks[c.key]||(locks[c.key]={});
+$('#menu').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!menuFor)return;const mi=menuFor.i,c=state.panels[mi],f=menuFor.f;const key=lockKey(c),L=locks[key]||(locks[key]={});
   if(b.dataset.v==='__auto')delete L[f];else L[f]=f==='h'?+b.dataset.v:b.dataset.v;closeMenu();state.sel=mi;compute(false)});
 document.addEventListener('click',e=>{if(!e.target.closest('#menu')&&!e.target.closest('.val'))closeMenu()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 
 $('#tbl').addEventListener('click',e=>{const v=e.target.closest('.val');if(v){e.stopPropagation();state.sel=+v.dataset.i;markSel();openMenu(v);return}
-  const t=e.target.closest('[data-ref]');if(t){const c=state.panels[+t.dataset.ref];const L=locks[c.key]||(locks[c.key]={});Object.assign(L,{shot:c.ref.shot,ang:c.ref.angle,h:c.ref.h_ratio});state.sel=+t.dataset.ref;compute(false);toast(`${state.sel+1}번 컷에 ${c.ref.label} 구도를 입혔어요`);return}
+  const t=e.target.closest('[data-ref]');if(t){const c=state.panels[+t.dataset.ref];const key=lockKey(c),L=locks[key]||(locks[key]={});Object.assign(L,{shot:c.ref.shot,ang:c.ref.angle,h:c.ref.h_ratio});state.sel=+t.dataset.ref;compute(false);toast(`${state.sel+1}번 컷에 ${c.ref.label} 구도를 입혔어요`);return}
   const s=e.target.closest('[data-sel]');if(s){state.sel=+s.dataset.sel;markSel();reveal()}});
 function markSel(){document.querySelectorAll('.tr[data-i]').forEach(r=>r.classList.toggle('on',+r.dataset.i===state.sel));render()}
 $('#preview').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(!g)return;state.sel=+g.dataset.p;markSel();document.querySelector(`.tr[data-i="${state.sel}"]`)?.scrollIntoView({block:'center',behavior:'smooth'})});
@@ -1201,7 +1222,7 @@ function soundEffectSVG(text,box,side,index,position){
   }).join('');
   return `<g transform="translate(${x} ${y}) rotate(-12)" font-family="Pretendard, Noto Sans KR, sans-serif" font-weight="900" font-size="${size}" text-anchor="middle" dominant-baseline="central">${letters}</g>`;
 }
-function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key||p.act);let o='';
+function letterSVG(p,box,idx,positions,interactive,extras=[],voice=false){const R=rngL(p.key||p.act);let o='';
   const add=(key,label,source,draw)=>{
     const pos=positions?.[key],text=pos?.text??source;
     const move=Number.isFinite(pos?.x)&&Number.isFinite(pos?.y)?` transform="translate(${pos.x} ${pos.y})"`:'';
@@ -1212,10 +1233,11 @@ function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key
   };
   (p.sfx||[]).forEach((text,n)=>add('effect-'+n,'효과음',text,(value,pos)=>soundEffectSVG(value,box,p.side,n,pos)));
   extras.forEach((item,n)=>add('material-'+item.id,'효과음',item.text,(value,pos)=>soundEffectSVG(value,box,p.side,n+(p.sfx?.length||0),pos)));
-  if(p.caption)add('caption','나레이션',p.caption,(value,pos)=>captionSVG(value,p,box,idx===0,pos));
   const ds=(p.dialogs||[]).filter(d=>d.text);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
+  const lead=voice?{...box,y:Math.max(0,box.y-Math.min(150,box.before)),h:Math.min(135,box.before),frame:false}:null;
+  if(p.caption)add('caption','나레이션',p.caption,(value,pos)=>captionSVG(value,p,lead&&!ds.length?lead:box,idx===0,pos));
   ds.forEach((d,n)=>{
-    add('dialog-'+n,'말풍선',d.text,(value,pos)=>balloonSVG({...d,text:value},p,box,n,R,pos,interactive));
+    add('dialog-'+n,'말풍선',d.text,(value,pos)=>balloonSVG({...d,text:value},p,n===0&&lead?lead:box,n,R,lead&&n===0?{showTail:false,...pos}:pos,interactive));
   });
   return o;
 }
@@ -1287,9 +1309,9 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false}={}){let y=40,o='',gaps='',backgrounds='';const multi=panels.length>1;
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false}={}){const top=panels.length&&edits?.[cutSlot(panels[0],0)]?.reveal?.voice?175:40;let y=top,o='',gaps='',backgrounds='';const multi=panels.length>1;
   let prev=null,handles='',tightGaps='';
-  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
+  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w&&!edit?.reveal?.h?bw*im.h/im.w:p.h*bw);
     // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
     if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const u=im?null:underlay(p);
     // 코드로 그린 러프 그림은 쓰지 않음: 등록 이미지 → 원본 컷 레퍼런스(그림 영역만 잘라) → 빈 칸에 샷·앵글 표시
@@ -1309,14 +1331,14 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
       (!clean&&edit?.materialLines?`<g clip-path="url(#${pre}${i})" pointer-events="none">${Object.values(edit.materialLines).map(effect=>window.RoughMaterials.lineEffect(effect,{x:bx,y,w:bw,h},rngL((p.key||p.act)+effect.kind))).join('')}</g>`:'')+
-      (clean?'':letterSVG(rough?{...p,dialogs:[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame,before:prev?.[1]??40},i,edit?.letters,interactive,edit?.materialSounds))+`</g>`;
+      (clean?'':letterSVG(rough?{...p,dialogs:edit?.reveal?.voice?p.dialogs.slice(0,1):[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame,before:prev?.[1]??top},i,edit?.letters,interactive,edit?.materialSounds,edit?.reveal?.voice))+`</g>`;
     if(interactive)handles+=frameHandles(pts||box,slot,i);
     const base=defaultPageGap(p),size=edit?.gap??base;
     y+=h;
     if(edits){
       const background=pageBackground(edit),next=panels[i+1];
       const end=next?pageBackground(edits[cutSlot(next,i+1)]):PAGE_WHITE;
-      backgrounds+=`<g data-bg-panel="${i}"><rect y="${i?y-h:0}" width="${W}" height="${h+(i?0:40)}" fill="${background}"/>${transitionSVG(background,end,edit?.transition,`${pre}bg-${i}`,y,size)}</g>`;
+      backgrounds+=`<g data-bg-panel="${i}"><rect y="${i?y-h:0}" width="${W}" height="${h+(i?0:top)}" fill="${background}"/>${transitionSVG(background,end,edit?.transition,`${pre}bg-${i}`,y,size)}</g>`;
     }
     if(interactive&&i<panels.length-1){
       const gap=gapMarkup(y,size,base,slot,i);
@@ -1334,7 +1356,7 @@ function frameHandles(pts,slot,i){const E=[['t',0,1],['r',1,2],['b',2,3],['l',3,
   return `<g class="frame-handles" data-fh-for="${slot}" data-p="${i}">`+E.map(([k,a,b])=>{const x=(pts[a][0]+pts[b][0])/2,y=(pts[a][1]+pts[b][1])/2,hz=k==='t'||k==='b';
     return `<rect data-fh="${k}" x="${(x-(hz?22:7)).toFixed(1)}" y="${(y-(hz?7:22)).toFixed(1)}" width="${hz?44:14}" height="${hz?14:44}" rx="7"><title>${hz?'위아래로 끌어 높이':'좌우로 끌어 폭'} 조절</title></rect>`}).join('')+
     ['tl','tr','br','bl'].map((k,n)=>`<circle data-fh="${k}" cx="${pts[n][0].toFixed(1)}" cy="${pts[n][1].toFixed(1)}" r="10"><title>끌어서 칸 모양(사선) 바꾸기</title></circle>`).join('')+`</g>`}
-function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false,{rough:true});$('#preview').innerHTML=state.svg}
+function render(){const pageEdits=SCENES[SCUR].pageEdits;state.svg=renderSVG(state.panels,state.sel,'c',true,null,false,{rough:true,edits:pageEdits.some(edit=>edit?.reveal)?pageEdits:undefined});$('#preview').innerHTML=state.svg}
 
 
 // ---------- reference images (캐릭터·장면) ----------
@@ -1779,8 +1801,103 @@ let WMODE='final';
 try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 러프'}catch(_){$('#wtitle').value='제목 없는 작품'}
 $('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
 $('#wmode').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;WMODE=b.dataset.m;document.querySelectorAll('#wmode button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderWebtoon()});
+let revealMode='reaction', revealScene='';
+const revealFields=['#reveal-first','#reveal-peak','#reveal-after'];
+const revealRoles=['선행','공개','여운'];
+
+function revealCaseHTML([,work,summary,frames,roles,notes,layers]){
+  const episode=Number(frames[0][0].split('-')[1]);
+  return `<details class="reveal-case"><summary>${esc(window.RoughReveal.works[work])} · ${episode}화</summary>
+    <p>${esc(summary)}</p>
+    <dl class="reveal-layers">${['시선·구도','배경·색','식자'].map((label,i)=>`<div><dt>${label}</dt><dd>${esc(layers[i])}</dd></div>`).join('')}</dl>
+    <div class="reveal-film" tabindex="0" aria-label="컷 순서">
+      ${frames.map(([id,w,h,y],i)=>{
+        const gap=frames[i+1]?Math.max(0,frames[i+1][3]-y-h):null;
+        const role=roles.indexOf(Number(id.split('-')[2]));
+        const [series,ep]=id.split('-');
+        const note=role>=0?revealRoles[role]+' · '+notes[role]:'연결 컷';
+        const space=gap===null?'':` · 다음 컷까지 가로폭의 ${Math.round(100*gap/w)}%`;
+        return `<figure style="padding-bottom:${gap===null?0:Math.min(112,Math.round(230*gap/w))}px"><img src="cuts/${series}/${ep}/${id}.jpg" width="${w}" height="${h}" alt="${esc(note)}" loading="lazy">
+          <figcaption>${id} · 세로\u2009: 가로 ${(h/w).toFixed(2)}\u2009: 1${space}<br>${esc(note)}</figcaption></figure>`;
+      }).join('')}
+    </div></details>`;
+}
+
+function renderRevealModes(){
+  const {modes,cases}=window.RoughReveal;
+  $('#reveal-modes').innerHTML=Object.entries(modes).map(([key,mode])=>`<button type="button" class="btn" data-reveal-mode="${key}" aria-pressed="${key===revealMode}">${mode.name}</button>`).join('');
+  $('#reveal-hint').textContent=modes[revealMode].hint;
+  $('#reveal-cue').textContent=modes[revealMode].cue+' 컷';
+  $('#reveal-cases').innerHTML=cases.filter(entry=>entry[0]===revealMode).map(revealCaseHTML).join('');
+  refreshRevealChoices(true);
+}
+
+function refreshRevealChoices(force=false){
+  if(!$('#reveal').open)return;
+  const signature=JSON.stringify([SCENES[SCUR].id,CUTS]);
+  if(!force&&signature===revealScene)return;
+  revealScene=signature;
+  const panels=state.panels;
+  const slots=panels.map(cutSlot);
+  const firstVoice=panels.findIndex(p=>p.said||p.caption);
+  const first=revealMode==='voice'&&firstVoice>=0?firstVoice:0;
+  const picks=[first,...panels.map((_,i)=>i).filter(i=>i!==first)].slice(0,3);
+  const options=panels.map((p,i)=>`<option value="${slots[i]}">${slots[i]+1}. ${esc((p.act||p.said||CUTS[slots[i]]).slice(0,40))}</option>`).join('');
+  revealFields.forEach((field,i)=>{
+    $(field).innerHTML=options;
+    $(field).selectedIndex=picks[i]??-1;
+    $(field).disabled=panels.length<3;
+  });
+  $('#reveal-apply').disabled=panels.length<3;
+  $('#reveal-status').textContent=panels.length<3?'씬에 컷이 3개 이상 있어야 적용할 수 있어요.':'';
+}
+
+function applyRevealFrame(panel,edits){
+  const frame=edits[cutSlot(panel,0)]?.reveal;
+  if(frame?.shot)panel.shot=frame.shot;
+  if(frame?.h)panel.h=frame.h;
+}
+
+$('#reveal').addEventListener('toggle',()=>{
+  if($('#reveal').open&&!$('#reveal-modes').hasChildNodes())renderRevealModes();
+  else refreshRevealChoices();
+});
+$('#reveal-modes').addEventListener('click',e=>{
+  const button=e.target.closest('[data-reveal-mode]');
+  if(!button||button.dataset.revealMode===revealMode)return;
+  revealMode=button.dataset.revealMode;
+  renderRevealModes();
+  $('#reveal-modes [aria-pressed=true]').focus();
+});
+$('#reveal-apply').addEventListener('click',()=>{
+  const {modes,variant}=window.RoughReveal;
+  const selected=revealFields.map(field=>Number($(field).value));
+  const source=SCENES[SCUR], plan=variant(CUTS,source.pageEdits,selected,revealMode);
+  const status=$('#reveal-status');
+  if(!plan){status.textContent='서로 다른 컷 3개를 골라 주세요.';return}
+  const first=state.panels.find((p,i)=>cutSlot(p,i)===selected[0]);
+  if(revealMode==='voice'&&!first?.said&&!first?.caption){status.textContent='대사나 내레이션이 있는 컷을 먼저 골라 주세요.';return}
+  const id='s'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+  const panels=new Map(state.panels.map((p,i)=>[cutSlot(p,i),{p,im:cutImg(SCUR,i,p)}]));
+  plan.order.filter((_,slot)=>plan.cuts[slot].trim()).forEach((sourceSlot,index)=>{
+    const {p,im}=panels.get(sourceSlot)||{};
+    const slot=plan.order.indexOf(sourceSlot);
+    const sig=`#${slot}:`+plan.cuts[slot];
+    const manual={...p?.lock};
+    if(plan.edits[slot]?.reveal?.h){delete manual.h;delete manual.shot}
+    if(Object.keys(manual).length)locks[id+':'+sig]=manual;
+    if(!im||im.stale)return;
+    const copy={id:cutId(id,index),kind:'cutimg',scene:id,idx:index,sig,src:im.src,w:im.w,h:im.h};
+    IMG.cut[copy.id]=copy;
+    idb.put(copy);
+  });
+  SCENES.push({id,title:`${source.title||'제목 없는 씬'} · ${modes[revealMode].name}`,cuts:plan.cuts,pageEdits:plan.edits,revealVariant:true});
+  switchScene(SCENES.length-1);
+  status.textContent='연출을 적용한 새 씬을 만들었어요.';
+});
+
 function scenePanels(i){if(i===SCUR)return state.panels;const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
-  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
+  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[lockKey(c,SCENES[i])]||{};applyRevealFrame(c,SCENES[i].pageEdits);Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
 // 완성본: 등록한 컷 이미지를 쓰고, 없는 컷은 러프
 function sceneArt(i,ps,pre,interactive=false){
   const imgs=WMODE==='final'?ps.map((p,k)=>cutImg(i,k,p)||null):null;
