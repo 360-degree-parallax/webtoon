@@ -3,6 +3,11 @@
 import Anthropic from './vendor/anthropic-sdk.mjs';
 
 export const MODEL = 'claude-opus-5-5';
+const BASE_URL = 'https://api.anthropic.com'; // Claude API로 고정
+const client = apiKey => new Anthropic({ apiKey, baseURL: BASE_URL, dangerouslyAllowBrowser: true, maxRetries: 2 });
+
+// 키 확인: 모델 정보 조회(토큰 비용 없음)로 키가 유효하고 이 모델을 쓸 수 있는지 본다
+export async function check(apiKey) { await client(apiKey).models.retrieve(MODEL); return true; }
 
 const SYSTEM = `너는 한국 웹툰 연출가이자 이미지 생성 프롬프트 작가다.
 입력은 한 씬의 컷 목록이다. 각 컷의 샷·앵글·감정·비율은 연출 엔진이 이미 정했으니 그대로 지킨다.
@@ -53,9 +58,8 @@ const SCHEMA = {
 
 // payload: { title, style, palette, chars:[{name,look}], cuts:[{n, shot, angle, lens, emotion, intensity, peak, ratio, who, action, dialogs, caption, sfx, story, draft}] }
 export async function refine(apiKey, payload, { onStatus } = {}) {
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 2 });
   onStatus?.('Claude가 씬을 읽는 중');
-  const stream = client.beta.messages.stream({
+  const stream = client(apiKey).beta.messages.stream({
     model: MODEL,
     max_tokens: 64000,
     output_config: { effort: 'medium', format: { type: 'json_schema', schema: SCHEMA } },
@@ -76,7 +80,8 @@ export async function refine(apiKey, payload, { onStatus } = {}) {
 
 export function explain(err) {
   if (err instanceof Anthropic.AuthenticationError) return 'API 키가 맞지 않아요';
-  if (err instanceof Anthropic.PermissionDeniedError) return '이 키로는 쓸 수 없는 모델이에요';
+  if (err instanceof Anthropic.PermissionDeniedError) return '이 키로는 Claude Opus 5.5를 쓸 수 없어요';
+  if (err instanceof Anthropic.NotFoundError) return '이 키로는 Claude Opus 5.5를 찾을 수 없어요';
   if (err instanceof Anthropic.RateLimitError) return '요청이 많아 잠시 막혔어요. 조금 뒤 다시 눌러주세요';
   if (err instanceof Anthropic.APIConnectionError) return '네트워크에 연결하지 못했어요';
   if (err instanceof Anthropic.APIError) return `API 오류 (${err.status ?? ''}) ${err.message}`;

@@ -130,7 +130,10 @@
   - 엔진이 정한 연출값은 바꾸지 않는다.
   - 연속성, 빈 정보 채우기, 감정을 몸 상태로, 프레임 안 구도, 글자 자리 비우기를 지시.
   - 결과는 JSON 스키마(brief + cuts[n, prompt])로 받는다.
-- 사용자가 자기 API 키를 넣는다. 브라우저에서 바로 호출(서버 없음), 키·결과는 localStorage. 이미지는 보내지 않는다.
+- 사용자가 자기 API 키를 넣는다. 브라우저에서 바로 호출(서버 없음). 이미지는 보내지 않는다.
+  - 키는 보안 입력창(모달)에서만 받는다: 비밀번호 입력, 자동완성·맞춤법 끔, `sk-ant-` 형식만 허용(관리자 키 거부), 저장 전 모델 조회(`models.retrieve`, 토큰 비용 없음)로 확인. 화면에는 앞 7자·끝 4자만.
+  - 보관: 이 브라우저(localStorage) 또는 탭을 닫으면 지움(sessionStorage). 401이 오면 키를 지우고 창을 다시 띄운다.
+  - Claude API로 고정: baseURL `https://api.anthropic.com`, 모델 `claude-opus-5-5`. 페이지 CSP의 `connect-src`를 이 사이트와 api.anthropic.com으로만 제한해 키가 다른 곳으로 나갈 수 없게 했다.
 - 씬별로 입력 서명과 함께 저장. 글·화풍·인물 외형이 바뀌면 "다시 다듬으면 반영돼요" 표시. '기본'으로 규칙 결과와 비교 가능.
 - SDK는 `@anthropic-ai/sdk` 1.6.0을 esbuild로 묶어 `rough/vendor/anthropic-sdk.mjs`에 둔다(Apache-2.0).
 
