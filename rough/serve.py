@@ -35,11 +35,11 @@ class RoughHandler(http.server.SimpleHTTPRequestHandler):
                 payload = json.loads(self.rfile.read(length))
             except (ValueError, RecursionError):
                 raise ImageRequestError(400, "컷 정보를 읽을 수 없어요.") from None
-            image = generate_panel(payload)
+            media_type, image = generate_panel(payload)
         except ImageRequestError as error:
             self.send_data(error.status, "application/json", json.dumps({"error": str(error)}).encode())
         else:
-            self.send_data(200, "image/jpeg", image)
+            self.send_data(200, media_type, image)
 
     def send_data(self, status, media_type, data):
         self.send_response(status)

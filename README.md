@@ -33,8 +33,10 @@ python3 cutlink.py GM-03-045
 
 ### 컷 이미지 생성
 
-터미널 환경에 `OPENAI_API_KEY`를 설정한 뒤 `python3 rough/serve.py`를 실행합니다. 키는 서버에서만 사용합니다. 기본 모델은 `gpt-image-2.5-flare`이며 `OPENAI_IMAGE_MODEL`로 바꿀 수 있습니다. 이미지 생성과 재생성은 API 사용량에 포함됩니다.
+Cloudflare Workers AI의 **FLUX.2 [klein] 4B**로 이미지를 생성합니다. Workers Free 계정에서 하루 10,000 Neurons의 무료 할당량을 공유합니다. 무료 할당량을 넘기면 Free 계정의 생성 요청은 실패합니다. [Cloudflare 요금표](https://developers.cloudflare.com/workers-ai/platform/pricing/)
 
-결과 화면의 **컷** 목록에서 컷을 선택하고 **이미지 생성**을 누르면 스케치와 샷·앵글·비율을 바탕으로 컬러 러프가 콘티에 들어갑니다. **이미지 생성 설정**에서 장면 공통 묘사와 직접 만든 캐릭터 참고 이미지 한 장을 추가할 수 있습니다. 창작 연출 카드의 구도는 텍스트 지시로 적용되고 작품 원본 컷은 API로 전송되지 않습니다.
+[Cloudflare Workers AI REST API 설정](https://developers.cloudflare.com/workers-ai/get-started/rest-api/)에서 계정 ID를 확인하고 Workers AI API 토큰을 생성합니다. `CLOUDFLARE_ACCOUNT_ID`와 `CLOUDFLARE_API_TOKEN`을 터미널 환경에 설정한 뒤 `python3 rough/serve.py`를 실행합니다. 토큰은 로컬 서버에서만 사용합니다.
+
+**컷** 목록에서 컷을 선택하고 **이미지 생성**을 누르면 스케치와 샷·앵글·비율을 바탕으로 컬러 러프가 콘티에 들어갑니다. **이미지 생성 설정**에서 장면 공통 묘사와 직접 만든 캐릭터 참고 이미지 한 장을 추가할 수 있습니다. 창작 연출 카드의 구도는 텍스트 지시로 적용되고 작품 원본 컷은 API로 전송되지 않습니다.
 
 생성된 그림 위에 기존 대사를 별도 레이어로 표시합니다. 컷별로 재생성하거나 스케치로 돌아갈 수 있습니다. 작업 중 이미지는 열린 탭에 유지되므로 페이지를 닫기 전에 PNG 또는 SVG로 저장하세요.

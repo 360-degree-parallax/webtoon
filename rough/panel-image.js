@@ -53,8 +53,7 @@ async function generatePanelImage(panel, index) {
   const reference = $('#imageReference').files[0];
   const width = 630;
   const height = Math.round(panel.h * width);
-  const size = panel.h < .82 ? '1536x1024' : panel.h < 1.2 ? '1024x1024' :
-    panel.h < 2 ? '1024x1536' : '768x2304';
+  const ratio = panel.h;
   const drawing = '<rect width="100%" height="100%" fill="white"/>' +
     drawPanel(panel, 0, 0, width, height, index);
   const sketchUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(roughSvg(width, height, drawing));
@@ -68,19 +67,19 @@ async function generatePanelImage(panel, index) {
       throw new Error('16MB 이내의 PNG, JPG, WebP 파일을 선택해주세요.');
     }
     const [sketch, character] = await Promise.all([
-      asPng(sketchUrl, 900),
-      reference ? readImage(reference).then(url => asPng(url, 900)) : null,
+      asPng(sketchUrl, 511),
+      reference ? readImage(reference).then(url => asPng(url, 511)) : null,
     ]);
     const response = await fetch('api/panel-image', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({direction, size, sketch, reference: character}),
+      body: JSON.stringify({direction, ratio, sketch, reference: character}),
     });
     if (!response.ok) {
       const failure = await response.json().catch(() => ({}));
       throw new Error(failure.error || '러프 툴 서버를 실행한 뒤 다시 시도해주세요.');
     }
-    if (!response.headers.get('Content-Type')?.startsWith('image/jpeg')) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(response.headers.get('Content-Type'))) {
       throw new Error('서버에서 이미지 파일을 받지 못했어요.');
     }
     const src = await readImage(await response.blob());
@@ -95,10 +94,6 @@ async function generatePanelImage(panel, index) {
 
 function refreshImagePanel(panel) {
   if (!state.panels.includes(panel)) return;
-  if (sheetKind === 'cut' && state.panels[state.sel] === panel) {
-    refreshCut();
-  } else {
-    render();
-    renderCutList();
-  }
+  if (!$('#p-cuts').hidden) renderCuts();
+  render();
 }
