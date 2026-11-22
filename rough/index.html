@@ -389,6 +389,29 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   .pcard pre{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.plan-wrap{max-width:900px}
+.plan-wrap [hidden]{display:none!important}
+.plan-wrap form label,.plan-fields label{display:grid;gap:5px;min-width:0;color:var(--t2);font-size:13px;font-weight:600}
+.plan-wrap input,.plan-wrap textarea,.plan-wrap select{display:block;width:100%;min-width:0;padding:8px 10px;border:1px solid var(--line2);border-radius:7px;background:var(--bg);color:var(--t1);font:inherit}
+.plan-wrap textarea{line-height:1.55;resize:vertical}
+.plan-toolbar{margin-bottom:16px}
+.plan-length,.plan-details{margin-top:16px}
+.plan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.plan-length{grid-template-columns:repeat(3,minmax(0,1fr))}
+.plan-details,.plan-card{border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:12px 14px}
+.plan-details summary,.plan-card summary{cursor:pointer;color:var(--t1);font-size:14px;font-weight:650}
+.plan-fields,.plan-cuts{display:grid;gap:12px}
+.plan-details>.plan-fields,.plan-cuts{margin-top:12px}
+.plan-card{margin-top:9px}
+.plan-card header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:14px;font-weight:650}
+.plan-summary{margin:8px 0 12px;white-space:pre-wrap;color:var(--t2)}
+.plan-code iframe{width:100%;min-height:300px;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:white}
+.plan-code textarea{font-family:ui-monospace,monospace;margin-top:8px}
+.plan-send{margin-top:6px}
+#plan-status,#plan-fixed-warning{font-size:13px;color:var(--t2)}
+#plan-fixed-warning:not(:empty){padding:9px 12px;border-radius:7px;background:#fff0de;color:#69390c;overflow-wrap:anywhere}
+#plan-output:empty,#plan-fixed-warning:empty{display:none}
+@media(max-width:540px){.plan-grid{grid-template-columns:1fr}.plan-length{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -405,10 +428,11 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <nav class="topnav" role="tablist" aria-label="보기">
   <button role="tab" data-view="chars" aria-selected="false"><b>1</b>캐릭터</button>
   <button role="tab" data-view="world" aria-selected="false"><b>2</b>세계관</button>
-  <button role="tab" data-view="write" aria-selected="false"><b>3</b>씬</button>
-  <button role="tab" data-view="layout" aria-selected="false"><b>4</b>연출</button>
-  <button role="tab" data-view="nai" aria-selected="true"><b>5</b>NovelAI</button>
-  <button role="tab" data-view="webtoon" aria-selected="false"><b>6</b>웹툰 보기</button>
+  <button role="tab" data-view="plan" aria-selected="false"><b>3</b>구성</button>
+  <button role="tab" data-view="write" aria-selected="false"><b>4</b>씬</button>
+  <button role="tab" data-view="layout" aria-selected="false"><b>5</b>연출</button>
+  <button role="tab" data-view="nai" aria-selected="true"><b>6</b>NovelAI</button>
+  <button role="tab" data-view="webtoon" aria-selected="false"><b>7</b>웹툰 보기</button>
 </nav>
 
 <div class="view" id="v-chars" hidden>
@@ -450,8 +474,57 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="libgrid" id="wlibgrid"></div>
     <input type="file" id="wlibfile" accept="application/json,.json" hidden>
   </section>
-  <div class="next"><button class="btn" data-view="chars">← 캐릭터</button><span class="grow"></span><button class="btn dark big" data-view="write">씬으로 →</button></div>
+  <div class="next"><button class="btn" data-view="chars">← 캐릭터</button><span class="grow"></span><button class="btn dark big" data-view="plan">구성으로 →</button></div>
 </div>
+</div>
+
+<div class="view" id="v-plan" hidden>
+  <main class="wrap plan-wrap">
+    <h1>구성안 만들기</h1>
+    <p class="desc">기획이나 프롬프트를 붙여넣고 원하는 분량에 맞춰 구성안을 만들어요.</p>
+    <div class="toolbar plan-toolbar">
+      <div class="seg3" id="plan-mode" role="group" aria-label="결과물 유형">
+        <button type="button" data-kind="webtoon" aria-pressed="true">웹툰</button><button type="button" data-kind="marketing" aria-pressed="false">마케팅</button>
+      </div>
+      <span class="grow"></span><span class="keyst" data-keyst></span><button class="btn" data-act="aikeyopen" data-keybtn>API 키 입력</button>
+    </div>
+    <form id="plan-form" novalidate>
+      <label>기획·프롬프트<textarea name="prompt" rows="7" placeholder="작품 기획, 이야기, 상품 설명, 기존 카피 등을 붙여넣으세요"></textarea></label>
+      <div class="plan-grid plan-length">
+        <label>분량 방식<select name="lengthMode"><option value="exact">정확히 지정</option><option value="range">범위 지정</option></select></label>
+        <label data-plan-length="exact"><span id="plan-amount-label">씬 수</span><input type="number" name="count" min="1" value="6"></label>
+        <label data-plan-length="range" hidden>최소 개수<input type="number" name="min" min="1" value="5"></label>
+        <label data-plan-length="range" hidden>최대 개수<input type="number" name="max" min="1" value="7"></label>
+      </div>
+      <details class="plan-details">
+        <summary>세부 설정</summary>
+        <div class="plan-fields">
+          <label>원문 반영<select name="source"><option value="keep">원문 순서 유지</option><option value="reorder" selected>흐름에 맞게 재구성</option><option value="fill">빈 부분 보완</option></select></label>
+          <div class="plan-grid">
+            <label>꼭 넣을 내용<textarea name="mustInclude" rows="3" placeholder="들어가야 할 장면이나 메시지"></textarea></label>
+            <label>그대로 쓸 문구<textarea name="fixed" rows="3" placeholder="각 문구를 한 줄씩 입력"></textarea></label>
+          </div>
+          <label>추가 조건<textarea name="notes" rows="2" placeholder="톤, 금지 표현, 수정 가능 범위"></textarea></label>
+          <div class="plan-grid" data-plan-mode="webtoon">
+            <label>전체 컷 수<input type="number" name="cutCount" min="1" placeholder="비워두면 Claude가 배분"></label>
+            <label>대사 밀도<select name="density"><option value="low">적게</option><option value="normal" selected>보통</option><option value="high">많게</option></select></label>
+            <label>이번 화에서 보여줄 변화<input name="change" placeholder="예: 낯선 인물에서 믿고 싶은 인물로"></label>
+            <label>마지막 컷의 역할<select name="ending"><option value="aftertaste">여운</option><option value="hook">다음 화 궁금증</option><option value="twist">반전 공개</option><option value="relationship">관계 변화</option></select></label>
+          </div>
+          <div class="plan-grid" data-plan-mode="marketing" hidden>
+            <label>독자의 현재 상태<select name="audience"><option value="first">처음 접함</option><option value="interested">관심은 있음</option><option value="comparing">비교 중</option></select></label>
+            <label>HTML UI 개수<input type="number" name="uiCount" min="0" value="2"></label>
+            <label>HTML 배치<select name="placement"><option value="auto">Claude가 추천</option><option value="manual">위치 직접 지정</option></select></label>
+            <label id="plan-manual" hidden>HTML을 넣을 섹션 번호<input name="positions" placeholder="예: 3, 6"></label>
+            <label>HTML 동작 범위<select name="behavior"><option value="static">정적 표시</option><option value="interactive">클릭·선택 가능</option></select></label>
+          </div>
+        </div>
+      </details>
+      <div class="toolbar"><button type="submit" class="btn dark big">구성안 생성</button><span id="plan-status" role="status"></span></div>
+    </form>
+    <p id="plan-fixed-warning" role="status"></p>
+    <section id="plan-output" aria-label="생성한 구성안"></section>
+  </main>
 </div>
 
 <div class="view" id="v-write" hidden>
@@ -1859,13 +1932,44 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
 
 // ---------- 보기 전환 ----------
 let VIEW='nai';
-function showView(v){if(!['chars','world','write','layout','nai','webtoon','db'].includes(v))v='nai';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
-  ['chars','world','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
+function showView(v){if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='nai';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+  ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=v!=='layout';$('#gDb').setAttribute('aria-pressed',v==='db');
   if(v==='webtoon')renderWebtoon();
+  if(v==='plan')openComposition();
   if(v==='nai')renderNai();if(v==='db')loadDB();
   scrollTo(0,0);try{localStorage.setItem('rough-view',v)}catch(_){}}
+let compositionModule;
+function openComposition(){
+  if(compositionModule)return;
+  compositionModule=Promise.all([import('./composition-ui.js'),import('./claude.js')]).then(([ui,claude])=>{
+    ui.mountComposition($('#v-plan'),{
+      getKey:()=>AIKEY,
+      requestKey:callback=>openKey(callback),
+      addScenes:addCompositionScenes,
+      getStory:()=>({world:worldBrief(),lore:LORE.map(({name,keys,desc})=>({name,keywords:keys,desc})),
+        cast:CHARS.map(({name,aliases,look})=>({name,aliases,look}))}),
+      request:claude.requestComposition,
+      reportError:claude.explain,
+    });
+  }).catch(()=>{
+    compositionModule=null;
+    $('#plan-status').textContent='구성 화면을 불러오지 못했어요. 탭을 다시 열어 주세요.';
+  });
+}
+function addCompositionScenes(cards){
+  const added=cards.filter(card=>!SCENES.some(scene=>scene.compositionId===card.id));
+  if(!added.length){toast('이 구성안의 씬은 이미 추가했어요');return}
+  const scenes=added.map(card=>({id:'s'+crypto.randomUUID(),compositionId:card.id,
+    title:card.title.trim(),cuts:card.cuts.slice(),pageEdits:[]}));
+  saveScenes();
+  const first=SCENES.length;
+  SCENES.push(...scenes);
+  switchScene(first);
+  showView('write');
+  toast(`구성안에서 ${scenes.length}개 씬을 추가했어요`);
+}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
 {const _c=compute;compute=function(...a){_c(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon')renderWebtoon()}}
 {const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon'&&!pageDrag&&!gapDrag&&!tailDrag)renderWebtoon()}}

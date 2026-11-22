@@ -141,3 +141,8 @@ export function explain(err) {
   if (err instanceof Anthropic.APIError) return `API 오류 (${err.status ?? ''}) ${err.message}`;
   return err?.message || String(err);
 }
+
+// 구성 단계도 NovelAI와 같은 Claude 연결과 오류 처리를 사용한다.
+export function requestComposition(apiKey, system, schema, payload, onStatus) {
+  return run(apiKey, system, schema, JSON.stringify(payload), status=>onStatus?.(status.replace('씬을 읽는','기획을 읽는')));
+}
