@@ -579,6 +579,28 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .keysdlg form{margin-top:18px;text-align:right}
 @media(max-width:1100px){.czoom,.edsep{display:none}}
 @media(max-width:640px){.gscbar>span,#gkeys{display:none}.gscbar{margin-left:2px}.gscbar select{max-width:128px}}
+
+/* 레퍼런스 탭(refs.js) */
+.ltabs{display:flex;gap:2px;margin:-4px 0 10px;padding:2px;border-radius:8px;background:var(--hover)}.ltabs button{flex:1;height:30px;border-radius:6px;font-size:13px;font-weight:600;color:var(--t2)}
+.ltabs button[aria-selected=true]{background:var(--bg);color:var(--t1);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.refpanel{display:grid;gap:8px}.refpanel[hidden]{display:none}
+.rf-search input{width:100%;height:34px;border:1px solid var(--line2);border-radius:8px;padding:0 10px;background:var(--bg);font-size:13px}
+.rf-filters{display:grid;grid-template-columns:1fr 1fr;gap:6px}.rf-filters select{height:30px;min-width:0;border:1px solid var(--line2);border-radius:7px;background:var(--bg);font-size:12px;padding:0 6px}
+.rf-filters select:first-child{grid-column:1/-1}
+.rf-checks{display:flex;gap:12px;font-size:12px;color:var(--t2)}.rf-checks label{display:flex;align-items:center;gap:4px}
+.rf-sel{padding:8px;border-radius:8px;background:var(--hover);font-size:12px}.rf-cur{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}.rf-cur span{color:var(--t2)}.rf-cur em{font-style:normal;font-size:11px;color:#2d71f7}
+.rf-actions{display:flex;gap:6px;flex-wrap:wrap}.rf-hint{margin:0;color:var(--t2);line-height:1.5}
+.rf-count{font-size:12px;color:var(--t3)}
+.rf-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rf-item{position:relative;display:grid;gap:3px;padding:3px;border-radius:7px;border:1px solid transparent;text-align:left;cursor:grab}.rf-item:hover{background:var(--hover)}
+.rf-item.on{border-color:#2d71f7;background:var(--blue-soft,#eaf1ff)}.rf-item.cur::after{content:"사용 중";position:absolute;left:6px;top:6px;padding:1px 5px;border-radius:4px;background:#2d71f7;color:#fff;font-size:10px;font-weight:700}
+.rf-item img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;background:#f1f2f4}.rf-item span{font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rf-item i{position:absolute;right:6px;top:6px;padding:1px 5px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-style:normal}
+.rf-detail{display:grid;gap:8px;padding:8px;border:1px solid var(--line2);border-radius:8px}.rf-detail img{width:100%;max-height:260px;object-fit:contain;background:#f1f2f4;border-radius:6px}
+.rf-meta{font-size:12px;line-height:1.5;color:var(--t1)}.rf-meta small{color:var(--t3)}.rf-meta p{margin:6px 0 0;color:var(--t2)}
+.rf-more{justify-self:center}
+.reader [data-slot-index].drop-target .page-frame{stroke:#16a34a;stroke-width:6}
+.refrow .refrow-v{display:flex;align-items:center;gap:8px}.refrow b{font-size:13px;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -809,8 +831,9 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <span class="status edst" id="wst"></span>
 <div class="edgrid">
   <aside class="edleft" aria-label="목차">
-    <div class="edhead">목차</div>
-    <nav class="edtree" id="wtoc" aria-label="씬·컷 목차"></nav>
+    <div class="ltabs" role="tablist" aria-label="왼쪽 패널"><button role="tab" id="ltab-layers" aria-selected="true" aria-controls="wtoc">레이어</button><button role="tab" id="ltab-refs" aria-selected="false" aria-controls="wrefs">레퍼런스</button></div>
+    <nav class="edtree" id="wtoc" aria-label="씬·컷 레이어" role="tabpanel"></nav>
+    <div class="refpanel" id="wrefs" role="tabpanel" aria-label="레퍼런스 검색" hidden></div>
   </aside>
   <main class="edcanvas">
     <div class="reader-top">
@@ -921,6 +944,9 @@ const NARR={'끝 정점':'마지막 컷에서 터지는 장면','중간 정점':
 const CURVE={'상승':'감정이 점점 올라가요','하강':'감정이 점점 가라앉아요','산형':'감정이 올랐다 내려와요','골형':'가라앉았다 다시 올라요','평탄':'감정이 고르게 이어져요'};
 const PART={narr:'서사 형태',curve:'감정 곡선',goal:'연출 목적',vng:'VNG 순서',count:'컷 수',trans:'컷 전환',tempo:'템포',dist:'거리 흐름',emo:'감정'};
 let PATS=[],REFS=[],REF_ALL=0,CUTMETA={};
+// 편집 화면에서 직접 고른 레퍼런스(pageEdits[컷].ref = 원본 컷 ID). 말풍선 많은 컷도 직접 고르면 씀
+let REF_PICK={};
+function pickRef(c,edits,i){const id=edits?.[cutSlot(c,i)]?.ref;return (id&&REF_PICK[id])||RE.suggestRef(c,REFS)}
 const locks={};              // 문장(key) → {shot, ang, h}
 const state={an:[],ranks:[],pick:[],panels:[],sel:-1,svg:''};
 
@@ -931,7 +957,7 @@ function compute(resetPick){
   state.ranks=state.an.map(a=>RE.rank(a,PATS,12));
   state.panels=[];
   state.an.forEach((a,ci)=>{const r=state.ranks[ci][state.pick[ci]];if(!r)return;
-    RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);state.panels.push(c)})});
+    RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=pickRef(c,SCENES[SCUR]?.pageEdits,state.panels.length);state.panels.push(c)})});
   state.panels.forEach((c,i)=>c.side=i%2?'left':'right');
   if(state.sel>=state.panels.length)state.sel=-1;
   const n=state.panels.length;$('#count').textContent=n?`${n}컷 · ${state.an.length}묶음`:'';$('#pvsize').textContent=n?`${n}컷`:'';
@@ -1828,7 +1854,7 @@ try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정�
 $('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
 $('#wmode').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;WMODE=b.dataset.m;document.querySelectorAll('#wmode button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderWebtoon()});
 function scenePanels(i){if(i===SCUR)return state.panels;const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
-  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=RE.suggestRef(c,REFS);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
+  an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=pickRef(c,SCENES[i].pageEdits,out.length);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
 // 완성본: 등록한 컷 이미지를 쓰고, 없는 컷은 러프
 function sceneArt(i,ps,pre,interactive=false){
   const imgs=WMODE==='final'?ps.map((p,k)=>cutImg(i,k,p)||null):null;
@@ -2702,9 +2728,10 @@ Promise.all([
 ]).then(([pt,cuts])=>{
   PATS=pt.patterns;
   // 그림 위주 컷만 레퍼런스로(말풍선 위주·덜 차지·여러 칸 섞인 컷은 자동 판정으로 제외)
-  REFS=cuts.items.filter(g=>g.fit==='ok'||g.fixed).map(g=>({...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}${g.fixed?' · 수정본':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));
+  REFS=cuts.items.filter(g=>g.fit==='ok'||g.fixed).map(g=>({...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}${g.fixed?' · 수정본':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));REF_PICK=Object.fromEntries(cuts.items.filter(g=>g.art).map(g=>[g.source_cut,{...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}`,picked:true}]));
   compute(true);if(VIEW==='webtoon')refreshPageMaterials()}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 </script>
 <script src="studio.js"></script>
+<script src="refs.js"></script>
 </body>
 </html>
