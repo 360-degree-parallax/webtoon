@@ -82,11 +82,11 @@ async function buildSVG(st){const ms=await models(st);if(!ms.length)return null;
     if(m.defs)[...m.defs.children].forEach(d=>{if(d.id!=='gs'&&!defs.querySelector('#'+CSS.escape(d.id)))defs.appendChild(doc.importNode(d,true))});
     svg.appendChild(sc);y+=m.H+SCENE_GAP}
   y-=SCENE_GAP;
-  [['width',W],['height',y],['viewBox',`0 0 ${W} ${y}`],['font-family','Pretendard,system-ui,sans-serif']].forEach(([a,v])=>svg.setAttribute(a,v));
+  [['width',W],['height',y],['viewBox',`0 0 ${W} ${y}`],['font-family',typeof PAGE_FONT==='string'?PAGE_FONT:'Pretendard,system-ui,sans-serif']].forEach(([a,v])=>svg.setAttribute(a,v));
   return {svg:'<?xml version="1.0" encoding="UTF-8"?>\n'+new XMLSerializer().serializeToString(svg),count:ms.length,models:ms}}
 
 // ---------- 레이어 그리기(PSD·PNG 공용) ----------
-function wrap(m,inner){return `<svg xmlns="${NS}" width="${m.W}" height="${m.H}" viewBox="0 0 ${m.W} ${m.H}" font-family="Pretendard,system-ui,sans-serif"><defs>${m.cuts.map(c=>c.clip?c.clip.outerHTML:'').join('')}${m.defs?m.defs.innerHTML:''}</defs>${inner}</svg>`}
+function wrap(m,inner){return `<svg xmlns="${NS}" width="${m.W}" height="${m.H}" viewBox="0 0 ${m.W} ${m.H}" font-family="${typeof PAGE_FONT==='string'?PAGE_FONT:'Pretendard,system-ui,sans-serif'}"><defs>${m.cuts.map(c=>c.clip?c.clip.outerHTML:'').join('')}${m.defs?m.defs.innerHTML:''}</defs>${inner}</svg>`}
 async function raster(m,inner,{trim=true,bg=null}={}){const im=await img('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(wrap(m,inner)));
   const c=document.createElement('canvas');c.width=m.W;c.height=m.H;const g=c.getContext('2d');if(bg){g.fillStyle=bg;g.fillRect(0,0,c.width,c.height)}g.drawImage(im,0,0,m.W,m.H);
   if(!trim)return {canvas:c,left:0,top:0};

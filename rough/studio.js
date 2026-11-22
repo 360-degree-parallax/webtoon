@@ -5,12 +5,12 @@ const canvas=document.querySelector('.edcanvas'),reader=pageReader;
 const typingIn=t=>t&&t.closest&&t.closest('input,textarea,select,[contenteditable]');
 const inEdit=()=>VIEW==='webtoon';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const STICKY=160;
+const STICKY=200;
 
 // ---------- 캔버스 확대·축소 ----------
 const CZ_MIN=.1,CZ_MAX=4,BASE=720;
 let CZ=1;try{CZ=clamp(+localStorage.getItem('rough-canvas-zoom')||1,CZ_MIN,CZ_MAX)}catch(_){}
-function applyZoom(){reader.style.width=Math.round(BASE*CZ)+'px';reader.style.maxWidth='none';
+function applyZoom(){if(reader.classList.contains('artboards')){reader.style.width='max-content';reader.style.setProperty('--abw',Math.round(BASE*CZ)+'px')}else reader.style.width=Math.round(BASE*CZ)+'px';reader.style.maxWidth='none';
   $('#wczlab').textContent=Math.round(CZ*100)+'%';try{localStorage.setItem('rough-canvas-zoom',CZ)}catch(_){}
   mini.view()}
 // 화면의 (cx,cy) 지점이 확대 뒤에도 같은 자리에 있게
@@ -20,7 +20,7 @@ function zoomTo(z,cx,cy){z=clamp(z,CZ_MIN,CZ_MAX);if(Math.abs(z-CZ)<1e-4)return;
   const r2=reader.getBoundingClientRect();scrollBy(0,r2.top+fy*r2.height-cy);canvas.scrollLeft+=r2.left+fx*r2.width-cx}
 const STEPS=[.1,.25,.33,.5,.67,.75,1,1.25,1.5,2,3,4];
 const stepZoom=d=>{const i=d>0?STEPS.findIndex(s=>s>CZ+1e-3):STEPS.length-1-[...STEPS].reverse().findIndex(s=>s<CZ-1e-3);zoomTo(STEPS[clamp(i,0,STEPS.length-1)]??CZ)};
-function fitAll(){const h=reader.scrollHeight/CZ,avail=innerHeight-STICKY-40;CZ=clamp(Math.min(avail/h,(canvas.clientWidth-48)/BASE),CZ_MIN,CZ_MAX);applyZoom();
+function fitAll(){const ab=reader.classList.contains('artboards'),h=reader.scrollHeight/CZ,w=ab?reader.scrollWidth/CZ:BASE,avail=innerHeight-STICKY-40;CZ=clamp(Math.min(avail/h,(canvas.clientWidth-48)/w),CZ_MIN,CZ_MAX);applyZoom();canvas.scrollLeft=0;
   scrollTo(0,reader.getBoundingClientRect().top+scrollY-STICKY-12)}
 function fitSelected(){const g=selGroup();if(!g){fitAll();return}const b=g.getBoundingClientRect(),h=b.height/CZ,w=b.width/CZ;
   CZ=clamp(Math.min((innerHeight-STICKY-60)*.85/h,(canvas.clientWidth-48)/w),CZ_MIN,CZ_MAX);applyZoom();g.scrollIntoView({block:'center',inline:'center'})}
@@ -34,7 +34,8 @@ let space=false,pan=null;
 document.addEventListener('keydown',e=>{if(e.code!=='Space'||!inEdit()||typingIn(e.target)||e.target.closest?.('button,[data-letter],[data-page-gap]'))return;e.preventDefault();if(!space){space=true;canvas.classList.add('panning')}});
 document.addEventListener('keyup',e=>{if(e.code==='Space'){space=false;canvas.classList.remove('panning')}});
 addEventListener('blur',()=>{space=false;canvas.classList.remove('panning')});
-canvas.addEventListener('pointerdown',e=>{if(!(space&&e.button===0)&&e.button!==1)return;e.preventDefault();e.stopPropagation();
+const handTool=()=>window.RoughWS?.tool==='hand';
+canvas.addEventListener('pointerdown',e=>{if(!((space||handTool())&&e.button===0)&&e.button!==1)return;e.preventDefault();e.stopPropagation();
   pan={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.classList.add('panning-on')},true);
 canvas.addEventListener('pointermove',e=>{if(pan?.id!==e.pointerId)return;scrollBy(0,pan.y-e.clientY);canvas.scrollLeft+=pan.x-e.clientX;pan.x=e.clientX;pan.y=e.clientY});
 const endPan=e=>{if(pan?.id===e.pointerId){pan=null;canvas.classList.remove('panning-on')}};
@@ -96,8 +97,8 @@ const mini=(()=>{const box=document.createElement('div');box.className='minimap'
   function refresh(){clearTimeout(timer);timer=setTimeout(build,250)}
   function build(){if(!inEdit()||!reader.querySelector('svg')){box.hidden=true;return}
     inner.innerHTML=reader.innerHTML;inner.style.width=BASE+'px';
-    const h=reader.scrollHeight/CZ,maxH=Math.max(160,innerHeight*.55);k=Math.min(96/BASE,maxH/h);
-    inner.style.transform=`scale(${k})`;box.style.width=Math.round(BASE*k)+'px';box.style.height=Math.round(h*k)+'px';box.hidden=matchMedia('(max-width:1100px)').matches;view()}
+    const docked=box.classList.contains('docked'),h=reader.scrollHeight/CZ,maxH=docked?Math.max(200,innerHeight*.45):Math.max(160,innerHeight*.55);k=Math.min((docked?Math.max(60,box.parentElement.clientWidth-4):96)/BASE,maxH/h);
+    inner.style.transform=`scale(${k})`;box.style.width=Math.round(BASE*k)+'px';box.style.height=Math.round(h*k)+'px';box.hidden=(!docked&&matchMedia('(max-width:1100px)').matches)||reader.classList.contains('artboards');view()}
   function view(){if(box.hidden)return;const r=reader.getBoundingClientRect(),s=k/CZ;
     const top=(STICKY-r.top)*s,h=(innerHeight-STICKY)*s,left=(canvas.getBoundingClientRect().left-r.left)*s,w=canvas.clientWidth*s;
     vp.style.transform=`translate(${Math.max(0,left)}px,${Math.max(0,top)}px)`;vp.style.width=Math.min(BASE*k,w)+'px';vp.style.height=Math.max(8,h)+'px'}
@@ -152,5 +153,5 @@ document.addEventListener('keydown',e=>{if(typingIn(e.target))return;
 {const _sw=switchScene;switchScene=function(i){const r=_sw(i);if(inEdit())document.getElementById('ws-'+i)?.scrollIntoView({behavior:'smooth'});return r}}
 
 applyZoom();
-window.RoughStudio={zoomTo,fitAll,fitSelected,setCrop,openRead,closeRead,get zoom(){return CZ}};
+window.RoughStudio={zoomTo,fitAll,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
 })();

@@ -63,7 +63,8 @@ function apply(id,key=pageSelection){if(!key||!REF_PICK[id])return;const prev=pa
   toast(`${id} 레퍼런스를 썼어요`);render()}
 function reset(){if(!pageSelection)return;const set=pageSettings();if(set){delete set.ref;delete set.img}saveScenes();if(typeof compute==='function')compute(false);renderWebtoon();render()}
 
-function showTab(t){const refs=t==='refs';tabL.setAttribute('aria-selected',!refs);tabR.setAttribute('aria-selected',refs);$('#wtoc').hidden=refs;panel.hidden=!refs;
+function showTab(t){if(document.body.classList.contains('ws-panels')){panel.hidden=false;$('#wtoc').hidden=false;if(t==='refs'){window.RoughWS?.openPanel('refs');loadText();render()}return}
+  const refs=t==='refs';tabL.setAttribute('aria-selected',!refs);tabR.setAttribute('aria-selected',refs);$('#wtoc').hidden=refs;panel.hidden=!refs;
   try{localStorage.setItem('rough-left-tab',t)}catch(_){}if(refs){loadText();render()}}
 tabL.addEventListener('click',()=>showTab('layers'));tabR.addEventListener('click',()=>showTab('refs'));
 

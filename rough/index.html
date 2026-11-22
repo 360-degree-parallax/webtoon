@@ -245,8 +245,8 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .edtop #wedit[aria-pressed=true]{background:var(--dark);color:var(--ondark)}
 .edst{display:block;text-align:center;font-size:12px;min-height:0}
 .edgrid{display:grid;grid-template-columns:240px minmax(0,1fr) 300px;align-items:start}
-.edleft,.edright{position:sticky;top:156px;max-height:calc(100vh - 156px);overflow:auto;padding:16px}
-.edleft{border-right:1px solid var(--line);background:var(--bg);min-height:calc(100vh - 156px)}
+.edleft,.edright{position:sticky;top:196px;max-height:calc(100vh - 196px);overflow:auto;padding:0}
+.edleft{border-right:1px solid var(--line);background:var(--bg);min-height:calc(100vh - 196px)}
 #wtools.edright{position:sticky;top:156px;z-index:5;border:0;border-left:1px solid var(--line);background:var(--bg);min-height:calc(100vh - 156px);max-width:none;margin:0;border-radius:0;padding:16px}
 .edhead{font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.04em;margin:0 0 8px 6px}
 .edtree{display:grid;gap:1px}
@@ -618,6 +618,79 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .dict-none{font-size:12px;color:var(--t3)}
 .dictlink{font:inherit;font-weight:700;color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:help}
 .dbnote{margin:-4px 0 10px;font-size:12px;color:var(--t3)}
+
+/* 작업 공간(workspace.js): 도구 막대 · 상황 막대 · 패널 */
+.edgrid{grid-template-columns:48px 248px minmax(0,1fr) 300px}
+#v-webtoon.preview .edgrid{grid-template-columns:48px 248px minmax(0,1fr) 0}
+.toolrail{position:sticky;top:196px;align-self:start;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;height:calc(100vh - 196px);border-right:1px solid var(--line);background:var(--bg);z-index:5}
+.tr-btn{position:relative;width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--t2);flex:none}
+.tr-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tr-btn:hover:not([aria-pressed=true]){background:var(--hover);color:var(--t1)}
+.tr-btn[aria-pressed=true]{background:var(--dark,#1f2329);color:var(--ondark,#fff)}
+.tr-more{position:absolute;right:3px;bottom:3px;width:0;height:0;border-left:5px solid transparent;border-bottom:5px solid currentColor;opacity:.7}
+.tr-sep{width:24px;height:1px;background:var(--line);margin:5px 0;flex:none}.tr-grow{flex:1}
+.tr-fly{position:fixed;z-index:95;width:220px;max-height:420px;overflow:auto;padding:6px;border-radius:10px;background:var(--bg);border:1px solid var(--line2);box-shadow:0 14px 36px rgba(0,0,0,.18);display:grid;gap:1px}.tr-fly[hidden]{display:none}
+.tr-fly b{font-size:11px;color:var(--t3);padding:4px 8px}
+.tr-fly button{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12px;text-align:left;color:var(--t1)}.tr-fly button:hover,.tr-fly button:focus-visible{background:var(--hover)}
+.tr-fly button[aria-checked=true]{background:var(--blue-soft,#eaf1ff);font-weight:700}
+.sw{width:26px;height:26px;flex:none;display:inline-block}.tr-fly .sw{background:none}
+.ctxbar{position:sticky;top:156px;z-index:14;display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;background:var(--bg);border-bottom:1px solid var(--line);font-size:12px;color:var(--t2);overflow-x:auto;white-space:nowrap;scrollbar-width:thin}
+.ctxbar .cb-tool{display:inline-flex;align-items:center;gap:6px;color:var(--t1)}.ctxbar .cb-tool svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ctxbar .cb-sep{width:1px;height:18px;background:var(--line2)}
+.ctxbar .cb-mid{display:inline-flex;align-items:center;gap:8px}.ctxbar .cb-mid b{color:var(--t1)}
+.ctxbar .cb-right{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding-left:12px}
+.ctxbar label{display:inline-flex;align-items:center;gap:5px}.ctxbar select,.ctxbar input[type=number],.ctxbar input:not([type]){height:26px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);font-size:12px;padding:0 6px;color:var(--t1)}
+.ctxbar input[type=range]{width:90px}.ctxbar output{min-width:34px;font-variant-numeric:tabular-nums}
+.ctxbar .cb{height:26px;padding:0 9px;border-radius:6px;border:1px solid var(--line2);font-size:12px;color:var(--t1)}.ctxbar .cb:hover{background:var(--hover)}.ctxbar .cb.on{background:var(--dark,#1f2329);color:var(--ondark,#fff);border-color:transparent}
+.ctxbar .cb-t{max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--t2)}.ctxbar .cb-hint{color:var(--t2)}
+.ctxbar .seg3 button{height:26px;font-size:12px;padding:0 10px}
+.edleft,.edright{display:flex;flex-direction:column}
+.edright>.wpanel:first-of-type,.edleft>.wpanel:first-child{border-top:0}
+.wpanel{border-bottom:1px solid var(--line);background:var(--bg)}
+.wp-h{display:flex;align-items:center;gap:4px;height:34px;padding:0 6px 0 4px;font-size:12px;color:var(--t1);cursor:grab;user-select:none;position:sticky;top:0;background:var(--bg);z-index:2}
+.wp-h b{font-weight:700}
+.wp-h button{width:24px;height:24px;border-radius:5px;display:grid;place-items:center;color:var(--t3)}.wp-h button:hover{background:var(--hover);color:var(--t1)}
+.wp-h svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wp-col svg{transition:transform .12s}.wpanel.collapsed .wp-col svg{transform:rotate(-90deg)}
+.wp-acts{margin-left:auto;display:flex;gap:1px;opacity:0;transition:opacity .1s}.wp-h:hover .wp-acts,.wp-acts:focus-within,.wpanel.floating .wp-acts{opacity:1}
+.wp-body{padding:10px 12px 14px}.wpanel.collapsed .wp-body{display:none}
+.wpanel.drop-before{box-shadow:inset 0 3px 0 #2d71f7}
+.wpanel.floating{position:fixed;z-index:85;width:300px;max-height:72vh;display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:10px;box-shadow:0 18px 44px rgba(0,0,0,.2);overflow:hidden}
+.wpanel.floating .wp-h{cursor:move;border-bottom:1px solid var(--line)}.wpanel.floating .wp-body{overflow:auto;resize:both;min-width:220px;min-height:80px}
+.wpanel[hidden]{display:none}
+.ws-props .insp{padding:0;border:0}
+.nav-row{display:flex;align-items:center;gap:8px}.nav-row input{flex:1}.nav-row output{font-size:12px;min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+.nav-btns{display:flex;gap:6px;margin:8px 0}.nav-map{display:flex;justify-content:center}.nav-note{font-size:12px;color:var(--t3);margin:6px 0 0}
+.minimap.docked{position:relative;right:auto;bottom:auto;box-shadow:none;z-index:auto}
+.hist{list-style:none;margin:0;padding:0;display:grid;gap:1px;max-height:300px;overflow:auto}
+.hist button{width:100%;text-align:left;padding:5px 8px;border-radius:6px;font-size:12px;color:var(--t1)}.hist button:hover:not(:disabled){background:var(--hover)}
+.hist button[aria-current=true]{background:var(--blue-soft,#eaf1ff);font-weight:700}.hist small{color:var(--t3);font-weight:500;margin-left:4px}
+.hist .redo button{color:var(--t3)}.hist-note,.wsn{font-size:12px;color:var(--t3);margin:8px 0 0;line-height:1.5}
+.wsf{display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:8px;margin:8px 0;font-size:12px;color:var(--t2)}.wsf select{height:30px;border:1px solid var(--line2);border-radius:7px;background:var(--bg);font-size:12px;min-width:0}
+.wsb{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.algrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:8px 0}
+.al{height:34px;border-radius:7px;border:1px solid var(--line2);display:grid;place-items:center;color:var(--t1)}.al:hover:not(:disabled){background:var(--hover)}.al:disabled{opacity:.35}
+.al svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.ws-lib h5{margin:12px 0 6px;font-size:11px;color:var(--t3)}
+.libgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.libgrid.words{grid-template-columns:repeat(4,1fr)}
+.lib{display:grid;justify-items:center;gap:3px;padding:6px 4px;border-radius:7px;border:1px solid var(--line);font-size:11px;color:var(--t1);cursor:grab;min-width:0}.lib:hover{background:var(--hover)}
+.lib span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)}.lib svg{width:34px;height:34px}.libgrid.words .lib{font-weight:800;font-size:13px}
+.edtree .tthumb{width:26px;height:26px;border-radius:4px;object-fit:cover;flex:none;background:var(--hover);display:inline-block}
+.edtree .tcutrow .tcut i{display:none}
+.edtree .tlock{flex:none;width:24px;height:24px;border-radius:5px;display:grid;place-items:center;color:var(--t3);opacity:0}
+.edtree .tcutrow:hover .tlock,.edtree .tlrow:hover .tlock,.edtree .tlock.on,.edtree .tlock:focus-visible{opacity:1}.edtree .tlock.on{color:#e0533d}
+.edtree .tlock svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.reader [data-letter].multi-sel{filter:drop-shadow(0 0 1.5px #2d71f7) drop-shadow(0 0 1.5px #2d71f7)}
+.reader [data-slot-index].locked .frame-handles{display:none!important}
+.reader[data-tool=hand],.reader[data-tool=hand] *{cursor:grab!important}
+.reader[data-tool=zoom],.reader[data-tool=zoom] *{cursor:zoom-in!important}
+.reader[data-tool=balloon] *,.reader[data-tool=caption] *,.reader[data-tool=sfx] *,.reader[data-tool=split] *,.reader[data-tool=crop] *{cursor:crosshair!important}
+.reader.artboards{display:flex;gap:64px;align-items:flex-start;background:none;box-shadow:none;margin:12px 24px 80px}
+.reader.artboards>section{flex:none;width:var(--abw,720px);background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.1)}
+.reader.artboards .scn{overflow:hidden;min-width:0}.reader.artboards .scn span{overflow:hidden;text-overflow:ellipsis}
+.kfoot{display:flex;justify-content:space-between;margin-top:16px}.keyb{min-width:110px}.keyb.wait{border-color:#2d71f7;color:#2d71f7}
+@media(max-width:1100px){.edgrid{grid-template-columns:48px minmax(0,1fr) 280px}#v-webtoon.preview .edgrid{grid-template-columns:48px minmax(0,1fr) 0}.ctxbar .cb-ws,.ctxbar [data-ctx=wsreset]{display:none}}
+@media(max-width:760px){.toolrail{display:none}.edgrid{grid-template-columns:1fr}#v-webtoon.preview .edgrid{grid-template-columns:1fr}.ctxbar{position:static}.ctxbar .cb-right{display:none}.wp-acts{display:none}}
 </style>
 </head>
 <body>
@@ -954,7 +1027,8 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script src="materials.js"></script>
 <script src="export.js"></script>
 <script>
-const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
+const W=690;
+let PAGE_FONT='Pretendard,system-ui,sans-serif';try{PAGE_FONT=localStorage.getItem('rough-page-font')||PAGE_FONT}catch(_){}const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const CUT_BASE='cuts/',FIX_BASE='cuts-fixed/'; // 원본 / 피그마에서 말풍선 정리한 수정본(같은 경로·같은 이름)
 const LEN=[['짧게',.6],['보통',1],['길게',1.5],['아주 길게',2.2]];
@@ -1421,7 +1495,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     }
     prev=[slot,size];y+=size;
   });
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${gaps}${o}${tightGaps}${handles}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="${esc(PAGE_FONT)}"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${gaps}${o}${tightGaps}${handles}</svg>`;
 }
 // 칸 안 그림 확대·이동(피그마 이미지 크롭처럼): 칸 가운데 기준 배율 s, 이동 dx·dy
 function zoomTf(z,bx,y,bw,h){if(!z||!(z.s>1))return'';const cx=bx+bw/2,cy=y+h/2;
@@ -1903,7 +1977,7 @@ function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerH
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
     const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':art.svg;
     const lab=art&&WMODE==='final'?(art.kind==='mix'?`이미지 ${art.n}/${ps.length}컷 · 나머지 러프`:ART_LABEL[art.kind]):'';
-    return `<section id="ws-${i}" data-page-scene="${i}" style="scroll-margin-top:160px"><div class="scn"><span>${esc(sceneLabel(sc,i))}${lab?' · '+lab:''}</span></div>${body}</section>`});
+    return `<section id="ws-${i}" data-page-scene="${i}" style="scroll-margin-top:200px"><div class="scn"><span>${esc(sceneLabel(sc,i))}${lab?' · '+lab:''}</span></div>${body}</section>`});
   $('#reader').innerHTML=parts.join('');
   refreshPageTools();
   $('#wstat').textContent=`씬 ${SCENES.length}개 · 컷 ${cuts}개${imgd?` · 이미지 ${imgd}컷 등록`:''}`;
@@ -2562,9 +2636,10 @@ $('#wsheet').addEventListener('click',()=>{const o=$('#wtools').classList.toggle
 $('#wtoc').addEventListener('click',e=>{const b=e.target.closest('[data-tcut]');if(!b)return;e.preventDefault();pageCut.value=b.dataset.tcut;pageCut.dispatchEvent(new Event('change'))});
 // 실행 취소: 편집 화면에서 저장될 때마다 이전 상태(씬별 pageEdits)를 쌓음. 연속 드래그는 0.6초 단위로 묶음
 const UNDO=[],REDO=[];let edSnap=null,edLast=0,edRestoring=false,edSavedAt=0;
-const edState=()=>JSON.stringify(SCENES.map(sc=>sc.pageEdits||[]));
+const edState=()=>JSON.stringify(SCENES.map(sc=>({c:sc.cuts,e:sc.pageEdits||[]})));
 function edButtons(){$('#wundo').disabled=!UNDO.length;$('#wredo').disabled=!REDO.length}
-function edRestore(json){edRestoring=true;const arr=JSON.parse(json);SCENES.forEach((sc,i)=>sc.pageEdits=arr[i]||[]);saveScenes();edRestoring=false;edSnap=json;renderWebtoon();edButtons()}
+function edRestore(json){edRestoring=true;const arr=JSON.parse(json);let text=false;SCENES.forEach((sc,i)=>{const v=arr[i];if(!v){sc.pageEdits=[];return}if(Array.isArray(v)){sc.pageEdits=v;return}
+  if(JSON.stringify(sc.cuts)!==JSON.stringify(v.c)){sc.cuts.splice(0,sc.cuts.length,...v.c);text=true}sc.pageEdits=v.e||[]});saveScenes();edRestoring=false;edSnap=json;if(text&&typeof compute==='function')compute(false);renderWebtoon();edButtons()}
 {const _ss=saveScenes;saveScenes=function(...a){
   if(typeof VIEW!=='undefined'&&VIEW==='webtoon'&&!edRestoring){const cur=edState();
     if(edSnap!==null&&cur!==edSnap){const now=Date.now();if(now-edLast>600||!UNDO.length)UNDO.push(edSnap);if(UNDO.length>100)UNDO.shift();REDO.length=0;edLast=now;edSavedAt=now;edSaveLabel()}
@@ -2767,5 +2842,6 @@ Promise.all([
 <script src="studio.js"></script>
 <script src="refs.js"></script>
 <script src="dict.js"></script>
+<script src="workspace.js"></script>
 </body>
 </html>
