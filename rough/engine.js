@@ -409,7 +409,8 @@
     if (exact) return exact;
     let best = null, bs = -1;
     for (const r of refs) {
-      const s = (r.shot === cut.shot ? 2 : RANK[r.shot] != null && Math.abs(RANK[r.shot] - RANK[cut.shot]) === 1 ? 0.8 : 0) + (r.angle === cut.ang ? 1 : 0) + (r.kind === 'cre' && cut.shot === '클로즈업' ? 0.3 : 0);
+      const s = (r.shot === cut.shot ? 2 : RANK[r.shot] != null && Math.abs(RANK[r.shot] - RANK[cut.shot]) === 1 ? 0.8 : 0) + (r.angle === cut.ang ? 1 : 0) + (r.kind === 'cre' && cut.shot === '클로즈업' ? 0.3 : 0)
+        + (cut.src && r.source_cut && r.source_cut.slice(0, 2) === cut.src.slice(0, 2) ? 0.4 : 0) + (r.role && r.role === cut.role ? 0.3 : 0) + (r.emotion && r.emotion === cut.emo ? 0.2 : 0);
       if (s > bs) { bs = s; best = r; }
     }
     return bs >= 2 ? best : null;

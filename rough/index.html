@@ -835,7 +835,7 @@ const lenWord=h=>h<.7?'짧게':h<1.2?'보통':h<2?'길게':'아주 길게';
 const NARR={'끝 정점':'마지막 컷에서 터지는 장면','중간 정점':'가운데서 터지고 가라앉는 장면','정점 선행':'처음부터 터지고 수습하는 장면','정점 연속':'계속 몰아치는 장면','무정점':'큰 고비 없이 흐르는 장면'};
 const CURVE={'상승':'감정이 점점 올라가요','하강':'감정이 점점 가라앉아요','산형':'감정이 올랐다 내려와요','골형':'가라앉았다 다시 올라요','평탄':'감정이 고르게 이어져요'};
 const PART={narr:'서사 형태',curve:'감정 곡선',goal:'연출 목적',vng:'VNG 순서',count:'컷 수',trans:'컷 전환',tempo:'템포',dist:'거리 흐름',emo:'감정'};
-let PATS=[],REFS=[];
+let PATS=[],REFS=[],REF_ALL=0;
 const locks={};              // 문장(key) → {shot, ang, h}
 const state={an:[],ranks:[],pick:[],panels:[],sel:-1,svg:''};
 
@@ -1238,15 +1238,18 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false}={}){let y=40,o='',gaps='',backgrounds='';const multi=panels.length>1;
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false}={}){let y=40,o='',gaps='',backgrounds='';const multi=panels.length>1;
   panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi),bx=B.x,bw=B.w;const h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);const on=i===sel;const u=im?null:underlay(p);
-    let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel({...p,said:''},bx,y,bw,h,i);
-    if(u){art=`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
+    // 코드로 그린 러프 그림은 쓰지 않음: 등록 이미지 → 원본 컷 레퍼런스(그림 영역만 잘라) → 빈 칸에 샷·앵글 표시
+    let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:'';
+    if(u){const c=u.crop&&u.w?u.crop:null;const vb=c?`${(c[0]*u.w).toFixed(0)} ${(c[1]*u.h).toFixed(0)} ${((c[2]-c[0])*u.w).toFixed(0)} ${((c[3]-c[1])*u.h).toFixed(0)}`:null;
+      art=c?`<svg x="${bx}" y="${y}" width="${bw}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${u.src}" width="${u.w}" height="${u.h}" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/></svg>`:`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`}
+    else if(!im)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;
     const c=!clean&&!im&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame?`stroke="#222" stroke-width="3"`:'stroke="none"';
     o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}><rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
-      (clean?'':letterSVG(p,{x:bx,y,w:bw,h,frame:B.frame},i,edit?.letters,interactive))+`</g>`;
+      (clean?'':letterSVG(rough?{...p,dialogs:[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame},i,edit?.letters,interactive))+`</g>`;
     const base=defaultPageGap(p),size=edit?.gap??base;
     y+=h;
     if(edits){
@@ -1259,7 +1262,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
   });
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${o}${gaps}</svg>`;
 }
-function render(){state.svg=renderSVG(state.panels,state.sel);$('#preview').innerHTML=state.svg}
+function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false,{rough:true});$('#preview').innerHTML=state.svg}
 
 
 // ---------- reference images (캐릭터·장면) ----------
@@ -1283,7 +1286,7 @@ function underlay(p){if(!showUnder)return null;
   if(p.shot==='클로즈업'){const c=p.who&&IMG.char[p.who];if(c)return{src:c.src,op:.32}}
   if(['설정','전경','전신','중경','효과 배경'].includes(p.shot)){const sc=sceneFor(p);if(sc)return{src:sc.src,op:p.shot==='설정'||p.shot==='전경'?.38:.22}}
   // 직접 넣은 참고 이미지가 없으면 엔진이 고른 구도 레퍼런스를 컬러로 깔기
-  if(p.ref)return{src:p.ref.src,op:.55,color:true};
+  if(p.ref)return{src:p.ref.src,op:1,color:true,crop:p.ref.art,w:p.ref.w,h:p.ref.h};
   return null}
 function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parseCuts(CUTS,engineChars()).map(b=>b.who).filter(Boolean)])]}
 function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
@@ -2231,12 +2234,13 @@ function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$
     <div class="nbtns"><button class="btn dark" data-act="naibase" data-i="${i}">바탕 PNG (${o.size.w}×${o.size.h})</button>${o.charRef?`<button class="btn" data-act="nairef" data-n="${esc(o.charRef)}">캐릭터 레퍼런스 이미지</button>`:o.vibe?'<button class="btn" data-act="naivibe">장면 이미지</button>':''}</div>
     </div></div>`}).join('')}
 // img2img 바탕: 이 컷의 러프를 NovelAI 해상도로 (밑그림 레퍼런스 사진은 빼고 선만)
-async function naiBase(i){const p=state.panels[i];if(!p)return;const o=NAI.cut(p,i,state.panels,{chars:naiChars(),style:NAISTYLE,tags:NAITAGS,refs:{}});
-  const keep=showUnder;showUnder=false;let svg;try{svg=renderSVG([p],-1,`nb${i}_`,false,null,true)}finally{showUnder=keep}
-  const im=await loadImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg));const PW=W-60,ph=Math.round(p.h*PW);
-  const c=document.createElement('canvas');c.width=o.size.w;c.height=o.size.h;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
-  const k=Math.max(c.width/PW,c.height/ph);const dw=PW*k,dh=ph*k;g.drawImage(im,30,40,PW,ph,(c.width-dw)/2,(c.height-dh)/2,dw,dh);
-  c.toBlob(b=>{download(`${sceneLabel(SCENES[SCUR],SCUR).replace(/[\\/:*?"<>|]/g,'_')}-컷${i+1}-바탕-${o.size.w}x${o.size.h}.png`,URL.createObjectURL(b));toast('바탕 PNG를 저장했어요')},'image/png')}
+// img2img 바탕: 이 컷의 원본 레퍼런스(그림 영역만, 흑백)를 NovelAI 해상도로. 레퍼런스가 없으면 만들지 않음
+async function naiBase(i){const p=state.panels[i];if(!p)return;if(!p.ref){toast('이 컷은 맞는 레퍼런스가 없어 바탕 PNG를 만들 수 없어요');return}
+  const o=NAI.cut(p,i,state.panels,{chars:naiChars(),style:NAISTYLE,tags:NAITAGS,refs:{}});const r=p.ref,im=await loadImg(r.src);const a=r.art||[0,0,1,1];
+  const sx=a[0]*im.width,sy=a[1]*im.height,sw=(a[2]-a[0])*im.width,sh=(a[3]-a[1])*im.height;
+  const c=document.createElement('canvas');c.width=o.size.w;c.height=o.size.h;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.filter='grayscale(1)';
+  const k=Math.max(c.width/sw,c.height/sh),dw=sw*k,dh=sh*k;g.drawImage(im,sx,sy,sw,sh,(c.width-dw)/2,(c.height-dh)/2,dw,dh);
+  c.toBlob(b=>{download(`${sceneLabel(SCENES[SCUR],SCUR).replace(/[\\/:*?"<>|]/g,'_')}-컷${i+1}-바탕-${r.source_cut}-${o.size.w}x${o.size.h}.png`,URL.createObjectURL(b));toast(`바탕 PNG를 저장했어요 (${r.source_cut})`)},'image/png')}
 function dataUrlDownload(name,src){fetch(src).then(r=>r.blob()).then(b=>download(name,URL.createObjectURL(b)))}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   if(a==='ncopy')copyText(el.closest('.nf').querySelector('pre').textContent);
@@ -2293,7 +2297,8 @@ Promise.all([
   fetch(CUT_BASE+'index.json').then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})),
 ]).then(([pt,cuts])=>{
   PATS=pt.patterns;
-  REFS=cuts.items.map(g=>({...g,kind:'cut',src:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}`}));
+  // 그림 위주 컷만 레퍼런스로(말풍선 위주·덜 차지·여러 칸 섞인 컷은 자동 판정으로 제외)
+  REFS=cuts.items.filter(g=>g.fit==='ok').map(g=>({...g,kind:'cut',src:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}`}));REF_ALL=cuts.items.length;
   compute(true)}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 </script>
 </body>
