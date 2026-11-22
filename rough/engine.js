@@ -28,7 +28,7 @@
     ['평온', 0, ['평화', '고요', '잔잔', '나른', '햇살', '산책', '차를 마', '한가', '여유', '졸음', '기지개', '조용히']],
   ];
   // 강약: 강하게 +1, 약하게 -1 (감정 낱말이 있으면 최소 1)
-  const BOOST = ['갑자기', '확 ', '순간', '번쩍', '쾅', '와락', '벌떡', '펑펑', '미친 듯', '온 힘', '부들부들', '폭발', '격하게', '버럭', '소리를 지르'];
+  const BOOST = ['갑자기', '확 ', '순간', '번쩍', '쾅', '쨍그랑', '와장창', '퍽', '와락', '벌떡', '펑펑', '미친 듯', '온 힘', '부들부들', '폭발', '격하게', '버럭', '소리를 지르'];
   const SOFT = ['살짝', '조금', '희미', '옅은', '옅게', '작게', '슬며시', '살며시', '애써', '잠깐'];
   const PLACE = ['복도', '방 ', '방에', '거리', '교실', '저택', '정원', '하늘', '성 ', '성의', '집', '카페', '학교', '숲', '바다', '도시', '길', '문 앞', '창밖', '연회장', '침실', '마당', '골목', '광장', '역', '사무실', '궁'];
   const SETV = ['서 있', '걸어', '도착', '들어선', '들어옴', '들어온', '풍경', '전경', '펼쳐', '앉아 있', '등장'];
@@ -126,9 +126,12 @@
   //   그 밖의 줄         → 행동 묘사
   function parseCut(text, chars, idx) {
     const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
-    const actions = [], captions = [], dialogs = [];
-    for (const l of lines) {
+    const actions = [], captions = [], dialogs = [], sfx = [];
+    const SFX = /(^|\s)-([^\s-][^-\n]{0,10}?)-(?=\s|$|[.,!?])/g;
+    for (let l of lines) {
       let m;
+      l = l.replace(SFX, (_, a, w) => { sfx.push(w.trim()); return a; }).replace(/\s{2,}/g, ' ').trim();
+      if (!l) continue;
       if ((m = l.match(/^\[(.+)\]$/))) { captions.push(m[1].trim()); continue; }
       if ((m = l.match(/^(?:@([^\s"“]+)\s*)?["“](.*)["”]\s*[.!?…]*$/))) {
         const who = m[1] ? (mentions('@' + m[1], chars)[0] || {}).name || m[1] : '';
@@ -143,10 +146,10 @@
     if (!who && dialogs.length) who = dialogs.find(d => d.who)?.who || null;
     for (const d of dialogs) if (!d.who) d.who = who || '';
     const said = dialogs.map(d => d.text).filter(Boolean).join(' / ');
-    const cue = [actText, ...dialogs.map(d => d.note), ...dialogs.map(d => d.text), ...captions].filter(Boolean).join(' ');
-    const act = actText.replace(/@/g, '') || (dialogs[0] ? `${dialogs[0].who ? dialogs[0].who + ' ' : ''}대사` : captions[0] || '');
+    const cue = [actText, ...dialogs.map(d => d.note), ...dialogs.map(d => d.text), ...captions, ...sfx].filter(Boolean).join(' ');
+    const act = actText.replace(/@/g, '') || (dialogs[0] ? `${dialogs[0].who ? dialogs[0].who + ' ' : ''}대사` : captions[0] || (sfx[0] ? `효과음 ${sfx[0]}` : ''));
     const rcue = [actText, ...dialogs.map(d => d.note), said ? `"${said}"` : ''].filter(Boolean).join(' ').replace(/@/g, '');
-    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), dialogs, cue: cue.replace(/@/g, ''), rcue };
+    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), sfx, dialogs, cue: cue.replace(/@/g, ''), rcue };
   }
   function parseCuts(cuts, chars) {
     const named = chars && chars.length ? chars.slice() : [];
@@ -380,7 +383,7 @@
       if (b.vng === 'P') { gap *= 1.6; why.gap.push('정점 뒤 숨 고르기'); }
       if (an.beats[k + 1]?.role === '전환') { gap *= 1.8; why.gap.push('다음 컷이 장면 전환'); }
       gap = +clamp(gap, 0.08, 1.2).toFixed(2);
-      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', dialogs: b.dialogs || [], key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
+      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', sfx: b.sfx || [], dialogs: b.dialogs || [], key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
     });
   }
 

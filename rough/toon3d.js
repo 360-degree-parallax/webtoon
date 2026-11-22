@@ -135,6 +135,7 @@ export class Director {
       g.drawImage(c, 30, yy); g.lineWidth = 3; g.strokeStyle = '#111'; g.strokeRect(30, yy, ws, h);
       if (p.said) balloon(g, 30, yy, ws, h, p.said);
       if (p.caption) caption(g, 30, yy, ws, p.caption);
+      (p.sfx || []).forEach((x, k) => sfxText(g, 30 + ws - 24, yy + h - 24 - k * 52, Math.min(54, Math.max(30, h * .16)), x));
     }
     return out;
   }
@@ -236,4 +237,10 @@ function caption(g, x, y, w, text) {
   const tw = Math.min(w * .6, g.measureText(t).width + 24);
   g.fillStyle = '#fff'; g.strokeStyle = '#111'; g.lineWidth = 2; g.fillRect(x + 12, y + 12, tw, 32); g.strokeRect(x + 12, y + 12, tw, 32);
   g.fillStyle = '#111'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(t, x + 24, y + 29);
+}
+
+function sfxText(g, x, y, size, text) {
+  g.save(); g.translate(x, y); g.rotate(-8 * Math.PI / 180);
+  g.font = `900 ${size}px Pretendard, "Apple SD Gothic Neo", sans-serif`; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+  g.lineJoin = 'round'; g.lineWidth = 6; g.strokeStyle = '#fff'; g.strokeText(text, 0, 0); g.fillStyle = '#111'; g.fillText(text, 0, 0); g.restore();
 }

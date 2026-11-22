@@ -158,6 +158,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .cutlist .tools{display:flex;flex-direction:column;gap:2px;margin-top:4px}
 .cutlist .tools button{width:28px;height:24px;border-radius:6px;color:var(--t3);font-size:14px}
 .cutlist .tools button:hover{background:var(--hover);color:var(--t1)}
+.tr .cap.sfx{font-weight:800;border-style:dashed}
 .tr .cap{display:inline-block;margin-top:3px;font-size:12px;color:var(--t2);border:1px solid var(--line2);border-radius:4px;padding:0 5px}
 /* characters */
 .chars{display:grid;gap:10px}
@@ -290,7 +291,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
   <section>
     <div class="sh"><h2>장면</h2><span id="count"></span></div>
-    <div class="guide2"><code>[식자]</code> 내레이션·효과 글자 · <code>@인물 "(감정·연기)대사"</code> 대사 · 나머지는 행동 묘사 · <code>@</code>를 치면 인물 목록</div>
+    <div class="guide2"><code>[식자]</code> 내레이션 · <code>-툭-</code> 효과음 · <code>@인물 "(감정·연기)대사"</code> 대사 · 나머지는 행동 묘사 · <code>@</code>를 치면 인물 목록</div>
     <ol class="cutlist" id="cutlist"></ol>
     <div class="toolbar" style="margin-top:10px"><button class="btn" data-act="addcut">+ 컷 추가</button><button class="btn" data-act="prose">줄글 붙여넣기</button><span class="grow"></span><button class="link" data-act="clear">모두 지우기</button></div>
     <dialog id="pdlg2" aria-labelledby="pd2t"><h3 id="pd2t">줄글 붙여넣기</h3><p>문장마다 컷으로 나눠 컷 칸에 채워요. 지금 컷은 바뀌어요.</p><textarea id="prosein" style="min-height:220px" placeholder="@에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다."></textarea><div class="acts"><button class="btn" data-act="prosecancel">닫기</button><button class="btn dark" data-act="prosego">컷으로 나누기</button></div></dialog>
@@ -419,7 +420,7 @@ function renderTable(){
     const v=(f,label,why)=>`<div><button class="val${c.lock[f]!==undefined?' lock':''}" data-f="${f}" data-i="${i}" title="${esc(why)}">${esc(label)}</button><div class="why">${esc(why)}</div></div>`;
     return `<div class="tr${i===state.sel?' on':''}" data-i="${i}">
       <button class="n" data-sel="${i}" aria-label="${i+1}번 컷 선택">${i+1}</button>
-      <div class="beat" data-sel="${i}"><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`].filter(Boolean).join(' · '))}</small>${c.caption?`<span class="cap">${esc(c.caption)}</span>`:''}</div>
+      <div class="beat" data-sel="${i}"><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`].filter(Boolean).join(' · '))}</small>${c.caption?`<span class="cap">${esc(c.caption)}</span>`:''}${(c.sfx||[]).map(x=>`<span class="cap sfx">-${esc(x)}-</span>`).join(' ')}</div>
       <div><span class="vng"><em class="${c.vng}">${c.vng}</em>${esc(c.role)}</span><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.roleWhy||'')}</div></div>
       <div><span style="font-size:14px;font-weight:600">${esc(c.emo)}</span><div class="dots${P?' P':''}">${[1,2,3].map(k=>`<i class="${c.i>=k?'on':''}"></i>`).join('')}</div><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.emoWhy||'')}</div></div>
       ${v('shot',c.shot,c.lock.shot!==undefined?'직접 고름':c.why.shot.slice(1).join(' · ')||c.why.shot[0])}
@@ -490,6 +491,7 @@ function render(){let y=40,o='';const ws=W-60;
     const c=p.who&&charRef(p.who);
     o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${sel?'#2d71f7':'#222'}" stroke-width="${sel?6:3}"/><clipPath id="c${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#c${i})">${art}</g>`+
       `<circle cx="52" cy="${y+22}" r="16" fill="${sel?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`+
+      ((p.sfx||[]).map((x,k)=>`<text x="${30+ws-24}" y="${y+h-24-k*52}" font-size="${Math.min(54,Math.max(30,h*.16))}" font-weight="900" text-anchor="end" fill="#111" stroke="#fff" stroke-width="6" paint-order="stroke" transform="rotate(-8 ${30+ws-24} ${y+h-24-k*52})">${esc(x)}</text>`).join(''))+
       (p.caption?`<rect x="76" y="${y+8}" width="${Math.min(ws-200,24+p.caption.length*17)}" height="30" fill="#fff" stroke="#222" stroke-width="2"/><text x="88" y="${y+29}" font-size="16" fill="#222">${esc(p.caption.slice(0,24))}</text>`:'')+
       (c?`<rect x="42" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="62" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="76" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+`</g>`;
     y+=h+Math.round(p.gap*ws)+16});
@@ -604,7 +606,7 @@ function showMbox(){const mq=mentionQuery();const all=CHARS.map(c=>c.name.trim()
 function pickMention(i){const ta=TA;const name=mList[i];if(!name)return;const pos=ta.selectionStart;
   ta.value=ta.value.slice(0,mStart)+'@'+name+ta.value.slice(pos);const c=mStart+name.length+1;ta.setSelectionRange(c,c);ta.focus();mbox.hidden=true;ta.dispatchEvent(new Event('input',{bubbles:true}))}
 // 컷 칸 (컷별 입력)
-const DEFAULT_CUTS=['비가 그친 저녁, 저택 복도. 촛불만 흔들린다.\n[그날 밤, 저택]','@에드가 복도 끝에서 천천히 걸어온다.','발소리에 @준 놀라 돌아본다.\n@준 "(놀라서)에드가?"','@에드가 대답 대신 @준의 손목을 붙잡는다.','@준의 얼굴이 순식간에 붉어진다.\n[두근]','@에드가 희미하게 웃는다.\n@에드가 "(낮게, 다정하게)같이 가자."'];
+const DEFAULT_CUTS=['비가 그친 저녁, 저택 복도. 촛불만 흔들린다.\n[그날 밤, 저택]','@에드가 복도 끝에서 천천히 걸어온다.','발소리에 @준 놀라 돌아본다.\n@준 "(놀라서)에드가?"','@에드가 대답 대신 @준의 손목을 붙잡는다.\n-툭-','@준의 얼굴이 순식간에 붉어진다.\n[두근]','@에드가 희미하게 웃는다.\n@에드가 "(낮게, 다정하게)같이 가자."'];
 let CUTS;try{CUTS=JSON.parse(localStorage.getItem('rough-cuts')||'null')||DEFAULT_CUTS.slice()}catch(_){CUTS=DEFAULT_CUTS.slice()}
 function saveCuts(){try{localStorage.setItem('rough-cuts',JSON.stringify(CUTS))}catch(_){}}
 function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
