@@ -171,7 +171,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scbar b{color:var(--t1);font-weight:700}
 .scbar .ib{width:32px;height:32px}
 .scbar select{height:32px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);padding:0 8px;font-size:14px;font-weight:600;max-width:60vw}
-.choices{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:24px}
 .choice{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:24px;border:1px solid var(--line2);border-radius:12px;text-align:left;background:var(--bg);transition:border-color .12s,background .12s}
 .choice:hover{border-color:var(--t1)}
 .choice[aria-pressed=true]{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue);background:var(--blue-soft)}
@@ -260,6 +260,12 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .kfoot{font-size:12px!important;color:var(--t3)!important}
 .sheetbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 12px;padding:14px 16px;border:1px solid var(--line);border-radius:8px}.sheetbar>div{flex:1 1 300px;display:grid;gap:2px;font-size:14px}.sheetbar span{font-size:13px;color:var(--t2)}
 .sheetimg{display:block;width:100%;margin:0 0 12px;border:1px solid var(--line);border-radius:8px}
+.naichars{display:grid;gap:8px}.naichar{display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:10px;align-items:center}.naichar b{font-size:15px}.naichar input{height:40px;box-sizing:border-box;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);color:var(--t1);font:13px ui-monospace,Menlo,monospace;min-width:0}
+.naiterms{display:flex;flex-wrap:wrap;gap:8px;font-size:14px}.naiterms span{padding:6px 10px;border-radius:8px;background:var(--surface)}.naiterms span.on{color:var(--t1);font-weight:600}.naiterms span.off{color:var(--t3)}
+.nf{margin-top:10px}.nf header{display:flex;align-items:center;justify-content:space-between;gap:8px}.nf h4{margin:0;font-size:13px;font-weight:700}.nf h4 small{margin-left:6px;font-weight:600;color:var(--t2)}.nf pre{margin-top:6px!important}
+.nset{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:10px;font-size:13px}.nset div{padding:8px 10px;border-radius:8px;background:var(--surface)}.nset b{display:block;font-size:12px;color:var(--t2);font-weight:600}
+.nbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+@media(max-width:640px){.naichar{grid-template-columns:1fr auto}.naichar input{grid-column:1/-1;grid-row:2}}
 .hint{margin:10px 0 0;font-size:13px;color:var(--t2)}
 .pcard.cut{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px}
 .pcard.cut .drop{width:150px;height:auto;min-height:150px}
@@ -420,8 +426,37 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <div class="choices">
     <button class="choice" data-choose="3d"><span class="ck">3D</span><b>3D 시안</b><span>VRoid 기본 체형을 흑백 툰으로 그려요. 카메라·표정·포즈를 연출에서 계산한 대로 잡아요.</span><em>웹툰 보기에 3D 컷으로 들어가요</em></button>
     <button class="choice" data-choose="prompt"><span class="ck">AI</span><b>프롬프트 시안</b><span>인물 외형·화풍·카메라·조명까지 담은 컷별 프롬프트를 만들고, 생성한 이미지를 컷마다 등록해요.</span><em>등록한 이미지가 웹툰 보기에 완성본으로 들어가요</em></button>
+    <button class="choice" data-choose="nai"><span class="ck">NAI</span><b>NovelAI V4.5 시안</b><span>NovelAI Diffusion V4.5 Full 화면 칸에 맞춰 태그·캐릭터 위치·해상도·img2img 바탕 이미지를 컷마다 만들어요.</span><em>생성한 이미지를 등록하면 완성본으로 들어가요</em></button>
   </div>
   <div class="next"><button class="btn" data-view="layout">← 연출로</button><span class="grow"></span><button class="btn big" data-view="webtoon">러프 그대로 웹툰 보기 →</button></div>
+</div>
+</div>
+
+<div class="view" id="v-nai" hidden>
+<div class="wrap">
+  <div class="scbar" data-scbar></div>
+  <h1>NovelAI V4.5 시안</h1>
+  <p class="desc">NovelAI Diffusion V4.5 Full 기준이에요. 컷마다 기본 프롬프트, 캐릭터 프롬프트와 위치, 제외할 내용, 해상도, img2img 바탕 이미지, 레퍼런스를 칸별로 나눠 줘요.</p>
+  <ol class="psteps"><li><b>1</b>화풍·인물 태그 확인</li><li><b>2</b>컷 카드의 칸을 NovelAI 같은 칸에 복사</li><li><b>3</b>바탕 PNG를 img2img로 올려 생성</li><li><b>4</b>생성 이미지를 컷에 등록</li></ol>
+  <section style="margin-top:28px">
+    <div class="sh"><h2>화풍 태그</h2><span>모든 컷의 기본 프롬프트 끝에 붙어요 · 영어 태그, 쉼표로 구분</span></div>
+    <textarea class="pstyle" id="naistyle" rows="2" aria-label="NovelAI 화풍 태그"></textarea>
+    <p class="hint">NovelAI의 Add Quality Tags와 제외할 내용 프리셋(Heavy)은 켜 두는 걸 권해요. 여기 태그는 그 위에 더해져요.</p>
+  </section>
+  <section>
+    <div class="sh"><h2>인물 태그</h2><span>인물 설정의 외형을 태그로 바꿨어요 · 고치면 이 브라우저에 저장</span></div>
+    <div class="naichars" id="naichars"></div>
+  </section>
+  <section>
+    <div class="sh"><h2>레퍼런스</h2><span>이미지는 프롬프트 시안의 참고 이미지 칸에서 등록해요</span></div>
+    <div class="naiterms" id="nairefs"></div>
+  </section>
+  <section>
+    <div class="sh"><h2>컷별 입력값</h2><span id="naicount"></span></div>
+    <div class="toolbar"><span class="grow"></span><button class="btn" data-act="naimulti">이미지 여러 장 등록</button><button class="btn" data-act="naidown">txt 저장</button></div>
+    <div class="pcards" id="ncards"></div>
+  </section>
+  <div class="next"><button class="btn" data-view="finish">← 완성 방식</button><span class="grow"></span><button class="btn dark big" data-view="webtoon">웹툰 보기 →</button></div>
 </div>
 </div>
 
@@ -520,6 +555,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
 <script src="engine.js"></script>
 <script src="prompt.js"></script>
+<script src="nai.js"></script>
 <script>
 const W=690;const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -635,15 +671,15 @@ function drawPanel(p,x,y,w,h,idx){const R=rng(p.act+idx),j=a=>(R()-.5)*a,st='#33
   else{for(let i=0;i<20;i++){const a=i/20*Math.PI*2;o+=L(x+w/2+Math.cos(a)*w*.15,y+h/2+Math.sin(a)*h*.15,x+w/2+Math.cos(a)*w,y+h/2+Math.sin(a)*h,1)}o+=head(x+w/2,y+h/2,Math.min(w,h)*.2)}
   if(p.said){const bw=Math.min(w*.6,48+p.said.length*16),bh=64,bx=x+w-bw-16,by=y+16;o+=`<ellipse cx="${bx+bw/2}" cy="${by+bh/2}" rx="${bw/2}" ry="${bh/2}" fill="#fff" stroke="#333" stroke-width="2"/><text x="${bx+bw/2}" y="${by+bh/2+6}" font-size="18" text-anchor="middle" fill="#222">${esc(p.said.slice(0,16))}</text>`}
   return o}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null){let y=40,o='';const ws=W-60;
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false){let y=40,o='';const ws=W-60;
   panels.forEach((p,i)=>{const im=imgs&&imgs[i];const h=Math.round(im&&im.w?ws*im.h/im.w:p.h*ws);const on=i===sel;const u=im?null:underlay(p);
-    let art=im?`<image href="${im.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel(p,30,y,ws,h,i);
+    let art=im?`<image href="${im.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel(clean?{...p,said:''}:p,30,y,ws,h,i);
     if(u){art=`<image href="${u.src}" x="30" y="${y}" width="${ws}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}" filter="url(#gs)"/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
-    const c=!im&&p.who&&charRef(p.who);
+    const c=!clean&&!im&&p.who&&charRef(p.who);
     o+=`<g data-p="${i}"><rect x="30" y="${y}" width="${ws}" height="${h}" fill="#fff" stroke="${on?'#2d71f7':'#222'}" stroke-width="${on?6:3}"/><clipPath id="${pre}${i}"><rect x="30" y="${y}" width="${ws}" height="${h}"/></clipPath><g clip-path="url(#${pre}${i})">${art}</g>`+
       (nums?`<circle cx="52" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="52" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
-      ((p.sfx||[]).map((x,k)=>`<text x="${30+ws-24}" y="${y+h-24-k*52}" font-size="${Math.min(54,Math.max(30,h*.16))}" font-weight="900" text-anchor="end" fill="#111" stroke="#fff" stroke-width="6" paint-order="stroke" transform="rotate(-8 ${30+ws-24} ${y+h-24-k*52})">${esc(x)}</text>`).join(''))+
-      (p.caption?`<rect x="76" y="${y+8}" width="${Math.min(ws-200,24+p.caption.length*17)}" height="30" fill="#fff" stroke="#222" stroke-width="2"/><text x="88" y="${y+29}" font-size="16" fill="#222">${esc(p.caption.slice(0,24))}</text>`:'')+
+      ((clean?[]:p.sfx||[]).map((x,k)=>`<text x="${30+ws-24}" y="${y+h-24-k*52}" font-size="${Math.min(54,Math.max(30,h*.16))}" font-weight="900" text-anchor="end" fill="#111" stroke="#fff" stroke-width="6" paint-order="stroke" transform="rotate(-8 ${30+ws-24} ${y+h-24-k*52})">${esc(x)}</text>`).join(''))+
+      (!clean&&p.caption?`<rect x="76" y="${y+8}" width="${Math.min(ws-200,24+p.caption.length*17)}" height="30" fill="#fff" stroke="#222" stroke-width="2"/><text x="88" y="${y+29}" font-size="16" fill="#222">${esc(p.caption.slice(0,24))}</text>`:'')+
       (c?`<rect x="42" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="62" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="76" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+`</g>`;
     y+=h+Math.round(p.gap*ws)+16});
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}</svg>`;
@@ -808,7 +844,7 @@ async function attachCuts(files,from){files=[...files].filter(f=>f.type.startsWi
   // 칸을 지정하면 그 컷부터 차례로 덮어쓰고, 지정하지 않으면 빈 컷만 앞에서부터 채운다
   const slots=from!=null?state.panels.map((_,k)=>k).filter(k=>k>=from):state.panels.map((p,k)=>cutImg(SCUR,k,p)?-1:k).filter(k=>k>=0);
   let n=0;for(const f of files){if(n>=slots.length)break;await attachCut(f,slots[n]);n++}
-  renderPrompts();if(n)toast(`컷 이미지 ${n}장을 등록했어요`);if(files.length>n)setTimeout(()=>toast(`남은 컷보다 이미지가 많아 ${files.length-n}장은 건너뛰었어요`),1600)}
+  rerenderCuts();if(n)toast(`컷 이미지 ${n}장을 등록했어요`);if(files.length>n)setTimeout(()=>toast(`남은 컷보다 이미지가 많아 ${files.length-n}장은 건너뛰었어요`),1600)}
 
 
 // ---------- data ----------
@@ -869,7 +905,7 @@ function saveScenes(){SCENES[SCUR].cuts=CUTS;try{localStorage.setItem('rough-sce
 function saveCuts(){saveScenes();renderSceneList()}
 const SCENE3D={};
 function sceneLabel(sc,i){return `씬 ${i+1} · ${sc.title||'제목 없는 씬'}`}
-function renderSceneList(){$('#scenelist').innerHTML=SCENES.map((sc,i)=>`<li><button data-scene="${i}" aria-current="${i===SCUR}"><span class="sn">${i+1}</span><span style="min-width:0"><span class="st">${esc(sc.title||'제목 없는 씬')}</span><br><small>${sc.cuts.filter(c=>c.trim()).length}컷${sc.out?` · <span class="tag3">${sc.out==='3d'?'3D':'프롬프트'}</span>`:''}</small></span></button></li>`).join('');
+function renderSceneList(){$('#scenelist').innerHTML=SCENES.map((sc,i)=>`<li><button data-scene="${i}" aria-current="${i===SCUR}"><span class="sn">${i+1}</span><span style="min-width:0"><span class="st">${esc(sc.title||'제목 없는 씬')}</span><br><small>${sc.cuts.filter(c=>c.trim()).length}컷${sc.out?` · <span class="tag3">${sc.out==='3d'?'3D':sc.out==='nai'?'NovelAI':'프롬프트'}</span>`:''}</small></span></button></li>`).join('');
   $('#scount').textContent=`${SCENES.length}개`;
   document.querySelectorAll('[data-scbar]').forEach(el=>el.innerHTML=`<button class="ib" data-scmove="-1" aria-label="이전 씬"${SCUR?'':' disabled'}>‹</button><select data-scsel aria-label="씬 고르기">${SCENES.map((sc,i)=>`<option value="${i}"${i===SCUR?' selected':''}>${esc(sceneLabel(sc,i))}</option>`).join('')}</select><button class="ib" data-scmove="1" aria-label="다음 씬"${SCUR<SCENES.length-1?'':' disabled'}>›</button><span>${SCENES[SCUR].cuts.filter(c=>c.trim()).length}컷</span>`);
   document.querySelectorAll('[data-choose]').forEach(b=>b.setAttribute('aria-pressed',SCENES[SCUR].out===b.dataset.choose))}
@@ -959,14 +995,14 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
 // ---------- 보기 전환 ----------
 let VIEW='layout',dirty3d=true;
 function showView(v){VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
-  const nav={'3d':'finish',prompt:'finish',db:''}[v]??v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===nav));
-  ['write','layout','finish','3d','prompt','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
+  const nav={'3d':'finish',prompt:'finish',nai:'finish',db:''}[v]??v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===nav));
+  ['write','layout','finish','3d','prompt','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
   $('#gSvg').hidden=v!=='layout';$('#gPng').hidden=!(v==='layout'||v==='3d');$('#gDb').setAttribute('aria-pressed',v==='db');
   if(v==='webtoon')renderWebtoon();if(v==='finish')renderSceneList();
-  if(v==='prompt')renderPrompts();if(v==='3d'){renderCast();renderC3();if(dirty3d&&state.panels.length)draw3d()}if(v==='db')loadDB();
+  if(v==='prompt')renderPrompts();if(v==='nai')renderNai();if(v==='3d'){renderCast();renderC3();if(dirty3d&&state.panels.length)draw3d()}if(v==='db')loadDB();
   scrollTo(0,0);try{localStorage.setItem('rough-view',v)}catch(_){}}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
-{const _c=compute;compute=function(...a){_c(...a);dirty3d=true;if(VIEW==='prompt')renderPrompts();if(VIEW==='3d'){renderCast();renderC3();if(!last3d)draw3d()}}}
+{const _c=compute;compute=function(...a){_c(...a);dirty3d=true;if(VIEW==='prompt')renderPrompts();if(VIEW==='nai')renderNai();if(VIEW==='3d'){renderCast();renderC3();if(!last3d)draw3d()}}}
 {const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='prompt')renderPrompts()}}
 
 // ---------- 프롬프트 시안 ----------
@@ -989,8 +1025,9 @@ $('#pstyle').value=PSTYLE;
 $('#pstyle').addEventListener('input',e=>{PSTYLE=e.target.value;try{localStorage.setItem('rough-style',PSTYLE)}catch(_){}clearTimeout(window._pst);window._pst=setTimeout(renderPrompts,300)});
 $('#aiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;AIVIEW=b.dataset.v;renderPrompts()});
 renderKey();
-{const el=$('#pcards');
-  el.addEventListener('click',e=>{const d=e.target.closest('[data-delcut]');if(d){e.stopPropagation();const id=cutId(SCENES[SCUR].id,+d.dataset.delcut);delete IMG.cut[id];idb.del(id);renderPrompts();return}
+const rerenderCuts=()=>{if(VIEW==='nai')renderNai();else renderPrompts()};
+for(const el of [$('#pcards'),$('#ncards')]){
+  el.addEventListener('click',e=>{const d=e.target.closest('[data-delcut]');if(d){e.stopPropagation();const id=cutId(SCENES[SCUR].id,+d.dataset.delcut);delete IMG.cut[id];idb.del(id);rerenderCuts();return}
     const s=e.target.closest('[data-cutslot]');if(s){target={kind:'cut',key:s.dataset.cutslot};$('#filem').click()}});
   el.addEventListener('keydown',e=>{const s=e.target.closest('[data-cutslot]');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();s.click()}});
   el.addEventListener('focusin',e=>{const s=e.target.closest('[data-cutslot]');if(s)target={kind:'cut',key:s.dataset.cutslot}});
@@ -1006,6 +1043,55 @@ function renderPrompts(){const ps=state.panels;$('#sheetimg').hidden=true;
   $('#pcards').innerHTML=cutPrompts().map(({p,i,o})=>{const im=cutImg(SCUR,i,p);
     return `<div class="pcard cut"><div class="drop${im?' has':''}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 이미지 ${im?'바꾸기':'등록'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="삭제">×</button>`:'+ 생성한 이미지'}</div>
     <div><header><h3>${esc(cutHead(p,i))}${im?(im.stale?'<span class="tag warn">글이 바뀜</span>':'<span class="tag">등록됨</span>'):''}${aiCut(ai,i)?'<span class="tag">Claude</span>':''}</h3><button class="btn" data-act="pcopy1">복사</button></header><p class="meta"><span class="ratio">${esc(o.spec.ratio)} · ${o.spec.W}×${o.spec.H}px · ${o.spec.exact?'표준 ':'가까운 표준 '}${o.spec.near}</span> ${esc(p.act)}${p.said?` · “${esc(p.said)}”`:''} · 뒤 간격 ${RP.gapTag(p.gap??0.3)}</p><pre>${esc(aiCut(ai,i)||fmtText(o))}</pre></div></div>`}).join('')}
+
+// ---------- NovelAI V4.5 시안 ----------
+const NAI=window.RoughNAI;
+const NAI_STYLE_DEF='webtoon, korean webtoon, soft shading, flat color, thin lineart, muted colors, watercolor (medium)';
+let NAISTYLE=NAI_STYLE_DEF,NAITAGS={};
+try{NAISTYLE=localStorage.getItem('rough-nai-style')||NAI_STYLE_DEF;NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){}
+const saveNaiTags=()=>{try{localStorage.setItem('rough-nai-tags',JSON.stringify(NAITAGS))}catch(_){}};
+function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),body:c.body||'female',look:c.look||''}))}
+function naiCuts(){const ps=state.panels,chars=naiChars(),sc=ps.length?sceneFor(ps[0]):null;
+  const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc}};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
+function naiText(){const L=naiCuts();return L.map(({p,i,o})=>NAI.text(o,i,L.length,cutHead(p,i))).join('\n\n────────\n\n')}
+function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
+  const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
+  $('#naichars').innerHTML=chars.length?chars.map(c=>`<div class="naichar"><b>${esc(c.name)}</b><input data-naitag="${esc(c.name)}" value="${esc(NAITAGS[c.name]??NAI.lookTags(c.look).join(', '))}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="btn" data-act="naireset" data-n="${esc(c.name)}">외형에서 다시</button></div>`).join(''):'<p class="empty">작성 단계의 인물 설정에 인물을 넣어주세요.</p>';
+  const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
+  $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="prompt">참고 이미지 등록하러 가기</button>`;
+  if(!ps.length){$('#ncards').innerHTML='<p class="empty">작성 단계에서 컷을 적어주세요.</p>';$('#naicount').textContent='';return}
+  $('#naicount').textContent=`이미지 ${cutCount(SCUR,ps)}/${ps.length}컷 등록 · 칸마다 복사 버튼`;
+  const blk=(t,sub,txt)=>`<div class="nf"><header><h4>${t}${sub?`<small>${sub}</small>`:''}</h4><button class="btn" data-act="ncopy">복사</button></header><pre>${esc(txt)}</pre></div>`;
+  $('#ncards').innerHTML=naiCuts().map(({p,i,o})=>{const im=cutImg(SCUR,i,p),S=o.settings;
+    return `<div class="pcard cut"><div class="drop${im?' has':''}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 이미지 ${im?'바꾸기':'등록'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="삭제">×</button>`:'+ 생성한 이미지'}</div>
+    <div><header><h3>${esc(cutHead(p,i))}${im?(im.stale?'<span class="tag warn">글이 바뀜</span>':'<span class="tag">등록됨</span>'):''}</h3><button class="btn" data-act="ncopyall">전체 복사</button></header>
+    <p class="meta"><span class="ratio">${o.size.w} × ${o.size.h}${o.size.exact?'':' → 자르기'}</span> ${esc(p.act)}${o.size.exact?'':` · 생성 후 ${esc(o.size.crop)}`}</p>
+    ${blk('기본 프롬프트','Base Prompt',o.base)}
+    ${o.chars.map((c,n)=>blk(`캐릭터 ${n+1} · ${esc(c.name)}`,`위치 ${c.pos.cell} (x ${c.pos.x}, y ${c.pos.y})`,c.prompt)).join('')}
+    ${blk('제외할 내용','Undesired Content',o.uc)}
+    <div class="nset"><div><b>해상도</b>${o.size.w} × ${o.size.h}</div><div><b>Steps · Guidance</b>${S.steps} · ${S.guidance}</div><div><b>Sampler</b>${S.sampler} · ${S.noise}</div><div><b>img2img</b>Strength ${S.strength} · Noise ${S.noiseImg}</div><div><b>캐릭터 위치</b>${o.chars.length>1?'AI\'s Choice 끄고 칸 지정':o.chars.length?'1명이면 AI\'s Choice도 괜찮음':'인물 없음'}</div><div><b>레퍼런스</b>${o.charRef?`Character Reference: ${esc(o.charRef)}`:o.vibe?'Vibe Transfer: 장면 이미지':'없음'}</div></div>
+    <div class="nbtns"><button class="btn dark" data-act="naibase" data-i="${i}">바탕 PNG (${o.size.w}×${o.size.h})</button>${o.charRef?`<button class="btn" data-act="nairef" data-n="${esc(o.charRef)}">캐릭터 레퍼런스 이미지</button>`:o.vibe?'<button class="btn" data-act="naivibe">장면 이미지</button>':''}</div>
+    </div></div>`}).join('')}
+// img2img 바탕: 이 컷의 러프를 NovelAI 해상도로 (밑그림 레퍼런스 사진은 빼고 선만)
+async function naiBase(i){const p=state.panels[i];if(!p)return;const o=NAI.cut(p,i,state.panels,{chars:naiChars(),style:NAISTYLE,tags:NAITAGS,refs:{}});
+  const keep=showUnder;showUnder=false;let svg;try{svg=renderSVG([p],-1,`nb${i}_`,false,null,true)}finally{showUnder=keep}
+  const im=await loadImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg));const PW=W-60,ph=Math.round(p.h*PW);
+  const c=document.createElement('canvas');c.width=o.size.w;c.height=o.size.h;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+  const k=Math.max(c.width/PW,c.height/ph);const dw=PW*k,dh=ph*k;g.drawImage(im,30,40,PW,ph,(c.width-dw)/2,(c.height-dh)/2,dw,dh);
+  c.toBlob(b=>{download(`${sceneLabel(SCENES[SCUR],SCUR).replace(/[\\/:*?"<>|]/g,'_')}-컷${i+1}-바탕-${o.size.w}x${o.size.h}.png`,URL.createObjectURL(b));toast('바탕 PNG를 저장했어요')},'image/png')}
+function dataUrlDownload(name,src){fetch(src).then(r=>r.blob()).then(b=>download(name,URL.createObjectURL(b)))}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+  if(a==='ncopy')copyText(el.closest('.nf').querySelector('pre').textContent);
+  else if(a==='ncopyall'){const i=+el.closest('.pcard').querySelector('[data-cutslot]').dataset.cutslot;const L=naiCuts();copyText(NAI.text(L[i].o,i,L.length,cutHead(L[i].p,i)))}
+  else if(a==='naidown'){download(`${sceneLabel(SCENES[SCUR],SCUR)}-novelai.txt`,URL.createObjectURL(new Blob([naiText()],{type:'text/plain'})));toast('txt로 저장했어요')}
+  else if(a==='naimulti'){target=null;$('#filem').click()}
+  else if(a==='naibase')naiBase(+el.dataset.i);
+  else if(a==='nairef'){const r=IMG.char[el.dataset.n];if(r)dataUrlDownload(`${el.dataset.n}-character-reference.jpg`,r.src)}
+  else if(a==='naivibe'){const sc=state.panels.length&&sceneFor(state.panels[0]);if(sc)dataUrlDownload(`${sc.name||'scene'}-vibe.jpg`,sc.src)}
+  else if(a==='naireset'){delete NAITAGS[el.dataset.n];saveNaiTags();renderNai()}});
+$('#naichars').addEventListener('change',e=>{const t=e.target.closest('[data-naitag]');if(!t)return;NAITAGS[t.dataset.naitag]=t.value.trim();saveNaiTags();renderNai()});
+$('#naistyle').value=NAISTYLE;
+$('#naistyle').addEventListener('input',e=>{NAISTYLE=e.target.value;try{localStorage.setItem('rough-nai-style',NAISTYLE)}catch(_){}clearTimeout(window._nst);window._nst=setTimeout(renderNai,300)});
 
 // ---------- 3D 시안 ----------
 let D3=null,last3d=null,CAST={};
