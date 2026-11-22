@@ -774,7 +774,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div class="page">
 <main class="main">
   <h1>콘티</h1>
-  <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB 244묶음 중 가장 닮은 패턴으로 컷을 짰어요.</p>
+  <p class="desc">감정·정점·연출 목적을 글에서 계산하고, 연출 DB <span id="patcount">5컷</span>묶음 중 가장 닮은 패턴으로 컷을 짰어요.</p>
 
   <section>
     <div class="sh"><h2>이렇게 읽었어요</h2><span>코드표 기준 자동 판정</span></div>
@@ -2744,7 +2744,7 @@ Promise.all([
   fetch('patterns.json').then(r=>r.json()),
   fetch(CUT_BASE+'index.json').then(r=>r.ok?r.json():{items:[]}).catch(()=>({items:[]})),
 ]).then(([pt,cuts])=>{
-  PATS=pt.patterns;
+  PATS=pt.patterns;{const el=document.getElementById('patcount');if(el)el.textContent=PATS.length.toLocaleString()}
   // 그림 위주 컷만 레퍼런스로(말풍선 위주·덜 차지·여러 칸 섞인 컷은 자동 판정으로 제외)
   REFS=cuts.items.filter(g=>g.fit==='ok'||g.fixed).map(g=>({...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}${g.fixed?' · 수정본':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));REF_PICK=Object.fromEntries(cuts.items.filter(g=>g.art).map(g=>[g.source_cut,{...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}`,picked:true}]));
   compute(true);if(VIEW==='webtoon')refreshPageMaterials()}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
