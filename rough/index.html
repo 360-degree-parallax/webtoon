@@ -173,6 +173,14 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .page-editor{position:sticky;top:104px;z-index:10;max-width:690px;margin:0 auto;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
 .page-editor[hidden],.page-editor [hidden]{display:none}
 .page-editor .toolbar{margin-top:0}
+.page-editor .background-controls{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-top:8px}
+.background-controls label{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.background-controls input{width:29px;height:27px;padding:1px;border:1px solid var(--line);background:var(--surface);border-radius:5px}
+.bg-presets{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.bg-presets button{position:relative;min-width:30px;height:28px;border:1px solid var(--line);border-radius:5px;overflow:hidden;background:white;color:#24201c;font-size:12px}
+.bg-presets button[aria-pressed=true]{outline:2px solid #2d71f7;outline-offset:1px}
+.bg-presets svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.bg-presets button span{position:relative;padding:0 3px;border-radius:3px;background:#fff}
 .page-editor small{display:block;margin-top:6px;color:var(--t2)}
 .reader [data-page-gap]{cursor:ns-resize;outline:none}
 .reader .gap-grip{touch-action:none}
@@ -199,7 +207,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .reader .scn{padding:28px 0 6px;text-align:center;font-size:13px;font-weight:600;color:#8a8f98;display:flex;align-items:center;gap:12px}
 .reader .scn::before,.reader .scn::after{content:"";flex:1;height:1px;background:#e5e7eb}
 .reader .scn span{white-space:nowrap}
-.reader svg,.reader img{display:block;width:100%;height:auto}
+.reader section > svg,.reader img{display:block;width:100%;height:auto}
 .reader .empty{padding:60px 20px;text-align:center;color:#8a8f98}
 @media(max-width:900px){.wgrid{grid-template-columns:1fr;padding:0 24px;gap:0}.scenes{position:static;max-height:none;padding:20px 0 0}.scenes ol{display:flex;overflow-x:auto;gap:6px}.scenes li button{grid-template-columns:22px auto;white-space:nowrap}.scenes li small{display:none}}
 @media(max-width:640px){.wgrid{padding:0 16px}.next{flex-wrap:wrap}.next .big{flex:1}.wtitle{font-size:24px}}
@@ -470,6 +478,11 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <label>편집할 컷 <select id="wcut"></select></label>
     <button class="btn" id="wletterreset">식자 편집 초기화</button>
   </div>
+  <div class="background-controls" id="wbackground" hidden>
+    <label>배경색 <input id="wbgcolor" type="color" value="#ffffff"></label>
+    <button class="btn" id="wbgreset">배경 초기화</button>
+    <div class="bg-presets" id="wbgpresets" role="group" aria-label="컷 아래 전환 질감"></div>
+  </div>
   <div class="toolbar" id="wballoon" hidden>
     <label>말풍선 크기 <input id="wballoonsize" type="range" min="50" max="200" step="1" value="100"> <output id="wballoonvalue">100%</output></label>
     <button class="btn" id="wballoonreset">크기·꼬리 초기화</button>
@@ -734,6 +747,52 @@ function letterSVG(p,box,idx,positions,interactive){const R=rngL(p.key||p.act);l
 function cutSlot(p,i){const slot=/^#(\d+):/.exec(p.key||'');return slot?Number(slot[1]):i}
 function defaultPageGap(p){return Math.round(p.gap*(W-60)*.45)+24}
 const MAX_PAGE_GAP=1600;
+const PAGE_BACKGROUNDS=[
+  null,
+  {name:'별빛',start:'#101621',mid:'#516b8b',stop:51,ink:'#b4dbff',marks:130},
+  {name:'불씨',start:'#080708',mid:'#593029',stop:73,ink:'#ff635d',marks:112},
+  {name:'장밋빛 파편',start:'#9e787d',mid:'#20151b',stop:55,ink:'#f8d3d7',marks:104},
+  {name:'번진 잉크',start:'#0a0709',mid:'#50363c',stop:46,ink:'#c3a5a8',marks:115},
+  {name:'흑백 입자',start:'#131313',mid:'#777777',stop:46,ink:'#ffffff',marks:350},
+  {name:'수평 노이즈',start:'#08090c',mid:'#525252',stop:47,ink:'#ffffff',marks:290}
+];
+const PAGE_WHITE='#ffffff';
+function pageBackground(edit){
+  return /^#[\da-f]{6}$/i.test(edit?.background||'')?edit.background:PAGE_BACKGROUNDS[edit?.transition]?.start||PAGE_WHITE;
+}
+function transitionTexture(preset,id){
+  const {ink,marks}=PAGE_BACKGROUNDS[preset],rand=rngL(id.split('-').at(-1)+':'+preset);
+  let art='';
+  if(preset===4||preset===5){
+    art+=`<filter id="${id}-grain" x="0%" y="0%" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="${preset===4?'.11 .36':'.68 .94'}" numOctaves="3" seed="${preset}"/><feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .95 5 0 0 0 -2.6"/></filter><rect width="690" height="240" opacity="${preset===4?.44:.67}" filter="url(#${id}-grain)"/>`;
+  }
+  if(preset<=3){
+    art+=`<radialGradient id="${id}-halo"><stop stop-color="${ink}" stop-opacity=".72"/><stop offset="1" stop-color="${ink}" stop-opacity="0"/></radialGradient>`;
+  }
+  for(let i=0;i<marks;i++){
+    const x=Math.round(rand()*690),t=rand(),scale=rand(),y=Math.round(240*(preset===2?Math.sqrt(t):t)),dim=(.13+rand()*.73).toFixed(2);
+    if(preset===6){
+      const dark=rand()<y/240;
+      art+=`<rect x="${x}" y="${y}" width="${Math.round(2+scale*scale*39)}" height="${scale>.93?2:1}" fill="${dark?'#111111':ink}" opacity="${dim}"/>`;
+    }else if(preset===2||preset===3){
+      const r=(1+scale**3*(preset===2?8:12)).toFixed(1);
+      if(scale>.94)art+=`<ellipse cx="${x}" cy="${y}" rx="${r*4}" ry="${r*2.3}" fill="url(#${id}-halo)" opacity=".6"/>`;
+      art+=`<path d="M0 -1 L${r} -2 L2 ${r}Z" transform="translate(${x} ${y}) rotate(${Math.round(rand()*360)})" fill="${ink}" opacity="${dim}"/>`;
+    }else{
+      const r=(.55+scale**4*(preset===4?18:preset===5?1.25:2.8)).toFixed(1);
+      if(preset===1&&scale>.94)art+=`<ellipse cx="${x}" cy="${y}" rx="${r*6}" ry="${r*3.6}" fill="url(#${id}-halo)"/>`;
+      art+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${ink}" opacity="${dim}"/>`;
+    }
+  }
+  return `<mask id="${id}-fade" maskUnits="userSpaceOnUse" x="0" y="0" width="690" height="240"><linearGradient id="${id}-alpha" x2="0" y2="1"><stop stop-color="#fff" stop-opacity="0"/><stop offset=".23" stop-color="#fff" stop-opacity=".85"/><stop offset=".63" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><rect width="690" height="240" fill="url(#${id}-alpha)"/></mask><g mask="url(#${id}-fade)">${art}</g>`;
+}
+function transitionSVG(from,to,preset,id,y,height){
+  const style=PAGE_BACKGROUNDS[preset];
+  const mid=style?`<stop offset="${style.stop}%" stop-color="${style.mid}"/>`:'';
+  const fill=!style&&from===to?from:`url(#${id})`;
+  const gradient=fill===from?'':`<linearGradient id="${id}" x2="0" y2="1"><stop stop-color="${from}"/>${mid}<stop offset="1" stop-color="${to}"/></linearGradient>`;
+  return `<svg data-page-transition="1" y="${y}" width="${W}" height="${height}" viewBox="0 0 690 240" preserveAspectRatio="none" overflow="hidden">${gradient}<rect width="690" height="240" fill="${fill}"/>${style?transitionTexture(preset,id):''}</svg>`;
+}
 function gapMarkup(y,size,base,slot,i){
   return `<g data-page-gap="${i}" data-slot="${slot}" data-gap-size="${size}" data-gap-base="${base}" data-gap-y="${y}" role="slider" tabindex="0" aria-label="${i+1}컷과 ${i+2}컷 사이 간격" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="${MAX_PAGE_GAP}" aria-valuenow="${size}">
     <rect class="gap-area" width="${W}" y="${y}" height="${size}"/>
@@ -753,7 +812,7 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false}={}){let y=40,o='',gaps='';const multi=panels.length>1;
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false}={}){let y=40,o='',gaps='',backgrounds='';const multi=panels.length>1;
   panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi),bx=B.x,bw=B.w;const h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);const on=i===sel;const u=im?null:underlay(p);
     let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:drawPanel({...p,said:''},bx,y,bw,h,i);
     if(u){art=`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`+art.replace(/ fill="#fff"\/>/g,' fill="none"/>')}
@@ -764,10 +823,15 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
       (clean?'':letterSVG(p,{x:bx,y,w:bw,h,frame:B.frame},i,edit?.letters,interactive))+`</g>`;
     const base=defaultPageGap(p),size=edit?.gap??base;
     y+=h;
+    if(edits){
+      const background=pageBackground(edit),next=panels[i+1];
+      const end=next?pageBackground(edits[cutSlot(next,i+1)]):PAGE_WHITE;
+      backgrounds+=`<g data-bg-panel="${i}"><rect y="${i?y-h:0}" width="${W}" height="${h+(i?0:40)}" fill="${background}"/>${transitionSVG(background,end,edit?.transition,`${pre}bg-${i}`,y,size)}</g>`;
+    }
     if(interactive&&i<panels.length-1)gaps+=gapMarkup(y,size,base,slot,i);
     y+=size;
   });
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${o}${gaps}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${o}${gaps}</svg>`;
 }
 function render(){state.svg=renderSVG(state.panels,state.sel);$('#preview').innerHTML=state.svg}
 
@@ -978,7 +1042,7 @@ function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerH
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
     const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':art.svg;
     const lab=art&&WMODE==='final'?(art.kind==='mix'?`이미지 ${art.n}/${ps.length}컷 · 나머지 러프`:ART_LABEL[art.kind]):'';
-    return `<section id="ws-${i}" data-page-scene="${i}" style="scroll-margin-top:120px"><div class="scn"><span>${esc(sceneLabel(sc,i))}${lab?' · '+lab:''}</span></div>${body}</section>`});
+    return `<section id="ws-${i}" data-page-scene="${i}" style="scroll-margin-top:160px"><div class="scn"><span>${esc(sceneLabel(sc,i))}${lab?' · '+lab:''}</span></div>${body}</section>`});
   $('#reader').innerHTML=parts.join('');
   refreshPageTools();
   $('#wstat').textContent=`씬 ${SCENES.length}개 · 컷 ${cuts}개${imgd?` · 이미지 ${imgd}컷 등록`:''}`;
@@ -1010,12 +1074,42 @@ function selectPageCut(group){
   if(selectedBalloon?.closest('[data-slot-index]')!==group)selectBalloon(null);
   const buttons=[pageCut,$('#wletterreset')];
   buttons.forEach(el=>el.disabled=!group);
+  $('#wbackground').hidden=!group;
   if(!group){pageSelection='';return}
   pageSelection=pageKey(group);
   pageCut.value=pageSelection;
+  refreshBackgroundTools();
   pageReader.querySelector('.cut-selected')?.classList.remove('cut-selected');
   group.querySelector('.page-frame').classList.add('cut-selected');
 }
+const backgroundColor=$('#wbgcolor'),backgroundPresets=$('#wbgpresets');
+backgroundPresets.innerHTML=PAGE_BACKGROUNDS.map((preset,i)=>{
+  const name=preset?`${i}. ${preset.name}`:'기본 그라디언트';
+  const thumb=preset?transitionSVG(preset.start,PAGE_WHITE,i,`bg-thumb-${i}`,0,240):'';
+  return `<button type="button" data-bg-preset="${i}" aria-label="${name}" title="${name}" aria-pressed="false">${thumb}<span>${i||'기본'}</span></button>`;
+}).join('');
+function refreshBackgroundTools(){
+  const edit=pageSettings();
+  backgroundColor.value=pageBackground(edit);
+  backgroundPresets.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',Number(b.dataset.bgPreset)===(edit?.transition||0)));
+}
+backgroundColor.addEventListener('change',()=>{
+  if(!pageSelection)return;
+  pageSettings(true).background=backgroundColor.value;
+  saveScenes();renderWebtoon();
+});
+backgroundPresets.addEventListener('click',e=>{
+  const preset=e.target.closest('[data-bg-preset]');
+  if(!pageSelection||!preset)return;
+  pageSettings(true).transition=Number(preset.dataset.bgPreset);
+  saveScenes();renderWebtoon();
+});
+$('#wbgreset').addEventListener('click',()=>{
+  if(!pageSelection)return;
+  const edit=pageSettings();
+  if(edit){delete edit.background;delete edit.transition}
+  saveScenes();renderWebtoon();
+});
 $('#wedit').addEventListener('click',e=>{
   pageEditing=!pageEditing;
   e.currentTarget.setAttribute('aria-pressed',pageEditing);
@@ -1089,17 +1183,19 @@ pageReader.addEventListener('focusin',e=>{
 });
 function gapLayout(gap){
   const svg=gap.ownerSVGElement,index=Number(gap.dataset.pageGap);
-  const following=[...svg.querySelectorAll('[data-slot-index],[data-page-gap]')]
-    .filter(el=>Number(el.dataset.p??el.dataset.pageGap)>index)
+  const following=[...svg.querySelectorAll('[data-slot-index],[data-page-gap],[data-bg-panel]')]
+    .filter(el=>Number(el.dataset.p??el.dataset.pageGap??el.dataset.bgPanel)>index)
     .map(el=>[el,Number(el.dataset.shift||0)]);
-  return {gap,svg,following,size:Number(gap.dataset.gapSize),height:svg.viewBox.baseVal.height,
+  const transition=svg.querySelector(`[data-bg-panel="${index}"] > [data-page-transition]`);
+  return {gap,svg,following,transition,size:Number(gap.dataset.gapSize),height:svg.viewBox.baseVal.height,
     y:Number(gap.dataset.gapY),key:gap.closest('section').dataset.pageScene+':'+gap.dataset.slot};
 }
 function resizeGap(layout,size){
-  const {gap,svg,following,y}=layout,delta=size-layout.size,height=layout.height+delta;
+  const {gap,svg,following,transition,y}=layout,delta=size-layout.size,height=layout.height+delta;
   gap.dataset.gapSize=String(size);
   gap.setAttribute('aria-valuenow',size);
   gap.querySelector('.gap-area').setAttribute('height',size);
+  transition?.setAttribute('height',size);
   gap.querySelector('.gap-grip').setAttribute('transform',`translate(${W/2} ${y+size/2})`);
   gap.querySelector('text').textContent=`${size} px`;
   following.forEach(([el,offset])=>{
