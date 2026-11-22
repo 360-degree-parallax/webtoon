@@ -617,6 +617,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .dict-ex figcaption{font-size:12px;color:var(--t2);display:grid;gap:2px}.dict-ex figcaption b{color:var(--t1)}.dict-ex figcaption p{margin:2px 0 0;line-height:1.5}
 .dict-none{font-size:12px;color:var(--t3)}
 .dictlink{font:inherit;font-weight:700;color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:help}
+.dbnote{margin:-4px 0 10px;font-size:12px;color:var(--t3)}
 </style>
 </head>
 <body>
@@ -946,6 +947,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <input type="file" id="filem" accept="image/*" multiple hidden>
 <script src="engine.js"></script>
 <script src="prompt.js"></script>
+<script src="nai-stats.js"></script>
 <script src="nai.js"></script>
 <script src="sfx.js"></script>
 <script src="materials.js"></script>
@@ -2673,7 +2675,7 @@ function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$
     return `<div class="pcard cut"><div class="drop${im?' has':''}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 이미지 ${im?'바꾸기':'등록'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="삭제">×</button>`:'+ 생성한 이미지'}</div>
     <div><header><h3>${esc(cutHead(p,i))}${im?(im.stale?'<span class="tag warn">글이 바뀜</span>':'<span class="tag">등록됨</span>'):''}${o.ai?'<span class="tag">Claude</span>':''}</h3><button class="btn" data-act="ncopyall">전체 복사</button></header>
     <p class="meta"><span class="ratio">${o.size.w} × ${o.size.h}${o.size.exact?'':' → 자르기'}</span> ${esc(p.act)}${o.size.exact?'':` · 생성 후 ${esc(o.size.crop)}`}</p>
-    ${blk('기본 프롬프트','Base Prompt',o.base)}
+    ${blk('기본 프롬프트','Base Prompt',o.base)}${o.dbNote?`<p class="dbnote">${esc(o.dbNote)}</p>`:''}
     ${o.chars.map((c,n)=>blk(`캐릭터 ${n+1} · ${esc(c.name)}`,`위치 ${c.pos.cell} (x ${c.pos.x}, y ${c.pos.y})`,c.prompt)).join('')}
     <div class="nset"><div><b>해상도</b>${o.size.w} × ${o.size.h}</div><div><b>Steps · Guidance</b>${S.steps} · ${S.guidance}</div><div><b>Sampler</b>${S.sampler} · ${S.noise}</div><div><b>img2img</b>Strength ${S.strength} · Noise ${S.noiseImg}</div><div><b>캐릭터 위치</b>${o.chars.length>1?'AI\'s Choice 끄고 칸 지정':o.chars.length?'1명이면 AI\'s Choice도 괜찮음':'인물 없음'}</div><div><b>레퍼런스</b>${o.charRef?`Character Reference: ${esc(o.charRef)}`:o.vibe?'Vibe Transfer: 장면 이미지':'없음'}</div></div>
     <div class="nbtns"><button class="btn dark" data-act="naibase" data-i="${i}">바탕 PNG (${o.size.w}×${o.size.h})</button>${o.charRef?`<button class="btn" data-act="nairef" data-n="${esc(o.charRef)}">캐릭터 레퍼런스 이미지</button>`:o.vibe?'<button class="btn" data-act="naivibe">장면 이미지</button>':''}</div>

@@ -6,6 +6,8 @@
   const SHOT = {
     설정: ['scenery', 'very wide shot', 'wide shot'], 전경: ['wide shot', 'full body'], 전신: ['full body'], 중경: ['upper body'],
     클로즈업: ['portrait', 'close-up', 'face focus'], 디테일: ['close-up'], '효과 배경': ['upper body', 'abstract background'],
+    // 연출 DB에 있는 샷 값(화면 인서트 52컷, SD 27컷)
+    '화면 인서트': ['close-up', 'phone screen', 'holding phone', 'pov hands'], SD: ['chibi', 'super deformed', 'simple background'],
   };
   const ANG = { 아이레벨: ['straight-on'], 하이앵글: ['from above'], 로우앵글: ['from below'], 탑뷰: ['from above', 'top-down'] };
   const EXPR = {
@@ -32,7 +34,25 @@
     [['밤', '촛불', '달빛', '자정'], ['night', 'candlelight', 'dark']], [['노을', '저녁', '석양'], ['sunset', 'orange sky']], [['아침', '햇살', '햇빛'], ['morning', 'sunlight']],
     [['비가 그친', '비 갠'], ['after rain', 'wet floor']], [['비가 내', '비가 오', '비 오', '빗줄기', '빗속'], ['rain', 'wet']], [['눈 내', '눈이 내', '겨울'], ['snow', 'winter']],
   ];
-  const MOOD = { 긴장: ['dramatic lighting', 'high contrast'], 설렘: ['soft lighting', 'bloom'], 쓸쓸: ['muted colors'], 분노: ['high contrast', 'dramatic lighting'], 놀람: ['dramatic lighting'] };
+  const MOOD = { 긴장: ['dramatic lighting', 'high contrast'], 설렘: ['soft lighting', 'bloom'], 쓸쓸: ['muted colors'], 분노: ['high contrast', 'dramatic lighting'], 놀람: ['dramatic lighting'],
+    회상: ['soft focus', 'light particles', 'vignetting'], 다정: ['warm lighting'], 냉담: ['cold colors'], 개그: ['simple background'] };
+  // 연출 DB 덩어리 색 → 빛·색 태그 (nai-stats.js가 감정별로 고른 색)
+  const TONE = { '어두운 톤': ['dark', 'low key'], 검정: ['dark background'], '밝은 톤': ['bright', 'high key'], '중간 톤·회색': ['muted colors'],
+    '중간 컬러·주황': ['warm lighting', 'orange theme'], '중간 컬러·붉은색': ['red theme'], '중간 컬러·분홍': ['pink theme'], '중간 컬러·파랑': ['blue theme'],
+    '중간 컬러·남색': ['blue theme', 'night'], '중간 컬러·보라': ['purple theme'], '중간 컬러·초록': ['green theme'], '중간 컬러·노랑': ['yellow theme'], '중간 컬러·청록': ['aqua theme'],
+    '강조색·붉은색': ['red theme'], '강조색·분홍': ['pink theme'], '강조색·파랑': ['blue theme'], '강조색·주황': ['orange theme'], '강조색·노랑': ['yellow theme'], '강조색·초록': ['green theme'] };
+  const FXBG = { '어두운 톤': 'dark background', 검정: 'black background', '밝은 톤': 'white background', '중간 컬러·분홍': 'pink background', '강조색·분홍': 'pink background',
+    '중간 컬러·파랑': 'blue background', '강조색·파랑': 'blue background', '중간 컬러·주황': 'orange background', '중간 컬러·붉은색': 'red background', '강조색·붉은색': 'red background',
+    '중간 컬러·보라': 'purple background', '중간 컬러·노랑': 'yellow background', '중간 컬러·초록': 'green background', '중간 컬러·남색': 'blue background', '중간 컬러·청록': 'aqua background' };
+  const STATS = () => (typeof window !== 'undefined' && window.RoughNAIStats) || N.STATS || null;
+  // 감정 하나에 대한 DB 근거 태그와 설명
+  function dbTone(emo, shot) {
+    const st = STATS(), r = st && st.emo && st.emo[emo];
+    if (!r) return { tags: [], note: '' };
+    if (shot === '효과 배경' && r.fx && FXBG[r.fx]) return { tags: [FXBG[r.fx]], note: `DB 근거: ${emo} 효과 배경 ${r.fxN}컷 중 ${Math.round(r.fxShare * 100)}%가 ${r.fx}` };
+    if (r.tone && TONE[r.tone]) return { tags: TONE[r.tone], note: `DB 근거: ${emo} 그림 컷 ${r.n}개 중 ${Math.round(r.share * 100)}%가 ${r.tone}` };
+    return { tags: [], note: '' };
+  }
   // 한국어 외형 → 태그
   const COLOR = { 검은: 'black', 검정: 'black', 까만: 'black', 흰: 'white', 하얀: 'white', 붉은: 'red', 빨간: 'red', 파란: 'blue', 푸른: 'blue', 초록: 'green', 녹색: 'green', 노란: 'yellow', 금색: 'yellow', 갈색: 'brown', 밤색: 'brown', 회색: 'grey', 은색: 'silver', 분홍: 'pink', 보라: 'purple', 남색: 'navy blue' };
   const HAIRC = [[['금발'], 'blonde hair'], [['은발'], 'silver hair'], [['흑발', '검은 머리', '까만 머리'], 'black hair'], [['갈색 머리', '밤색 머리', '갈발'], 'brown hair'], [['빨간 머리', '붉은 머리', '적발'], 'red hair'], [['분홍 머리'], 'pink hair'], [['백발', '흰 머리'], 'white hair'], [['회색 머리'], 'grey hair']];
@@ -82,12 +102,13 @@
     const first = tbl => (tbl.find(([ws]) => has(t, ws)) || tbl.find(([ws]) => has(all, ws)) || [null, []])[1];
     const light = uniq([...first(TIME), ...first(WEATHER)]);
     const peak = p.vng === 'P';
+    const tone = insert ? { tags: [], note: '' } : dbTone(p.emo, p.shot);
     const shot = insert ? (poses.some(x => /wrist|hand|shoulder/.test(x)) ? ['close-up', 'hands focus', 'head out of frame'] : cast.length ? ['close-up', 'head out of frame'] : ['close-up', 'still life', 'no humans']) : SHOT[p.shot] || SHOT['중경'];
     const side = i % 2 ? 'left' : 'right';
     const base = uniq([
       ...(cast.length ? countTag(cast) : ['no humans']),
       ...shot, ...(ANG[p.ang] || []),
-      ...place, ...(ctx.loreTags ? ctx.loreTags(p) : []), ...light, ...(MOOD[p.emo] || []),
+      ...place, ...(ctx.loreTags ? ctx.loreTags(p) : []), ...light, ...(MOOD[p.emo] || []), ...(light.length ? tone.tags.filter(x => x !== 'dark') : tone.tags),
       peak && '1.2::dramatic lighting::',
       (p.dialogs || []).length && 'negative space',
       ...String(ctx.worldTags || '').split(',').map(s => s.trim()),
@@ -115,7 +136,7 @@
     return {
       base: base.join(', '), chars: charP, size: sz,
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
-      charRef, vibe, peak, aiChoice: cast.length < 2 && !insert,
+      charRef, vibe, peak, aiChoice: cast.length < 2 && !insert, dbNote: tone.note,
     };
   }
   function text(o, i, total, head) {
