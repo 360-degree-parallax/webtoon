@@ -24,7 +24,7 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 #info{font-size:12px;color:var(--soft);margin-bottom:8px}
 #canvasWrap{overflow:auto;max-height:80vh;background:light-dark(#e9e6e0,#111);border-radius:8px;padding:12px;text-align:center}
 #canvasWrap svg{background:#fff;max-width:100%;height:auto}
-#refs{margin-top:12px}#refs h3{font-size:13px;margin:8px 0 4px}#refs .strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}#refs figure{margin:0;flex:none;width:110px}#refs img{width:110px;border-radius:4px;display:block;background:var(--line)}#refs figcaption{font-size:11px;color:var(--soft)}
+#refs{margin-top:12px}#gallery{margin-top:16px}#gallery .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}#gallery figure{margin:0;cursor:pointer;border:2px solid transparent;border-radius:6px;padding:2px}#gallery figure.hit{border-color:var(--accent)}#gallery img{width:100%;border-radius:4px;display:block}#gallery figcaption{font-size:11px;color:var(--soft)}#refs h3{font-size:13px;margin:8px 0 4px}#refs .strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}#refs figure{margin:0;flex:none;width:110px}#refs img{width:110px;border-radius:4px;display:block;background:var(--line)}#refs figcaption{font-size:11px;color:var(--soft)}
 table{border-collapse:collapse;width:100%;font-size:12px;margin-top:10px}
 td,th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
 td select{min-height:28px;padding:2px 4px;font-size:12px}
@@ -62,6 +62,7 @@ td select{min-height:28px;padding:2px 4px;font-size:12px}
 <div id="info">패턴을 불러오는 중…</div>
 <div id="canvasWrap"></div>
 <div id="refs"></div>
+<div id="gallery"></div>
 </section>
 </main>
 <script>
@@ -72,7 +73,13 @@ for(const k in OPT)$('#'+k).innerHTML=OPT[k].map(v=>`<option>${v}</option>`).joi
 let PATS=[],state={chunks:[],pick:[]},CUTS=null;
 // 참고 원본 컷: cuts/ 서브모듈(비공개 저장소)이 있을 때만 보임
 fetch('../cuts/manifest.csv').then(r=>r.ok?r.text():Promise.reject()).then(t=>{const L=t.replace(/^\ufeff/,'').trim().split('\n');const H=L.shift().split(',');CUTS={};for(const l of L){const v=l.split(',');CUTS[v[0]]=v[H.indexOf('file')]}if(state.used)renderRefs()}).catch(()=>{CUTS=false;renderRefs()});
-function renderRefs(){const el=document.querySelector('#refs');if(CUTS===false){el.innerHTML='<p class="hint">참고 원본 컷은 cuts/ 서브모듈이 있을 때 보입니다 (비공개 저장소 권한 필요).</p>';return}if(!CUTS||!state.used)return;el.innerHTML=state.used.map(p=>`<h3>${esc(p.src+'-'+p.id)} ${esc(p.name||'')}</h3><div class="strip">${p.cuts.filter(c=>c.t==='그림'&&CUTS[c.id]).map(c=>`<figure><img loading="lazy" src="../cuts/${CUTS[c.id]}" alt="${esc(c.id)}"><figcaption>${esc(c.id)} · ${esc(c.shot)}</figcaption></figure>`).join('')}</div>`).join('')}
+// 컬러 러프 참고 (공개 저장소에 포함, 원본 컷 ID와 연결)
+let GAL=[];fetch('references/green-midnight/index.json').then(r=>r.json()).then(d=>{GAL=d.items;renderGallery()}).catch(()=>{});
+function renderGallery(){const el=document.querySelector('#gallery');if(!GAL.length)return;const used=new Set((state.used||[]).flatMap(p=>p.cuts.map(c=>c.id)));
+  el.innerHTML='<h3 style="font-size:13px;margin:8px 0 4px">컬러 러프 참고 <span class="hint">(누르면 선택한 컷에 샷·앵글·비율 적용)</span></h3><div class="grid">'+GAL.map((g,i)=>`<figure data-g="${i}" class="${used.has(g.source_cut)?'hit':''}"><img loading="lazy" src="references/green-midnight/${g.file}" alt="${esc(g.source_cut)}"><figcaption>${esc(g.source_cut)} · ${esc(g.shot)} · ${esc(g.frame)}</figcaption></figure>`).join('')+'</div>'}
+document.addEventListener('click',e=>{const f=e.target.closest('#gallery figure');if(!f||!state.panels||!state.panels.length)return;const g=GAL[+f.dataset.g];const i=Math.min(state.sel||0,state.panels.length-1);Object.assign(state.panels[i],{shot:SHOTS.includes(g.shot)?g.shot:'중경',ang:ANGLES.includes(g.angle)?g.angle:'아이레벨',h:g.h_ratio});renderTable();render()});
+document.addEventListener('focusin',e=>{const t=e.target.closest('#cutTable [data-i]');if(t)state.sel=+t.dataset.i});
+function renderRefs(){renderGallery();const el=document.querySelector('#refs');if(CUTS===false){el.innerHTML='<p class="hint">참고 원본 컷은 cuts/ 서브모듈이 있을 때 보입니다 (비공개 저장소 권한 필요).</p>';return}if(!CUTS||!state.used)return;el.innerHTML=state.used.map(p=>`<h3>${esc(p.src+'-'+p.id)} ${esc(p.name||'')}</h3><div class="strip">${p.cuts.filter(c=>c.t==='그림'&&CUTS[c.id]).map(c=>`<figure><img loading="lazy" src="../cuts/${CUTS[c.id]}" alt="${esc(c.id)}"><figcaption>${esc(c.id)} · ${esc(c.shot)}</figcaption></figure>`).join('')}</div>`).join('')}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function parseBeats(){return $('#beats').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const [who,...rest]=l.split('|');const act=rest.join('|').trim()||who.trim();const said=(act.match(/"([^"]+)"/)||[])[1]||'';return {who:rest.length?who.trim():'',act,said}})}
