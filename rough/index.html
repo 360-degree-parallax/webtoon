@@ -322,7 +322,9 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .reader .frame-handles{display:none}.reader .frame-handles.sel{display:inline}
 .frame-handles rect,.frame-handles circle{fill:#fff;stroke:#2d71f7;stroke-width:3;touch-action:none}
 .frame-handles [data-fh=t],.frame-handles [data-fh=b]{cursor:ns-resize}.frame-handles [data-fh=l],.frame-handles [data-fh=r]{cursor:ew-resize}
-.frame-handles circle{cursor:move}.frame-handles :hover{fill:#2d71f7}
+.frame-handles circle{cursor:move}
+.reader [data-slot-index].sel [data-art]{cursor:grab}.reader [data-slot-index].sel [data-art]:active{cursor:grabbing}
+.zoomrow{display:flex;align-items:center;gap:8px;min-width:0}.zoomrow input{flex:1;min-width:80px}.zoomrow b{font-size:12px;font-weight:600;width:40px;text-align:right;color:var(--t2)}.frame-handles :hover{fill:#2d71f7}
 .reader-top{max-width:720px;margin:0 auto;padding:32px 16px 8px}
 .h1sub{margin-left:8px;font-size:15px;font-weight:600;color:var(--t2);vertical-align:middle}
 .wtitle{display:block;width:100%;border:0;background:none;font-size:30px;font-weight:800;letter-spacing:-.02em;padding:0;outline:none}
@@ -792,10 +794,11 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
         <div class="prop col"><span>아래 전환 질감</span><div class="bg-presets" id="wbgpresets" role="group" aria-label="컷 아래 전환 질감"></div></div>
         <div class="prop"><span></span><button class="btn sm" id="wbgreset">배경 초기화</button></div>
       </div>
+      <div class="prop"><span>그림 확대</span><span class="zoomrow"><input id="wzoom" type="range" min="100" max="500" step="5" value="100" aria-label="칸 안 그림 확대"><b id="wzoomvalue">100%</b><button class="btn sm" id="wzoomreset">원래대로</button></span></div>
       <div class="prop"><span>프레임</span><button class="btn sm" id="wframereset">크기·모양 초기화</button></div>
       <div class="prop"><span>식자</span><button class="btn sm" id="wletterreset">이 컷 식자 배치·스타일 초기화</button></div>
     </section>
-    <small class="insp-foot">컷을 고르면 테두리에 손잡이가 생겨요. 변을 끌면 크기, 꼭짓점을 끌면 칸 모양(사선)이 바뀌어요. 컷 사이 손잡이로 간격을 바꾸고, 두 번 클릭하면 기본 간격으로 돌아가요.</small>
+    <small class="insp-foot">컷을 고르면 테두리에 손잡이가 생겨요. 변을 끌면 크기, 꼭짓점을 끌면 칸 모양(사선)이 바뀌어요. 칸 위에서 Ctrl(⌘)+휠이나 핀치로 그림을 확대하고, 확대한 그림은 끌어서 옮겨요. 컷 사이 손잡이로 간격을 바꾸고, 두 번 클릭하면 기본 간격으로 돌아가요.</small>
   </aside>
 </div>
 </div>
@@ -1264,7 +1267,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     const fp=pts||(interactive?box:null),poly=fp?fp.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' '):null;
     const fdata=interactive?` data-frame='${JSON.stringify({x:bx,y,w:bw,h,q:(pts||box).map((q,k)=>[Math.round(q[0]-box[k][0]),Math.round(q[1]-box[k][1])])})}'${prev?` data-prev="${prev[0]}:${prev[1]}"`:''}`:'';
     const c=!clean&&!im&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame?`stroke="#222" stroke-width="3"`:'stroke="none"';
-    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g clip-path="url(#${pre}${i})">${art}</g>`+
+    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g clip-path="url(#${pre}${i})"><g data-art${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
       (clean?'':letterSVG(rough?{...p,dialogs:[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame},i,edit?.letters,interactive))+`</g>`;
@@ -1281,6 +1284,9 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
   });
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="Pretendard,system-ui,sans-serif"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${o}${gaps}${handles}</svg>`;
 }
+// 칸 안 그림 확대·이동(피그마 이미지 크롭처럼): 칸 가운데 기준 배율 s, 이동 dx·dy
+function zoomTf(z,bx,y,bw,h){if(!z||!(z.s>1))return'';const cx=bx+bw/2,cy=y+h/2;
+  return ` transform="translate(${(cx+(z.dx||0)).toFixed(1)} ${(cy+(z.dy||0)).toFixed(1)}) scale(${z.s.toFixed(3)}) translate(${(-cx).toFixed(1)} ${(-cy).toFixed(1)})"`}
 // 칸 프레임 손잡이: 네 변(크기) + 네 꼭짓점(모양). 선택한 컷에만 보임
 function frameHandles(pts,slot,i){const E=[['t',0,1],['r',1,2],['b',2,3],['l',3,0]];
   return `<g class="frame-handles" data-fh-for="${slot}" data-p="${i}">`+E.map(([k,a,b])=>{const x=(pts[a][0]+pts[b][0])/2,y=(pts[a][1]+pts[b][1])/2,hz=k==='t'||k==='b';
@@ -1785,7 +1791,8 @@ function selectPageCut(group){
   refreshBackgroundTools();
   pageReader.querySelector('.cut-selected')?.classList.remove('cut-selected');
   pageReader.querySelectorAll('.frame-handles.sel').forEach(h=>h.classList.remove('sel'));
-  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');
+  pageReader.querySelector('[data-slot-index].sel')?.classList.remove('sel');group.classList.add('sel');
+  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');showZoom(pageSettings()?.img?.s||1);
 }
 const backgroundColor=$('#wbgcolor'),backgroundPresets=$('#wbgpresets');
 backgroundPresets.innerHTML=PAGE_BACKGROUNDS.map((preset,i)=>{
@@ -1998,7 +2005,7 @@ pageReader.addEventListener('dblclick',e=>{
   saveGap(layout,true);
 });
 pageReader.addEventListener('pointerdown',e=>{
-  if(!pageEditing||e.button!==0||pageDrag||gapDrag||tailDrag||frameDrag)return;
+  if(!pageEditing||e.button!==0||pageDrag||gapDrag||tailDrag||frameDrag||artDrag)return;
   const gap=e.target.closest('[data-page-gap]');
   if(gap){
     if(e.pointerType!=='touch'||e.target.closest('.gap-grip'))startGapDrag(gap,e);
@@ -2008,10 +2015,11 @@ pageReader.addEventListener('pointerdown',e=>{
   if(fh){const hs=fh.closest('[data-fh-for]');startFrameDrag(hs.ownerSVGElement.querySelector(`[data-slot-index="${hs.dataset.fhFor}"]`),fh,e);return}
   const group=e.target.closest('[data-slot-index]');
   if(!group)return;
+  const was=pageSelection===pageKey(group);
   selectPageCut(group);
   const letter=e.target.closest('[data-letter]');
   selectLetter(letter);
-  if(!letter)return;
+  if(!letter){if(was&&(pageSettings()?.img?.s||1)>1)startArtDrag(group,e);return}
   e.preventDefault();
   const handle=e.target.closest('[data-tail-handle]');
   if(handle){
@@ -2026,6 +2034,7 @@ pageReader.addEventListener('pointerdown',e=>{
 });
 pageReader.addEventListener('pointermove',e=>{
   if(frameDrag?.id===e.pointerId){moveFrame(e);return}
+  if(artDrag?.id===e.pointerId){const pt=pagePoint(artDrag.svg,e);setZoom(artDrag.group,{...artDrag.z0,dx:artDrag.z0.dx+pt.x-artDrag.start.x,dy:artDrag.z0.dy+pt.y-artDrag.start.y});return}
   if(tailDrag?.id===e.pointerId){
     const {art,meta,start,end}=tailDrag,point=pagePoint(art,e);
     tailDrag.offset={x:Math.round(end.x+point.x-start.x-meta.cx),y:Math.round(end.y+point.y-start.y-meta.cy)};
@@ -2045,6 +2054,7 @@ pageReader.addEventListener('pointermove',e=>{
 });
 pageReader.addEventListener('pointerup',e=>{
   if(frameDrag?.id===e.pointerId){saveFrame();return}
+  if(artDrag?.id===e.pointerId){const g=artDrag.group;artDrag=null;saveZoom(g);return}
   if(tailDrag?.id===e.pointerId){
     if(tailDrag.offset)saveLetter(tailDrag.letter,{tail:tailDrag.offset});
     tailDrag=null;
@@ -2061,6 +2071,7 @@ pageReader.addEventListener('pointerup',e=>{
 });
 pageReader.addEventListener('lostpointercapture',e=>{
   if(frameDrag?.id===e.pointerId){showFrame(frameDrag.group,frameDrag.f0);frameDrag=null;return}
+  if(artDrag?.id===e.pointerId){setZoom(artDrag.group,artDrag.z0);artDrag=null;return}
   if(tailDrag?.id===e.pointerId){
     showTail(tailDrag.art,tailDrag.meta,tailDrag.initial);
     tailDrag=null;
@@ -2130,6 +2141,31 @@ function saveFrame(){const d=frameDrag;frameDrag=null;if(!d.moved)return;const {
   // 윗변을 끌면 바로 위 칸과의 간격을 그만큼 줄이거나 늘려 아랫변은 그대로
   if(k==='t'&&group.dataset.prev){const [ps,size]=group.dataset.prev.split(':').map(Number);pageSettings(true,scene+':'+ps).gap=clampGap(size+(f.y-f0.y))}
   saveScenes();renderWebtoon()}
+// ---------- 칸 안 그림 확대·이동 ----------
+let artDrag=null,zoomTimer=0;const ZMAX=5;
+function zoomOf(group){const z=pageSettings(false,pageKey(group))?.img;return {s:1,dx:0,dy:0,...z}}
+function clampZoom(group,z){const f=JSON.parse(group.dataset.frame),s=Math.max(1,Math.min(ZMAX,z.s)),mx=f.w*(s-1)/2,my=f.h*(s-1)/2;
+  return {s,dx:Math.max(-mx,Math.min(mx,z.dx)),dy:Math.max(-my,Math.min(my,z.dy))}}
+function setZoom(group,z){z=clampZoom(group,z);const f=JSON.parse(group.dataset.frame),el=group.querySelector('[data-art]');
+  const tf=zoomTf(z,f.x,f.y,f.w,f.h);if(tf)el.setAttribute('transform',tf.slice(12,-1));else el.removeAttribute('transform');
+  group._z=z;if(pageSelection===pageKey(group))showZoom(z.s);return z}
+function saveZoom(group){const z=group._z;if(!z)return;const set=pageSettings(true,pageKey(group));
+  if(z.s<=1.001)delete set.img;else set.img={s:+z.s.toFixed(3),dx:Math.round(z.dx),dy:Math.round(z.dy)};saveScenes()}
+function startArtDrag(group,e){e.preventDefault();artDrag={group,svg:group.ownerSVGElement,z0:zoomOf(group),start:pagePoint(group.ownerSVGElement,e),id:e.pointerId};pageReader.setPointerCapture(e.pointerId)}
+// 커서 아래 점이 그대로 있도록 확대
+function zoomAt(group,s2,pt){const z=group._z||zoomOf(group),f=JSON.parse(group.dataset.frame),cx=f.x+f.w/2,cy=f.y+f.h/2;
+  const c=pt||{x:cx+z.dx,y:cy+z.dy},k=s2/z.s;
+  return setZoom(group,{s:s2,dx:c.x-cx-k*(c.x-cx-z.dx),dy:c.y-cy-k*(c.y-cy-z.dy)})}
+pageReader.addEventListener('wheel',e=>{if(!pageEditing||!(e.ctrlKey||e.metaKey))return;const group=e.target.closest('[data-slot-index]');if(!group)return;
+  e.preventDefault();if(pageSelection!==pageKey(group))selectPageCut(group);
+  const z=group._z||zoomOf(group);zoomAt(group,Math.max(1,Math.min(ZMAX,z.s*Math.exp(-e.deltaY*(Math.abs(e.deltaY)<20?.012:.002)))),pagePoint(group.ownerSVGElement,e));
+  clearTimeout(zoomTimer);zoomTimer=setTimeout(()=>saveZoom(group),300)},{passive:false});
+const zoomRange=$('#wzoom');
+function showZoom(s){zoomRange.value=Math.round(s*100);$('#wzoomvalue').textContent=zoomRange.value+'%'}
+const selGroup=()=>[...pageReader.querySelectorAll('[data-slot-index]')].find(g=>pageKey(g)===pageSelection);
+zoomRange.addEventListener('input',()=>{const g=selGroup();if(g)zoomAt(g,zoomRange.value/100)});
+zoomRange.addEventListener('change',()=>{const g=selGroup();if(g)saveZoom(g)});
+$('#wzoomreset').addEventListener('click',()=>{const g=selGroup();if(!g)return;setZoom(g,{s:1,dx:0,dy:0});saveZoom(g)});
 $('#wframereset').addEventListener('click',()=>{if(!pageSelection)return;const set=pageSettings();if(set){delete set.frame;delete set.quad}saveScenes();renderWebtoon()});
 function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
 async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 만드는 중');
