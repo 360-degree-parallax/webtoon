@@ -108,3 +108,19 @@ textarea::placeholder { color: var(--muted); }
   .cut-summary { grid-template-columns: 29px minmax(0, 1fr) 14px; }
   .cut-shot { display: none; }
 }
+
+.ref-aspects { border: 0; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.ref-aspects legend { font-size: 12px; color: var(--soft); margin: 0 0 2px; }
+.ref-aspects label { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; }
+.ref-aspects input { margin: 0; accent-color: var(--blue); }
+.ref-aspects:disabled { opacity: .6; }
+.fixed-label { color: var(--blue); }
+.prompt-heading { margin-top: 15px; }
+.prompt-heading label { font-weight: 700; }
+.cut-buttons { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.prompt.editable { resize: vertical; min-height: 125px; max-height: 420px; }
+.prompt.editable:read-only { background: var(--wash); }
+.prompt.editable:not(:read-only) { background: var(--paper); }
+.commit-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.commit-row p { color: var(--muted); font-size: 12px; }
+.edit-hint { margin: -10px 0 13px; color: var(--muted); font-size: 12px; }

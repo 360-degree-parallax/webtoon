@@ -65,6 +65,46 @@ test('serves the editor, reference bytes and JSON on a separate loopback route',
   assert.equal((await compiled.json()).panels.length, 2);
   assert.equal((await send({ script: '' })).status, 400);
   assert.equal((await send(scene, { Origin: 'https://example.com' })).status, 403);
-  assert.equal((await send({ script: 'a'.repeat(100000) })).status, 413);
+  assert.equal((await send({ script: 'a'.repeat(800000) })).status, 413);
   assert.equal((await fetch(base + '/cuts/manifest.csv')).status, 404);
+});
+
+test('each reference aspect modifies only the selected part', () => {
+  const input = { script: '도령 | 창문을 연다\n도령 | 거울을 든다', scene: '붉은 등불이 켜진 방' };
+  const base = compile(input).panels[0];
+  const using = aspects => compile({ ...input, overrides: { 0: { id: 'GM-06-013', aspects } } }).panels[0];
+  const composition = using(['composition']);
+  assert.equal(composition.shot, '클로즈업');
+  assert.equal(composition.frame.height, base.frame.height);
+  assert.match(composition.image, /얼굴 절반/);
+  assert.doesNotMatch(composition.image, /참고 색·빛/);
+  const light = using(['lighting']);
+  assert.equal(light.shot, base.shot);
+  assert.equal(light.angle, base.angle);
+  assert.equal(light.frame.height, base.frame.height);
+  assert.match(light.image, /참고 색·빛/);
+  assert.match(light.image, /붉은 등불이 켜진 방/);
+  const length = using(['length']);
+  assert.equal(length.shot, base.shot);
+  assert.equal(length.angle, base.angle);
+  assert.equal(length.frame.height, 497);
+  assert.doesNotMatch(length.image, /참고 색·빛|얼굴 절반/);
+  assert.deepEqual(using([]).frame, base.frame);
+});
+
+test('an approved cut keeps exact text and camera while position follows the new scene', () => {
+  const original = compile(scene).panels[1];
+  const edited = '  얼굴은 화면 오른쪽,\n침묵은 한 박자 길게.  ';
+  const scene2 = { ...scene, script: '바깥에 비가 온다\n' + scene.script, style: 'ink', overrides: {} };
+  const outer = compile({ ...scene2, edits: { 2: { image: edited, lock: original.lock } } });
+  const moved = outer.panels[2];
+  assert.equal(moved.image, edited);
+  assert.equal(moved.locked, true);
+  assert.equal(moved.reference.id, original.reference.id);
+  assert.equal(moved.shot, original.shot);
+  assert.equal(moved.angle, original.angle);
+  assert.equal(moved.frame.height, original.frame.height);
+  assert.notEqual(moved.frame.y, original.frame.y);
+  assert.equal(outer.panels[0].locked, false);
+  assert.equal(compile({ ...scene2, edits: { 2: { image: edited } } }).panels[2].locked, false);
 });

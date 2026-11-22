@@ -4,7 +4,10 @@ const Engine = require('../engine.js');
 const { patterns } = require('../patterns.json');
 const color = require('../references/green-midnight/index.json').items;
 const creative = require('../references/creative/green-midnight-closeups/index.json').items;
+const palettes = require('./palettes.json');
 const WIDTH = 690;
+const IMAGE_LIMIT = 6000;
+const ASPECTS = ['composition', 'lighting', 'length'];
 const MAX_CUTS = 30;
 const STYLES = {
   green: '거친 연필선과 넓은 색면의 한국 웹툰 컬러 러프. 숲빛 녹색, 차콜과 낮은 채도의 웜그레이를 기본으로 하고, 명암은 큰 덩어리로 정리한다.',
@@ -65,6 +68,7 @@ function publicRef(ref) {
   return ref && {
     id: ref.id, kind: ref.kind, shot: ref.shot, angle: ref.angle, ratio: ref.h_ratio,
     composition: NOTES[ref.id] || ref.composition || '', lighting: LIGHT[ref.id] || '',
+    palette: palettes[ref.id] || [],
     image: '/rough/references/' + ref.path,
   };
 }
@@ -86,10 +90,32 @@ function readBeats(text) {
   });
 }
 
-function referenceFor(cut, id) {
-  if (id) return { ref: refById.get(id), match: 'manual' };
-  const ref = Engine.suggestRef(cut, refs);
-  return { ref, match: ref?.source_cut === cut.src ? 'exact' : ref ? 'similar' : null };
+function referenceFor(cut, automatic, selection, lock) {
+  if (lock) return { ref: refById.get(lock.referenceId), match: lock.match, aspects: lock.aspects };
+  if (selection) return { ref: refById.get(selection.id), match: 'manual', aspects: selection.aspects };
+  return { ref: automatic, match: automatic?.source_cut === cut.src ? 'exact' : automatic ? 'similar' : null, aspects: [] };
+}
+
+function validAspects(value) {
+  return Array.isArray(value) && value.length <= ASPECTS.length &&
+    value.every(item => ASPECTS.includes(item)) && new Set(value).size === value.length;
+}
+
+function validLock(lock) {
+  return lock && Engine.SHOTS.includes(lock.shot) && Engine.ANGLES.includes(lock.angle) &&
+    Number.isInteger(lock.height) && lock.height > 0 && lock.height <= WIDTH * 4 &&
+    Number.isInteger(lock.gapAfter) && lock.gapAfter >= 0 && lock.gapAfter <= WIDTH * 4 &&
+    typeof lock.sourceCut === 'string' && /^[A-Z]{2}-\d{2}-\d{3}$/.test(lock.sourceCut) &&
+    (lock.referenceId === null || refById.has(lock.referenceId)) &&
+    [null, 'exact', 'similar', 'manual'].includes(lock.match) && validAspects(lock.aspects);
+}
+
+function referenceLight(ref, monochrome) {
+  const colors = palettes[ref.id] || [];
+  const light = LIGHT[ref.id];
+  const description = [light, colors.length && `참고 이미지의 주조색 ${colors.join(', ')}`].filter(Boolean).join(' ');
+  if (!description) return '첨부한 참고 컷의 명암 대비와 광원 방향을 적용한다.';
+  return `참고 색·빛: ${description}${monochrome ? ' 색상은 흑백 명암 값으로 치환한다.' : ''}`;
 }
 
 function lettering(beat, cut) {
@@ -111,20 +137,30 @@ function lettering(beat, cut) {
   });
 }
 
-function compile({ script, scene = '', cast = '', style = 'green', overrides = {} }) {
+function compile({ script, scene = '', cast = '', style = 'green', overrides = {}, edits = {} }) {
   if (typeof script !== 'string' || script.length > 16000 || !script.trim())
     throw new Error('장면을 16,000자 이내로 입력해주세요.');
   if (typeof scene !== 'string' || scene.length > 1200 || typeof cast !== 'string' || cast.length > 1600)
     throw new Error('공간·빛은 1,200자, 캐릭터 설정은 1,600자까지 입력할 수 있어요.');
-  if (!Object.hasOwn(STYLES, style) || !overrides || typeof overrides !== 'object' || Array.isArray(overrides))
+  const mapping = value => value && typeof value === 'object' && !Array.isArray(value);
+  if (!Object.hasOwn(STYLES, style) || !mapping(overrides) || !mapping(edits))
     throw new Error('프롬프트 설정을 확인해주세요.');
   const beats = readBeats(script);
   if (!beats.length || beats.length > MAX_CUTS) throw new Error('한 번에 1~30컷까지 작성할 수 있어요.');
   if (beats.some(beat => !beat.who && !beat.action && !beat.letter.length && !beat.framing))
     throw new Error('인물이나 행동이 비어 있는 줄을 확인해주세요.');
-  for (const [index, id] of Object.entries(overrides)) {
-    if (!/^(0|[1-9]\d*)$/.test(index) || +index >= beats.length || !refById.has(id))
-      throw new Error('지정한 참고 컷을 확인해주세요.');
+  const validIndex = index => /^(0|[1-9]\d*)$/.test(index) && +index < beats.length;
+  const selections = Object.create(null);
+  for (const [index, value] of Object.entries(overrides)) {
+    const selection = typeof value === 'string' ? { id: value, aspects: ASPECTS } : value;
+    if (!validIndex(index) || !mapping(selection) || !refById.has(selection.id) || !validAspects(selection.aspects))
+      throw new Error('지정한 참고 컷과 적용 범위를 확인해주세요.');
+    selections[index] = selection;
+  }
+  for (const [index, edit] of Object.entries(edits)) {
+    if (!validIndex(index) || !mapping(edit) || typeof edit.image !== 'string' ||
+        !edit.image.trim() || edit.image.length > IMAGE_LIMIT || (edit.lock && !validLock(edit.lock)))
+      throw new Error('편집한 프롬프트와 확정 정보를 확인해주세요.');
   }
 
   const castLines = cast.trim().split(/\r?\n/).map(line => line.trim()).filter(Boolean);
@@ -142,36 +178,49 @@ function compile({ script, scene = '', cast = '', style = 'green', overrides = {
     for (const cut of Engine.layout(analysis, p)) {
       const i = panels.length;
       const beat = beats[i];
-      const { ref, match } = referenceFor(cut, overrides[i]);
-      if (match === 'manual') {
+      const edit = edits[i];
+      const locked = edit?.lock;
+      const automatic = Engine.suggestRef(cut, refs);
+      const autoGeometry = automatic && automatic.shot === cut.shot && automatic.angle === cut.ang ? automatic : null;
+      const { ref, match, aspects } = referenceFor(cut, automatic, selections[i], locked);
+      if (aspects.includes('composition') && ref) {
         cut.shot = ref.shot;
         cut.ang = ref.angle;
-        cut.h = ref.h_ratio;
       }
-      const height = Math.round(cut.h * WIDTH);
-      const gap = i === beats.length - 1 ? 0 : Math.round(cut.gap * WIDTH);
+      if (locked) {
+        cut.shot = locked.shot;
+        cut.ang = locked.angle;
+        cut.src = locked.sourceCut;
+      }
+      const height = locked?.height ?? Math.round((aspects.includes('length') && ref ? ref.h_ratio : cut.h) * WIDTH);
+      const gapAfter = locked?.gapAfter ?? Math.round(cut.gap * WIDTH);
+      const gap = i === beats.length - 1 ? 0 : gapAfter;
       const letter = lettering(beat, cut);
       const descriptions = castLines.filter(line => {
         const name = line.split(/\s*[|:：]\s*/, 1)[0];
         return !/[|:：]/.test(line) || name === beat.who || (name && beat.action.includes(name));
       });
-      const useRefDetails = ref && ref.shot === cut.shot && ref.angle === cut.ang;
-      const composition = beat.framing || (useRefDetails
-        ? (NOTES[ref.id] || (ref.composition ? `${ref.composition} 구도를 사용한다.` : '')) : '');
+      const compositionRef = aspects.includes('composition') ? ref : autoGeometry;
+      const manualLight = aspects.includes('lighting') && ref && referenceLight(ref, style === 'ink');
+      const automaticLight = autoGeometry && style === 'green' && LIGHT[autoGeometry.id];
+      const composition = beat.framing || (compositionRef
+        ? NOTES[compositionRef.id] || (compositionRef.composition ? `${compositionRef.composition} 구도를 사용한다.` : '') : '');
       const previous = panels.at(-1);
       const distance = previous && previous.chapter === chapters.length && previous.shot !== cut.shot
         ? `직전 컷의 ${previous.shot}에서 이번 컷의 ${cut.shot}로 전환한다.` : '';
       const subject = [beat.who, beat.action].filter(Boolean).join(' · ') || '장면의 중심이 되는 피사체';
       const reserve = [...new Set(letter.map(item => item.position.replace(/에서 아래로$/, '')))].join('·');
-      const image = [
+      const generated = [
         `웹툰 한 컷. ${subject}.`,
         [`${cut.shot} · ${cut.ang}. ${ANGLES[cut.ang] || ''}`, composition || SHOTS[cut.shot], ROLES[cut.role]].filter(Boolean).join(' '),
         `감정은 ${cut.emo}. ${cut.i >= 2 ? '표정 또는 몸짓 한 곳에 긴장을 모은다.' : '표정과 몸짓은 절제한다.'}`,
-        scene.trim() ? `공간·조명·색: ${scene.trim()}` : useRefDetails && style === 'green' && LIGHT[ref.id],
+        scene.trim() && `장면 공통 공간·빛: ${scene.trim()}`,
+        manualLight || (!scene.trim() && automaticLight),
         descriptions.length
           ? `인물 연속성: ${descriptions.join(' / ')}. 컷 사이에 얼굴·헤어·복식을 유지한다.`
           : beat.who && beats.some((other, j) => j !== i && other.who === beat.who) && `이 장면의 ${beat.who}는 컷 사이에 얼굴·헤어·복식을 유지한다.`,
-        `${STYLES[style]}${scene.trim() ? ' 색과 빛은 장면 입력을 우선한다.' : useRefDetails && style === 'green' && LIGHT[ref.id] ? ' 색과 빛은 참고 컷의 묘사를 우선한다.' : ''}`,
+        `${STYLES[style]}${manualLight || (!scene.trim() && automaticLight)
+          ? ' 이 컷의 색과 빛은 참고 묘사를 우선한다.' : scene.trim() ? ' 색과 빛은 장면 입력을 우선한다.' : ''}`,
         `화면 비율 가로:세로 ${WIDTH}:${height}. ${reserve ? `${reserve}의 식자 예정 영역은 낮은 대비로 비워 인물의 눈이나 핵심 소품을 겹치지 않게 한다. ` : ''}생성 이미지에는 글자, 말풍선, 효과음, 페이지 번호를 그리지 않는다.`,
       ].filter(Boolean).join('\n');
       const layout = [
@@ -181,8 +230,11 @@ function compile({ script, scene = '', cast = '', style = 'green', overrides = {
         letter.length ? letter.map(item => `${item.kind} ${item.position} (x ${item.x}%, y ${item.y}%)${item.speaker ? ` · ${item.speaker}` : ''} «${item.text}»`).join('\n') : '식자 없음.',
       ].filter(Boolean).join('\n');
       panels.push({ number: i + 1, chapter: chapters.length, title: subject, sourceCut: cut.src,
-        shot: cut.shot, angle: cut.ang, emotion: cut.emo, role: cut.role, image, layout, letter,
-        frame: { x: 0, y, width: WIDTH, height, gapAfter: gap }, reference: publicRef(ref), match });
+        shot: cut.shot, angle: cut.ang, emotion: cut.emo, role: cut.role,
+        image: edit?.image ?? generated, generated, locked: Boolean(locked), layout, letter,
+        frame: { x: 0, y, width: WIDTH, height, gapAfter: gap }, reference: publicRef(ref), match, aspects,
+        lock: { shot: cut.shot, angle: cut.ang, height, gapAfter, sourceCut: cut.src,
+          referenceId: ref?.id ?? null, match, aspects } });
       y += height + gap;
     }
   }

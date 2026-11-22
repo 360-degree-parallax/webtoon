@@ -12,7 +12,7 @@ const files = new Map([
   [directory + 'style.css', ['style.css', 'text/css; charset=utf-8']],
   ...references.map(ref => [ref.image, ['..' + ref.image.slice('/rough'.length), 'image/png']]),
 ]);
-const maxRequest = 96 * 1024;
+const maxRequest = 768 * 1024;
 
 function send(res, status, type, body) {
   res.writeHead(status, { 'Content-Type': type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' });
