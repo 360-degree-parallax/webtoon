@@ -270,10 +270,27 @@
   function applyFeel(beats) { if (!E._feel) return beats; const T = beats.map(plain);
     beats.forEach((b, k) => { const r = E._feel(T[k], T[k - 1] || '', T[k + 1] || ''); b._m = { emo: r.emo, i: r.i, why: '글 전체로 판단(학습 모델)' }; }); return beats; }
   // 샷·역할 모델(tools/ml/train_shot.py): 컷 글(+앞뒤) → 샷·역할. E.useShotModel(model)로 켬. E.SHOT(b) → {shot, role} 또는 null
+  // 단어 1~2그램 TF-IDF(sklearn word, token_pattern, 1+log tf, idf, l2와 같게)
+  function wordVec(vocab, idf, pat) {
+    const vi = new Map(vocab.map((w, k) => [w, k])), re = new RegExp(pat, 'g');
+    return s => { const toks = String(s || '').toLowerCase().match(re) || [], tf = new Map(), add = g => { const k = vi.get(g); if (k !== undefined) tf.set(k, (tf.get(k) || 0) + 1); };
+      toks.forEach((t, i) => { add(t); if (i + 1 < toks.length) add(t + ' ' + toks[i + 1]); });
+      let nn = 0; const out = []; for (const [k, c] of tf) { const v = (1 + Math.log(c)) * idf[k]; out.push([k, v]); nn += v * v; }
+      nn = Math.sqrt(nn) || 1; return out.map(([k, v]) => [k, v / nn]); };
+  }
+  // 희소 가중치(S: 조각마다 클래스별 [k,v,k,v…]) → 조밀 배열. 옛 형식(W·Ww)도 읽음
+  function denseHead(H, nv, nw) {
+    if (H._d) return H._d; const C = H.classes.length, segs = [];
+    if (H.S) H.S.forEach((seg, s) => { const n = s < 3 ? nv : nw; segs.push(seg.map(fl => { const a = new Float32Array(n); for (let i = 0; i < fl.length; i += 2) a[fl[i]] = fl[i + 1]; return a; })); });
+    else { for (let s = 0; s < 3; s++) segs.push(H.W[s].map(r => Float32Array.from(r))); if (H.Ww) segs.push(H.Ww.map(r => Float32Array.from(r))); }
+    return (H._d = segs);
+  }
   function makeShot(M) {
-    const vec = ngramVec(M);
-    const pick = (H, xs) => { let m = 0, best = -Infinity; H.classes.forEach((_, c) => { const z = xs.reduce((a, x, s) => a + x.reduce((q, [k, v]) => q + v * H.W[s][c][k], 0) * (s ? M.meta.ctx : 1), H.b[c]); if (z > best) { best = z; m = c; } }); return H.classes[m]; };
-    return (t, p, n) => { const xs = [vec(t), vec(p), vec(n)]; return { shot: pick(M.shot, xs), role: pick(M.role, xs) }; };
+    const vec = ngramVec(M), wvec = M.wvocab ? wordVec(M.wvocab, M.widf, M.wpat) : null, nv = M.vocab.length, nw = M.wvocab ? M.wvocab.length : 0;
+    const pick = (H, xs) => { const D = denseHead(H, nv, nw); let m = 0, best = -Infinity;
+      H.classes.forEach((_, c) => { let z = H.b[c]; xs.forEach((x, s) => { if (!D[s]) return; const w = D[s][c], k = s === 1 || s === 2 ? M.meta.ctx : 1; let q = 0; for (const [i, v] of x) q += v * w[i]; z += q * k; }); if (z > best) { best = z; m = c; } });
+      return H.classes[m]; };
+    return (t, p, n) => { const xs = [vec(t), vec(p), vec(n)]; if (wvec) xs.push(wvec(t)); return { shot: pick(M.shot, xs), role: pick(M.role, xs) }; };
   }
   function applyShot(beats) { if (!E._shotM) return beats; const T = beats.map(plain);
     beats.forEach((b, k) => { b._s = E._shotM(T[k], T[k - 1] || '', T[k + 1] || ''); }); return beats; }
