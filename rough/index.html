@@ -1346,13 +1346,13 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
   const tailArt=interactive?`<g data-tail-art="">${tail.svg}</g>`:tail.svg;
   return `<g${data} transform="${balloonTransform(meta,scale)}">${body+tailArt+cover+text+suffix}</g>`;
 }
-function captionSVG(t,p,box,first,edit){
+function captionSVG(t,p,box,first,edit,n=0){
   const k=box.w/630,edited=typeof edit?.text==='string';
   const wrapped=wrapLetter(t,16,edited),lines=edited?wrapped:wrapped.slice(0,3);
   const fs=edited?Math.min(19*k,box.h*.48/(lines.length*1.5+1.6)):19*k,lh=fs*1.5;
   const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
   const style=/그날|이후|후|전|밤|아침|저녁|년|일 뒤|며칠|다음 날|그때/.test(t)&&(first||p.role==='설정'||p.role==='전환')?'deco':(p.vng==='R'||p.shot==='효과 배경')?'plain':'box';
-  const w=tw+fs*2.6,h=th+fs*1.6,x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06);
+  const w=tw+fs*2.6,h=th+fs*1.6,x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06)-n*(h+10*k);  // 두 번째부터는 위로 쌓음
   const txt=(fill,extra='')=>lines.map((l,n)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+fs*.8+lh*(n+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" text-anchor="middle" fill="${fill}"${extra}>${esc(l)}</text>`).join('');
   if(edit?.style==='narration')return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#161616" stroke-width="${1.8*k}"/>`+txt('#24201c',' font-family="Noto Serif KR, Batang, serif"');
   if(style==='plain')return txt('#f7f2e6',` stroke="rgba(20,16,12,.55)" stroke-width="${3*k}" paint-order="stroke"`);
@@ -1397,7 +1397,8 @@ function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key
   };
   (p.sfx||[]).forEach((text,n)=>add('effect-'+n,'효과음',text,(value,pos)=>soundEffectSVG(value,box,p.side,n,pos)));
   extras.forEach((item,n)=>add('material-'+item.id,'효과음',item.text,(value,pos)=>soundEffectSVG(value,box,p.side,n+(p.sfx?.length||0),pos)));
-  if(p.caption)add('caption','나레이션',p.caption,(value,pos)=>captionSVG(value,p,box,idx===0,pos));
+  // 나레이션은 컷마다 여러 개: 첫째 'caption', 둘째부터 'caption-1'…(예전 저장 위치와 호환)
+  (p.captions||(p.caption?[p.caption]:[])).forEach((c,n)=>add(n?'caption-'+n:'caption','나레이션',c,(value,pos)=>captionSVG(value,p,box,idx===0&&!n,pos,n)));
   const ds=(p.dialogs||[]).filter(d=>d.text);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
   ds.forEach((d,n)=>{
     add('dialog-'+n,'말풍선',d.text,(value,pos)=>balloonSVG({...d,text:value},p,box,n,R,pos,interactive));
@@ -2192,7 +2193,7 @@ function selectLetter(letter){
   selectedLetter?.classList.remove('balloon-selected','letter-selected');
   selectedLetter=letter||null;
   const art=letter?.querySelector('[data-balloon]');
-  const caption=letter?.dataset.letter==='caption';
+  const caption=/^caption/.test(letter?.dataset.letter||'');
   $('#wballoon').hidden=!art;
   $('#wballoonstyletools').hidden=!art&&!caption;
   letterTextForm.hidden=!letter;

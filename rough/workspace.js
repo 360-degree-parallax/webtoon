@@ -26,7 +26,7 @@ const TOOLS=[
   {id:'crop',name:'그림 편집',key:'C',icon:'<path d="M6.5 2.5v15h15M2.5 6.5h15v15"/>',hint:'컷을 누르면 그림 확대·이동 모드 · Ctrl+휠 확대, 끌어 이동'},
   0,
   {id:'balloon',name:'말풍선',key:'B',sub:true,icon:'<path d="M12 4c5 0 9 3.1 9 7s-4 7-9 7c-1 0-2-.1-2.9-.4L4.5 19.5l1.4-3.6A6.6 6.6 0 0 1 3 11c0-3.9 4-7 9-7z"/>',hint:'컷 안을 누른 자리에 말풍선 · 형태는 막대 왼쪽에서 고르거나 아이콘을 길게 눌러요'},
-  {id:'caption',name:'나레이션',key:'T',icon:'<rect x="3" y="6" width="18" height="12" rx="1"/><path d="M7 10.5h10M7 14h6"/>',hint:'컷 안을 누른 자리에 나레이션 상자(컷마다 하나)'},
+  {id:'caption',name:'나레이션',key:'T',icon:'<rect x="3" y="6" width="18" height="12" rx="1"/><path d="M7 10.5h10M7 14h6"/>',hint:'컷 안을 누른 자리에 나레이션 상자(한 컷에 여러 개)'},
   {id:'sfx',name:'효과음',key:'S',icon:'<path d="M12 2.5l1.9 5.6 5.6-1.9-3.6 4.6 4.9 2.8-5.8.9.8 5.9-3.8-4.4-3.8 4.4.8-5.9-5.8-.9 4.9-2.8L4.5 6.2l5.6 1.9z"/>',hint:'컷 안을 누른 자리에 효과음 · 문구는 막대에서 바꿔요'},
   0,
   {id:'focus',name:'집중선',key:'L',icon:'<circle cx="12" cy="12" r="2.2"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5M5.3 5.3l3.5 3.5M15.2 15.2l3.5 3.5M18.7 5.3l-3.5 3.5M8.8 15.2l-3.5 3.5"/>',hint:'컷 안에서 강조할 지점을 누르세요'},
@@ -103,7 +103,7 @@ function addLetter(kind,group,pt,o={}){
   const count=pre=>group.querySelectorAll(`[data-letter^="${pre}"]`).length;
   let lk,line;
   if(kind==='balloon'){lk='dialog-'+count('dialog-');line=`"${o.text||'대사를 입력하세요'}"`}
-  else if(kind==='caption'){const ex=group.querySelector('[data-letter="caption"]');if(ex){selectPageCut(group);selectLetter(ex);focusText();flash('나레이션은 컷마다 하나예요 · 문구를 고쳐 주세요');return}lk='caption';line=`[${o.text||'나레이션'}]`}
+  else if(kind==='caption'){const c=count('caption');lk=c?'caption-'+c:'caption';line=`[${o.text||'나레이션'}]`}
   else{const w=String(o.text||opt.sfx||'쾅').replace(/[-\s]/g,'').slice(0,10)||'쾅';lk='effect-'+count('effect-');line=`-${w}-`}
   cuts[slot]=String(cuts[slot]||'').replace(/\s+$/,'')+'\n'+line;
   const style=kind==='balloon'?(o.style||opt.balloon):null;
@@ -221,7 +221,7 @@ function renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
   if(MULTI.size>1&&tool==='select')mid=`<b>식자 ${MULTI.size}개</b>${[['left','왼쪽'],['hcenter','가로 가운데'],['right','오른쪽'],['top','위'],['vcenter','세로 가운데'],['bottom','아래'],['vdist','세로 간격'],['hdist','가로 간격']].map(([k,n])=>`<button class="cb" data-align="${k}">${n}</button>`).join('')}`;
   else if(tool==='balloon')mid=`<label>형태 <select data-ctx="bstyle">${BSTYLES.map(([k,n])=>`<option value="${k}"${k===opt.balloon?' selected':''}>${esc(n)}</option>`).join('')}</select></label>`;
   else if(tool==='sfx')mid=`<label>문구 <input data-ctx="sfxword" value="${esc(opt.sfx)}" maxlength="10" size="6"></label>${['쾅','두근','툭','쿵','휘청','쨍그랑','덜컹','찰칵'].map(w=>`<button class="cb${w===opt.sfx?' on':''}" data-sfxw="${w}">${w}</button>`).join('')}`;
-  else if(tool==='select'&&selectedLetter){const art=selectedLetter.querySelector('[data-balloon]'),kind=/^dialog/.test(selectedLetter.dataset.letter)?'말풍선':selectedLetter.dataset.letter==='caption'?'나레이션':'효과음';
+  else if(tool==='select'&&selectedLetter){const art=selectedLetter.querySelector('[data-balloon]'),kind=/^dialog/.test(selectedLetter.dataset.letter)?'말풍선':/^caption/.test(selectedLetter.dataset.letter)?'나레이션':'효과음';
     mid=`<b>${kind}</b><span class="cb-t">${esc((selectedLetter.dataset.letterText||'').replace(/\s+/g,' ').slice(0,24))}</span><button class="cb" data-ctx="ledit">문구 고치기</button>`+
       (art?`<label>형태 <select data-ctx="lstyle">${[...$('#wballoonstyle').options].map(o=>`<option value="${o.value}"${o.selected?' selected':''}>${esc(o.textContent)}</option>`).join('')}</select></label><label>크기 <input type="range" data-ctx="lsize" min="50" max="200" value="${$('#wballoonsize').value}"><output>${$('#wballoonsize').value}%</output></label>`:'')+
       `<button class="cb" data-ctx="llock">${isLocked(selectedLetter.closest('[data-slot-index]'),selectedLetter.dataset.letter)?'잠금 풀기':'잠그기'}</button>`}
