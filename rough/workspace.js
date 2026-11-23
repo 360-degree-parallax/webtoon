@@ -400,7 +400,35 @@ function targetText(){if(selectedLetter){const k=selectedLetter.dataset.letter;r
 function renderTarget(){const t=targetText();assetBody.querySelector('#astarget').innerHTML=t?`<span>적용 대상</span><b>${esc(t)}</b>`:'<span>컷을 고르면 클릭으로 넣고, 아니면 캔버스로 끌어다 놓아요</span>'}
 function assetTab(k,user){if(!ATABS.some(t=>t[0]===k))k='rec';ASSET.tab=k;if(user)ASSET.auto=false;assetBody.querySelectorAll('[data-at]').forEach(b=>b.setAttribute('aria-selected',b.dataset.at===k));
   const refs=k==='ref';asRefs.hidden=!refs;asBody.hidden=refs;if(refs){if(!assetTab.busy){assetTab.busy=true;try{RoughRefs.showTab('refs')}finally{assetTab.busy=false}}const q=$('#rfq');if(q&&ASSET.q&&q.value!==ASSET.q){q.value=ASSET.q;q.dispatchEvent(new Event('input',{bubbles:true}))}}else renderAssets();renderTarget()}
-const item=(k,v,label,inner,extra='')=>`<button class="asi" draggable="true" data-mat="${k}" data-v="${esc(String(v))}" data-label="${esc(label)}" title="${esc(label)}"${extra}>${inner}<span>${esc(label)}</span></button>`;
+// ---------- 즐겨찾기: 모든 에셋(말풍선·효과음·효과선·배경·색·이미지·시퀀스)을 ★로 모아 봄 ----------
+const FAVS=LS('rough-asset-favs',[]);
+const favKey=(k,v)=>k+'|'+v;
+function isFav(k,v){return FAVS.some(f=>favKey(f.k,f.v)===favKey(k,String(v)))||(k==='pack'&&typeof materialFavorites!=='undefined'&&materialFavorites.has(String(v)))}
+function toggleFav(k,v,label){v=String(v);const on=isFav(k,v),i=FAVS.findIndex(f=>favKey(f.k,f.v)===favKey(k,v));if(i>=0)FAVS.splice(i,1);if(!on)FAVS.unshift({k,v,label});
+  if(k==='pack'&&typeof materialFavorites!=='undefined'){on?materialFavorites.delete(v):materialFavorites.add(v);try{localStorage.setItem('rough-material-favorites',JSON.stringify([...materialFavorites]))}catch(_){}}
+  SS('rough-asset-favs',FAVS.slice(0,400));return !on}
+const item=(k,v,label,inner,extra='')=>`<button class="asi" draggable="true" data-mat="${k}" data-v="${esc(String(v))}" data-label="${esc(label)}" title="${esc(label)}"${extra}>${inner}<span>${esc(label)}</span><span class="fav${isFav(k,v)?' on':''}" data-fav role="button" tabindex="-1" aria-label="즐겨찾기" title="즐겨찾기">★</span></button>`;
+// ---------- 효과음: 소재 묶음 타입(A~D)·검색 ----------
+const SFX_TYPES=[['A','흰 테두리'],['B','계단형'],['C','가는 펜선'],['D','컷 전 선행음']];
+let SFX_TYPE=LS('rough-sfx-type','A');if(!SFX_TYPES.some(t=>t[0]===SFX_TYPE))SFX_TYPE='A';
+const SFXQ={q:'',cat:''};
+const packOf=w=>typeof materialCatalog!=='undefined'?materialCatalog.find(w):null;
+function packTile(id){const e=materialCatalog.entry(id),art=e&&materialCatalog.image(e,SFX_TYPE);return art?`<img class="apv sfxi" src="${art.src}" alt="" loading="lazy">`:sfxTile(e?.word||'')}
+// 자주 쓰는 낱말: 묶음에 있으면 그 소재(고른 타입)로, 없으면 기본 레터링
+const quickItem=w=>{const e=packOf(w);return e?item('pack',e.id,w,packTile(e.id),` data-cat="${esc(e.category)}"`):item('sfx',w,w,sfxTile(w))};
+function sfxMatches(){const q=SFXQ.q.normalize('NFKC').toLowerCase();return (materialRows||[]).filter(r=>(!SFXQ.cat||r.category===SFXQ.cat)&&(!q||r.word.normalize('NFKC').toLowerCase().includes(q)||r.category.toLowerCase().includes(q)))}
+function renderSfxGrid(){const el=asBody.querySelector('#sfxgrid');if(!el)return;const L=sfxMatches();
+  el.innerHTML=(SFXQ.q||SFXQ.cat?'':`<h5>자주 쓰는 효과음</h5><div class="asgrid sfxs">${SFXW.map(quickItem).join('')}</div>`)+
+    (materialRows?.length?`<h5>효과음 소재 · ${SFX_TYPES.find(t=>t[0]===SFX_TYPE)[1]} (${L.length})</h5>`+(L.length?`<div class="asgrid sfxs">${L.map(r=>item('pack',r.id,r.word,packTile(r.id),` data-cat="${esc(r.category)}"`)).join('')}</div>`:'<p class="as-empty">찾는 효과음이 없어요.</p>'):
+      `<p class="as-note">효과음 소재 묶음(ZIP, 615종 × 타입 4)을 한 번 불러오면 이 브라우저에 남아 다음부터는 처음부터 다 불러와요. <button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button></p>`)}
+// 처음부터 효과음 소재를 다 불러 둠(한가할 때 40개씩) → 타일·캔버스에 바로 실제 그림
+const sfxPreload=(()=>{let started=false;return ()=>{if(started||typeof materialCatalog==='undefined')return;started=true;
+  materialCatalog.ready().then(rows=>{if(!rows.length){started=false;return}materialRows=rows;let i=0;
+    const idle=f=>window.requestIdleCallback?requestIdleCallback(f,{timeout:800}):setTimeout(f,30);
+    const step=()=>{const b=rows.slice(i,i+40);i+=40;if(!b.length){if(ASSET.tab==='sfx')renderSfxGrid();else if(['rec','star'].includes(ASSET.tab))renderAssets();return}
+      Promise.all(b.map(e=>materialCatalog.load(e).catch(()=>{}))).then(()=>{if(ASSET.tab==='sfx'&&i%200===0)renderSfxGrid();idle(step)})};idle(step)})}})();
+if(document.readyState==='complete')setTimeout(sfxPreload,300);else addEventListener('load',()=>setTimeout(sfxPreload,300),{once:true});
+
 const match=s=>!ASSET.q||String(s).toLowerCase().includes(ASSET.q.toLowerCase());
 const EMO_BG={'설렘':3,'기쁨':3,'다정':3,'긴장':2,'분노':2,'결의':2,'쓸쓸':4,'회상':4,'놀람':5,'당황':5,'냉담':6,'평온':1,'의아':1,'개그':1};
 const EMO_SFX={'설렘':['두근'],'놀람':['쾅','휘청'],'분노':['쾅','쿵'],'긴장':['두근','툭'],'당황':['휘청'],'개그':['펑']};
@@ -443,7 +471,7 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
   const bimgs=Object.values(IMG.bg||{}).filter(r=>match(r.name||'배경 이미지')).map(r=>item('bgimg',r.id,r.name||'배경 이미지',`<img src="${r.src}" alt="">`));
   const lines=[['focus','집중선'],['speed','속도선']].filter(x=>match(x[1])).map(([v,n])=>item('line',v,n,lineTile(v,srcs[0])));
   if(k==='rec'){const p=selPanel();
-    if(!p)h='<p class="as-empty">컷을 고르면 그 컷의 감정·샷·연출에 맞는 에셋을 골라 보여 줘요.</p>'+grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).slice(0,8).map(x=>item(x.k,x.v,x.label,tileFor(x.k,x.v))),'big');
+    if(!p)h='<p class="as-empty">컷을 고르면 그 컷의 감정·샷·연출에 맞는 에셋을 골라 보여 줘요.</p>'+grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).slice(0,8).map(x=>item(x.k,x.v,x.label,x.k==='pack'?packTile(x.v):tileFor(x.k,x.v))),'big');
     else{const emo=p.emo||'',hot=(p.i||0)>=2,act=String(p.act||''),lv=`${emo||'기본'}${p.i?` ${p.i}`:''}`;
       const ds=(p.dialogs||[]).map(d=>d.text).join('');
       const bgI=EMO_BG[emo]||1,bal=/!|！/.test(ds)?(hot?'torn':'charcoal'):/…|\.\.\./.test(p.said||'')?'hazy':'round-box';
@@ -463,9 +491,10 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
         grid('비슷한 컷 참고',refs.map(r=>`<button class="asi ref" draggable="true" data-ref-id="${esc(r.source_cut)}" title="${esc(r.label||r.source_cut)}"><img src="${r.thumb||cutThumb(r.source_cut)||r.src}" alt="" loading="lazy"><span>${esc(r.source_cut)}</span></button>`),'refs')+
         grid('저장한 시퀀스',seqList().map((t,i)=>item('seq',i,`${t.name} · ${t.cuts.length}컷`,'<i class="seqi"></i>')))}}
   else if(k==='balloon')h=grid('말풍선 형태',balloons,'big')+'<p class="as-note">말풍선을 고른 상태에서 누르면 형태가 바뀌고, 컷을 고른 상태면 새로 넣어요. 컷 위로 끌어 놓으면 그 자리에.</p>';
-  else if(k==='sfx'){const pack=typeof materialRows!=='undefined'?materialRows.filter(r=>match(r.word)||match(r.category)).slice(0,120):[];
-    h=grid('자주 쓰는 효과음',sfxQuick,'sfxs')+(pack.length?grid(`효과음 소재 ${ASSET.q?`· "${esc(ASSET.q)}"`:''} (${pack.length}${pack.length===120?'+':''})`,pack.map(r=>item('pack',r.id,r.word,sfxTile(r.word),` data-cat="${esc(r.category)}"`)),'sfxs'):
-      `<p class="as-note">효과음 소재 묶음(ZIP)을 불러오면 600여 개를 검색해 쓸 수 있어요. <button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button></p>`);}
+  else if(k==='sfx'){const cats=[...new Set((materialRows||[]).map(r=>r.category))];
+    h=`<div class="sfxbar"><input id="sfxq" type="search" placeholder="효과음 검색 (글자·분류)" value="${esc(SFXQ.q)}" aria-label="효과음 검색">`+
+      (cats.length?`<select id="sfxcat" aria-label="분류"><option value="">모든 분류</option>${cats.map(c=>`<option${c===SFXQ.cat?' selected':''}>${esc(c)}</option>`).join('')}</select>`:'')+`</div>`+
+      `<div class="sfxtype" role="radiogroup" aria-label="레터링 타입">${SFX_TYPES.map(([t,n])=>`<button role="radio" data-sfxtype="${t}" aria-checked="${t===SFX_TYPE}"><b>${t}</b>${n}</button>`).join('')}</div><div id="sfxgrid"></div>`}
   else if(k==='line')h=grid('효과선',lines,'big')+'<p class="as-note">누르면 고른 컷에 효과선을 넣을 준비가 돼요. 컷 안 중심이 될 곳을 눌러 주세요. 세부(색·밀도)는 속성 서랍에서.</p>';
   else if(k==='bg'){const colors=[...new Set(SCENES.flatMap(sc=>(sc.pageEdits||[]).map(e=>e?.background).filter(c=>/^#/.test(c||''))))].slice(0,10).concat(['#ffffff','#111111','#1d2433','#5a2a22','#86c99c','#f3d9e0']);
     h=grid('컷 아래 전환 질감 · 위 컷 → 질감 → 아래 컷',[item('bg',0,'기본 · 질감 없음',bgTile(0,srcs)),...bgs],'strips')+grid('배경색 (컷 바탕)',[...new Set(colors)].filter(c=>match(c)||match(colorName(c))).map(c=>item('color',c,colorName(c),colorTile(c,srcs[0]))),'tints')+
@@ -473,11 +502,23 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
   else if(k==='seq'){const L=seqList().filter(t=>match(t.name));h=L.length?grid('저장한 시퀀스',L.map(t=>item('seq',seqList().indexOf(t),`${t.name} · ${t.cuts.length}컷`,'<i class="seqi"></i>'))):'<p class="as-empty">저장한 시퀀스가 없어요.</p>';
     h+='<p class="as-note">컷을 고르고 누르면 그 컷부터 적용해요. 저장은 시작할 컷을 고른 뒤 속성 서랍 › 시퀀스 템플릿 › 이 컷부터 저장.</p><div class="as-acts"><button class="btn sm" data-as="seqsave">고른 컷부터 저장…</button></div>'}
   else if(k==='up')h=grid('올린 배경 이미지',bimgs)+`<div class="as-acts"><button class="btn sm" data-as="bgup">+ 배경 이미지</button><button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button><button class="btn sm" data-as="cutup">컷 그림 등록 (콘티)</button></div><p class="as-note">올린 파일은 이 브라우저에 남고 작업 파일(.rough.json)에도 들어가요.</p>`;
-  else if(k==='star'){const fav=typeof materialFavorites!=='undefined'&&typeof materialRows!=='undefined'?materialRows.filter(r=>materialFavorites.has(r.id)):[];
-    h=grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).map(x=>item(x.k,x.v,x.label,tileFor(x.k,x.v))),'big')+grid('즐겨찾기 효과음',fav.map(r=>item('pack',r.id,r.word,sfxTile(r.word))),'sfxs')||'<p class="as-empty">아직 쓴 에셋이 없어요.</p>'}
-  asBody.innerHTML=h||'<p class="as-empty">찾는 에셋이 없어요.</p>';fitTiles(asBody)}
+  else if(k==='star'){const packFav=typeof materialFavorites!=='undefined'?[...materialFavorites].filter(id=>!FAVS.some(f=>f.k==='pack'&&f.v===id)).map(id=>({k:'pack',v:id,label:materialCatalog.entry(id)?.word||id})):[];
+    const all=[...FAVS,...packFav].filter(x=>match(x.label)),of=ks=>all.filter(x=>ks.includes(x.k));
+    const tile=x=>item(x.k,x.v,x.label,x.k==='pack'?packTile(x.v):tileFor(x.k,x.v));
+    h=all.length?grid('말풍선',of(['balloon']).map(tile),'big')+grid('효과음',of(['sfx','pack']).map(tile),'sfxs')+grid('효과선',of(['line']).map(tile),'big')+
+      grid('배경',of(['bg']).map(tile),'strips')+grid('배경색',of(['color']).map(tile),'tints')+grid('배경 이미지·시퀀스',of(['bgimg','seq']).map(tile)):
+      '<p class="as-empty">타일 오른쪽 위 ★를 누르면 여기 모여요.</p>';
+    h+=grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).map(x=>item(x.k,x.v,x.label,x.k==='pack'?packTile(x.v):tileFor(x.k,x.v))),'big')}
+  asBody.innerHTML=h||'<p class="as-empty">찾는 에셋이 없어요.</p>';if(k==='sfx')renderSfxGrid();fitTiles(asBody)}
 // 적용: 클릭은 고른 대상에, 끌어 놓기는 놓은 자리에
 function cutCenter(g){try{const f=JSON.parse(g.dataset.frame);return {x:f.x+f.w/2,y:f.y+f.h*.35}}catch(_){return {x:345,y:200}}}
+// 소재 효과음을 고른 타입(A~D)으로 넣기
+async function addPack(id,g){const entry=materialCatalog.entry(id),key=pageKey(g);if(!entry)return;
+  try{await materialCatalog.load(entry)}catch(_){flash('효과음 이미지를 불러오지 못했어요');return}
+  const set=pageSettings(true,key),mid=crypto.randomUUID();(set.materialSounds||=[]).push({id:mid,text:entry.word});
+  if(SFX_TYPE!=='A')(set.letters||={})['material-'+mid]={...(set.letters?.['material-'+mid]||{}),materialVariant:SFX_TYPE};
+  saveScenes();renderWebtoon();const L=reader.querySelector(`[data-letter="material-${mid}"]`);if(L)selectLetter(L);
+  flash(`${entry.word} · ${SFX_TYPES.find(t=>t[0]===SFX_TYPE)[1]} 효과음을 넣었어요`)}
 function applyAsset(k,v,g,pt,target){const label=asBody.querySelector(`[data-mat="${k}"][data-v="${CSS.escape(String(v))}"]`)?.dataset.label||String(v);
   g=g||(pageSelection?selGroup():null);
   if(k==='balloon'||k==='sfx'||k==='line'){if(k==='balloon'&&!g&&selectedLetter){const sg=selectedLetter.closest('[data-slot-index]');useMat('balloon',v,sg,cutCenter(sg),selectedLetter)}else useMat(k,v,g,pt||(g?cutCenter(g):null),target||(k==='balloon'?selectedLetter:null));remember(k,v,label);return}
@@ -486,10 +527,14 @@ function applyAsset(k,v,g,pt,target){const label=asBody.querySelector(`[data-mat
   if(k==='bg'){const e=pageSettings(true);if(+v)e.transition=+v;else delete e.transition;saveScenes();renderWebtoon();flash('전환 질감을 넣었어요')}
   else if(k==='color'){pageSettings(true).background=v;saveScenes();renderWebtoon();flash('배경색을 바꿨어요')}
   else if(k==='bgimg'){const e=pageSettings(true);e.bgImage=v;saveScenes();renderWebtoon();flash('배경 이미지를 넣었어요')}
-  else if(k==='pack'){filterMaterials();materialResult.value=v;$('#wmaterial-add').disabled=false;$('#wmaterial-add').click()}
+  else if(k==='pack'){addPack(v,g);remember(k,v,label);return}
   else if(k==='seq'){$('#wtplsel').value=v;$('#wtplapply').click()}
   remember(k,v,label);if(typeof refreshBackgroundTools==='function'&&pageSelection)refreshBackgroundTools()}
-assetBody.addEventListener('click',e=>{const t=e.target;const tb=t.closest('[data-at]');if(tb){assetTab(tb.dataset.at,true);return}
+assetBody.addEventListener('click',e=>{const t=e.target;
+  const fv=t.closest('[data-fav]');if(fv){e.preventDefault();e.stopPropagation();const b=fv.closest('[data-mat]');if(!b)return;const on=toggleFav(b.dataset.mat,b.dataset.v,b.dataset.label);
+    asBody.querySelectorAll(`[data-mat="${b.dataset.mat}"][data-v="${CSS.escape(b.dataset.v)}"] [data-fav]`).forEach(x=>x.classList.toggle('on',on));flash(on?'즐겨찾기에 넣었어요 · ★ 탭에서 모아 봐요':'즐겨찾기에서 뺐어요');if(ASSET.tab==='star')renderAssets();return}
+  const ty=t.closest('[data-sfxtype]');if(ty){SFX_TYPE=ty.dataset.sfxtype;SS('rough-sfx-type',SFX_TYPE);asBody.querySelectorAll('[data-sfxtype]').forEach(x=>x.setAttribute('aria-checked',x===ty));renderSfxGrid();return}
+  const tb=t.closest('[data-at]');if(tb){assetTab(tb.dataset.at,true);return}
   const r=t.closest('[data-ref-id]');if(r&&asBody.contains(r)){if(pageSelection)RoughRefs.apply(r.dataset.refId);else flash('레퍼런스를 바꿀 컷을 먼저 고르세요');return}
   const a=t.closest('[data-as]')?.dataset.as;
   if(a==='zip')$('#wmaterial-import').click();
@@ -497,7 +542,8 @@ assetBody.addEventListener('click',e=>{const t=e.target;const tb=t.closest('[dat
   if(a==='seqsave'){if(!pageSelection){flash('시작할 컷을 먼저 고르세요');return}$('#wtplsave').click();setTimeout(renderAssets,300)}
   if(a==='bgup'){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;f.onchange=async()=>{for(const file of f.files){const im=await shrink(file,1380);const o={id:'bg:'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'bgimg',name:file.name,src:im.src,w:im.w,h:im.h,at:Date.now()};IMG.bg[o.id]=o;await idb.put(o)}renderAssets();flash('배경 이미지를 올렸어요')};f.click()}
   const b=t.closest('[data-mat]');if(b&&asBody.contains(b))applyAsset(b.dataset.mat,b.dataset.v)});
-assetBody.addEventListener('input',e=>{if(e.target.id!=='asq')return;ASSET.q=e.target.value.trim();if(ASSET.tab==='ref'){const q=$('#rfq');if(q){q.value=ASSET.q;q.dispatchEvent(new Event('input',{bubbles:true}))}}else{clearTimeout(renderAssets.t);renderAssets.t=setTimeout(renderAssets,150)}});
+assetBody.addEventListener('input',e=>{if(e.target.id==='sfxq'){SFXQ.q=e.target.value.trim();clearTimeout(renderSfxGrid.t);renderSfxGrid.t=setTimeout(renderSfxGrid,120);return}if(e.target.id!=='asq')return;ASSET.q=e.target.value.trim();if(ASSET.tab==='ref'){const q=$('#rfq');if(q){q.value=ASSET.q;q.dispatchEvent(new Event('input',{bubbles:true}))}}else{clearTimeout(renderAssets.t);renderAssets.t=setTimeout(renderAssets,150)}});
+assetBody.addEventListener('change',e=>{if(e.target.id==='sfxcat'){SFXQ.cat=e.target.value;renderSfxGrid()}});
 assetBody.addEventListener('dragstart',e=>{const b=e.target.closest('[data-mat]');if(!b||!asBody.contains(b))return;e.dataTransfer.setData('application/x-rough-mat',JSON.stringify({k:b.dataset.mat,v:b.dataset.v}));e.dataTransfer.effectAllowed='copy'});
 // 컷 사이 간격으로 끌어 놓기 → 그 위 컷의 아래 전환
 reader.addEventListener('dragover',e=>{if(!e.dataTransfer.types.includes('application/x-rough-mat'))return;const gap=e.target.closest('[data-page-gap]');if(gap){e.preventDefault();e.dataTransfer.dropEffect='copy';reader.querySelectorAll('.gap-drop').forEach(x=>x!==gap&&x.classList.remove('gap-drop'));gap.classList.add('gap-drop')}},true);

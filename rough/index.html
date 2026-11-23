@@ -982,6 +982,14 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .asi .apv.onbg{display:flex;align-items:center;justify-content:center;height:58px;border:1px solid var(--line2)}.asi .onbg .c{display:block;width:60%;height:66%;background:#d9dde3 center/cover no-repeat;border-radius:2px}
 .asi.rec{align-items:stretch;text-align:left;gap:5px;padding:6px}.asi.rec .apv{height:78px}.asi.rec .apv.strip{height:96px}.asi.rec>span{font-weight:600;color:var(--t1)}
 .asi.rec .why{font-style:normal;font-size:12px;line-height:1.35;color:var(--t3);white-space:normal}
+/* 즐겨찾기 ★ · 효과음 타입·검색 */
+.asi{position:relative}.asi .fav{position:absolute;top:3px;right:3px;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;font-size:13px;line-height:1;color:#c3c8cf;background:rgba(255,255,255,.9);opacity:0;transition:opacity .12s;cursor:pointer;max-width:none}
+.asi:hover .fav,.asi:focus-visible .fav,.asi .fav.on{opacity:1}.asi .fav.on{color:#191f28}.asi .fav:hover{color:#191f28}
+@media(hover:none){.asi .fav{opacity:1}}
+.sfxbar{display:flex;gap:6px;margin:4px 0 8px}.sfxbar input{flex:1;min-width:0;height:34px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font-size:13px;background:var(--bg);color:var(--t1)}.sfxbar select{height:34px;border:1px solid var(--line2);border-radius:10px;font-size:13px;max-width:110px;background:var(--bg);color:var(--t1)}
+.sfxtype{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin-bottom:6px}.sfxtype button{display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--line2);border-radius:10px;font-size:13px;color:var(--t2);line-height:1.2}.sfxtype button b{font-size:14px;color:var(--t1)}
+.sfxtype button[aria-checked=true]{background:var(--tb,#191f28);border-color:transparent;color:#fff}.sfxtype button[aria-checked=true] b{color:#fff}
+.asi img.apv.sfxi{height:52px;object-fit:contain;background:none;border-radius:0}
 </style>
 </head>
 <body>
