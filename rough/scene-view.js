@@ -48,11 +48,12 @@ function sideHTML(b,c,g){const D=b.dir||{},o=[],gd=g.edit||{};
   return o.join('')}
 
 // ---------- 컷 줄 꾸미기 ----------
-const GAPPX={붙임:4,보통:14,쉼:34,'큰 쉼':72};
+const GAPPX={붙임:8,보통:18,쉼:36,'큰 쉼':72};
 function decorate(){const bs=RE.parseCuts(CUTS,engineChars()),by={};bs.forEach(b=>{const m=/^#(\d+):/.exec(b.key||'');if(m)by[+m[1]]=b});
   const P=state.panels||[];
   list.querySelectorAll('li[data-i]').forEach(li=>{const i=+li.dataset.i,b=by[i],box=li.querySelector('.cutbox');if(!box)return;
     let sd=li.querySelector('.cutside');if(!sd){sd=document.createElement('div');sd.className='cutside';li.insertBefore(sd,li.querySelector('.tools'))}
+    if(!li.querySelector('.cutadd')){const ad=document.createElement('button');ad.type='button';ad.className='cutadd';ad.textContent='+';ad.title='이 컷 아래에 새 컷';ad.setAttribute('aria-label',`${i+1}번 컷 아래에 새 컷`);li.appendChild(ad)}
     let lb=li.querySelector('.lenbar');if(!lb){lb=document.createElement('i');lb.className='lenbar';li.querySelector('.cn')?.after(lb)}
     const has=!!String(CUTS[i]||'').trim();box.classList.toggle('has',has);
     if(!b||!has){sd.innerHTML='';li.style.removeProperty('--gap');li.removeAttribute('data-gap');li.classList.remove('hl');li.style.removeProperty('--band');lb.style.height='0';return}
@@ -72,6 +73,9 @@ function stats(bs,P){const el=document.querySelector('.scmeta');if(!el)return;le
 {const _c=compute;compute=function(...a){const r=_c(...a);if(VIEW==='write')decorate();return r}}
 decorate();
 
+// 컷 사이 + : 이 컷 바로 아래에 빈 컷(이미지·편집값도 한 칸씩 밀림)
+list.addEventListener('click',e=>{const ad=e.target.closest('.cutadd');if(!ad)return;const i=+ad.closest('li').dataset.i,n=CUTS.length;
+  remapCuts(SCUR,()=>{cutEdits().splice(i+1,0,null);CUTS.splice(i+1,0,'');return moveMap(n,x=>x>i?x+1:x)});renderCuts();cutChanged();document.querySelectorAll('.cutin')[i+1]?.focus()});
 // 오타 제안 누르면 고침
 list.addEventListener('click',e=>{const f=e.target.closest('[data-fix]');if(!f)return;const li=f.closest('li'),i=+li.dataset.i,t=li.querySelector('.cutin');
   const from=f.dataset.fix,to=f.dataset.to;t.value=t.value.replace(/\{[^{}\n]*\}/g,m=>m.replace(new RegExp('(^\\{|[,，·/]\\s*)'+from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=\\s*([,，·/]|\\}))'),'$1'+to));
