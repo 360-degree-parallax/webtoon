@@ -17,3 +17,4 @@ __pycache__/
 # 수집 파이프라인 손 판정 원본(연출 DB 컷표 '내용'과 같은 내용, 권리자 허락 하에 공개)은 예외
 !tools/pipeline/notes/*_notes.txt
 rough/db/*.new.json
+tools/ml/cache/

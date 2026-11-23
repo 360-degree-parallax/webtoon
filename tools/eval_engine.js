@@ -33,6 +33,12 @@ function lev(a, b) { const d = Array.from({ length: a.length + 1 }, (_, i) => [i
   for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
 
 if (process.env.W_TRY) Object.assign(R.WEIGHTS, JSON.parse(process.env.W_TRY));
+// --preds 파일: 컷ID → {emo, i}(한 작품 빼고 학습한 모델 예측). 컷 글로 찾아 엔진 감정·강도를 바꿔 넣고 평가. --preds-only emo|i 로 한쪽만
+if (arg('--feel-mode')) R.FEEL_MODE = arg('--feel-mode');
+if (arg('--feel-shift')) R.FEEL_SHIFT = +arg('--feel-shift');
+if (arg('--preds')) { const P = JSON.parse(fs.readFileSync(arg('--preds'), 'utf8')), only = arg('--preds-only'), byText = {};
+  for (const r of cut.rows) { const p = P[r[CI('컷ID')]]; if (p) byText[cutText(r[CI('내용')])] = p; }
+  R.FEEL = b => { const p = byText[b.line]; if (!p) return null; return only === 'emo' ? { emo: p.emo } : only === 'i' ? { i: p.i } : { emo: p.emo, i: p.i }; }; }
 const cases = [];
 for (const r of rh.rows) {
   const g = r[RI('묶음')], rows = byGroup[g]; if (!rows || rows.length < 2) continue;

@@ -196,7 +196,7 @@
     if (sw) { i = Math.max(hit && hit.base > 0 ? 1 : 0, i - 1); why += ` · 약하게 '${sw}'`; }
     if (!hit && /\?/.test(s)) { emo = '의아'; i = Math.max(i, 1); why = '물음표'; }
     if (!hit && ex && emo === '평온') emo = '놀람';
-    return { emo, i: Math.max(0, Math.min(3, i)), emoWhy: why };
+    return { emo, i: Math.max(0, Math.min(3, i)), emoWhy: why, _hit: !!hit || ex > 0 };
   }
 
   // ---------- 3. 역할 ----------
@@ -223,8 +223,27 @@
     return out;
   }
 
+  // ---------- 학습한 감정·강도 모델(rough/feel-model.js, tools/ml/train_ngram.py) ----------
+  // 글자 1~3그램(단어 경계) TF-IDF를 이 컷·앞 컷·뒤 컷으로 만들고 선형 점수로 감정 14종·강도 1~3을 고름. sklearn과 같은 계산
+  function makeFeel(M) {
+    const vi = new Map(M.vocab.map((w, k) => [w, k]));
+    const vec = s => { const tf = new Map(), add = g => { const k = vi.get(g); if (k !== undefined) tf.set(k, (tf.get(k) || 0) + 1); };
+      for (const w of String(s || '').toLowerCase().split(/\s+/).filter(Boolean)) { const p = ' ' + w + ' ', L = p.length;
+        for (let n = 1; n <= 3; n++) { let o = 0; add(p.slice(0, n)); while (o + n < L) { o++; add(p.slice(o, o + n)); } if (o === 0) break; } }
+      let nn = 0; const out = []; for (const [k, c] of tf) { const v = (1 + Math.log(c)) * M.idf[k]; out.push([k, v]); nn += v * v; }
+      nn = Math.sqrt(nn) || 1; return out.map(([k, v]) => [k, v / nn]); };
+    const score = (H, xs) => H.classes.map((_, c) => xs.reduce((z, x, s) => z + x.reduce((a, [k, v]) => a + v * H.W[s][c][k], 0) * (s ? M.meta.ctx : 1), H.b[c]));
+    const pick = (H, xs) => { const z = score(H, xs); let m = 0; z.forEach((v, c) => { if (v > z[m]) m = c; }); return { label: H.classes[m], z }; };
+    return (t, p, n) => { const xs = [vec(t), vec(p), vec(n)], e = pick(M.emo, xs), i = pick(M.int, xs); return { emo: e.label, i: +i.label }; };
+  }
+  const plain = b => String(b.line || b.act || '').replace(/@/g, '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+  // 컷 묶음 전체에 미리 예측을 붙임(앞뒤 컷 문맥). E.useFeelModel(model)로 켬
+  function applyFeel(beats) { if (!E._feel) return beats; const T = beats.map(plain);
+    beats.forEach((b, k) => { const r = E._feel(T[k], T[k - 1] || '', T[k + 1] || ''); b._m = { emo: r.emo, i: r.i, why: '글 전체로 판단(학습 모델)' }; }); return beats; }
+  function useFeelModel(M) { E._feel = M ? makeFeel(M) : null; E.FEEL = M ? (b => b._m || null) : null; return !!M; }
   function analyzeChunk(raw) {
-    const beats = raw.map(b => ({ ...b, ...feel(b) }));
+    // 학습 모델(E.FEEL)이 있으면 감정·강도를 덮어씀: FEEL(beat) → {emo, i, why} 또는 null
+    const beats = raw.map(b => { const f = feel(b), m = E.FEEL && (E.FEEL_MODE !== 'fallback' || !f._hit) && E.FEEL(b); return { ...b, ...f, ...(m ? { emo: m.emo ?? f.emo, i: m.i != null ? Math.max(0, Math.min(3, m.i + E.FEEL_SHIFT)) : f.i, emoWhy: m.why || f.emoWhy } : {}) }; });
     beats.forEach((b, k) => {
       const [r, why] = roleOf(b, k, beats[k - 1]); b.role = r; b.roleWhy = why;
       // 드러남은 그 자체로 고비: 공개 컷은 강도 2 이상, 핵심 소품이면 +1
@@ -308,7 +327,7 @@
   }
 
   function analyze(text, chars) { return chunk(parse(text, chars)).map(analyzeChunk); }
-  function analyzeCuts(cuts, chars) { return chunk(parseCuts(cuts, chars)).map(analyzeChunk); }
+  function analyzeCuts(cuts, chars) { return chunk(applyFeel(parseCuts(cuts, chars))).map(analyzeChunk); }
 
   // ---------- 6. 패턴 검색 ----------
   function lev(a, b) {
@@ -418,5 +437,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
