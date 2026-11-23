@@ -3091,13 +3091,14 @@ async function loadPageMaterials(){
     scenePanels(scene).forEach((p,i)=>{
       const edit=sc.pageEdits[cutSlot(p,i)],add=(word,key)=>{
         const entry=materialCatalog.find(edit?.letters?.[key]?.text??word);
-        if(entry)used.set(entry.id,entry);
+        if(entry)used.set(entry.id+'|'+(edit?.letters?.[key]?.materialVariant||'A'),[entry,edit?.letters?.[key]?.materialVariant||'A']);
       };
       p.sfx?.forEach((word,n)=>add(word,'effect-'+n));
       edit?.materialSounds?.forEach(item=>add(item.text,'material-'+item.id));
     });
   });
-  await Promise.all([...used.values()].map(materialCatalog.load));
+  // 원고에 쓴 타입 그림만(타입 바꾸기 버튼을 열 때 나머지를 받음)
+  await Promise.all([...used.values()].map(([entry,variant])=>materialCatalog.load(entry,variant).catch(()=>{})));
 }
 function refreshPageMaterials(){
   const ticket=++materialRefresh;

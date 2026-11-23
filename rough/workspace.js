@@ -419,7 +419,7 @@ const quickItem=w=>{const e=packOf(w);return e?item('pack',e.id,w,packTile(e.id)
 function sfxMatches(){const q=SFXQ.q.normalize('NFKC').toLowerCase();return (materialRows||[]).filter(r=>(!SFXQ.cat||r.category===SFXQ.cat)&&(!q||r.word.normalize('NFKC').toLowerCase().includes(q)||r.category.toLowerCase().includes(q)))}
 // 효과음 소재는 60개씩: 맨 아래(더 보기 자리)가 보이면 다음 60개 그림을 풀어 붙임
 const SFX_PAGE=60;let sfxShown=0,sfxList=[],sfxIO=null;
-const sfxLoad=rows=>Promise.all(rows.map(e=>materialCatalog.load(e).catch(()=>{})));
+const sfxLoad=rows=>Promise.all(rows.map(e=>materialCatalog.load(e,SFX_TYPE).catch(()=>{})));  // 고른 타입 그림만
 const packItem=r=>item('pack',r.id,r.word,packTile(r.id),` data-cat="${esc(r.category)}"`);
 function renderSfxGrid(){const el=asBody.querySelector('#sfxgrid');if(!el)return;sfxList=sfxMatches();sfxShown=0;
   el.innerHTML=(SFXQ.q||SFXQ.cat?'':`<h5>자주 쓰는 효과음</h5><div class="asgrid sfxs">${SFXW.map(quickItem).join('')}</div>`)+
@@ -527,7 +527,7 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
 function cutCenter(g){try{const f=JSON.parse(g.dataset.frame);return {x:f.x+f.w/2,y:f.y+f.h*.35}}catch(_){return {x:345,y:200}}}
 // 소재 효과음을 고른 타입(A~D)으로 넣기
 async function addPack(id,g){const entry=materialCatalog.entry(id),key=pageKey(g);if(!entry)return;
-  try{await materialCatalog.load(entry)}catch(_){flash('효과음 이미지를 불러오지 못했어요');return}
+  try{await materialCatalog.load(entry,SFX_TYPE)}catch(_){flash('효과음 이미지를 불러오지 못했어요');return}
   const set=pageSettings(true,key),mid=crypto.randomUUID();(set.materialSounds||=[]).push({id:mid,text:entry.word});
   if(SFX_TYPE!=='A')(set.letters||={})['material-'+mid]={...(set.letters?.['material-'+mid]||{}),materialVariant:SFX_TYPE};
   saveScenes();renderWebtoon();const L=reader.querySelector(`[data-letter="material-${mid}"]`);if(L)selectLetter(L);

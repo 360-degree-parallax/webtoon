@@ -107,20 +107,27 @@
       reader.readAsDataURL(blob);
     });
   }
-  async function load(entry){
-    if(!entry)return;
-    if(!artCache.has(entry.id)){
-      const version=cacheVersion,record={};
-      record.pending=Promise.all(entry.paths.map(async path=>{
+  // 그림은 타입(A~D)마다 따로 받아 둠: 고른 타입만 받으면 처음 받는 양이 1/4
+  function loadOne(entry,variant){
+    const key=entry.id+'|'+variant;
+    if(!artCache.has(key)){
+      const version=cacheVersion,record={},path=entry.paths[variants.indexOf(variant)];
+      record.pending=(async()=>{
         const blob=await entry.source(path),header=await read(blob,0,24);
         if(header.byteLength!==24||header.getUint32(0)!==0x89504e47)throw error();
         return {width:header.getUint32(16),height:header.getUint32(20),src:await dataURL(new Blob([blob],{type:'image/png'}))};
-      })).then(art=>{record.art=art;return art}).catch(err=>{if(version===cacheVersion)artCache.delete(entry.id);throw err});
-      artCache.set(entry.id,record);
+      })().then(art=>{record.art=art;return art}).catch(err=>{if(version===cacheVersion)artCache.delete(key);throw err});
+      artCache.set(key,record);
     }
-    return artCache.get(entry.id).pending;
+    return artCache.get(key).pending;
   }
-  function image(entry,variant){return artCache.get(entry?.id)?.art?.[variants.indexOf(variant)]||null}
+  // variant를 주면 그 타입만, 안 주면 네 타입 모두
+  async function load(entry,variant){
+    if(!entry)return;
+    if(variant&&variants.includes(variant))return loadOne(entry,variant);
+    return Promise.all(variants.map(v=>loadOne(entry,v)));
+  }
+  function image(entry,variant){return artCache.get(entry?.id+'|'+variant)?.art||null}
   const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
   function lineEffect(effect,box,random){
     if(!effect||!['focus','speed'].includes(effect.kind))return '';
