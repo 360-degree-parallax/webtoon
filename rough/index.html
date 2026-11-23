@@ -149,6 +149,7 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 dialog h3{margin:0 0 4px;font-size:18px}
 dialog p{margin:0 0 12px;font-size:13px;color:var(--t2)}
 dialog textarea{min-height:360px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.6}
+.tmid{display:flex;gap:8px;align-items:center}.tmid .chk{font-size:12px;display:flex;gap:4px;align-items:center}.bg-imgs{display:flex;flex-wrap:wrap;gap:4px}.bg-imgs button{position:relative;width:46px;height:30px;border:1px solid var(--line);border-radius:5px;overflow:hidden;padding:0;background:var(--bg2,#f4f4f4)}.bg-imgs button img{width:100%;height:100%;object-fit:cover}.bg-imgs button[aria-pressed=true]{outline:2px solid #2d71f7;outline-offset:1px}.bg-imgs button span{position:absolute;top:0;right:0;width:14px;height:14px;line-height:13px;font-size:11px;background:rgba(0,0,0,.6);color:#fff;display:none}.bg-imgs button:hover span{display:block}.bg-imgs .add{width:auto;padding:0 8px;font-size:12px;color:var(--t2)}.pall{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.pall li{display:flex;align-items:center;gap:8px;padding:4px 0}.pall .sw{width:22px;height:22px;border-radius:4px;border:1px solid var(--line2)}.pall small{color:var(--t3);flex:1}
 .xsep{border:0;border-top:1px solid var(--line);margin:4px 0}.histl{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.histl li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.histl small{display:block;color:var(--t3);font-size:12px}
 #slicedlg{width:min(520px,calc(100vw - 32px))}.slicef{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:10px 0}.slicef label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--t2)}.slicef label.chk{grid-column:1/-1;flex-direction:row;align-items:center;gap:8px}.slicef input[type=number],.slicef select{padding:6px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--t1)}
 dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
@@ -965,6 +966,11 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       <div class="background-controls" id="wbackground" hidden>
         <div class="prop"><span>배경색</span><input id="wbgcolor" type="color" value="#ffffff" aria-label="배경색"></div>
         <div class="prop col"><span>아래 전환 질감</span><div class="bg-presets" id="wbgpresets" role="group" aria-label="컷 아래 전환 질감"></div></div>
+        <div class="prop"><span>중간색</span><span class="tmid"><input id="wtmid" type="color" value="#808080" aria-label="전환 중간색"><label class="chk"><input type="checkbox" id="wtmidon"> 쓰기</label></span></div>
+        <div class="prop"><span>중간색 위치</span><input id="wtstop" type="range" min="5" max="95" value="50" aria-label="중간색 위치(위→아래 %)"><output id="wtstopv">50%</output></div>
+        <div class="prop col"><span>배경 이미지 <small>(컷 사이 전환 위에 깔림 · 여러 장면에 다시 쓰기)</small></span><div class="bg-imgs" id="wbgimgs"></div></div>
+        <div class="prop" id="wbgoprow" hidden><span>이미지 진하기</span><input id="wbgop" type="range" min="10" max="100" value="100" aria-label="배경 이미지 진하기"></div>
+        <div class="prop"><span></span><button class="btn sm" id="wpalette">씬 색 한 번에 바꾸기</button></div>
         <div class="prop" id="wsceneendrow" hidden><span>씬 끝 색</span><select id="wsceneend" aria-label="씬 끝 색"><option value="next">다음 씬 첫 컷 색으로 이어감</option><option value="hold">이 컷 배경색 유지</option><option value="white">흰색으로</option></select></div>
         <div class="prop"><span></span><button class="btn sm" id="wbgreset">배경 초기화</button></div>
       </div>
@@ -1440,12 +1446,15 @@ function transitionTexture(preset,id){
   }
   return `<mask id="${id}-fade" maskUnits="userSpaceOnUse" x="0" y="0" width="690" height="240"><linearGradient id="${id}-alpha" x2="0" y2="1"><stop stop-color="#fff" stop-opacity="0"/><stop offset=".23" stop-color="#fff" stop-opacity=".85"/><stop offset=".63" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><rect width="690" height="240" fill="url(#${id}-alpha)"/></mask><g mask="url(#${id}-fade)">${art}</g>`;
 }
-function transitionSVG(from,to,preset,id,y,height){
-  const style=PAGE_BACKGROUNDS[preset];
-  const mid=style?`<stop offset="${style.stop}%" stop-color="${style.mid}"/>`:'';
-  const fill=!style&&from===to?from:`url(#${id})`;
+// opt: {mid:'#rrggbb'|'none', stop:0~100, img:배경 이미지 id, imgOp:0~1} — 컷마다 전환의 중간색·위치와 배경 이미지를 덮어씀
+function transitionSVG(from,to,preset,id,y,height,opt={}){
+  const style=PAGE_BACKGROUNDS[preset],midC=opt.mid==='none'?null:(opt.mid||style?.mid),stop=opt.stop??style?.stop??50;
+  const mid=midC?`<stop offset="${stop}%" stop-color="${midC}"/>`:'';
+  const bgi=opt.img&&IMG.bg[opt.img];
+  const fill=!mid&&!style&&from===to?from:`url(#${id})`;
   const gradient=fill===from?'':`<linearGradient id="${id}" x2="0" y2="1"><stop stop-color="${from}"/>${mid}<stop offset="1" stop-color="${to}"/></linearGradient>`;
-  return `<svg data-page-transition="1" y="${y}" width="${W}" height="${height}" viewBox="0 0 690 240" preserveAspectRatio="none" overflow="hidden">${gradient}<rect width="690" height="240" fill="${fill}"/>${style?transitionTexture(preset,id):''}</svg>`;
+  const pic=bgi?`<image data-bg-image="${esc(opt.img)}" href="${bgi.src}" width="690" height="240" preserveAspectRatio="xMidYMid slice" opacity="${opt.imgOp??1}" mask="url(#${id}-pfade)"/><mask id="${id}-pfade" maskUnits="userSpaceOnUse" x="0" y="0" width="690" height="240"><linearGradient id="${id}-pa" x2="0" y2="1"><stop stop-color="#fff" stop-opacity="0"/><stop offset=".2" stop-color="#fff"/><stop offset=".8" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><rect width="690" height="240" fill="url(#${id}-pa)"/></mask>`:'';
+  return `<svg data-page-transition="1" y="${y}" width="${W}" height="${height}" viewBox="0 0 690 240" preserveAspectRatio="none" overflow="hidden">${gradient}<rect width="690" height="240" fill="${fill}"/>${style?transitionTexture(preset,id):''}${pic}</svg>`;
 }
 function gapMarkup(y,size,base,slot,i){
   return `<g data-page-gap="${i}" data-slot="${slot}" data-gap-size="${size}" data-gap-base="${base}" data-gap-y="${y}" role="slider" tabindex="0" aria-label="${i+1}컷과 ${i+2}컷 사이 간격" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="${MAX_PAGE_GAP}" aria-valuenow="${size}">
@@ -1495,7 +1504,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     if(edits){
       const background=pageBackground(edit),next=panels[i+1];
       const end=next?pageBackground(edits[cutSlot(next,i+1)]):(sceneEnd||PAGE_WHITE);if(!next)lastEnd=end;
-      backgrounds+=`<g data-bg-panel="${i}"><rect y="${i?y-h:0}" width="${W}" height="${h+(i?0:40)}" fill="${background}"/>${transitionSVG(background,end,edit?.transition,`${pre}bg-${i}`,y,size)}</g>`;
+      backgrounds+=`<g data-bg-panel="${i}"><rect y="${i?y-h:0}" width="${W}" height="${h+(i?0:40)}" fill="${background}"/>${transitionSVG(background,end,edit?.transition,`${pre}bg-${i}`,y,size,{mid:edit?.transMid,stop:edit?.transStop,img:edit?.bgImage,imgOp:edit?.bgImageOp})}</g>`;
     }
     if(interactive&&i<panels.length-1){
       const gap=gapMarkup(y,size,base,slot,i);
@@ -1518,7 +1527,7 @@ function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false
 
 
 // ---------- reference images (캐릭터·장면) ----------
-const IMG={char:{},scene:[],cut:{},lib:{},lore:{},world:null,wlib:{}};let target=null,showUnder=true;
+const IMG={char:{},scene:[],cut:{},lib:{},lore:{},world:null,wlib:{},bg:{}};let target=null,showUnder=true;
 const idb=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('rough-refs',1);r.onupgradeneeded=()=>r.result.createObjectStore('refs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('refs',mode);const st=t.objectStore('refs');const out=fn(st);t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
   return{all:()=>tx('readonly',st=>st.getAll()).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).then(r=>{saveOk();return r}).catch(e=>{saveFail(e,'이미지')}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
@@ -1572,7 +1581,7 @@ slotsEl.forEach(el=>{
 document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
 try{showUnder=localStorage.getItem('rough-under')!=='0'}catch(_){}$('#under').setAttribute('aria-pressed',showUnder);
 $('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);try{localStorage.setItem('rough-under',showUnder?'1':'0')}catch(_){}render()};
-idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
+idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='bgimg')IMG.bg[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
 
 // ---------- prompt export ----------
 const RP=window.RoughPrompt;
@@ -2090,11 +2099,43 @@ function refreshBackgroundTools(){
   const edit=pageSettings();
   backgroundColor.value=pageBackground(edit);
   backgroundPresets.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',Number(b.dataset.bgPreset)===(edit?.transition||0)));
+  refreshTransTools();
   // 씬의 마지막 컷을 고르면 '씬 끝 색'을 보여 줌
   const row=$('#wsceneendrow'),[si,slot]=(pageSelection||'').split(':').map(Number),ps=pageSelection?scenePanels(si):[];
   const isLast=ps.length&&cutSlot(ps.at(-1),ps.length-1)===slot;row.hidden=!isLast;
   if(isLast){const sel=$('#wsceneend');sel.value=SCENES[si].endTo||'next';sel.options[0].textContent=si<SCENES.length-1?'다음 씬 첫 컷 색으로 이어감':'흰색으로 (마지막 씬)'}
 }
+// 전환 중간색·위치
+function refreshTransTools(){const e=pageSettings(),st=PAGE_BACKGROUNDS[e?.transition];const on=e?.transMid?e.transMid!=='none':!!st;
+  $('#wtmidon').checked=on;$('#wtmid').value=/^#/.test(e?.transMid||'')?e.transMid:(st?.mid||'#808080');$('#wtmid').disabled=!on;
+  const sv=e?.transStop??st?.stop??50;$('#wtstop').value=sv;$('#wtstopv').textContent=sv+'%';$('#wtstop').disabled=!on;
+  $('#wbgimgs').innerHTML=Object.values(IMG.bg).sort((a,b)=>a.at-b.at).map(r=>`<button type="button" data-bgimg="${r.id}" aria-pressed="${e?.bgImage===r.id}" title="${esc(r.name||'배경 이미지')}"><img src="${r.src}" alt=""><span data-bgimg-del="${r.id}" title="목록에서 지우기">×</span></button>`).join('')+`<button type="button" class="add" data-bgimg-add title="PNG·JPG를 배경 소재로 추가">+ 이미지</button>`+(e?.bgImage?`<button type="button" class="add" data-bgimg-off>빼기</button>`:'');
+  $('#wbgoprow').hidden=!e?.bgImage;$('#wbgop').value=Math.round((e?.bgImageOp??1)*100)}
+const setEdit=(f)=>{if(!pageSelection)return;f(pageSettings(true));saveScenes();renderWebtoon();refreshTransTools()};
+$('#wtmidon').addEventListener('change',e=>setEdit(x=>{if(e.target.checked)x.transMid=$('#wtmid').value;else x.transMid='none'}));
+$('#wtmid').addEventListener('change',e=>setEdit(x=>x.transMid=e.target.value));
+$('#wtstop').addEventListener('input',e=>{$('#wtstopv').textContent=e.target.value+'%'});
+$('#wtstop').addEventListener('change',e=>setEdit(x=>x.transStop=+e.target.value));
+$('#wbgop').addEventListener('change',e=>setEdit(x=>x.bgImageOp=+e.target.value/100));
+$('#wbgimgs').addEventListener('click',async e=>{
+  const del=e.target.closest('[data-bgimg-del]');if(del){e.stopPropagation();const id=del.dataset.bgimgDel;if(!confirm('이 배경 이미지를 목록에서 지울까요? 쓰고 있는 컷에서는 빠져요.'))return;delete IMG.bg[id];idb.del(id);SCENES.forEach(sc=>(sc.pageEdits||[]).forEach(x=>{if(x?.bgImage===id)delete x.bgImage}));saveScenes();renderWebtoon();refreshTransTools();return}
+  if(e.target.closest('[data-bgimg-off]')){setEdit(x=>{delete x.bgImage;delete x.bgImageOp});return}
+  if(e.target.closest('[data-bgimg-add]')){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;f.onchange=async()=>{let last=null;
+    for(const file of f.files){const im=await shrink(file,1380);const o={id:'bg:'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'bgimg',name:file.name,src:im.src,w:im.w,h:im.h,at:Date.now()};IMG.bg[o.id]=o;await idb.put(o);last=o.id}
+    if(last&&pageSelection)setEdit(x=>x.bgImage=last);else refreshTransTools()};f.click();return}
+  const b=e.target.closest('[data-bgimg]');if(b)setEdit(x=>x.bgImage=b.dataset.bgimg)});
+// 씬 팔레트: 이 씬에서 쓰는 배경색을 모아 한 번에 바꿈(배경색·전환 중간색, 식자에 색 값이 있으면 그것도)
+$('#wpalette').addEventListener('click',()=>{if(!pageSelection)return;const si=+pageSelection.split(':')[0],sc=SCENES[si],ps=scenePanels(si);
+  const used=new Map(),add=(c,w)=>{if(!/^#[\da-f]{6}$/i.test(c||''))return;c=c.toLowerCase();used.set(c,(used.get(c)||[]).concat(w))};
+  ps.forEach((p,n)=>{const e=sc.pageEdits?.[cutSlot(p,n)];add(pageBackground(e),'배경');if(/^#/.test(e?.transMid||''))add(e.transMid,'중간색');Object.values(e?.letters||{}).forEach(l=>{add(l?.color,'식자');add(l?.fill,'말풍선')})});
+  let d=$('#paldlg');if(!d){d=document.createElement('dialog');d.id='paldlg';d.className='keydlg';document.body.appendChild(d)}
+  d.innerHTML=`<h3>씬 색 한 번에 바꾸기 · ${esc(sceneLabel(sc,si))}</h3><p class="hint">이 씬에서 쓰는 색이에요. 오른쪽 색을 바꾸면 같은 색을 쓰는 컷 배경과 전환 중간색이 함께 바뀌어요.</p><ul class="pall">${[...used].map(([c,w])=>`<li><span class="sw" style="background:${c}"></span><code>${c}</code><small>${[...new Set(w)].join('·')} ${w.length}곳</small><span>→</span><input type="color" value="${c}" data-from="${c}"></li>`).join('')||'<li>바꿀 색이 없어요</li>'}</ul><div class="acts"><button class="btn" data-r="x">닫기</button><button class="btn dark" data-r="go">바꾸기</button></div>`;
+  d.onclick=e=>{const r=e.target.closest('[data-r]')?.dataset.r;if(!r)return;if(r==='go'){const map=Object.fromEntries([...d.querySelectorAll('[data-from]')].filter(i=>i.value.toLowerCase()!==i.dataset.from).map(i=>[i.dataset.from,i.value]));
+      const sw=c=>map[(c||'').toLowerCase()];let n=0;
+      ps.forEach((p,k)=>{const slot=cutSlot(p,k),e=sc.pageEdits[slot]||(sc.pageEdits[slot]={});const bg=pageBackground(e);if(sw(bg)){e.background=sw(bg);n++}if(sw(e.transMid)){e.transMid=sw(e.transMid);n++}
+        Object.values(e.letters||{}).forEach(l=>{if(!l)return;if(sw(l.color)){l.color=sw(l.color);n++}if(sw(l.fill)){l.fill=sw(l.fill);n++}})});
+      if(n){saveScenes();renderWebtoon();refreshBackgroundTools()}toast(n?`${n}곳의 색을 바꿨어요 (Ctrl+Z로 되돌리기)`:'바뀐 색이 없어요')}d.close()};
+  d.showModal()});
 $('#wsceneend').addEventListener('change',e=>{if(!pageSelection)return;const si=+pageSelection.split(':')[0];SCENES[si].endTo=e.target.value;saveScenes();renderWebtoon()});
 backgroundColor.addEventListener('change',()=>{
   if(!pageSelection)return;
@@ -2110,7 +2151,7 @@ backgroundPresets.addEventListener('click',e=>{
 $('#wbgreset').addEventListener('click',()=>{
   if(!pageSelection)return;
   const edit=pageSettings();
-  if(edit){delete edit.background;delete edit.transition}
+  if(edit){delete edit.background;delete edit.transition;delete edit.transMid;delete edit.transStop;delete edit.bgImage;delete edit.bgImageOp}
   saveScenes();renderWebtoon();
 });
 $('#wedit').addEventListener('click',e=>{
