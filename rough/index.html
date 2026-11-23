@@ -913,39 +913,37 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 @media(max-width:640px){#conti .ccard{padding:16px 14px}}
 
 /* 콘티 · 토스 스타일: 회색 바탕 + 흰 둥근 카드(테두리·그림자 없음), 큰 제목 + 친근한 한 줄, 주 버튼은 아래 고정 하나, 보조는 연파랑 알약 */
-#v-layout{--tb:#3182f6;--tb50:#e8f3ff;--tg9:#191f28;--tg7:#4e5968;--tg5:#8b95a1;--tg2:#e5e8eb;--tg1:#f2f4f6;--tg05:#f9fafb;--tcard:#fff;background:var(--tg1);min-height:calc(100vh - 104px)}
-:root[data-theme=dark] #v-layout{--tb50:rgba(49,130,246,.18);--tg9:#f2f4f6;--tg7:#b0b8c1;--tg5:#8b95a1;--tg2:#333d4b;--tg1:#101013;--tg05:#202027;--tcard:#17171c}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]) #v-layout{--tb50:rgba(49,130,246,.18);--tg9:#f2f4f6;--tg7:#b0b8c1;--tg5:#8b95a1;--tg2:#333d4b;--tg1:#101013;--tg05:#202027;--tcard:#17171c}}
-#v-layout .page{max-width:880px;padding-bottom:120px}#v-layout .next{display:none}
+#v-layout{--tb:#191f28;--tb50:#e5e8eb;--tbt:#fff;--tg9:#191f28;--tg7:#4e5968;--tg5:#8b95a1;--tg2:#e5e8eb;--tg1:#f2f4f6;--tg05:#f9fafb;--tcard:#fff;background:var(--tg1);min-height:calc(100vh - 104px)}
+:root[data-theme=dark] #v-layout{--tb:#f2f4f6;--tbt:#191f28;--tb50:#333d4b;--tg9:#f2f4f6;--tg7:#b0b8c1;--tg5:#8b95a1;--tg2:#333d4b;--tg1:#101013;--tg05:#202027;--tcard:#17171c}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) #v-layout{--tb:#f2f4f6;--tbt:#191f28;--tb50:#333d4b;--tg9:#f2f4f6;--tg7:#b0b8c1;--tg5:#8b95a1;--tg2:#333d4b;--tg1:#101013;--tg05:#202027;--tcard:#17171c}}
+#v-layout .page{max-width:880px;padding-bottom:60px}#v-layout .next{display:none}
 #conti .ct-head{border:0;padding:8px 0 0;margin:28px 0 20px}
 #conti .ct-head h2{font-size:28px;font-weight:700;letter-spacing:-.02em;color:var(--tg9);margin:0 0 8px}
-#conti .ct-sub{margin:0;font-size:17px;line-height:1.5;color:var(--tg7)}#conti .ct-warn{color:#f04452}
+#conti .ct-sub{margin:0;font-size:17px;line-height:1.5;color:var(--tg7)}#conti .ct-warn{color:var(--tg9);font-weight:600}
 .ct-progw{display:flex;align-items:center;gap:12px;margin:18px 0 0}.ct-prog{flex:1;height:8px;border-radius:4px;background:var(--tg2);overflow:hidden}.ct-prog i{display:block;height:100%;border-radius:4px;background:var(--tb);transition:width .3s}.ct-progw>span{font-size:14px;font-weight:600;color:var(--tg7);font-variant-numeric:tabular-nums}
 #conti .ct-tools{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}#conti .ct-tools .tbtn::before{display:none}
 .tpill{height:38px;padding:0 16px;border-radius:10px;border:0;background:var(--tb50);color:var(--tb);font-size:15px;font-weight:600;cursor:pointer;transition:filter .1s,transform .08s}.tpill:hover{filter:brightness(.96)}.tpill:active{transform:scale(.97)}
-.tpill.gray{background:var(--tcard);color:var(--tg7)}.tpill.done{background:var(--tb);color:#fff}
+.tpill.gray{background:var(--tcard);color:var(--tg7)}.tpill.done{background:var(--tb);color:var(--tbt)}
 #conti .ct-nav{top:104px;margin:0 -16px 16px;padding:12px 16px;border:0;border-radius:0 0 16px 16px;background:var(--tg1)}
 #conti .ct-dot{width:34px;height:34px;border-radius:17px;border:0;box-shadow:none;background:var(--tcard);color:var(--tg5);font-size:14px;font-weight:600}
-#conti .ct-dot.on{background:var(--tb50);color:var(--tb)}#conti .ct-dot.cur{background:var(--tb);color:#fff;box-shadow:none}
+#conti .ct-dot.on{background:var(--tb50);color:var(--tb)}#conti .ct-dot.cur{background:var(--tb);color:var(--tbt);box-shadow:none}
 .ct-filter{gap:8px;font-size:14px;color:var(--tg7);font-weight:500}.ct-filter input{position:absolute;opacity:0;width:1px;height:1px}
 .ct-filter i{position:relative;width:40px;height:24px;border-radius:12px;background:var(--tg2);transition:background .15s}.ct-filter i::after{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .15s}
-.ct-filter input:checked+i{background:var(--tb)}.ct-filter input:checked+i::after{left:19px}.ct-filter input:focus-visible+i{outline:2px solid var(--tb);outline-offset:2px}
+.ct-filter input:checked+i{background:var(--tb)}.ct-filter input:checked+i::after{background:var(--tcard)}.ct-filter input:checked+i::after{left:19px}.ct-filter input:focus-visible+i{outline:2px solid var(--tb);outline-offset:2px}
 #conti .ct-keys{color:var(--tg5);font-size:12.5px}#conti .ct-keys kbd{background:var(--tcard);box-shadow:none;color:var(--tg7);border-radius:6px}
 #conti .ccard,#conti .ccard.cur{border:0;border-radius:20px;background:var(--tcard);box-shadow:none;padding:24px;margin:0 0 12px}
 #conti .ccard.cur{box-shadow:0 0 0 2px var(--tb)}
-#conti .ccard>header{margin-bottom:18px}#conti .ct-no{color:var(--tb);font-size:14px;font-weight:600;letter-spacing:0;margin-bottom:4px}#conti .ccard.cur .ct-no::after{content:none}
+#conti .ccard>header{margin-bottom:18px}#conti .ct-no{color:var(--tg5);font-size:14px;font-weight:600;letter-spacing:0;margin-bottom:4px}#conti .ccard.cur .ct-no::after{content:none}
 #conti .ct-beat p{font-size:19px;font-weight:600;line-height:1.5;color:var(--tg9)}#conti .ct-beat small{font-size:14px;color:var(--tg5);margin-top:4px}
 #conti .ct-crop{background:var(--tg1);color:var(--tg7);border-radius:6px}
 #conti .ct-body{grid-template-columns:320px minmax(0,1fr);gap:24px}
 #conti .ct-drop.drop{width:320px;border-radius:16px;background:var(--tg1);box-shadow:none}#conti .ct-drop.drop:hover,#conti .ct-drop.drop.over{background:var(--tg2);box-shadow:none}
-#conti .ct-plus{color:var(--tb);font-size:15px;font-weight:600}#conti .ct-plus b{color:var(--tb);font-size:26px}#conti .ct-plus small{color:var(--tg5)}
+#conti .ct-plus{color:var(--tg7);font-size:15px;font-weight:600}#conti .ct-plus b{color:var(--tg7);font-size:26px}#conti .ct-plus small{color:var(--tg5)}
 #conti .ct-ph{font-size:14px;color:var(--tg7);margin-bottom:12px}#conti .ct-ph .tpill{height:34px;font-size:14px;padding:0 14px}
 #conti .nf{padding:14px 16px;margin:0 0 8px;border:0;border-radius:14px;background:var(--tg05)}#conti .nf h4{font-size:13px;color:var(--tg5)}
 #conti .nf pre{font-size:15px;line-height:1.7;color:var(--tg9)}#conti .ct-dim{color:var(--tg5)}
-#conti .nf .btn{color:var(--tb);font-weight:600}
-.ct-cta{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;padding:16px 20px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--tg1) 40%)}
-.tossbtn{width:min(560px,100%);height:56px;border:0;border-radius:16px;background:var(--tb);color:#fff;font-size:17px;font-weight:600;cursor:pointer;transition:filter .1s,transform .08s}.tossbtn:hover{filter:brightness(.95)}.tossbtn:active{transform:scale(.98)}
-#v-layout[hidden] .ct-cta{display:none}
+#conti .nf .btn{color:var(--tg7);font-weight:600}
+
 @media(max-width:900px){#conti .ct-body{grid-template-columns:1fr}#conti .ct-drop.drop{width:100%}}
 @media(max-width:640px){#conti .ccard{padding:20px 16px}#conti .ct-head h2{font-size:24px}.ct-keys{display:none}#conti .ct-nav{margin:0 -16px 12px}}
 </style>
@@ -3397,7 +3395,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
         <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><span class="ct-swap" aria-hidden="true">그림 바꾸기</span><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>${CT_COPIED.has(i)?'Ctrl+V로 붙여 넣기':'끌어다 놓아도 돼요'}</small></span>`}</div></div>
         <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="tpill${CT_COPIED.has(i)?' done':''}" data-act="ncopyall" data-i="${i}">${CT_COPIED.has(i)?'✓ 복사했어요':'프롬프트 복사'}</button></div>
           ${ctBlk('기본 프롬프트',o.base,dim)}${o.chars.map((c,n)=>ctBlk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,c.prompt,dim)).join('')}</div>
-      </div></article>`}).join('')+(CT_EMPTY&&done===ps.length?'<p class="empty ct-alldone">모든 컷에 그림이 있어요</p>':'')+'<div class="ct-cta"><button class="tossbtn" data-view="webtoon">편집으로 넘어가기</button></div>'}
+      </div></article>`}).join('')+(CT_EMPTY&&done===ps.length?'<p class="empty ct-alldone">모든 컷에 그림이 있어요</p>':'')}
 function ctGo(i,smooth=true){const L=state.panels.length;if(!L)return;i=Math.max(0,Math.min(L-1,i));CT_CUR=i;
   $('#conti').querySelectorAll('.ccard').forEach(c=>c.classList.toggle('cur',+c.dataset.ct===i));$('#conti').querySelectorAll('.ct-dot').forEach(d=>d.classList.toggle('cur',+d.dataset.ctgo===i));
   const c=$('#conti').querySelector(`.ccard[data-ct="${i}"]`);if(c&&!c.hidden)c.scrollIntoView({block:'start',behavior:smooth?'smooth':'auto'})}
