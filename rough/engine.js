@@ -253,11 +253,11 @@
     // 서사 형태
     let narr, narrWhy;
     if (!peaks.length) { narr = '무정점'; narrWhy = '강도 2 이상인 컷이 없음'; }
-    else if (peaks.length >= 2) { narr = '정점 연속'; narrWhy = `정점이 ${peaks.length}번`; }
+    else if (peaks.length >= 2) { narr = '정점 연속'; narrWhy = `하이라이트가 ${peaks.length}번`; }
     else {
       const pos = n === 1 ? 1 : peaks[0] / (n - 1);
       narr = pos <= 0.2 ? '정점 선행' : pos >= 0.8 ? '끝 정점' : '중간 정점';
-      narrWhy = `${peaks[0] + 1}번 컷이 정점(강도 ${maxI})`;
+      narrWhy = `${peaks[0] + 1}번 컷이 하이라이트(강도 ${maxI})`;
     }
     // 감정 곡선
     const first = I[0], lastI = I[n - 1];
@@ -285,15 +285,15 @@
     const domEmo = Object.entries(emoCount).sort((x, y) => y[1] - x[1])[0][0];
     let goal, goalWhy, w;
     if (beats[0].role === '전환') { goal = '장면 전환'; goalWhy = '첫 컷이 전환'; }
-    else if (P && (w = has(P.act, OBJ))) { goal = '정보 강조'; goalWhy = `정점 컷의 소품 '${w}'`; }
-    else if (P && ['놀람', '분노'].includes(P.emo) && (narr === '끝 정점' || narr === '정점 선행')) { goal = '충격 강조'; goalWhy = `${P.emo}이 ${narr}에 옴`; }
+    else if (P && (w = has(P.act, OBJ))) { goal = '정보 강조'; goalWhy = `하이라이트 컷의 소품 '${w}'`; }
+    else if (P && ['놀람', '분노'].includes(P.emo) && (narr === '끝 정점' || narr === '정점 선행')) { goal = '충격 강조'; goalWhy = `${P.emo}이 ${narr === '끝 정점' ? '마지막' : '첫'} 하이라이트에 옴`; }
     else if (narr === '끝 정점' && beats.slice(0, Math.ceil(n / 2)).some(b => /\?/.test(b.act))) { goal = '궁금증 유발'; goalWhy = '앞에서 물음을 던지고 끝에 터뜨림'; }
     else if (uniq.length === 2 && n >= 3 && alt >= n - 2) { goal = '관계 대비'; goalWhy = `${uniq.join('·')} 번갈아 ${alt}번`; }
     else if (!peaks.length && run >= 3 && !beats.some(b => b.said) && calm >= n - 1) { goal = '시간 압축'; goalWhy = `한 인물의 연속 동작 ${run}컷, 대사 없음`; }
     else if (['쓸쓸', '회상'].includes(domEmo) || (maxI <= 1 && lastI <= avg) || (curve === '하강' && lastI <= 1 && !beats[n - 1].said)) { goal = '여운'; goalWhy = domEmo === '쓸쓸' || domEmo === '회상' ? `${domEmo}이 주된 감정` : '가라앉으며 끝남'; }
-    else if (maxI <= 1) { goal = '감정 지속'; goalWhy = '강한 정점 없이 고르게 이어짐'; }
+    else if (maxI <= 1) { goal = '감정 지속'; goalWhy = '강한 하이라이트 없이 고르게 이어짐'; }
     else if (domEmo === '긴장') { goal = '긴장 고조'; goalWhy = '긴장 컷이 가장 많음'; }
-    else { goal = '몰입 유도'; goalWhy = '정점으로 다가가는 기본 흐름'; }
+    else { goal = '몰입 유도'; goalWhy = '하이라이트로 다가가는 기본 흐름'; }
     // 템포
     const exD = beats.filter(b => /!/.test(b.act)).length / n;
     const len = beats.reduce((a, b) => a + b.act.length, 0) / n;
@@ -366,7 +366,7 @@
       const why = { shot: [`패턴 컷 ${pc.id} ${pc.shot}`], ang: [], h: [], gap: [] };
       const ow = has(b.act, OBJ);
       if (b.role === '설정' && RANK[shot] > 1) { shot = has(' ' + b.act + ' ', PLACE) ? '설정' : '전경'; why.shot.push('장소를 먼저 보여줘서 넓게'); }
-      if (b.vng === 'P' && ['놀람', '분노', '설렘', '긴장', '당황', '쓸쓸'].includes(b.emo) && RANK[shot] < 4) { shot = '클로즈업'; why.shot.push(`정점의 ${b.emo}이라 얼굴로 당김`); }
+      if (b.vng === 'P' && ['놀람', '분노', '설렘', '긴장', '당황', '쓸쓸'].includes(b.emo) && RANK[shot] < 4) { shot = '클로즈업'; why.shot.push(`하이라이트의 ${b.emo}이라 얼굴로 당김`); }
       if (b.said && b.role !== '설정' && (shot === '설정' || shot === '전경')) { shot = b.vng === 'R' || b.i <= 1 ? '중경' : '클로즈업'; why.shot.push('대사 컷은 인물이 읽히게 당김'); }
       const hw = has(b.act, HAND);
       if (hw && b.vng !== 'P' && RANK[shot] < 5) { shot = '디테일'; why.shot.push(`손 동작 '${hw}'은 인서트로`); }
@@ -379,7 +379,7 @@
       else { ang = '아이레벨'; why.ang.push('기본 눈높이'); }
       let h = clamp(pc.h || 1, 0.45, 2.2); why.h.push(`패턴 길이 ${(+pc.h || 1).toFixed(2)}`);
       const im = 1 + 0.15 * (b.i - 1.5); if (Math.abs(im - 1) > 0.01) { h *= im; why.h.push(`강도 ${b.i}`); }
-      if (b.vng === 'P' && h < 1.1) { h = 1.1; why.h.push('정점은 크게'); }
+      if (b.vng === 'P' && h < 1.1) { h = 1.1; why.h.push('하이라이트는 크게'); }
       if (tf !== 1) { h *= tf === 0.8 ? 0.9 : 1.1; why.h.push(`템포 ${an.tempo}`); }
       h = +clamp(h, 0.45, 2.4).toFixed(2);
       // 컷 사이 간격 = 다음 컷과의 관계로 중요도 단계를 정하고(붙임·보통·쉼·큰 쉼), 패턴 여백과 섞는다
@@ -387,8 +387,8 @@
       const set = (v, t, r) => { if (v > base || tag === '보통') { base = v; tag = t; } why.gap.push(r); };
       if (nx) {
         if (nx.role === '전환' || nx.trans === '장면 전환') set(0.9, '큰 쉼', '다음 컷이 장면 전환');
-        if (b.vng === 'P') set(b.i - nx.i >= 1 ? 0.9 : 0.55, b.i - nx.i >= 1 ? '큰 쉼' : '쉼', '정점 뒤 숨 고르기');
-        else if (nx.vng === 'P') set(0.5, '쉼', '정점 앞 뜸 들이기');
+        if (b.vng === 'P') set(b.i - nx.i >= 1 ? 0.9 : 0.55, b.i - nx.i >= 1 ? '큰 쉼' : '쉼', '하이라이트 뒤 숨 고르기');
+        else if (nx.vng === 'P') set(0.5, '쉼', '하이라이트 앞 뜸 들이기');
         if (tag === '보통') {
           if (b.i - nx.i >= 2) set(0.5, '쉼', '감정이 가라앉는 사이');
           else if (nx.trans === '양상 전환') set(0.45, '쉼', '분위기 컷 사이 여유');
@@ -396,7 +396,7 @@
           else if (nx.trans === '동작 전환' && nx.who && nx.who === b.who) { base = 0.1; tag = '붙임'; why.gap.push('같은 인물 연속 동작'); }
           else if (nx.trans === '주체 전환' && b.said && nx.said) { base = 0.16; why.gap.push('대사 주고받기'); }
         }
-      } else if (an.goal === '여운' || b.vng === 'P') set(0.95, '큰 쉼', b.vng === 'P' ? '정점으로 묶음이 끝남' : '묶음 끝 · 여운');
+      } else if (an.goal === '여운' || b.vng === 'P') set(0.95, '큰 쉼', b.vng === 'P' ? '하이라이트로 묶음이 끝남' : '묶음 끝 · 여운');
       else set(0.6, '쉼', '묶음 끝');
       let gap = (0.35 * (pc.gap ?? 0.3) + 0.65 * base) * tf; why.gap.unshift(`${tag} · 패턴 여백 ${(pc.gap ?? 0.3).toFixed(2)} 섞음${tf !== 1 ? ` · 템포 ${an.tempo}` : ''}`);
       const band = { 붙임: [0.06, 0.12], 보통: [0.13, 0.32], 쉼: [0.33, 0.64], '큰 쉼': [0.65, 1.2] }[tag];
