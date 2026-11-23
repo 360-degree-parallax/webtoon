@@ -1057,7 +1057,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div class="view" id="v-webtoon" hidden>
 <div class="edtop">
   <div class="edtop-l"><b class="edcrumb">편집</b><span class="edsave" id="edsave" aria-live="polite">자동 저장</span></div>
-  <div class="edtop-c"><div class="seg3" id="wmode"><button data-m="final" aria-pressed="true">완성본</button><button data-m="rough" aria-pressed="false">러프</button></div></div>
+  <div class="edtop-c"></div>
   <div class="edtop-r"><div class="czoom" role="group" aria-label="캔버스 배율"><button class="ib" id="wczout" title="축소 (Ctrl −)" aria-label="캔버스 축소">−</button><button class="czlab" id="wczlab" title="100%로 (Shift+0) · 전체 보기 Shift+1 · 선택한 컷 보기 Shift+2" aria-label="캔버스 배율, 눌러서 100%">100%</button><button class="ib" id="wczin" title="확대 (Ctrl +)" aria-label="캔버스 확대">+</button></div><button class="btn" id="wread" title="모바일 폭으로 읽어 보기 (P)">읽기</button><button class="btn" id="wproof" title="모든 씬의 대사·나레이션·효과음을 한 화면에서 고치기">대사 교정</button><span class="edsep" aria-hidden="true"></span><button class="ib" id="wundo" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="ib" id="wredo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button class="btn" id="wedit" aria-pressed="false" aria-controls="wtools">미리보기</button></div>
 </div>
 <span class="status edst" id="wst"></span>
@@ -2242,10 +2242,9 @@ document.addEventListener('click',e=>{const t=e.target;
 function closeXMenu(){const m=$('#wxmenu');if(m&&!m.hidden){m.hidden=true;$('#wexport').setAttribute('aria-expanded','false')}}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#wxmenu').hidden){closeXMenu();$('#wexport').focus()}});
 document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switchScene(+e.target.value)});
-let WMODE='final';
+const WMODE='final';  // 편집 화면은 늘 완성본(등록 그림, 없으면 레퍼런스). 완성본/러프 전환은 뺌
 try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 예시'}catch(_){$('#wtitle').value='제목 없는 작품'}
 $('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
-$('#wmode').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;WMODE=b.dataset.m;document.querySelectorAll('#wmode button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderWebtoon()});
 function scenePanels(i){if(i===SCUR)return state.panels;const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
   an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=pickRef(c,SCENES[i].pageEdits,out.length);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
 // 씬 끝 색(sc.endTo): 'next'(기본) 다음 씬 첫 컷 배경으로 이어감 · 'white' 흰색으로 · 'hold' 마지막 컷 색 유지. 마지막 씬은 기본이 흰색
@@ -2281,7 +2280,7 @@ document.addEventListener('click',e=>{if(e.target.closest('[data-achk]'))jumpArt
 function confirmArtCheck(){const c=artCheck();if(!c.imgs||!c.list.length)return Promise.resolve(true);
   return new Promise(res=>{let d=$('#achkdlg');if(!d){d=document.createElement('dialog');d.id='achkdlg';d.className='keydlg';document.body.appendChild(d)}
     d.innerHTML=`<h3>내보내기 전에 확인해 주세요</h3><p>${c.miss.length?`이미지가 없는 컷 <b>${c.miss.length}개</b>는 러프 그림으로 들어가요.<br>`:''}${c.stale.length?`이미지를 올린 뒤 글이 바뀐 컷 <b>${c.stale.length}개</b>는 예전 그림이 그대로 들어가요.`:''}</p><div class="acts"><button class="btn" data-r="check">먼저 확인하기</button><button class="btn dark" data-r="go">그대로 내보내기</button></div>`;
-    d.onclick=e=>{const r=e.target.closest('[data-r]')?.dataset.r;if(!r)return;d.close();if(r==='go')res(true);else{res(false);if(VIEW!=='webtoon')showView('webtoon');if(WMODE!=='final')$('#wmode [data-m="final"]').click();ACHK=0;setTimeout(jumpArtCheck,150)}};
+    d.onclick=e=>{const r=e.target.closest('[data-r]')?.dataset.r;if(!r)return;d.close();if(r==='go')res(true);else{res(false);if(VIEW!=='webtoon')showView('webtoon');ACHK=0;setTimeout(jumpArtCheck,150)}};
     d.oncancel=()=>res(false);d.showModal();d.querySelector('[data-r="go"]').focus()})}
 function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
