@@ -818,23 +818,13 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .cuthl{color:var(--t1)!important;overflow:visible!important}.cuthl .sy{color:var(--t3);opacity:.6}.cuthl .nm{font-style:normal}.cuthl .memo{color:var(--t3)}
 .cuthl .hl-cap{font-style:italic;color:#36553f}.cuthl .h-sfx{color:#c2410c}.cuthl .h-dir{color:var(--t3)}.cuthl .h-dir .bad{color:#b91c1c}
 .cuthl .hl-dlg,.cuthl .hl-cap{position:relative}.cuthl .gface{position:absolute;left:-46px;top:50%;transform:translateY(-50%);font-style:normal}
-.cutview{display:none;font-size:18px;line-height:1.75;padding:6px 4px;color:var(--t1);cursor:text}
-.cutlist li:not(:focus-within) .cutbox.has .cutview{display:block}
-.cutlist li:not(:focus-within) .cutbox.has .cutin{position:absolute;inset:0;height:100%!important;opacity:0;pointer-events:none}
-.cutlist li:not(:focus-within) .cutbox.has .cuthl{display:none}
-.cutview p{margin:0}.v-act+.v-act{margin-top:4px}.v-nm{font-weight:600}.v-isfx{color:#c2410c;font-weight:800;font-style:italic}
-.v-dlg{display:flex;gap:12px;align-items:flex-start;margin:8px 0;padding:8px 12px 8px 10px;border-radius:12px;background:rgba(45,113,247,.05)}.v-dlg .sv-face{margin-top:2px}
-.v-db{min-width:0}.v-who{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.4}.v-who b{font-weight:700}.v-memo{color:var(--t3)}.v-bs{font-size:11.5px;padding:0 7px;border-radius:9px;background:#f3eefe;color:#6b3fb0}
-.v-dlg p{font-size:18px;line-height:1.65;margin-top:2px}
-.v-cap{margin:8px 0;padding:4px 14px;border-left:3px solid #9bb5a2;color:#36553f;background:rgba(63,107,75,.05);border-radius:0 8px 8px 0}.v-cap i{font-size:16.5px}
-.v-sfx{margin:6px 0;text-align:center;color:#c2410c;font-weight:900;font-style:italic;letter-spacing:.02em;transform:rotate(-3deg);line-height:1.2}.v-sfx.z1{font-size:22px}.v-sfx.z2{font-size:30px}.v-sfx.z3{font-size:40px}
 .cutside{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:6px;min-width:0}
 .svc{display:inline-flex;align-items:center;gap:5px;max-width:100%;font-size:12.5px;line-height:1.4;padding:3px 9px;border-radius:12px;background:#eef3ff;color:#2350b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .svc svg{width:14px;height:14px;flex:none}.svc.auto{background:transparent;box-shadow:inset 0 0 0 1px var(--line2);color:var(--t3)}
 .svc.fx{background:#f3eefe;color:#6b3fb0}.svc.hlc{background:#fff4dc;color:#a16207}.svc.bg i{width:10px;height:10px;border-radius:3px;background:var(--sw);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}.svc.bg{background:var(--surface);color:var(--t1)}
-.cutlist li:focus-within .svc.warn{display:none}.svc.warn{background:#fff1f1;color:#b91c1c;cursor:pointer;border:0;font:inherit;font-size:12.5px}
+.cutlist li:has(.cutin:focus) .svc.warn{display:none}.svc.warn{background:#fff1f1;color:#b91c1c;cursor:pointer;border:0;font:inherit;font-size:12.5px}
 .dirac{min-width:220px}.dirac p{margin:4px 8px 4px;font-size:11.5px;color:var(--t3)}.dirac button small{margin-left:auto;padding-left:16px;color:var(--t3)}
-:root[data-theme=dark] .svc{background:rgba(120,160,255,.15);color:#a8c1ff}:root[data-theme=dark] .svc.fx{background:rgba(170,130,255,.16);color:#cdb4ff}:root[data-theme=dark] .v-dlg{background:rgba(120,160,255,.08)}:root[data-theme=dark] .cuthl .hl-cap,:root[data-theme=dark] .v-cap{color:#a9d1b4}
+:root[data-theme=dark] .svc{background:rgba(120,160,255,.15);color:#a8c1ff}:root[data-theme=dark] .svc.fx{background:rgba(170,130,255,.16);color:#cdb4ff}:root[data-theme=dark] .cuthl .hl-cap{color:#a9d1b4}
 @media(max-width:640px){.scpaper{padding:24px 16px}.scpaper .cutlist li{grid-template-columns:36px minmax(0,1fr) 28px;grid-template-rows:auto auto 1fr auto auto}
   .scpaper .cutlist li>.cn{margin:6px 0 0 4px}.scpaper .cutlist li>.lenbar{margin-left:16px}.scpaper .cutlist li>.cutside{grid-column:2;grid-row:5;flex-direction:row;flex-wrap:wrap;padding:6px 0 0}.scpaper .cutlist li>.tools{grid-column:3}.scpaper .cutlist li>.cutparse{grid-column:2}
   .scpaper .cutlist li::before{left:-16px}.scpaper .cutlist li[data-gap]::after{left:40px;right:28px}.cuthl .gface{display:none}}

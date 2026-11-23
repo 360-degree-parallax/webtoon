@@ -1,6 +1,5 @@
 // 씬 화면 시각화(시안 B)
-// · 고르지 않은 컷: 완성 원고처럼(문법 기호 숨김, 대사는 얼굴 칩·이름, 나레이션 기울임, 효과음 크게, 연출은 오른쪽 칩)
-// · 고른 컷(입력 중): 입력칸 글자는 투명하게 두고 뒤층이 같은 자리에 꾸민 글자를 그림(기호 흐리게, 인물 색, 나레이션 기울임)
+// · 모든 컷(시안 B로 통일): 입력칸 글자는 투명하게 두고 뒤층이 같은 자리에 꾸민 글자를 그림(기호 흐리게, 인물 색, 나레이션 기울임)
 // · 컷 둘레: 칸 길이 막대, 하이라이트, 배경색 띠, 다음 컷까지 간격을 실제 여백으로, 씬 머리 통계, { 자동완성, 연출 오타 제안
 (function(){
 const list=$('#cutlist');if(!list)return;
@@ -24,22 +23,6 @@ cutHL=function(text){return String(text??'').split('\n').map(line=>{const bare=b
     o+=esc(line.slice(last));
     return `<div class="hl-${kind}">${who?`<span class="gface">${face(who)}</span>`:''}${o||'<br>'}</div>`}).join('')};
 document.querySelectorAll('.cutin').forEach(t=>syncHL(t));
-
-// ---------- 고르지 않은 컷: 원고 모양 ----------
-function viewHTML(text,b){const g=b?RoughGrammar.derive(b).edit:null;let dn=0;
-  const inline=s=>{let o='',last=0;s.replace(/(-{1,3})([^\s-][^-\n]{0,10}?)\1(?=\s|$|[.,!?])|@([^\s"“”.,!?{}()]+)/g,(m,dash,w,nm,off)=>{o+=esc(s.slice(last,off));last=off+m.length;
-      o+=dash?`<b class="v-isfx">${esc(w)}</b>`:`<b class="v-nm" style="color:${nameColor(nm)}">${esc(nm)}</b>`;return m});return o+esc(s.slice(last))};
-  return String(text||'').split('\n').map((line,k)=>{const noDir=line.replace(DIR_TOK,'').replace(/\s{2,}/g,' ').trim();if(!noDir)return '';
-    const bare=bareOf(line),at=`data-ln="${k}"`;
-    // 효과음만 있는 줄
-    if(!bare){const fx=[...noDir.matchAll(SFX_ONE)];return fx.map(m=>`<div class="v-sfx z${m[2].length}" ${at}>${esc(m[3])}</div>`).join('')}
-    if(isCap(bare))return `<div class="v-cap" ${at}><i>${inline(bare.slice(1,-1))}</i></div>`;
-    if(isDlg(bare)){const m=bare.match(/^(?:@([^\s"“]+)\s*)?["“](.*)["”]\s*([.!?…]*)$/),who=m[1]||b?.dialogs?.[dn]?.who||'';let body=m[2].trim(),memo='';
-      const n=body.match(/^\(([^)]*)\)\s*(.*)$/);if(n){memo=n[1];body=n[2]}
-      const st=g?.letters?.['dialog-'+dn]?.style,sp=st&&balloonPreset(st);dn++;
-      const sfx=[...noDir.matchAll(SFX_ONE)].map(x=>`<b class="v-isfx">${esc(x[3])}</b>`).join(' ');
-      return `<div class="v-dlg" ${at}>${who?face(who):'<span class="sv-face"><b>?</b></span>'}<div class="v-db"><div class="v-who">${who?`<b style="color:${nameColor(who)}">${esc(who)}</b>`:''}${memo?`<span class="v-memo">${esc(memo)}</span>`:''}${sp?`<span class="v-bs">${esc(sp[1].split(' · ')[0])}</span>`:''}</div><p>${esc(body)}${sfx?' '+sfx:''}</p></div></div>`}
-    return `<p class="v-act" ${at}>${inline(noDir)}</p>`}).join('')}
 
 // ---------- 오른쪽 연출 칩 ----------
 const VOCAB=()=>[...new Set([...RE.SHOTS,...RE.ANGLES,...DIR_MENU.flatMap(([,xs])=>xs),'집중선','속도선','확대','배경','하이라이트','붙임','쉼','큰 쉼','짧게','길게','아주 길게','속삭임','외침','생각','전화','분노','숨','떨림','의미심장'])];
@@ -69,13 +52,12 @@ const GAPPX={붙임:4,보통:14,쉼:34,'큰 쉼':72};
 function decorate(){const bs=RE.parseCuts(CUTS,engineChars()),by={};bs.forEach(b=>{const m=/^#(\d+):/.exec(b.key||'');if(m)by[+m[1]]=b});
   const P=state.panels||[];
   list.querySelectorAll('li[data-i]').forEach(li=>{const i=+li.dataset.i,b=by[i],box=li.querySelector('.cutbox');if(!box)return;
-    let v=box.querySelector('.cutview');if(!v){v=document.createElement('div');v.className='cutview';box.appendChild(v)}
     let sd=li.querySelector('.cutside');if(!sd){sd=document.createElement('div');sd.className='cutside';li.insertBefore(sd,li.querySelector('.tools'))}
     let lb=li.querySelector('.lenbar');if(!lb){lb=document.createElement('i');lb.className='lenbar';li.querySelector('.cn')?.after(lb)}
     const has=!!String(CUTS[i]||'').trim();box.classList.toggle('has',has);
-    if(!b||!has){v.innerHTML='';sd.innerHTML='';li.style.removeProperty('--gap');li.removeAttribute('data-gap');li.classList.remove('hl');li.style.removeProperty('--band');lb.style.height='0';return}
+    if(!b||!has){sd.innerHTML='';li.style.removeProperty('--gap');li.removeAttribute('data-gap');li.classList.remove('hl');li.style.removeProperty('--band');lb.style.height='0';return}
     const c=P.find(x=>x.key===b.key),g=RoughGrammar.derive(b),gd=g.edit||{};
-    v.innerHTML=viewHTML(CUTS[i],b);sd.innerHTML=sideHTML(b,c,g);
+    sd.innerHTML=sideHTML(b,c,g);
     const lw=c?lenWord(c.h):'보통';lb.style.height={짧게:14,보통:26,길게:42,'아주 길게':62}[lw]+'px';lb.classList.toggle('dir',!!b.dir?.h);lb.title=`칸 길이 · ${lw}`;
     li.classList.toggle('hl',!!(b.dir?.hl||c?.vng==='P'));
     const bg=gd.background||(gd.transition&&PAGE_BACKGROUNDS[gd.transition]?.start);if(bg)li.style.setProperty('--band',bg);else li.style.removeProperty('--band');
@@ -90,10 +72,6 @@ function stats(bs,P){const el=document.querySelector('.scmeta');if(!el)return;le
 {const _c=compute;compute=function(...a){const r=_c(...a);if(VIEW==='write')decorate();return r}}
 decorate();
 
-// 원고 모양을 누르면 그 줄 끝으로 커서
-list.addEventListener('mousedown',e=>{const v=e.target.closest('.cutview');if(!v||e.button)return;const t=v.parentElement.querySelector('.cutin');if(!t||document.activeElement===t)return;
-  e.preventDefault();const k=+(e.target.closest('[data-ln]')?.dataset.ln??-1),lines=t.value.split('\n');
-  const pos=k<0?t.value.length:lines.slice(0,k+1).join('\n').length;t.focus();t.setSelectionRange(pos,pos)});
 // 오타 제안 누르면 고침
 list.addEventListener('click',e=>{const f=e.target.closest('[data-fix]');if(!f)return;const li=f.closest('li'),i=+li.dataset.i,t=li.querySelector('.cutin');
   const from=f.dataset.fix,to=f.dataset.to;t.value=t.value.replace(/\{[^{}\n]*\}/g,m=>m.replace(new RegExp('(^\\{|[,，·/]\\s*)'+from.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=\\s*([,，·/]|\\}))'),'$1'+to));
