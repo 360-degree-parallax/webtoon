@@ -857,6 +857,31 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .ct-prompt{min-width:0}.ct-ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--t2)}
 .ct-prompt .nf{margin-bottom:8px}.ct-prompt .nf h4 small{font-weight:500;color:var(--t3);margin-left:6px}.ct-prompt .nf pre{font-size:13.5px;line-height:1.65}
 @media(max-width:640px){.ct-body{grid-template-columns:1fr}.ct-drop.drop{width:100%;max-height:420px}}
+
+/* 콘티: 포스타입 글 화면처럼(상자 대신 구분선·여백, 글이 주인공, 작은 글자 버튼, 흑백 + 강조 하나) */
+#v-layout .page{max-width:880px}
+#conti .ct-head{display:block;margin:24px 0 8px;padding-bottom:28px;border-bottom:1px solid var(--t1)}
+#conti .ct-head h2{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 10px}#conti .ct-head p{font-size:15px;color:var(--t3)}#conti .ct-head p b{color:var(--t1);font-weight:600}
+.ct-tools{display:flex;flex-wrap:wrap;gap:2px 4px;margin-top:16px;margin-left:-8px}
+.tbtn{height:30px;padding:0 8px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--t2);background:none}.tbtn:hover{background:var(--hover);color:var(--t1)}
+.ct-tools .tbtn+.tbtn::before{content:'';display:inline-block;width:1px;height:10px;background:var(--line2);margin:0 10px 0 -6px;vertical-align:middle}
+#conti .ccard{border:0;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none;background:none;padding:40px 0 44px;margin:0}
+#conti .ccard:focus-within{box-shadow:none;border-color:var(--line)}
+#conti .ccard>header{display:block;margin-bottom:20px}
+#conti .ct-no{display:block;width:auto;height:auto;background:none;border-radius:0;font-size:13px;font-weight:600;color:var(--blue,#2d71f7);letter-spacing:.04em;margin-bottom:6px}
+#conti .ct-beat p{font-size:18px;font-weight:500;line-height:1.75;color:var(--t1)}#conti .ct-beat small{display:block;margin-top:2px;font-size:13.5px;color:var(--t3)}
+#conti .ccard>header .tag{display:inline-block;margin-top:8px}
+#conti .ct-body{grid-template-columns:180px minmax(0,1fr);gap:28px}
+#conti .ct-drop.drop{width:180px;border:0;border-radius:8px;background:var(--surface)}#conti .ct-drop.drop:hover,#conti .ct-drop.drop.over{background:var(--hover);box-shadow:inset 0 0 0 1px var(--t3)}
+#conti .ct-plus{font-size:13.5px;font-weight:500;color:var(--t2)}#conti .ct-plus b{font-size:22px;color:var(--t2)}
+#conti .ccard.stale .ct-drop{outline:2px solid #d97706}#conti .ct-stale{color:#b45309;padding-left:0}#conti .ct-art .tbtn{margin-left:-8px}
+#conti .ct-ph{font-size:12.5px;font-weight:600;color:var(--t3);margin:0 0 10px}#conti .ct-ph .tbtn{height:26px;font-size:12.5px}
+#conti .nf{margin:0 0 14px;padding:0 0 0 14px;border-left:2px solid var(--line2);background:none}
+#conti .nf header{display:flex;align-items:center;gap:8px}#conti .nf h4{font-size:12.5px;font-weight:600;color:var(--t2)}
+#conti .nf .btn{height:24px;padding:0 8px;border:0;border-radius:6px;font-size:12px;font-weight:500;color:var(--t3);background:none;opacity:0;transition:opacity .12s}#conti .nf:hover .btn,#conti .nf .btn:focus-visible{opacity:1}#conti .nf .btn:hover{background:var(--hover);color:var(--t1)}
+#conti .nf pre{margin:4px 0 0!important;padding:0;background:none;font-size:15px;line-height:1.75;color:var(--t1);white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+#conti .tag{font-size:11.5px;padding:1px 8px;border-radius:10px;background:var(--surface);color:var(--t2)}
+@media(max-width:640px){#conti .ct-head h2{font-size:26px}#conti .ct-body{grid-template-columns:1fr;gap:18px}#conti .ct-drop.drop{width:100%}#conti .nf .btn{opacity:1}}
 </style>
 </head>
 <body>
@@ -3284,14 +3309,14 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   if(!ps.length){el.innerHTML='<p class="empty">씬 단계에서 컷을 적어주세요.</p>';return}
   const L=naiCuts(),done=cutCount(SCUR,ps),ai=ainFor();
   const head=`<div class="ct-head"><div><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><p>${ps.length}컷 · 그림 <b>${done}</b>/${ps.length}${ai?` · ${ai.stale?'<span class="ct-warn">글이 바뀌어 Claude 프롬프트가 예전 것</span>':'Claude로 다듬은 프롬프트'}`:''}</p></div>
-    <div class="btnrow"><button class="btn" data-act="naiset" aria-expanded="false">작화 설정</button><button class="btn" data-act="nairefine">Claude로 다듬기</button><button class="btn" data-act="naimulti" title="파일 이름 순으로 빈 컷부터 채워요">그림 여러 장</button><button class="btn" data-act="naidown">프롬프트 txt</button></div></div>`;
+    <div class="ct-tools"><button class="tbtn" data-act="naiset" aria-expanded="false">작화 설정</button><button class="tbtn" data-act="nairefine">Claude로 다듬기</button><button class="tbtn" data-act="naimulti" title="파일 이름 순으로 빈 컷부터 채워요">그림 여러 장</button><button class="tbtn" data-act="naidown">프롬프트 txt</button></div></div>`;
   el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
     return `<article class="ccard${im?.stale?' stale':''}">
       <header><b class="ct-no">${String(i+1).padStart(2,'0')}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([p.who,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':' → 생성 후 '+esc(o.size.crop)}</small></div>${o.ai?'<span class="tag">Claude</span>':''}</header>
       <div class="ct-body">
         <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>끌어다 놓아도 돼요</small></span>`}</div>
-          ${im?.stale?`<button class="btn sm ct-stale" data-act="nstale" data-i="${i}">원고가 바뀜 · 확인</button>`:im?`<button class="btn sm" data-cutslot="${i}">그림 바꾸기</button>`:''}</div>
-        <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="btn sm" data-act="ncopyall" data-i="${i}">전체 복사</button></div>
+          ${im?.stale?`<button class="tbtn ct-stale" data-act="nstale" data-i="${i}">원고가 바뀜 · 확인</button>`:im?`<button class="tbtn" data-cutslot="${i}">그림 바꾸기</button>`:''}</div>
+        <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="tbtn" data-act="ncopyall" data-i="${i}">전체 복사</button></div>
           ${nblk('기본 프롬프트','',o.base)}${o.chars.map((c,n)=>nblk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,'',c.prompt)).join('')}</div>
       </div></article>`}).join('')}
 // C안 카드: 번호·장면 한 줄·썸네일과 [이미지 등록|교체] [프롬프트]. 프롬프트·생성 설정은 펼쳐서
