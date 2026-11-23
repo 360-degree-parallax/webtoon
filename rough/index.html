@@ -960,6 +960,17 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   .ctxbar{overflow-x:auto}
 }
 @media(max-width:640px){.gnb #gkeys,.gnb #theme,.gnb #gDb{display:none!important}.gnb .gscbar>button{display:none}.gnb .xwrap .btn{white-space:nowrap}.gnb #gReview{flex-shrink:0;white-space:nowrap}.gnb .right{gap:6px;min-width:0}.gscbar select{max-width:110px}.gnb .xwrap .btn{padding:0 12px}}
+/* 캐릭터·세계관·구성(4): 콘티와 같은 흑백·둥근 톤, 글자 13px 이상 */
+#v-chars .ce-img:not(.has),#v-world .ce-img:not(.has){background:var(--tb50,#e5e8eb)!important;color:var(--tb,#191f28);border-radius:20px;border:0}
+#v-chars .ce-img:not(.has) .ini,#v-world .ce-img:not(.has) .ini{color:var(--tbt,#8b95a1)}
+#v-chars .ce-img,#v-world .ce-img{border-radius:20px}
+#v-chars .ce-img small,#v-world .ce-img small,#v-chars label small,#v-world label small,#v-chars .cstat,#v-world .cstat,#v-chars span>small,#v-world span>small{font-size:13px}
+#v-chars input,#v-chars textarea,#v-world input,#v-world textarea,#v-plan input,#v-plan textarea,#v-plan select{border-radius:12px}
+#v-plan .seg3,#v-plan details,#v-chars .seg3{border-radius:12px}
+#v-plan .btn,#v-chars .btn,#v-world .btn{border-radius:12px}
+#v-write .cn,#v-write .svc,#v-write .edhead,#v-write .edhead span,#v-write .scenes .btn.sm,#v-write button .sn,#v-write button b,#v-write span>small,#v-write .scadd small{font-size:13px}
+.gundo{display:inline-flex;gap:2px;align-items:center}.gundo[hidden]{display:none}
+.scenes li button[data-scene][aria-current=true]{background:var(--tb50,#e5e8eb)}
 </style>
 </head>
 <body>
@@ -3309,12 +3320,11 @@ function addCompositionScenes(cards){
   if(!added.length){toast('이 구성안의 씬은 이미 추가했어요');return}
   const scenes=added.map(card=>({id:'s'+crypto.randomUUID(),compositionId:card.id,
     title:card.title.trim(),cuts:card.cuts.slice(),pageEdits:[]}));
-  saveScenes();
   const first=SCENES.length;
-  SCENES.push(...scenes);
+  SCENES.push(...scenes);saveScenes();  // 붙인 뒤 저장(전에는 저장이 먼저라 새 씬이 다음 저장까지 안 남았음)
   switchScene(first);
   showView('write');
-  toast(`구성안에서 ${scenes.length}개 씬을 추가했어요`);
+  toast(`구성안에서 ${scenes.length}개 씬을 추가했어요 · 왼쪽 씬 목록에서 골라 다듬어요`,2600);
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
 {const _c=compute;compute=function(...a){_c(...a);if(VIEW==='layout')renderNai();else if(VIEW==='webtoon')renderWebtoon()}}
