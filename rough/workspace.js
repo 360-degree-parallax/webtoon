@@ -96,6 +96,7 @@ reader.addEventListener('keydown',e=>{if(selectedLetter&&/^Arrow/.test(e.key)){c
 
 function refreshText(si){saveScenes();if(si===SCUR&&typeof compute==='function')compute(false);else renderWebtoon()}
 function focusText(){openPanel('props');setTimeout(()=>{letterMemo.focus();letterMemo.select()},30)}
+window.focusLetterText=focusText;
 // 말풍선·나레이션·효과음을 컷 글에 더하고, 누른 자리로 옮김
 function addLetter(kind,group,pt,o={}){
   const key=pageKey(group),[si,slot]=key.split(':').map(Number),cuts=SCENES[si].cuts;
@@ -510,7 +511,13 @@ function deleteCut(key){const [si,slot]=key.split(':').map(Number),sc=SCENES[si]
 document.addEventListener('keydown',e=>{if(!inEdit()||(e.key!=='Delete'&&e.key!=='Backspace'))return;if(typing(e.target)||document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;
   if(MULTI.size>1){e.preventDefault();deleteLetterEls([...MULTI].map(k=>{const [key,lk]=k.split('|');return groupBy(key)?.querySelector(`[data-letter="${CSS.escape(lk)}"]`)}).filter(Boolean));return}
   if(selectedLetter){e.preventDefault();deleteLetterEls([selectedLetter]);return}
+  const lp=window.layerPart;if(pageSelection&&lp&&lp.key===pageSelection&&lp.what==='art'){e.preventDefault();deleteArt(pageSelection);return}
   if(pageSelection){e.preventDefault();deleteCut(pageSelection)}});
+// 레이어 패널의 '그림' 줄을 고르고 Delete: 컷은 두고 넣은 그림만 뺌(Ctrl+Z로 되돌림). 레퍼런스만 있으면 지울 것이 없음
+function deleteArt(key){const [si,slot]=key.split(':').map(Number),g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}
+  const id=cutId(SCENES[si].id,slot);if(!IMG.cut[id]){flash('이 컷은 레퍼런스만 보여 줘서 뺄 그림이 없어요 · 컷을 지우려면 \'칸\'을 고르고 Delete');return}
+  edSnap=edState();edLast=0;  // 그림 넣기는 기록을 안 남기므로 지금 상태를 기준으로 잡아야 Ctrl+Z가 그림을 되살림
+  delete IMG.cut[id];idb.del(id);saveScenes();renderWebtoon();const ng=groupBy(key);if(ng)selectPageCut(ng);window.layerPart={key,what:'art'};flash('넣은 그림을 뺐어요 · Ctrl+Z로 되돌리기')}
 
 // ---------- 오른쪽 클릭 메뉴(클립스튜디오·포토샵·피그마 방식) ----------
 // 누른 대상(식자 · 여러 식자 · 컷 · 컷 사이 · 빈 곳)을 먼저 고르고, 그 대상에 맞는 메뉴를 그 자리에. 하위 메뉴 ▸, 단축키 표시, 방향키·Enter·Esc
@@ -650,7 +657,7 @@ reader.addEventListener('click',e=>{const b=e.target.closest('[data-scene-add]')
   if(!last){const sc=SCENES[si];sc.cuts.push('(새 컷) 장면을 적어 주세요');refreshText(si);return}askCut(pageKey(last),true,b)});
 
 // ---------- 연결 ----------
-{const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);renderCtx();return r}}
+{const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);if(cropKey&&cropKey!==pageSelection)RoughStudio.setCrop(null);renderCtx();return r}}  // 그림 편집 중 다른 컷을 고르면 그림 편집을 풀어 새 컷이 바로 잡히게
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);renderCtx();return r}}
 {const _rw=renderWebtoon;renderWebtoon=function(...a){reader.classList.toggle('artboards',AB);const r=_rw(...a);markLocks();markMulti();renderCtx();renderHistory();return r}}
 {const _sv=showView;showView=function(v){const r=_sv(v);Object.entries(LAYOUT.panels).forEach(([id,p])=>{if(p.float)PANELS[id].sec.hidden=v!=='webtoon'});if(v!=='webtoon'){hideFly();if(tool!=='select')setTool('select')}return r}}

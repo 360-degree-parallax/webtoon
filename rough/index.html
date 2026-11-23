@@ -14,8 +14,8 @@
   --bg:light-dark(#ffffff,#16181c);
   --surface:light-dark(#f6f8fa,#1e2126);
   --t1:light-dark(rgba(22,29,39,.88),rgba(255,255,255,.88));
-  --t2:light-dark(rgba(19,30,44,.61),rgba(255,255,255,.58));
-  --t3:light-dark(rgba(19,30,44,.40),rgba(255,255,255,.36));
+  --t2:light-dark(rgba(19,30,44,.72),rgba(255,255,255,.68)); /* 대비 6.7:1 (가독성 개선, docs/readability-vs-postype.md) */
+  --t3:light-dark(rgba(19,30,44,.62),rgba(255,255,255,.52)); /* 대비 4.8:1 이상 — 정보 글자에 써도 AA */
   --line:light-dark(rgba(2,34,76,.09),rgba(255,255,255,.10));
   --line2:light-dark(rgba(2,34,76,.16),rgba(255,255,255,.18));
   --hover:light-dark(rgba(5,39,84,.05),rgba(255,255,255,.06));
@@ -398,11 +398,11 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .toc{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 .toc a{padding:5px 10px;border-radius:14px;background:var(--bg);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--t1);text-decoration:none}
 .reader{max-width:720px;margin:12px auto 80px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.reader .scn{padding:28px 0 6px;text-align:center;font-size:13px;font-weight:600;color:#8a8f98;display:flex;align-items:center;gap:12px}
+.reader .scn{padding:28px 0 6px;text-align:center;font-size:13px;font-weight:600;color:var(--t2);display:flex;align-items:center;gap:12px}
 .reader .scn::before,.reader .scn::after{content:"";flex:1;height:1px;background:#e5e7eb}
 .reader .scn span{white-space:nowrap}
 .reader section > svg,.reader img{display:block;width:100%;height:auto}
-.reader .empty{padding:60px 20px;text-align:center;color:#8a8f98}
+.reader .empty{padding:60px 20px;text-align:center;color:var(--t2)}
 @media(max-width:900px){.wgrid{grid-template-columns:1fr;padding:0 24px;gap:0}.scenes{position:static;max-height:none;padding:20px 0 0}.scenes ol{display:flex;overflow-x:auto;gap:6px}.scenes li{flex:none;max-width:100%}.scenes li button[data-scene]{grid-template-columns:22px auto;white-space:nowrap}.scenes li small{display:none}}
 @media(max-width:640px){.wgrid{padding:0 16px}.next{flex-wrap:wrap}.next .big{flex:1}.wtitle{font-size:24px}}
 /* cut list */
@@ -759,6 +759,28 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 /* 면 아이콘(직접 그림): 채움 */
 .tr-btn svg,.wp-h svg,.al svg,.edtree .tlock svg,.ctxbar .cb-tool svg{fill:currentColor;stroke:none}
 .tr-btn svg{width:21px;height:21px}
+
+/* ---------- 가독성 개선(포스타입 대비 측정: docs/readability-vs-postype.md) ---------- */
+/* 최소 글자: 편집 패널 12.5px, 그 밖 13px. 정보 글자는 보조색 이상 */
+.edtree .tcut{font-size:13.5px;color:var(--t1)}.edtree .tcut small{font-size:12px;color:var(--t2)}.edtree .texp{font-size:12px;color:var(--t2)}
+.edtree .tsc,.edtree a.tsc{font-size:14px}
+.ctxbar{font-size:13px;white-space:nowrap}.ctxbar>*,.ctxbar .cb-mid>*{flex-shrink:0}.ctxbar .cb,.ctxbar select,.ctxbar input{font-size:13px}
+.as-tabs button{font-size:13px;padding:5px 10px}.as-body h5{font-size:13px;color:var(--t1);font-weight:600}.as-target{font-size:12.5px}.as-why,.as-note{font-size:12.5px;color:var(--t2)}
+.asi{font-size:12.5px;color:var(--t1)}.words .asi{font-size:14px}
+.rvopts kbd,.cmenu-box kbd,.keysdlg kbd{font-size:12px}.rvnav .hint{font-size:12.5px;color:var(--t2)}.rvask small{font-size:13px;color:var(--t2)}
+.wsd-tabs [role=tab]{font-size:13.5px}.insp .prop span,.insp-h span{font-size:13px}
+/* 읽는 글: 컷 내용·장면 설명은 16~17px/1.7, 한 줄 약 40자 */
+#tbl .beat b{font-size:16px;line-height:1.6}#tbl .beat small{font-size:13px}
+.rvtext{font-size:17px;line-height:1.7;max-width:40em}.rvq{max-width:44em}
+.pcard.cut.c h3{font-size:16px;line-height:1.5}.pcard .meta{font-size:14px}
+#v-layout .rhead p{font-size:16px}.desc{font-size:15.5px;line-height:1.7;max-width:46em}
+/* 작화 영어 태그: 줄바꿈 */
+.nf pre{white-space:pre-wrap;word-break:break-word;line-height:1.6}
+/* 굵기: 400·500·600·700만 */
+.rd-head{font-weight:700}b,strong{font-weight:600}h1{font-weight:700}
+/* 상단 단계 메뉴: 번호와 이름 사이 간격, 휴대폰은 가로 스크롤 */
+.topnav [data-view] b{margin-right:6px}
+@media(max-width:640px){.topnav{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}.topnav [data-view]{flex-shrink:0;white-space:nowrap}#gReview{margin-right:4px}}
 </style>
 </head>
 <body>
