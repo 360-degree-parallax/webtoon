@@ -513,6 +513,87 @@ document.addEventListener('keydown',e=>{if(!inEdit()||(e.key!=='Delete'&&e.key!=
   if(selectedLetter){e.preventDefault();deleteLetterEls([selectedLetter]);return}
   if(pageSelection){e.preventDefault();deleteCut(pageSelection)}});
 
+// ---------- 오른쪽 클릭 메뉴(클립스튜디오·포토샵·피그마 방식) ----------
+// 누른 대상(식자 · 여러 식자 · 컷 · 컷 사이 · 빈 곳)을 먼저 고르고, 그 대상에 맞는 메뉴를 그 자리에. 하위 메뉴 ▸, 단축키 표시, 방향키·Enter·Esc
+const cm=mk('cmenu');cm.setAttribute('role','menu');cm.hidden=true;document.body.appendChild(cm);let cmStack=[];
+const SEP={sep:1};
+function cmBuild(items){const box=mk('cmenu-box');box.setAttribute('role','menu');
+  box.innerHTML=items.filter(Boolean).map((it,i)=>it.sep?'<div class="cm-sep" role="separator"></div>':
+    `<button role="menuitem" data-ci="${i}"${it.disabled?' disabled':''}${it.sub?' aria-haspopup="true"':''}${it.danger?' class="danger"':''}><span class="cm-l">${it.check!==undefined?`<i class="cm-c">${it.check?'✓':''}</i>`:''}${esc(it.label)}</span>${it.key?`<kbd>${esc(it.key)}</kbd>`:''}${it.sub?'<i class="cm-a">▸</i>':''}</button>`).join('');
+  box._items=items.filter(Boolean);return box}
+function cmOpen(items,x,y,level=0){cmStack.slice(level).forEach(b=>b.remove());cmStack=cmStack.slice(0,level);
+  const box=cmBuild(items);cm.appendChild(box);cm.hidden=false;cmStack.push(box);
+  const r=box.getBoundingClientRect(),W=innerWidth,H=innerHeight;let L=x,T=y;
+  if(L+r.width>W-6)L=level?Math.max(6,x-r.width-(cmStack[level-1]?.getBoundingClientRect().width||0)):W-r.width-6;if(T+r.height>H-6)T=Math.max(6,H-r.height-6);
+  box.style.left=L+'px';box.style.top=T+'px';(box.querySelector('button:not([disabled])'))?.focus();return box}
+function cmClose(){cm.hidden=true;cm.innerHTML='';cmStack=[]}
+cm.addEventListener('click',e=>{const b=e.target.closest('button[data-ci]');if(!b)return;const box=b.closest('.cmenu-box'),it=box._items[+b.dataset.ci];
+  if(it.sub){const r=b.getBoundingClientRect();cmOpen(it.sub(),r.right-2,r.top-4,cmStack.indexOf(box)+1);return}cmClose();it.run?.()});
+cm.addEventListener('pointerover',e=>{const b=e.target.closest('button[data-ci]');if(!b)return;const box=b.closest('.cmenu-box'),lv=cmStack.indexOf(box),it=box._items[+b.dataset.ci];
+  clearTimeout(cm._t);cm._t=setTimeout(()=>{if(it.sub){const r=b.getBoundingClientRect();cmOpen(it.sub(),r.right-2,r.top-4,lv+1);b.focus()}else{cmStack.slice(lv+1).forEach(x=>x.remove());cmStack=cmStack.slice(0,lv+1)}},140)});
+cm.addEventListener('keydown',e=>{const box=e.target.closest('.cmenu-box');if(!box)return;const bs=[...box.querySelectorAll('button:not([disabled])')],i=bs.indexOf(document.activeElement),lv=cmStack.indexOf(box);
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();bs[(i+(e.key==='ArrowDown'?1:-1)+bs.length)%bs.length]?.focus()}
+  else if(e.key==='ArrowRight'){const it=box._items[+document.activeElement?.dataset.ci];if(it?.sub){e.preventDefault();document.activeElement.click()}}
+  else if(e.key==='ArrowLeft'&&lv>0){e.preventDefault();const parent=cmStack[lv-1];box.remove();cmStack=cmStack.slice(0,lv);parent.querySelector('[aria-haspopup]:focus,[aria-haspopup]')?.focus()}
+  else if(e.key==='Escape'){e.preventDefault();cmClose()}
+  else if(e.key==='Tab'){e.preventDefault()}});
+document.addEventListener('pointerdown',e=>{if(!cm.hidden&&!cm.contains(e.target))cmClose()},true);
+addEventListener('blur',cmClose);addEventListener('resize',cmClose);document.addEventListener('scroll',()=>{if(!cm.hidden)cmClose()},true);
+const K=id=>KEYS[id]||'';
+// 컷 넣기·복제·옮기기(이미지·편집값이 함께 움직이게 remapCuts 사용)
+function insertCut(key,after,copy){const [si,slot]=key.split(':').map(Number),sc=SCENES[si],len=sc.cuts.length,at=slot+(after?1:0);
+  remapCuts(si,()=>{sc.cuts.splice(at,0,copy?sc.cuts[slot]:'(새 컷) 장면을 적어 주세요');if(sc.pageEdits.length>at||copy)sc.pageEdits.splice(at,0,copy&&sc.pageEdits[slot]?structuredClone(sc.pageEdits[slot]):null);return moveMap(len,x=>x>=at?x+1:x)});
+  if(si===SCUR)CUTS=sc.cuts;refreshText(si);const g=groupBy(`${si}:${at}`);if(g){selectPageCut(g);g.scrollIntoView({block:'center',behavior:'smooth'})}
+  flash(copy?'컷을 복제했어요 · 그림은 복제되지 않아요':'새 컷을 넣었어요 · 글은 씬 화면이나 대사 교정에서 고쳐요')}
+function moveCutBy(key,d){const [si,slot]=key.split(':').map(Number),sc=SCENES[si],j=slot+d,len=sc.cuts.length;if(j<0||j>=len)return;
+  remapCuts(si,()=>{[sc.cuts[slot],sc.cuts[j]]=[sc.cuts[j],sc.cuts[slot]];while(sc.pageEdits.length<=Math.max(slot,j))sc.pageEdits.push(null);[sc.pageEdits[slot],sc.pageEdits[j]]=[sc.pageEdits[j],sc.pageEdits[slot]];return moveMap(len,x=>x===slot?j:x===j?slot:x)});
+  if(si===SCUR)CUTS=sc.cuts;refreshText(si);const g=groupBy(`${si}:${j}`);if(g)selectPageCut(g)}
+const setGap=(key,v)=>{const s=withKey(key,()=>pageSettings(true));if(v==null)delete s.gap;else s.gap=v;saveScenes();renderWebtoon()};
+const bgSub=g=>()=>[{label:'기본(질감 없음)',run:()=>applyAsset('bg',0,g)},...PAGE_BACKGROUNDS.map((p,i)=>p&&{label:p.name,run:()=>applyAsset('bg',i,g)}).filter(Boolean)];
+function letterMenu(L,g,pt){const lk=L.dataset.letter,key=pageKey(g),isD=/^dialog/.test(lk),isC=/^caption/.test(lk),locked=isLocked(g,lk);
+  const tailOn=!!L.querySelector('[data-tail-handle]');
+  return [{label:'문구 고치기',key:'더블클릭',run:()=>{selectPageCut(g);selectLetter(L);focusText()}},
+    isD&&{label:'형태',sub:()=>BALLOON_STYLES.map(s=>({label:s[1],run:()=>useMat('balloon',s[0],g,pt,L)}))},
+    isD&&{label:'꼬리 보이기',check:tailOn,run:()=>{withKey(key,()=>{const s=pageSettings(true);(s.letters||={})[lk]={...(s.letters[lk]||{}),showTail:!tailOn}});saveScenes();renderWebtoon()}},
+    {label:'위치·크기 처음대로',run:()=>{withKey(key,()=>{const s=pageSettings(true),e=s.letters?.[lk];if(e){const t=e.text;s.letters[lk]=t!==undefined?{text:t}:{}}});saveScenes();renderWebtoon();flash('식자 배치를 처음대로 돌렸어요')}},
+    SEP,{label:locked?'잠금 풀기':'잠그기',run:()=>toggleLock(key,lk)},
+    SEP,{label:`${isD?'말풍선':isC?'나레이션':'효과음'} 지우기`,key:'Del',danger:1,disabled:locked,run:()=>deleteLetterEls([L])}]}
+function multiMenu(){const els=[...MULTI].map(k=>{const [key,lk]=k.split('|');return groupBy(key)?.querySelector(`[data-letter="${CSS.escape(lk)}"]`)}).filter(Boolean);
+  return [{label:`식자 ${els.length}개 정렬`,sub:()=>[['left','왼쪽'],['hcenter','가로 가운데'],['right','오른쪽'],['top','위'],['vcenter','세로 가운데'],['bottom','아래'],['vdist','세로 간격 고르게'],['hdist','가로 간격 고르게']].map(([k,n])=>({label:n,run:()=>alignLetters(k)}))},
+    {label:'선택 풀기',key:'Esc',run:clearMulti},SEP,{label:`식자 ${els.length}개 지우기`,key:'Del',danger:1,run:()=>deleteLetterEls(els)}]}
+function cutMenu(g,pt){const key=pageKey(g),[si,slot]=key.split(':').map(Number),locked=isLocked(g,'cut'),len=SCENES[si].cuts.length;
+  return [{label:'여기에 말풍선',key:K('balloon'),disabled:locked,run:()=>addLetter('balloon',g,pt)},{label:'여기에 나레이션',key:K('caption'),disabled:locked,run:()=>addLetter('caption',g,pt)},
+    {label:'여기에 효과음',sub:()=>[...SFXW.map(w=>({label:w,run:()=>addLetter('sfx',g,pt,{text:w})})),{label:'효과음 소재 더 보기…',run:()=>{selectPageCut(g);assetTab('sfx',true)}}]},
+    {label:'효과선',sub:()=>[{label:'집중선',run:()=>useMat('line','focus',g)},{label:'속도선',run:()=>useMat('line','speed',g)}]},SEP,
+    {label:'그림 편집(확대·이동)',key:'더블클릭',run:()=>{selectPageCut(g);RoughStudio.setCrop(g)}},
+    {label:'레퍼런스 바꾸기…',run:()=>{selectPageCut(g);assetTab('ref',true)}},
+    {label:'이 컷에 맞는 에셋 추천',run:()=>{selectPageCut(g);assetTab('rec',true)}},
+    si===SCUR&&{label:'컷 그림 등록·교체…',run:()=>{target={kind:'cut',key:String(g.dataset.p)};$('#filem').click()}},SEP,
+    {label:'칸 나누기',key:K('split'),disabled:locked,run:()=>splitCut(g)},
+    {label:'위에 새 컷',run:()=>insertCut(key,false)},{label:'아래에 새 컷',run:()=>insertCut(key,true)},{label:'컷 복제',run:()=>insertCut(key,true,true)},
+    {label:'위로 옮기기',disabled:slot===0,run:()=>moveCutBy(key,-1)},{label:'아래로 옮기기',disabled:slot>=len-1,run:()=>moveCutBy(key,1)},SEP,
+    {label:'아래 전환 질감',sub:bgSub(g)},{label:'프레임 처음대로',disabled:locked,run:()=>{selectPageCut(g);$('#wframereset').click()}},
+    {label:'여기부터 시퀀스로 저장…',run:()=>{selectPageCut(g);$('#wtplsave').click()}},{label:locked?'컷 잠금 풀기':'컷 잠그기',run:()=>toggleLock(key,'cut')},SEP,
+    {label:'컷 지우기',key:'Del',danger:1,disabled:locked||len<=1,run:()=>deleteCut(key)}]}
+function gapMenu(gap){const si=gap.closest('section').dataset.pageScene,key=`${si}:${gap.dataset.slot}`,g=groupBy(key);if(!g)return null;
+  return [{label:'간격',sub:()=>[{label:'붙임 · 0px',run:()=>setGap(key,0)},{label:'기본',run:()=>setGap(key,null)},{label:'쉼 · 300px',run:()=>setGap(key,300)},{label:'큰 쉼 · 600px',run:()=>setGap(key,600)},{label:'아주 길게 · 1200px',run:()=>setGap(key,1200)}]},
+    {label:'전환 질감',sub:bgSub(g)},{label:'배경 이미지',sub:()=>[...Object.values(IMG.bg||{}).map(r=>({label:r.name||'배경 이미지',run:()=>applyAsset('bgimg',r.id,g)})),{label:'이미지 올리기…',run:()=>{selectPageCut(g);assetTab('bg',true);assetBody.querySelector('[data-as="bgup"]')?.click()}}]},
+    {label:'배경 세부(중간색·씬 끝 색)…',run:()=>{selectPageCut(g);setDrawer(true,'props')}},SEP,{label:'여기에 새 컷',run:()=>insertCut(key,true)}]}
+function emptyMenu(){return [{label:'전체 보기',key:'Shift+1',run:()=>RoughStudio.fitAll()},{label:'100%',key:'Shift+0',run:()=>RoughStudio.zoomTo(1)},pageSelection&&{label:'선택한 컷 보기',key:'Shift+2',run:()=>RoughStudio.fitSelected()},SEP,
+  {label:'미니맵',check:!miniWrap.hidden,run:()=>ctx.querySelector('[data-off="mini"]')?.click()},{label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},{label:'읽기 모드',key:'P',run:()=>$('#wread').click()},
+  SEP,{label:'대사 교정…',run:()=>$('#wproof').click()},{label:'완성본 점검(다음 문제 컷)',run:()=>typeof jumpArtCheck==='function'&&jumpArtCheck()}]}
+reader.addEventListener('contextmenu',e=>{if(!inEdit()||!pageEditing)return;e.preventDefault();e.stopPropagation();hideFly();
+  const L=e.target.closest('[data-letter]'),g=e.target.closest('[data-slot-index]'),gap=e.target.closest('[data-page-gap]');let items=null;
+  if(L&&g&&MULTI.size>1&&MULTI.has(lkey(L)))items=multiMenu();
+  else if(L&&g){if(MULTI.size)clearMulti();selectPageCut(g);selectLetter(L);items=letterMenu(L,g,pagePoint(g.ownerSVGElement,e))}
+  else if(gap)items=gapMenu(gap);
+  else if(g){if(MULTI.size)clearMulti();selectLetter(null);selectPageCut(g);const pt=pagePoint(g.ownerSVGElement,e);items=cutMenu(g,{x:pt.x,y:pt.y})}
+  else items=emptyMenu();
+  if(items)cmOpen(items,e.clientX,e.clientY)},true);
+// 키보드로도 열기: 고른 대상에서 Shift+F10 · 메뉴 키
+document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||!(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')))return;e.preventDefault();
+  const el=selectedLetter||selGroup();if(!el)return;const r=el.getBoundingClientRect();el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:r.left+Math.min(40,r.width/2),clientY:r.top+Math.min(40,r.height/2)}))});
+
 // ---------- 연결 ----------
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);renderCtx();return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);renderCtx();return r}}
