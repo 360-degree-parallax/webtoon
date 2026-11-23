@@ -882,6 +882,12 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 #conti .nf pre{margin:4px 0 0!important;padding:0;background:none;font-size:15px;line-height:1.75;color:var(--t1);white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 #conti .tag{font-size:11.5px;padding:1px 8px;border-radius:10px;background:var(--surface);color:var(--t2)}
 @media(max-width:640px){#conti .ct-head h2{font-size:26px}#conti .ct-body{grid-template-columns:1fr;gap:18px}#conti .ct-drop.drop{width:100%}#conti .nf .btn{opacity:1}}
+
+/* 콘티 그림 크게 */
+#v-layout .page{max-width:1000px}
+#conti .ct-body{grid-template-columns:340px minmax(0,1fr);gap:32px}
+#conti .ct-drop.drop{width:340px;max-height:520px}
+@media(max-width:900px){#conti .ct-body{grid-template-columns:1fr}#conti .ct-drop.drop{width:100%;max-height:560px}}
 </style>
 </head>
 <body>
@@ -3311,11 +3317,11 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const head=`<div class="ct-head"><div><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><p>${ps.length}컷 · 그림 <b>${done}</b>/${ps.length}${ai?` · ${ai.stale?'<span class="ct-warn">글이 바뀌어 Claude 프롬프트가 예전 것</span>':'Claude로 다듬은 프롬프트'}`:''}</p></div>
     <div class="ct-tools"><button class="tbtn" data-act="naiset" aria-expanded="false">작화 설정</button><button class="tbtn" data-act="nairefine">Claude로 다듬기</button><button class="tbtn" data-act="naimulti" title="파일 이름 순으로 빈 컷부터 채워요">그림 여러 장</button><button class="tbtn" data-act="naidown">프롬프트 txt</button></div></div>`;
   el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
-    return `<article class="ccard${im?.stale?' stale':''}">
+    return `<article class="ccard">
       <header><b class="ct-no">${String(i+1).padStart(2,'0')}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([p.who,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':' → 생성 후 '+esc(o.size.crop)}</small></div>${o.ai?'<span class="tag">Claude</span>':''}</header>
       <div class="ct-body">
         <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>끌어다 놓아도 돼요</small></span>`}</div>
-          ${im?.stale?`<button class="tbtn ct-stale" data-act="nstale" data-i="${i}">원고가 바뀜 · 확인</button>`:im?`<button class="tbtn" data-cutslot="${i}">그림 바꾸기</button>`:''}</div>
+          ${im?`<button class="tbtn" data-cutslot="${i}">그림 바꾸기</button>`:''}</div>
         <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="tbtn" data-act="ncopyall" data-i="${i}">전체 복사</button></div>
           ${nblk('기본 프롬프트','',o.base)}${o.chars.map((c,n)=>nblk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,'',c.prompt)).join('')}</div>
       </div></article>`}).join('')}
