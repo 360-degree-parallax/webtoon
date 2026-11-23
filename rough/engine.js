@@ -120,24 +120,49 @@
     }
     return beats;
   }
+  // ---------- 연출 지시 {…} ----------
+  // 줄 어디에나 {클로즈업} {로우앵글, 확대 1.5} 처럼. 쉼표·가운뎃점·빗금으로 여러 개
+  // 엔진이 쓰는 것(샷·앵글·길이·간격·하이라이트)은 여기서 읽고, 나머지(확대·효과선·배경·말풍선 모양…)는 fx로 넘겨 화면이 해석
+  const DIR_RE = /\{([^{}\n]{1,80})\}/g;
+  const SHOT_ALIAS = { 원경: '설정', 롱샷: '설정', '설정샷': '설정', 와이드: '전경', 풀샷: '전신', 전신샷: '전신', 미디엄: '중경', 미디엄샷: '중경', 바스트: '중경', 바스트샷: '중경', 클로즈: '클로즈업', 업: '클로즈업', 익스트림: '디테일', '익스트림 클로즈업': '디테일', 인서트: '디테일', 디테일샷: '디테일', '배경 효과': '효과 배경', 효과: '효과 배경', 심상: '효과 배경' };
+  const ANG_ALIAS = { 눈높이: '아이레벨', 정면: '아이레벨', 부감: '하이앵글', 위에서: '하이앵글', 하이: '하이앵글', 앙각: '로우앵글', 아래에서: '로우앵글', 로우: '로우앵글', 조감: '탑뷰', 버즈아이: '탑뷰', 탑: '탑뷰' };
+  const LEN_W = { 짧게: 0.6, '길이 짧게': 0.6, '길이 보통': 1, 길게: 1.5, '길이 길게': 1.5, '아주 길게': 2.2, '길이 아주 길게': 2.2 };
+  const GAP_W = { 붙임: '붙임', 붙여서: '붙임', '간격 붙임': '붙임', '간격 보통': '보통', 쉼: '쉼', '간격 쉼': '쉼', '큰 쉼': '큰 쉼', '간격 큰 쉼': '큰 쉼', 여운: '큰 쉼' };
+  function readDirs(tokens) {
+    const d = { fx: [] };
+    for (const raw of tokens) {
+      const t = raw.replace(/\s+/g, ' ').trim(); if (!t) continue; let m;
+      if (SHOTS.includes(t) || SHOT_ALIAS[t]) d.shot = SHOTS.includes(t) ? t : SHOT_ALIAS[t];
+      else if (ANGLES.includes(t) || ANG_ALIAS[t]) d.ang = ANGLES.includes(t) ? t : ANG_ALIAS[t];
+      else if (LEN_W[t]) d.h = LEN_W[t];
+      else if ((m = t.match(/^길이\s*([\d.]+)$/))) d.h = Math.max(0.45, Math.min(2.4, +m[1] || 1));
+      else if (GAP_W[t]) d.gap = GAP_W[t];
+      else if (/^(하이라이트|정점|클라이맥스)$/.test(t)) d.hl = true;
+      else d.fx.push(t);
+    }
+    return d;
+  }
+  function takeDirs(line, into) { return line.replace(DIR_RE, (_, t) => { into.push(...t.split(/[,，·\/]/)); return ' '; }).replace(/\s{2,}/g, ' ').trim(); }
   // 컷별 입력: 컷마다 한 칸. 칸 안에서
   //   [식자]            → 식자(내레이션·효과 글자)
   //   @인물 "(지시)대사"  → 대사 (괄호 안은 연기·감정 지시)
   //   그 밖의 줄         → 행동 묘사
   function parseCut(text, chars, idx) {
     const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
-    const actions = [], captions = [], dialogs = [], sfx = [];
-    const SFX = /(^|\s)-([^\s-][^-\n]{0,10}?)-(?=\s|$|[.,!?])/g;
+    const actions = [], captions = [], dialogs = [], sfx = [], sfxSize = [], tokens = [];
+    // -효과음- 보통 · --효과음-- 크게 · ---효과음--- 아주 크게
+    const SFX = /(^|\s)(-{1,3})([^\s-][^-\n]{0,10}?)\2(?=\s|$|[.,!?])/g;
     for (let l of lines) {
-      let m;
-      l = l.replace(SFX, (_, a, w) => { sfx.push(w.trim()); return a; }).replace(/\s{2,}/g, ' ').trim();
+      let m; const lineDirs = [];
+      l = takeDirs(l, lineDirs); tokens.push(...lineDirs);
+      l = l.replace(SFX, (_, a, d, w) => { sfx.push(w.trim()); sfxSize.push(d.length); return a; }).replace(/\s{2,}/g, ' ').trim();
       if (!l) continue;
       if ((m = l.match(/^\[(.+)\]$/))) { captions.push(m[1].trim()); continue; }
       if ((m = l.match(/^(?:@([^\s"“]+)\s*)?["“](.*)["”]\s*[.!?…]*$/))) {
         const who = m[1] ? (mentions('@' + m[1], chars)[0] || {}).name || m[1] : '';
         let body = m[2].trim(), note = '';
         const n = body.match(/^\(([^)]*)\)\s*(.*)$/); if (n) { note = n[1].trim(); body = n[2].trim(); }
-        dialogs.push({ who, note, text: body }); continue;
+        dialogs.push({ who, note, text: body, fx: readDirs(lineDirs).fx }); continue;
       }
       actions.push(l);
     }
@@ -149,7 +174,7 @@
     const cue = [actText, ...dialogs.map(d => d.note), ...dialogs.map(d => d.text), ...captions, ...sfx].filter(Boolean).join(' ');
     const act = actText.replace(/@/g, '') || (dialogs[0] ? `${dialogs[0].who ? dialogs[0].who + ' ' : ''}대사` : captions[0] || (sfx[0] ? `효과음 ${sfx[0]}` : ''));
     const rcue = [actText, ...dialogs.map(d => d.note), said ? `"${said}"` : ''].filter(Boolean).join(' ').replace(/@/g, '');
-    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), captions, sfx, dialogs, cue: cue.replace(/@/g, ''), rcue };
+    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), captions, sfx, sfxSize, dialogs, cue: cue.replace(/@/g, ''), rcue, dir: readDirs(tokens) };
   }
   function parseCuts(cuts, chars) {
     const named = chars && chars.length ? chars.slice() : [];
@@ -259,6 +284,7 @@
       const spread = cand.filter((k, j) => j === 0 || k - cand[j - 1] > 1);
       peaks = spread.length >= 2 ? spread : [cand.find(k => beats[k].role === '공개') ?? cand[cand.length - 1]];
     }
+    beats.forEach((b, k) => { if (b.dir && b.dir.hl && !peaks.includes(k)) peaks.push(k); }); peaks.sort((a, b) => a - b);
     let e = 0; while (e < n - 1 && (beats[e].role === '설정' || beats[e].role === '전환')) e++;
     const vng = beats.map((b, k) => {
       if (peaks.includes(k)) return 'P';
@@ -420,7 +446,12 @@
       let gap = (0.35 * (pc.gap ?? 0.3) + 0.65 * base) * tf; why.gap.unshift(`${tag} · 패턴 여백 ${(pc.gap ?? 0.3).toFixed(2)} 섞음${tf !== 1 ? ` · 템포 ${an.tempo}` : ''}`);
       const band = { 붙임: [0.06, 0.12], 보통: [0.13, 0.32], 쉼: [0.33, 0.64], '큰 쉼': [0.65, 1.2] }[tag];
       gap = +clamp(gap, band[0], band[1]).toFixed(2);
-      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || (b.caption ? [b.caption] : []), sfx: b.sfx || [], dialogs: b.dialogs || [], key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
+      const D = b.dir || {};
+      if (D.shot) { shot = D.shot; why.shot.unshift('글에 적은 연출'); }
+      if (D.ang) { ang = D.ang; why.ang.unshift('글에 적은 연출'); }
+      if (D.h) { h = D.h; why.h.unshift('글에 적은 연출'); }
+      if (D.gap) { gap = { 붙임: 0.09, 보통: 0.22, 쉼: 0.48, '큰 쉼': 0.9 }[D.gap]; why.gap.unshift(`${D.gap} · 글에 적은 연출`); }
+      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || (b.caption ? [b.caption] : []), sfx: b.sfx || [], sfxSize: b.sfxSize || [], dialogs: b.dialogs || [], dir: b.dir || null, key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
     });
   }
 
@@ -437,5 +468,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));

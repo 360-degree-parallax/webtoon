@@ -248,7 +248,9 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scpaper .cutlist li:hover .cutparse span,.scpaper .cutlist li:focus-within .cutparse span{background:var(--bg)}
 .cutparse .av{width:16px;height:16px;border-radius:8px;overflow:hidden;display:inline-grid;place-items:center;color:#fff;font-size:10px;font-weight:700;flex:none}
 .cutparse .av img{width:100%;height:100%;object-fit:cover;object-position:top}
-.cutparse .k-cap{color:#2f5a3a}.cutparse .k-sfx{color:#9a3412}.cutparse .k-who{color:var(--t1);font-weight:600}
+.cutparse .k-cap{color:#2f5a3a}.cutparse .k-dir{color:#1d4ed8}.cutparse .k-bad{color:#b91c1c;text-decoration:underline dotted}
+.dirpop{position:fixed;z-index:80;width:min(440px,calc(100vw - 16px));max-height:70vh;overflow:auto;background:var(--bg);border:1px solid var(--line2);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.14);padding:10px 12px}.dirg{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.dirg b{font-size:13px;color:var(--t2);font-weight:600;padding-top:4px}.dirg div{display:flex;flex-wrap:wrap;gap:4px}.dirg button{font-size:13px;padding:3px 8px;border:1px solid var(--line2);border-radius:6px}.dirg button:hover{background:var(--hover)}.dirfoot{display:flex;gap:6px;margin-top:8px}.gramdlg{width:min(640px,calc(100vw - 24px))}.gramdlg pre{white-space:pre-wrap;font:14px/1.7 inherit;font-family:inherit;max-height:60vh;overflow:auto;background:var(--surface);padding:12px;border-radius:8px}.dirpop .hint{font-size:12.5px;margin:8px 0 0;color:var(--t2)}
+.cutparse .k-sfx{color:#9a3412}.cutparse .k-who{color:var(--t1);font-weight:600}
 .cutlist li.dragging{opacity:.4}.cutlist li.dropbefore{box-shadow:inset 0 2px 0 var(--blue,#2d71f7)}
 .scadd{display:block;width:100%;margin-top:10px;padding:12px;border:1px dashed var(--line2);border-radius:8px;font-size:14px;font-weight:600;color:var(--t2);text-align:left}
 .scadd:hover{border-color:var(--t1);color:var(--t1)}.scadd small{font-weight:500;color:var(--t3);margin-left:6px}
@@ -911,7 +913,8 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <div class="scins" role="toolbar" aria-label="넣기">
     <button type="button" data-ins="caption" title="식자(내레이션) 넣기 · 대괄호"><b>[ ]</b>식자</button>
     <button type="button" data-ins="dialog" title="대사 넣기 · @인물 &quot;(감정)대사&quot;"><b>@</b>대사</button>
-    <button type="button" data-ins="sfx" title="효과음 넣기 · -소리-"><b>-♪-</b>효과음</button>
+    <button type="button" data-ins="sfx" title="효과음 넣기 · -소리- (--크게--)"><b>-♪-</b>효과음</button>
+    <button type="button" data-dirmenu aria-haspopup="true" aria-expanded="false" title="연출 넣기 · {클로즈업} {확대 1.5} {집중선}"><b>{ }</b>연출</button>
     <span class="scsep"></span>
     <button type="button" data-act="addcut" title="컷 추가 (Ctrl+Enter)"><b>+</b>컷</button>
     <button type="button" data-act="prose" title="줄글을 컷으로 나누기"><b>¶</b>줄글</button>
@@ -1149,6 +1152,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <input type="file" id="file" accept="image/*" hidden>
 <input type="file" id="filem" accept="image/*" multiple hidden>
 <script src="engine.js"></script>
+<script src="grammar.js"></script>
 <script src="prompt.js"></script>
 <script src="nai-stats.js"></script>
 <script src="nai.js"></script>
@@ -1623,7 +1627,7 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   return{x:30,w:ws,frame:true}}
 function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false,sceneEnd=null}={}){let y=40,o='',gaps='',backgrounds='',defs='',lastEnd=null;const multi=panels.length>1;
   let prev=null,handles='',tightGaps='';
-  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
+  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=RoughGrammar.merge(edits?.[slot],p);const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
     // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
     if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const u=im?null:underlay(p);
     // 코드로 그린 러프 그림은 쓰지 않음: 등록 이미지 → 원본 컷 레퍼런스(그림 영역만 잘라) → 빈 칸에 샷·앵글 표시
@@ -1654,7 +1658,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     y+=h;
     if(edits){
       const background=pageBackground(edit),next=panels[i+1];
-      const end=next?pageBackground(edits[cutSlot(next,i+1)]):(sceneEnd||PAGE_WHITE);if(!next)lastEnd=end;
+      const end=next?pageBackground(RoughGrammar.merge(edits[cutSlot(next,i+1)],next)):(sceneEnd||PAGE_WHITE);if(!next)lastEnd=end;
       backgrounds+=`<g data-bg-panel="${i}"><rect y="${i?y-h:0}" width="${W}" height="${h+(i?0:40)}" fill="${background}"/>${transitionSVG(background,end,edit?.transition,`${pre}bg-${i}`,y,size,{mid:edit?.transMid,stop:edit?.transStop,img:edit?.bgImage,imgOp:edit?.bgImageOp})}</g>`;
     }
     if(interactive&&i<panels.length-1){
@@ -2078,7 +2082,7 @@ function deleteScene(index){
 function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
 function renderCuts(){if(!CUTS.length)CUTS=[''];
   const firstEmpty=CUTS.findIndex(c=>!String(c).trim());
-  $('#cutlist').innerHTML=CUTS.map((c,i)=>`<li data-i="${i}"><span class="cn" title="끌어서 순서 바꾸기">${i+1}</span><textarea class="cutin" rows="1" spellcheck="false" aria-label="${i+1}번 컷" placeholder="${UX==='A'?(i?'행동 묘사 / @인물 &quot;(감정)대사&quot; / [식자]':'예: @에드가 복도 끝에서 걸어온다.'):(i===firstEmpty?'@준 창가로 다가간다. &quot;누구세요?&quot;':'')}">${esc(c)}</textarea><span class="tools"><button data-cut="up" aria-label="위로" title="위로">↑</button><button data-cut="down" aria-label="아래로" title="아래로">↓</button><button data-cut="del" aria-label="삭제" title="삭제">×</button></span><div class="cutparse" data-parse></div></li>`).join('');
+  $('#cutlist').innerHTML=CUTS.map((c,i)=>`<li data-i="${i}"><span class="cn" title="끌어서 순서 바꾸기">${i+1}</span><textarea class="cutin" rows="1" spellcheck="false" aria-label="${i+1}번 컷" placeholder="${UX==='A'?(i?'행동 묘사 / @인물 &quot;(감정)대사&quot; / [식자]':'예: @에드가 복도 끝에서 걸어온다.'):(i===firstEmpty?'@준 창가로 다가간다. {클로즈업}  ·  연출은 { } 안에 (위 { } 연출 버튼)':'')}">${esc(c)}</textarea><span class="tools"><button data-cut="up" aria-label="위로" title="위로">↑</button><button data-cut="down" aria-label="아래로" title="아래로">↓</button><button data-cut="del" aria-label="삭제" title="삭제">×</button></span><div class="cutparse" data-parse></div></li>`).join('');
   document.querySelectorAll('.cutin').forEach(grow);renderParse()}
 // 컷 아래 해석 줄: 글을 어떻게 읽었는지(인물·대사·식자·효과음·세계관 항목) 바로 보여줌
 function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.forEach(b=>{const m=/^#(\d+):/.exec(b.key||'');if(m)by[+m[1]]=b});let nd=0,nc=0,ns=0;
@@ -2087,7 +2091,12 @@ function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.
     if(b.who)out.push(`<span class="k-who">${av(b.who)}${esc(b.who)}</span>`);
     (b.dialogs||[]).filter(d=>d.text).forEach(d=>{nd++;out.push(`<span>${d.who?av(d.who):''}“${esc(d.text.length>22?d.text.slice(0,22)+'…':d.text)}”${d.note?` <small>(${esc(d.note)})</small>`:''}</span>`)});
     if(b.caption){nc++;out.push(`<span class="k-cap">식자 · ${esc(b.caption)}</span>`)}
-    (b.sfx||[]).forEach(x=>{ns++;out.push(`<span class="k-sfx">효과음 · ${esc(x)}</span>`)});
+    (b.sfx||[]).forEach((x,n)=>{ns++;out.push(`<span class="k-sfx">효과음 · ${esc(x)}${b.sfxSize?.[n]>1?(b.sfxSize[n]>2?' · 아주 크게':' · 크게'):''}</span>`)});
+    {const D=b.dir||{},g=RoughGrammar.derive(b),k=[D.shot,D.ang,D.h&&`길이 ${lenWord(D.h)}`,D.gap&&`뒤 ${D.gap}`,D.hl&&'하이라이트',...(D.fx||[]).filter(t=>!g.unknown.includes(t))].filter(Boolean);
+      const st=g.edit?.letters&&Object.entries(g.edit.letters).filter(([key,v])=>v.style&&/^dialog/.test(key)).map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean);
+      if(st?.length&&!(D.fx||[]).some(t=>RoughGrammar.styleOf(t)))k.push('말풍선 '+[...new Set(st)].join('·'));
+      if(k.length)out.push(`<span class="k-dir" title="글에 적은 연출 · 편집에서 직접 바꾸면 그 값이 우선">연출 · ${esc(k.join(', '))}</span>`);
+      if(g.unknown.length)out.push(`<span class="k-bad" title="이 낱말은 연출로 읽지 못했어요. 도움말(?)의 연출 문법을 참고하세요">모르는 연출 · ${esc(g.unknown.join(', '))}</span>`)}
     if(typeof loreHits==='function')loreHits(CUTS[i]).forEach(e=>out.push(`<span>◆ ${esc(e.name)}</span>`));
     el.innerHTML=out.join('')});
   const m=$('#scmeta2');if(m)m.textContent=`대사 ${nd} · 식자 ${nc} · 효과음 ${ns}`}
@@ -2121,6 +2130,26 @@ document.querySelector('.scins').addEventListener('click',e=>{const b=e.target.c
   const [pre,post]=k==='caption'?[nl+'[',']']:k==='sfx'?[' -','- ']:[nl+'@',''];
   t.value=t.value.slice(0,a)+pre+sel+post+t.value.slice(z);const c=a+pre.length+sel.length;t.setSelectionRange(c,c);TA=t;
   t.dispatchEvent(new Event('input',{bubbles:true}))});
+// 연출 넣기 메뉴: 누르면 지금 줄 끝에 {…}. 같은 줄에 이미 {…}가 있으면 그 안에 쉼표로 이어 붙임
+const DIR_MENU=[['샷',['설정','전경','전신','중경','클로즈업','디테일','효과 배경']],['앵글',['아이레벨','하이앵글','로우앵글','탑뷰']],
+  ['칸 길이·간격',['짧게','길게','아주 길게','붙임','쉼','큰 쉼','하이라이트']],['그림',['확대 1.5','확대 2','집중선','집중선 진하게','속도선 가로','속도선 위로']],
+  ['배경',['배경 검정','배경 흰색','배경 노을',...PAGE_BACKGROUNDS.filter(Boolean).map(b=>'배경 '+b.name),'씬 끝 흰색','씬 끝 유지']],['말풍선',['속삭임','외침','생각','전화','분노','숨','떨림','의미심장']]];
+{const btn=document.querySelector('[data-dirmenu]'),pop=document.createElement('div');pop.className='dirpop';pop.hidden=true;pop.setAttribute('role','menu');
+  pop.innerHTML=DIR_MENU.map(([h,xs])=>`<div class="dirg"><b>${h}</b><div>${xs.map(x=>`<button type="button" role="menuitem" data-dir="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>`).join('')+'<p class="hint">말풍선 모양은 대사 줄에 넣으면 그 대사만, 다른 줄에 넣으면 컷의 모든 대사에. 대사 메모 (속삭이며)도 알아들어요.</p><div class="dirfoot"><button type="button" class="btn sm" data-dirguide>문법 전체 보기</button><button type="button" class="btn sm" data-dircopy title="ChatGPT·Claude 등에 붙여 넣으면 이 문법으로 씬을 써 줘요">AI용 문법 설명 복사</button></div>';
+  document.body.appendChild(pop);const close=()=>{pop.hidden=true;btn.setAttribute('aria-expanded','false')};
+  btn.addEventListener('mousedown',e=>e.preventDefault());
+  btn.addEventListener('click',()=>{if(!pop.hidden){close();return}const r=btn.getBoundingClientRect();pop.hidden=false;pop.style.top=r.bottom+6+'px';pop.style.left=Math.max(8,Math.min(innerWidth-pop.offsetWidth-8,r.left))+'px';btn.setAttribute('aria-expanded','true')});
+  pop.addEventListener('mousedown',e=>e.preventDefault());
+  pop.addEventListener('click',e=>{if(e.target.closest('[data-dircopy]')){copyText(RoughGrammar.GUIDE+'\n\n위 문법으로 웹툰 씬을 컷 단위로 써 줘. 컷마다 행동 묘사 한 줄 + 필요하면 대사·나레이션·효과음 줄, 연출 지시 {…}는 의도가 분명한 곳에만.');close();return}
+    if(e.target.closest('[data-dirguide]')){close();openGrammarGuide();return}
+    const b=e.target.closest('[data-dir]');if(!b)return;let t=TA&&document.body.contains(TA)?TA:null;if(!t){const l=document.querySelectorAll('.cutin');t=l[l.length-1]}if(!t)return;t.focus();
+    const v=t.value,a=t.selectionStart,ls=v.lastIndexOf('\n',a-1)+1,le=(v.indexOf('\n',a)+1||v.length+1)-1,ln=v.slice(ls,le),tok=b.dataset.dir;
+    const m=ln.match(/\{([^{}]*)\}\s*$/);const nl=m?ln.slice(0,m.index)+`{${m[1].trim()}, ${tok}}`:(ln.trim()?ln.replace(/\s*$/,'')+' ':'')+`{${tok}}`;
+    t.value=v.slice(0,ls)+nl+v.slice(le);const c=ls+nl.length;t.setSelectionRange(c,c);TA=t;t.dispatchEvent(new Event('input',{bubbles:true}));if(!e.shiftKey)close()});
+  document.addEventListener('click',e=>{if(!pop.hidden&&!e.target.closest('.dirpop,[data-dirmenu]'))close()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!pop.hidden)close()})}
+function openGrammarGuide(){let d=$('#gramdlg');if(!d){d=document.createElement('dialog');d.id='gramdlg';d.className='keydlg gramdlg';document.body.appendChild(d)}
+  d.innerHTML=`<h3>씬 문법</h3><pre>${esc(RoughGrammar.GUIDE)}</pre><div class="acts"><button class="btn" data-g="copy">AI용으로 복사</button><button class="btn dark" data-g="x">닫기</button></div>`;
+  d.onclick=e=>{const k=e.target.closest('[data-g]')?.dataset.g;if(k==='copy')copyText(RoughGrammar.GUIDE);if(k==='x')d.close()};d.showModal()}
 // 컷 번호를 끌어서 순서 바꾸기
 {const L=$('#cutlist');let from=-1;
   L.addEventListener('mousedown',e=>{const n=e.target.closest('.cn');if(n)n.closest('li').draggable=true});
@@ -2161,10 +2190,10 @@ $('#wmode').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if
 function scenePanels(i){if(i===SCUR)return state.panels;const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
   an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=pickRef(c,SCENES[i].pageEdits,out.length);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
 // 씬 끝 색(sc.endTo): 'next'(기본) 다음 씬 첫 컷 배경으로 이어감 · 'white' 흰색으로 · 'hold' 마지막 컷 색 유지. 마지막 씬은 기본이 흰색
-function sceneEndColor(i,ps){const sc=SCENES[i],mode=sc.endTo||'next';
-  if(mode==='hold'){const last=ps.at(-1);return last?pageBackground(sc.pageEdits?.[cutSlot(last,ps.length-1)]):PAGE_WHITE}
+function sceneEndColor(i,ps){const sc=SCENES[i],mode=sc.endTo||ps.map(p=>RoughGrammar.fromText(p)?.endTo).filter(Boolean).at(-1)||'next';
+  if(mode==='hold'){const last=ps.at(-1);return last?pageBackground(RoughGrammar.merge(sc.pageEdits?.[cutSlot(last,ps.length-1)],last)):PAGE_WHITE}
   if(mode==='white'||i>=SCENES.length-1)return PAGE_WHITE;
-  for(let k=i+1;k<SCENES.length;k++){const nps=scenePanels(k);if(nps.length)return pageBackground(SCENES[k].pageEdits?.[cutSlot(nps[0],0)])}
+  for(let k=i+1;k<SCENES.length;k++){const nps=scenePanels(k);if(nps.length)return pageBackground(RoughGrammar.merge(SCENES[k].pageEdits?.[cutSlot(nps[0],0)],nps[0]))}
   return PAGE_WHITE}
 // 완성본: 등록한 컷 이미지를 쓰고, 없는 컷은 러프
 function sceneArt(i,ps,pre,interactive=false){
@@ -2754,7 +2783,8 @@ async function openHistory(){const snaps=(await idb.all()).filter(r=>r.kind==='s
   d.showModal()}
 
 // ---------- 대사 교정(#19): 모든 씬의 대사·나레이션·효과음 줄을 한 화면에서 고치고, 찾아 바꾸기 ----------
-const PROOF_RE=[[/^(\s*(?:@\S+\s*)?(?:\([^)]*\)\s*)?["“])(.*)(["”]\s*)$/,'대사'],[/^(\s*\[)(.*)(\]\s*)$/,'나레이션'],[/^(\s*-)([^-].*?)(-\s*)$/,'효과음']];
+// 줄 끝의 연출 지시 {…}는 post에 남겨 고쳐도 그대로
+const PROOF_RE=[[/^(\s*(?:@\S+\s*)?(?:\([^)]*\)\s*)?["“])(.*?)(["”]\s*(?:\{[^{}\n]*\}\s*)*)$/,'대사'],[/^(\s*\[)(.*?)(\]\s*(?:\{[^{}\n]*\}\s*)*)$/,'나레이션'],[/^(\s*-{1,3})([^-].*?)(-{1,3}\s*(?:\{[^{}\n]*\}\s*)*)$/,'효과음']];
 function proofLines(){const out=[];SCENES.forEach((sc,si)=>sc.cuts.forEach((c,ci)=>String(c).split('\n').forEach((l,li)=>{for(const [re,kind] of PROOF_RE){const m=l.match(re);if(m){out.push({si,ci,li,kind,pre:m[1],text:m[2],post:m[3],who:(l.match(/@(\S+)/)||[])[1]||''});break}}})));return out}
 function openProof(){let d=$('#proofdlg');if(!d){d=document.createElement('dialog');d.id='proofdlg';d.className='proofdlg';document.body.appendChild(d)}
   const draw=()=>{const L=proofLines(),q=d.querySelector('#pfq')?.value||'';const over=SCENES.map(sc=>(sc.pageEdits||[]).reduce((n,e)=>n+Object.values(e?.letters||{}).filter(x=>typeof x?.text==='string').length,0));

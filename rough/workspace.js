@@ -479,14 +479,15 @@ if(LS('rough-ws-drawer',false))setTimeout(()=>setDrawer(true),0);if(LS('rough-ws
 
 // ---------- Delete·Backspace로 지우기 ----------
 // 말풍선·나레이션·효과음은 원고(컷 글)의 해당 줄을 지우고, 뒤쪽 식자의 배치값 번호를 한 칸씩 당김. 컷을 고른 상태면 컷을 지움. 모두 Ctrl+Z로 되돌림
-const SFX_RE=/(^|\s)-([^\s-][^-\n]{0,10}?)-(?=\s|$|[.,!?])/g;
+const SFX_RE=/(^|\s)(-{1,3})([^\s-][^-\n]{0,10}?)\2(?=\s|$|[.,!?])/g;  // 엔진과 같은 규칙(--크게--)
+const DIRS_RE=/\{[^{}\n]{1,80}\}/g;
 const DLG_RE=/^(?:@([^\s"“]+)\s*)?["“](.*)["”]\s*[.!?…]*$/;
 function dropFromText(text,kind,n){const lines=String(text||'').split('\n');let c=-1,done=false;
   if(kind==='effect'){for(let i=0;i<lines.length&&!done;i++)lines[i]=lines[i].replace(SFX_RE,(m,a)=>{if(done)return m;c++;if(c===n){done=true;return a}return m});
     return done?lines.map(l=>l.replace(/\s{2,}/g,' ').replace(/\s+$/,'')).filter((l,i)=>l.trim()||!lines[i].trim()).join('\n'):null}
-  for(let i=0;i<lines.length;i++){const bare=lines[i].replace(SFX_RE,'$1').replace(/\s{2,}/g,' ').trim();if(!bare)continue;
+  for(let i=0;i<lines.length;i++){const bare=lines[i].replace(DIRS_RE,' ').replace(SFX_RE,'$1').replace(/\s{2,}/g,' ').trim();if(!bare)continue;
     const hit=kind==='caption'?/^\[(.+)\]$/.test(bare):kind==='dialog'?DLG_RE.test(bare):false;if(!hit)continue;c++;
-    if(c===n){const keep=[...lines[i].matchAll(SFX_RE)].map(m=>'-'+m[2]+'-').join(' ');if(keep)lines[i]=keep;else lines.splice(i,1);return lines.join('\n')}}
+    if(c===n){const keep=[...[...lines[i].matchAll(SFX_RE)].map(m=>m[2]+m[3]+m[2]),...(lines[i].match(DIRS_RE)||[]).map(d=>kind!=='dialog'?d:(x=>x.length?`{${x.join(', ')}}`:'')(d.slice(1,-1).split(/[,，·\/]/).map(t=>t.trim()).filter(t=>t&&!RoughGrammar.styleOf(t)))).filter(Boolean)].join(' ');if(keep)lines[i]=keep;else lines.splice(i,1);return lines.join('\n')}}
   return null}
 const kindOfKey=k=>{let m;if(k==='caption')return['caption',0];if(m=k.match(/^(dialog|caption|effect)-(\d+)$/))return[m[1],+m[2]];return null};
 function shiftLetters(settings,kind,n){const L=settings?.letters;if(!L)return;const name=i=>kind==='caption'&&i===0?'caption':`${kind}-${i}`;
