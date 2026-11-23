@@ -149,6 +149,7 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 dialog h3{margin:0 0 4px;font-size:18px}
 dialog p{margin:0 0 12px;font-size:13px;color:var(--t2)}
 dialog textarea{min-height:360px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.6}
+#slicedlg{width:min(520px,calc(100vw - 32px))}.slicef{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:10px 0}.slicef label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--t2)}.slicef label.chk{grid-column:1/-1;flex-direction:row;align-items:center;gap:8px}.slicef input[type=number],.slicef select{padding:6px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--t1)}
 dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 
 /* flow */
@@ -705,7 +706,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <button class="btn" data-view="db" id="gDb">DB</button>
     <button class="ib" id="gkeys" aria-label="단축키 보기" title="단축키 (?)">?</button>
     <button class="ib" id="theme" aria-label="테마 바꾸기" title="테마 바꾸기"><svg class="i" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
-    <div class="xwrap"><button class="btn dark" id="wexport" aria-haspopup="menu" aria-expanded="false" aria-controls="wxmenu">내보내기</button><div class="xmenu" id="wxmenu" role="menu" hidden><button role="menuitem" data-act="wsave"><b>PNG 이미지</b><span>한 장으로 이어 붙인 그림 · 확인·공유용</span></button><button role="menuitem" data-act="wsvg"><b>SVG · 피그마</b><span>씬·컷·칸·그림·식자가 이름 붙은 레이어로 · 글자는 텍스트로 남아요</span></button><button role="menuitem" data-act="wpsd"><b>PSD · 클립스튜디오</b><span>씬마다 PSD(컷 폴더·칸 모양 마스크·식자 레이어) + 대사 목록 ZIP</span></button></div></div>
+    <div class="xwrap"><button class="btn dark" id="wexport" aria-haspopup="menu" aria-expanded="false" aria-controls="wxmenu">내보내기</button><div class="xmenu" id="wxmenu" role="menu" hidden><button role="menuitem" data-act="wsave"><b>PNG 이미지</b><span>한 장으로 이어 붙인 그림 · 확인·공유용</span></button><button role="menuitem" data-act="wslice"><b>연재용 분할 (JPG·PNG)</b><span>폭·한 장 높이를 정해 여러 장으로 · 씬 제목 없이 · 컷 사이 여백에서 잘라요</span></button><button role="menuitem" data-act="wsvg"><b>SVG · 피그마</b><span>씬·컷·칸·그림·식자가 이름 붙은 레이어로 · 글자는 텍스트로 남아요</span></button><button role="menuitem" data-act="wpsd"><b>PSD · 클립스튜디오</b><span>씬마다 PSD(컷 폴더·칸 모양 마스크·식자 레이어) + 대사 목록 ZIP</span></button></div></div>
   </div>
 </header>
 
@@ -1977,6 +1978,7 @@ document.addEventListener('click',e=>{const t=e.target;
   const a=t.closest('[data-act]')?.dataset.act;
   if(a==='addscene'){saveScenes();SCENES.push({id:'s'+Date.now(),title:'',cuts:[''],pageEdits:[]});switchScene(SCENES.length-1);$('#sctitle').focus()}
   if(a==='adddemo'){saveScenes();const first=SCENES.length;SCENES.push(...DEFAULT_SCENES.map((d,k)=>({id:'s'+Date.now()+k,title:d.title,cuts:d.cuts.slice(),pageEdits:[]})));switchScene(first);toast('예시 씬 2개를 추가했어요')}
+  if(a==='wslice'){closeXMenu();confirmArtCheck().then(ok=>{if(ok)openSliceDialog()})}
   if(a==='wsave'||a==='wsvg'||a==='wpsd'){closeXMenu();const st=t=>$('#wst').textContent=t;
     confirmArtCheck().then(ok=>{if(!ok)return;const run=a==='wsave'?saveWebtoon():a==='wsvg'?RoughExport.exportSVG(st):RoughExport.exportPSD(st);
     Promise.resolve(run).then(()=>{if(VIEW!=='webtoon')toast($('#wst').textContent)}).catch(err=>{console.error(err);if(VIEW!=='webtoon')toast('내보내기 실패: '+(err.message||err));st(a==='wsave'?'소재 또는 이미지를 불러오지 못했어요. 다시 저장해 주세요.':'내보내기 실패: '+(err.message||err))})})}
@@ -2481,6 +2483,52 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
     return new Promise(res=>c.toBlob(bl=>{download(name,URL.createObjectURL(bl));res()},'image/png'))};
   const base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
   if(total<=30000){await draw(items,`${base}.png`);st('이미지로 저장했어요')}else{for(const x of items)await draw([x],`${base}-씬${x.i+1}.png`);st(`길어서 씬별 ${items.length}장으로 저장했어요`)}}
+
+// ---------- 연재용 분할 내보내기: 폭·한 장 최대 높이·형식을 정해 여러 장(ZIP)으로. 씬 제목 없이 이어 붙이고, 컷 사이 여백(한 줄이 모두 같은 색)에서 자름 ----------
+const SLICE_DEF={w:690,h:1280,fmt:'jpg',q:92,gap:0,title:false,smart:true};
+function sliceOpts(){try{return{...SLICE_DEF,...JSON.parse(localStorage.getItem('rough-slice')||'{}')}}catch(_){return{...SLICE_DEF}}}
+function openSliceDialog(){const o=sliceOpts();let d=$('#slicedlg');if(!d){d=document.createElement('dialog');d.id='slicedlg';d.className='keydlg';document.body.appendChild(d)}
+  d.innerHTML=`<h3>연재용 분할 내보내기</h3><p class="hint">연재처 규격(폭·한 장 최대 높이)에 맞춰 넣어 주세요. 결과는 순서대로 이름 붙은 이미지 ZIP이에요.</p>
+  <div class="slicef"><label>폭(px)<input type="number" name="w" min="300" max="2000" step="10" value="${o.w}"></label>
+  <label>한 장 최대 높이(px)<input type="number" name="h" min="300" max="20000" step="10" value="${o.h}"></label>
+  <label>형식<select name="fmt"><option value="jpg"${o.fmt==='jpg'?' selected':''}>JPG</option><option value="png"${o.fmt==='png'?' selected':''}>PNG</option></select></label>
+  <label>JPG 품질<input type="number" name="q" min="50" max="100" value="${o.q}"></label>
+  <label>씬 사이 간격(px)<input type="number" name="gap" min="0" max="3000" step="10" value="${o.gap}"></label>
+  <label class="chk"><input type="checkbox" name="smart"${o.smart?' checked':''}> 컷 사이 여백에서 자르기(그림·말풍선을 가르지 않게)</label>
+  <label class="chk"><input type="checkbox" name="title"${o.title?' checked':''}> 씬 제목 넣기(검수본용)</label></div>
+  <p class="hint" id="slicest"></p><div class="acts"><button class="btn" data-r="x">닫기</button><button class="btn dark" data-r="go">내보내기</button></div>`;
+  d.onclick=async e=>{const r=e.target.closest('[data-r]')?.dataset.r;if(!r)return;if(r==='x'){d.close();return}
+    const f=k=>d.querySelector(`[name=${k}]`),num=(k,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(+f(k).value||SLICE_DEF[k])));
+    const opt={w:num('w',300,2000),h:num('h',300,20000),fmt:f('fmt').value,q:num('q',50,100),gap:num('gap',0,3000),smart:f('smart').checked,title:f('title').checked};
+    try{localStorage.setItem('rough-slice',JSON.stringify(opt))}catch(_){}
+    const st=t=>{$('#slicest').textContent=t;$('#wst').textContent=t};e.target.disabled=true;
+    try{await exportSlices(opt,st)}catch(err){console.error(err);st('내보내기 실패: '+(err.message||err))}finally{e.target.disabled=false}};
+  d.showModal()}
+// 한 줄이 모두 같은 색(±6)인지
+function rowFlat(data,w,y){const i0=y*w*4,r=data[i0],g=data[i0+1],b=data[i0+2];for(let x=1;x<w;x++){const i=i0+x*4;if(Math.abs(data[i]-r)>6||Math.abs(data[i+1]-g)>6||Math.abs(data[i+2]-b)>6)return false}return true}
+async function exportSlices(o,st){st('이미지 만드는 중');await loadPageMaterials();
+  const items=[];for(let i=0;i<SCENES.length;i++){if(!scenePanels(i).length)continue;st(`씬 ${i+1}/${SCENES.length} 그리는 중`);const art=await RoughExport.inlineSceneSVG(i);
+    items.push({i,im:await loadImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(art.svg))})}
+  if(!items.length){st('저장할 컷이 없어요');return}
+  // 전체 세로 배치(출력 좌표)
+  const LABEL=o.title?Math.round(56*o.w/W):0;let y=0;const lay=items.map((x,k)=>{if(k)y+=o.gap;const t=y;y+=LABEL;const h=Math.round(x.im.height*o.w/x.im.width),it={...x,t,y,h};y+=h;return it});const total=y;
+  const paint=(g,y0,hh)=>{g.fillStyle='#fff';g.fillRect(0,0,o.w,hh);
+    for(const x of lay){if(x.y+x.h<y0&&x.t+LABEL<y0)continue;if(x.t>y0+hh)break;
+      if(LABEL){g.fillStyle='#8a8f98';g.font=`600 ${Math.round(15*o.w/W)}px Pretendard, sans-serif`;g.textAlign='center';g.fillText(sceneLabel(SCENES[x.i],x.i),o.w/2,x.t-y0+LABEL*0.6)}
+      g.drawImage(x.im,0,x.y-y0,o.w,x.h)}};
+  const files=[],ext=o.fmt==='png'?'png':'jpg',type=o.fmt==='png'?'image/png':'image/jpeg',base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
+  let y0=0,n=0,hard=0;
+  while(y0<total){let hh=Math.min(o.h,total-y0);const c=document.createElement('canvas');c.width=o.w;c.height=hh;const g=c.getContext('2d');paint(g,y0,hh);
+    if(o.smart&&y0+hh<total){const data=g.getImageData(0,0,o.w,hh).data,lo=Math.floor(hh*0.4);let cut=-1;
+      for(let yy=hh-1;yy>=lo;yy--)if(rowFlat(data,o.w,yy)){cut=yy+1;break}
+      // 아래쪽 60% 안에 여백이 없으면(키 큰 컷) 더 위의 여백까지 봄: 장이 짧아져도 그림을 가르지 않는 쪽이 우선
+      if(cut<0)for(let yy=lo-1;yy>=Math.floor(hh*0.05);yy--)if(rowFlat(data,o.w,yy)){cut=yy+1;break}
+      if(cut>0&&cut<hh){const c2=document.createElement('canvas');c2.width=o.w;c2.height=cut;c2.getContext('2d').drawImage(c,0,0);hh=cut;c.width=0;
+        files.push({name:`${base}_${String(++n).padStart(3,'0')}.${ext}`,data:new Uint8Array(await (await new Promise(r=>c2.toBlob(r,type,o.q/100))).arrayBuffer())});y0+=hh;st(`${n}장째 · ${Math.round(y0/total*100)}%`);continue}
+      if(cut!==hh)hard++}
+    files.push({name:`${base}_${String(++n).padStart(3,'0')}.${ext}`,data:new Uint8Array(await (await new Promise(r=>c.toBlob(r,type,o.q/100))).arrayBuffer())});y0+=hh;st(`${n}장째 · ${Math.round(y0/total*100)}%`)}
+  const z=await RoughExport._zip(files);download(`${base}-연재용-${o.w}x${o.h}.zip`,URL.createObjectURL(z));
+  st(`${n}장으로 나눠 저장했어요 · 전체 ${o.w}×${total}px${hard?` · 한 장 높이보다 긴 컷이라 그림 위에서 자른 곳 ${hard}군데`:''}`);return{n,total,hard,names:files.map(f=>f.name)}}
 
 // ---------- 편집 화면 보강: 목차 트리 · 속성 패널 · 실행 취소 · 자동 저장 표시 (포스타입·노션 에디터 참고) ----------
 function editTree(){const el=$('#wtoc');if(!el)return;const groups=[...pageReader.querySelectorAll('[data-slot-index]')];const by={};
