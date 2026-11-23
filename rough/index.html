@@ -843,6 +843,20 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .cutadd{position:absolute;left:50%;bottom:-13px;z-index:3;width:24px;height:24px;margin-left:-12px;border-radius:12px;border:1px solid var(--line2);background:var(--bg);color:var(--t2);font-size:16px;line-height:22px;text-align:center;opacity:0;transition:opacity .12s;box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .scpaper .cutlist li:hover>.cutadd,.cutadd:focus-visible{opacity:1}.cutadd:hover{background:var(--dark);color:var(--ondark);border-color:transparent}
 @media(max-width:640px){.scpaper .cutlist li{padding:10px 4px 10px 0}.scpaper .cutlist li>.cn{margin-left:6px}.scpaper .cutlist li>.lenbar{margin-left:18px}.scpaper .cutlist li[data-gap]::after{left:48px;right:32px}.cutadd{opacity:.6}}
+
+/* 콘티 = 프롬프트 + 그림 넣기 카드 */
+#v-layout .page{grid-template-columns:minmax(0,1fr);max-width:1040px}#v-layout .pv,#v-layout main>section:not(#conti),#v-layout main>h1,#v-layout main>.desc{display:none}
+.ct-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:8px 0 22px}.ct-head h2{font-size:26px;margin:0 0 4px}.ct-head p{margin:0;color:var(--t2);font-size:15px}.ct-head p b{color:var(--t1)}.ct-warn{color:#b45309}
+.ccard{border:1px solid var(--line2);border-radius:14px;background:var(--bg);padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.ccard:focus-within{border-color:rgba(45,113,247,.5);box-shadow:0 0 0 3px rgba(45,113,247,.1)}
+.ccard>header{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}.ct-no{flex:none;width:30px;height:30px;border-radius:15px;display:grid;place-items:center;font-size:12.5px;background:var(--surface);color:var(--t2)}
+.ct-beat{flex:1;min-width:0}.ct-beat p{margin:0;font-size:16.5px;font-weight:600;line-height:1.55}.ct-beat small{font-size:13px;color:var(--t3)}
+.ct-body{display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;align-items:start}
+.ct-art{display:grid;gap:8px;justify-items:start}.ct-drop.drop{width:200px;height:auto;max-height:320px;border-radius:10px}.ct-drop .ct-ref{opacity:.3;filter:grayscale(1)}
+.ct-plus{position:relative;display:grid;gap:2px;justify-items:center;font-size:14px;font-weight:600;color:var(--t1)}.ct-plus b{font-size:28px;font-weight:400;line-height:1}.ct-plus small{font-size:12px;font-weight:500;color:var(--t3)}
+.ccard.stale .ct-drop{outline:2px solid #d97706;outline-offset:2px}.ct-stale{color:#b45309}
+.ct-prompt{min-width:0}.ct-ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--t2)}
+.ct-prompt .nf{margin-bottom:8px}.ct-prompt .nf h4 small{font-weight:500;color:var(--t3);margin-left:6px}.ct-prompt .nf pre{font-size:13.5px;line-height:1.65}
+@media(max-width:640px){.ct-body{grid-template-columns:1fr}.ct-drop.drop{width:100%;max-height:420px}}
 </style>
 </head>
 <body>
@@ -1003,6 +1017,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <h1 class="ux-a">콘티</h1>
   <p class="desc ux-a">감정·하이라이트·연출 목적을 글에서 계산하고, 연출 DB <span id="patcount">5컷</span>묶음 중 가장 닮은 패턴으로 컷을 짰어요.</p>
 
+  <section id="conti" aria-label="컷별 프롬프트와 그림"></section>
   <section>
     <div class="sh ux-a"><h2>이렇게 읽었어요</h2><span>코드표 기준 자동 판정</span></div>
     <div id="reading"></div>
@@ -3205,7 +3220,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
 $('#filem').addEventListener('change',e=>{attachCuts(e.target.files,target&&target.kind==='cut'?+target.key:null);e.target.value=''});
 renderKey();
 const rerenderCuts=()=>{renderNai();if(VIEW==='layout'){renderTable();renderReading()}};
-for(const el of [$('#ncards'),$('#tbl')]){
+for(const el of [$('#ncards'),$('#tbl'),$('#conti')]){
   el.addEventListener('click',e=>{const d=e.target.closest('[data-delcut]');if(d){e.stopPropagation();const id=cutId(SCENES[SCUR].id,+d.dataset.delcut);delete IMG.cut[id];idb.del(id);rerenderCuts();return}
     const s=e.target.closest('[data-cutslot]');if(s){target={kind:'cut',key:s.dataset.cutslot};$('#filem').click()}});
   el.addEventListener('keydown',e=>{const s=e.target.closest('[data-cutslot]');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();s.click()}});
@@ -3244,7 +3259,7 @@ $('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');
 // 전체 복사: 기본 프롬프트와 캐릭터 프롬프트만, 각 줄 끝에 쉼표, 빈 줄로 구분
 const naiCopy=o=>[o.base,...o.chars.map(c=>c.prompt)].map(t=>t.trim().replace(/,\s*$/,'')+',').join('\n\n');
 function naiText(){const L=naiCuts();return L.map(({p,i,o})=>NAI.text(o,i,L.length,cutHead(p,i))).join('\n\n────────\n\n')}
-function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
+function renderNai(){if(VIEW==='layout')setTimeout(renderConti);$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
   $('#naichars').innerHTML=chars.length?chars.map(c=>`<div class="naichar"><b>${esc(c.name)}</b><input data-naitag="${esc(c.name)}" value="${esc(NAITAGS[c.name]??NAI.lookTags(c.look).join(', '))}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="btn" data-act="naireset" data-n="${esc(c.name)}">외형에서 다시</button></div>`).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
   const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
@@ -3264,6 +3279,21 @@ function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$
     <div class="nset"><div><b>해상도</b>${o.size.w} × ${o.size.h}</div><div><b>Steps · Guidance</b>${S.steps} · ${S.guidance}</div><div><b>Sampler</b>${S.sampler} · ${S.noise}</div><div><b>img2img</b>Strength ${S.strength} · Noise ${S.noiseImg}</div><div><b>캐릭터 위치</b>${o.chars.length>1?'AI\'s Choice 끄고 칸 지정':o.chars.length?'1명이면 AI\'s Choice도 괜찮음':'인물 없음'}</div><div><b>레퍼런스</b>${o.charRef?`Character Reference: ${esc(o.charRef)}`:o.vibe?'Vibe Transfer: 장면 이미지':'없음'}</div></div>
     <div class="nbtns"><button class="btn dark" data-act="naibase" data-i="${i}">바탕 PNG (${o.size.w}×${o.size.h})</button>${o.charRef?`<button class="btn" data-act="nairef" data-n="${esc(o.charRef)}">캐릭터 레퍼런스 이미지</button>`:o.vibe?'<button class="btn" data-act="naivibe">장면 이미지</button>':''}</div>
     </div></div>`}).join('')}
+// 콘티 = 컷마다 [그림 넣기 | NovelAI 프롬프트]. 그 밖의 연출 설정·전체 미리보기는 이 화면에서 뺌(연출은 씬 글 {…}로)
+function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,sc=SCENES[SCUR];
+  if(!ps.length){el.innerHTML='<p class="empty">씬 단계에서 컷을 적어주세요.</p>';return}
+  const L=naiCuts(),done=cutCount(SCUR,ps),ai=ainFor();
+  const head=`<div class="ct-head"><div><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><p>${ps.length}컷 · 그림 <b>${done}</b>/${ps.length}${ai?` · ${ai.stale?'<span class="ct-warn">글이 바뀌어 Claude 프롬프트가 예전 것</span>':'Claude로 다듬은 프롬프트'}`:''}</p></div>
+    <div class="btnrow"><button class="btn" data-act="naiset" aria-expanded="false">작화 설정</button><button class="btn" data-act="nairefine">Claude로 다듬기</button><button class="btn" data-act="naimulti" title="파일 이름 순으로 빈 컷부터 채워요">그림 여러 장</button><button class="btn" data-act="naidown">프롬프트 txt</button></div></div>`;
+  el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
+    return `<article class="ccard${im?.stale?' stale':''}">
+      <header><b class="ct-no">${String(i+1).padStart(2,'0')}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([p.who,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':' → 생성 후 '+esc(o.size.crop)}</small></div>${o.ai?'<span class="tag">Claude</span>':''}</header>
+      <div class="ct-body">
+        <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>끌어다 놓아도 돼요</small></span>`}</div>
+          ${im?.stale?`<button class="btn sm ct-stale" data-act="nstale" data-i="${i}">원고가 바뀜 · 확인</button>`:im?`<button class="btn sm" data-cutslot="${i}">그림 바꾸기</button>`:''}</div>
+        <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="btn sm" data-act="ncopyall" data-i="${i}">전체 복사</button></div>
+          ${nblk('기본 프롬프트','',o.base)}${o.chars.map((c,n)=>nblk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,'',c.prompt)).join('')}</div>
+      </div></article>`}).join('')}
 // C안 카드: 번호·장면 한 줄·썸네일과 [이미지 등록|교체] [프롬프트]. 프롬프트·생성 설정은 펼쳐서
 function naiCardC(p,i,o,im,blk){const S=o.settings,no=String(i+1).padStart(2,'0');
   const state=im?(im.stale?`<span class="tag warn">그림 등록 후 원고가 바뀜</span>`:''):'';
