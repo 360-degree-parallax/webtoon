@@ -242,6 +242,12 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .scpaper .cutlist textarea:focus{outline:none;box-shadow:none}
 .scpaper .cutlist .tools{opacity:0;transition:opacity .1s}
 .scpaper .cutlist li:hover .tools,.scpaper .cutlist li:focus-within .tools{opacity:1}
+.cutbox{position:relative;grid-column:2;min-width:0}.cutbox .cutin{position:relative;z-index:1;width:100%}
+.cuthl{position:absolute;inset:0;z-index:0;pointer-events:none;color:transparent;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word}
+.cuthl div{border-radius:4px}.cuthl .hl-dlg{background:rgba(45,113,247,.07);box-shadow:inset 3px 0 0 rgba(45,113,247,.45)}.cuthl .hl-cap{background:rgba(47,90,58,.08);box-shadow:inset 3px 0 0 rgba(47,90,58,.45)}
+.cuthl .hl-mix{background:repeating-linear-gradient(135deg,rgba(217,119,6,.07) 0 6px,transparent 6px 12px)}
+.cuthl i{font-style:normal;border-radius:4px}.cuthl .h-dir{background:rgba(45,113,247,.16)}.cuthl .h-dir .bad{background:rgba(185,28,28,.18);text-decoration:underline wavy #b91c1c}.scins b{white-space:nowrap}.cuthl .h-sfx{background:rgba(234,88,12,.16)}.cuthl .h-who{background:rgba(124,58,237,.12)}
+:root[data-theme=dark] .cuthl .hl-dlg{background:rgba(120,160,255,.1)}
 .cutparse{grid-column:2;display:flex;flex-wrap:wrap;gap:4px;padding:0 4px 4px;font-size:12px;color:var(--t2)}
 .cutparse:empty{display:none}
 .cutparse span{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:var(--surface);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2079,24 +2085,42 @@ function deleteScene(index){
   document.querySelector(`#scenelist [data-scene="${SCUR}"]`)?.focus({preventScroll:true});
   toast('씬을 삭제했어요');
 }
-function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
+function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px';const h=t.previousElementSibling;
+  if(h?.classList.contains('cuthl')&&!h._m&&t.offsetWidth){const cs=getComputedStyle(t);for(const k of ['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','wordSpacing','wordBreak','lineBreak','textIndent','tabSize','paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','fontKerning','textRendering'])h.style[k]=cs[k];h.style.borderStyle='solid';h.style.borderColor='transparent';h.style.boxSizing=cs.boxSizing;h._m=1}}
 function renderCuts(){if(!CUTS.length)CUTS=[''];
   const firstEmpty=CUTS.findIndex(c=>!String(c).trim());
-  $('#cutlist').innerHTML=CUTS.map((c,i)=>`<li data-i="${i}"><span class="cn" title="끌어서 순서 바꾸기">${i+1}</span><textarea class="cutin" rows="1" spellcheck="false" aria-label="${i+1}번 컷" placeholder="${UX==='A'?(i?'행동 묘사 / @인물 &quot;(감정)대사&quot; / [식자]':'예: @에드가 복도 끝에서 걸어온다.'):(i===firstEmpty?'@준 창가로 다가간다. {클로즈업}  ·  연출은 { } 안에 (위 { } 연출 버튼)':'')}">${esc(c)}</textarea><span class="tools"><button data-cut="up" aria-label="위로" title="위로">↑</button><button data-cut="down" aria-label="아래로" title="아래로">↓</button><button data-cut="del" aria-label="삭제" title="삭제">×</button></span><div class="cutparse" data-parse></div></li>`).join('');
+  $('#cutlist').innerHTML=CUTS.map((c,i)=>`<li data-i="${i}"><span class="cn" title="끌어서 순서 바꾸기">${i+1}</span><div class="cutbox"><div class="cuthl" aria-hidden="true">${cutHL(c)}</div><textarea class="cutin" rows="1" spellcheck="false" aria-label="${i+1}번 컷" placeholder="${UX==='A'?(i?'행동 묘사 / @인물 &quot;(감정)대사&quot; / [식자]':'예: @에드가 복도 끝에서 걸어온다.'):(i===firstEmpty?'@준 창가로 다가간다. {클로즈업}&#10;@준 &quot;누구세요?&quot;':'')}">${esc(c)}</textarea></div><span class="tools"><button data-cut="up" aria-label="위로" title="위로">↑</button><button data-cut="down" aria-label="아래로" title="아래로">↓</button><button data-cut="del" aria-label="삭제" title="삭제">×</button></span><div class="cutparse" data-parse></div></li>`).join('');
   document.querySelectorAll('.cutin').forEach(grow);renderParse()}
-// 컷 아래 해석 줄: 글을 어떻게 읽었는지(인물·대사·식자·효과음·세계관 항목) 바로 보여줌
+// 글 위 강조: 문법을 입력칸 글자 뒤에 바로 칠함(배경만 칠해 글자 위치는 입력칸 그대로). 대사 줄·나레이션 줄은 줄 전체, 효과음·연출·@인물은 그 부분만
+const HL_TOK=/(\{[^{}\n]*\})|((?:^|(?<=\s))(-{1,3})[^\s-][^-\n]{0,10}?\3(?=\s|$|[.,!?]))|(@[^\s"“”.,!?{}()]+)/g;
+const HL_DLG=/^(?:@[^\s"“]+\s*)?["“].*["”]\s*[.!?…]*$/,HL_MIX=/["“][^"”]+["”]/;
+const dirBad=t=>!!t.trim()&&RoughGrammar.derive({dir:RE.readDirs([t])}).unknown.length>0;
+// {…} 안을 항목별로: 못 읽은 항목만 빨갛게
+const dirHL=tok=>`<i class="h-dir">{${tok.slice(1,-1).split(/([,，·\/])/).map((x,k)=>k%2?esc(x):dirBad(x)?`<i class="bad">${esc(x)}</i>`:esc(x)).join('')}}</i>`;
+function cutHL(text){return String(text??'').split('\n').map(line=>{const bare=line.replace(/\{[^{}\n]*\}/g,'').replace(/(^|\s)-{1,3}[^\s-][^-\n]{0,10}?-{1,3}(?=\s|$|[.,!?])/g,'$1').trim();
+    const kind=!bare?'':HL_DLG.test(bare)?'dlg':/^\[.*\]$/.test(bare)?'cap':HL_MIX.test(bare)?'mix':'act';
+    let o='',last=0;line.replace(HL_TOK,(m,d,sfx,_dash,at,off)=>{o+=esc(line.slice(last,off));last=off+m.length;
+      o+=d?dirHL(d):sfx?`<i class="h-sfx">${esc(m)}</i>`:`<i class="h-who">${esc(m)}</i>`;return m});
+    o+=esc(line.slice(last));return `<div class="hl-${kind||'empty'}">${o||'<br>'}</div>`}).join('')}
+function syncHL(t){const h=t.previousElementSibling;if(h?.classList.contains('cuthl'))h.innerHTML=cutHL(t.value)}
+// 대사와 줄글 나누기: 한 줄에 묘사와 "대사"가 섞여 있으면 입력칸을 벗어날 때 대사를 @인물 "대사" 줄로 떼어 냄
+function splitMixed(text){let n=0;const out=String(text||'').split('\n').flatMap(line=>{const dirs=line.match(/\{[^{}\n]*\}/g)||[],bare=line.replace(/\{[^{}\n]*\}/g,'').trim();
+    if(!HL_MIX.test(bare)||HL_DLG.test(bare)||/^\[.*\]$/.test(bare))return[line];
+    const who=(bare.match(/@([^\s"“”.,!?{}()]+)/)||[])[1]||'',qs=[...bare.matchAll(/["“]([^"”]+)["”]/g)].map(m=>m[1].trim()).filter(Boolean);
+    let prose=bare.replace(/["“][^"”]*["”]\s*(하고|라고|하며|라며|며)?/g,' ').replace(/\s+/g,' ').trim();
+    if(new RegExp('^@'+who.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[.,]?$').test(prose))prose='';n++;
+    return[...(prose||dirs.length?[[prose,...dirs].filter(Boolean).join(' ')]:[]),...qs.map(q=>`${who?'@'+who+' ':''}"${q}"`)]});
+  return{text:out.join('\n'),n}}
+// 컷 아래 해석 줄: 글에 칠해지지 않는 것만(읽은 주인공 · 말풍선 자동 모양 · 세계관 항목)
 function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.forEach(b=>{const m=/^#(\d+):/.exec(b.key||'');if(m)by[+m[1]]=b});let nd=0,nc=0,ns=0;
   document.querySelectorAll('#cutlist li').forEach(li=>{const i=+li.dataset.i,b=by[i],el=li.querySelector('[data-parse]');if(!el)return;if(!b||!CUTS[i].trim()){el.innerHTML='';return}
     const av=n=>{const im=IMG.char[n];return `<i class="av" style="${im?'':`background:${avBg(n)}`}">${im?`<img src="${im.src}" alt="">`:esc(n.slice(0,1))}</i>`};const out=[];
     if(b.who)out.push(`<span class="k-who">${av(b.who)}${esc(b.who)}</span>`);
-    (b.dialogs||[]).filter(d=>d.text).forEach(d=>{nd++;out.push(`<span>${d.who?av(d.who):''}“${esc(d.text.length>22?d.text.slice(0,22)+'…':d.text)}”${d.note?` <small>(${esc(d.note)})</small>`:''}</span>`)});
-    if(b.caption){nc++;out.push(`<span class="k-cap">식자 · ${esc(b.caption)}</span>`)}
-    (b.sfx||[]).forEach((x,n)=>{ns++;out.push(`<span class="k-sfx">효과음 · ${esc(x)}${b.sfxSize?.[n]>1?(b.sfxSize[n]>2?' · 아주 크게':' · 크게'):''}</span>`)});
-    {const D=b.dir||{},g=RoughGrammar.derive(b),k=[D.shot,D.ang,D.h&&`길이 ${lenWord(D.h)}`,D.gap&&`뒤 ${D.gap}`,D.hl&&'하이라이트',...(D.fx||[]).filter(t=>!g.unknown.includes(t))].filter(Boolean);
+    nd+=(b.dialogs||[]).filter(d=>d.text).length;nc+=(b.captions||[]).length;ns+=(b.sfx||[]).length;
+    {const D=b.dir||{},g=RoughGrammar.derive(b);
       const st=g.edit?.letters&&Object.entries(g.edit.letters).filter(([key,v])=>v.style&&/^dialog/.test(key)).map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean);
-      if(st?.length&&!(D.fx||[]).some(t=>RoughGrammar.styleOf(t)))k.push('말풍선 '+[...new Set(st)].join('·'));
-      if(k.length)out.push(`<span class="k-dir" title="글에 적은 연출 · 편집에서 직접 바꾸면 그 값이 우선">연출 · ${esc(k.join(', '))}</span>`);
-      if(g.unknown.length)out.push(`<span class="k-bad" title="이 낱말은 연출로 읽지 못했어요. 도움말(?)의 연출 문법을 참고하세요">모르는 연출 · ${esc(g.unknown.join(', '))}</span>`)}
+      if(st?.length&&!(D.fx||[]).some(t=>RoughGrammar.styleOf(t)))out.push(`<span class="k-dir" title="대사 메모를 읽어 말풍선 모양을 골랐어요">말풍선 ${esc([...new Set(st)].join('·'))}</span>`);
+      if(g.unknown.length)out.push(`<span class="k-bad" title="이 낱말은 연출로 읽지 못했어요. { } 연출 메뉴의 '문법 전체 보기'를 참고하세요">모르는 연출 · ${esc(g.unknown.join(', '))}</span>`)}
     if(typeof loreHits==='function')loreHits(CUTS[i]).forEach(e=>out.push(`<span>◆ ${esc(e.name)}</span>`));
     el.innerHTML=out.join('')});
   const m=$('#scmeta2');if(m)m.textContent=`대사 ${nd} · 식자 ${nc} · 효과음 ${ns}`}
@@ -2104,8 +2128,10 @@ const cutChanged=()=>{saveCuts();scSaved();clearTimeout(tmr);tmr=setTimeout(()=>
 let scSavedAt=0;function scSaved(){scSavedAt=Date.now();scSaveLabel()}
 function scSaveLabel(){const el=$('#scsave');if(!el)return;if(SAVE_FAIL){saveFailLabel();return}if(!scSavedAt)return;const s=Math.round((Date.now()-scSavedAt)/1000);el.textContent=s<5?'저장됨 · 방금':s<60?`저장됨 · ${s}초 전`:`저장됨 · ${Math.round(s/60)}분 전`;el.classList.add('on')}
 setInterval(scSaveLabel,5000);
-$('#cutlist').addEventListener('input',e=>{const t=e.target.closest('.cutin');if(!t)return;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);cutChanged();mSel=0;showMbox()});
+$('#cutlist').addEventListener('input',e=>{const t=e.target.closest('.cutin');if(!t)return;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();mSel=0;showMbox()});
 $('#cutlist').addEventListener('focusin',e=>{const t=e.target.closest('.cutin');if(t)TA=t});
+$('#cutlist').addEventListener('focusout',e=>{const t=e.target.closest('.cutin');if(!t)return;const r=splitMixed(t.value);if(!r.n||r.text===t.value)return;
+  t.value=r.text;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();toast(`대사를 따로 줄로 나눴어요 (${r.n}줄) · 묘사와 대사는 줄을 나눠 써요`,2400)});
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cut]');if(e.target.closest('.cutin'))showMbox();if(!b)return;const i=+b.closest('li').dataset.i,k=b.dataset.cut;
   const edits=cutEdits();
   const n=CUTS.length,j=k==='up'?i-1:i+1;if(k!=='del'&&(j<0||j>=n))return;
