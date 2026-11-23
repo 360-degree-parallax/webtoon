@@ -950,6 +950,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <span class="wordmark">ROUGH<span>웹툰 연출 러프</span></span>
   <div class="scbar gscbar" data-scbar id="gscbar" hidden></div>
   <div class="right">
+    <span class="gundo" id="gundo" hidden><button class="ib" id="gundo-b" aria-label="실행 취소" title="실행 취소 (Ctrl+Z)" disabled><svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="ib" id="gredo-b" aria-label="다시 실행" title="다시 실행 (Ctrl+Shift+Z)" disabled><svg class="i" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button></span>
     <button class="btn" data-view="db" id="gDb">DB</button>
     <button class="btn" id="gReview" title="모델이 의심한 컷을 골라 판정 (DB 값 고치기)">판정<small class="gcount" id="gReviewN"></small></button>
     <button class="ib" id="gkeys" aria-label="단축키 보기" title="단축키 (?)">?</button>
@@ -2272,7 +2273,8 @@ setInterval(scSaveLabel,5000);
 $('#cutlist').addEventListener('input',e=>{const t=e.target.closest('.cutin');if(!t)return;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();mSel=0;showMbox()});
 $('#cutlist').addEventListener('focusin',e=>{const t=e.target.closest('.cutin');if(t)TA=t});
 $('#cutlist').addEventListener('focusout',e=>{const t=e.target.closest('.cutin');if(!t)return;const r=splitMixed(t.value);if(!r.n||r.text===t.value)return;
-  t.value=r.text;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();toast(`대사를 따로 줄로 나눴어요 (${r.n}줄) · 묘사와 대사는 줄을 나눠 써요`,2400)});
+  if(typeof edRecord==='function'){edRecord();edLast=0}  // 나누기 전 글을 따로 한 단계로
+  t.value=r.text;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();toast(`대사를 따로 줄로 나눴어요 (${r.n}줄) · 묘사와 대사는 줄을 나눠 써요 · Ctrl+Z로 되돌리기`,2400)});
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cut]');if(e.target.closest('.cutin'))showMbox();if(!b)return;const i=+b.closest('li').dataset.i,k=b.dataset.cut;
   const edits=cutEdits();
   const n=CUTS.length,j=k==='up'?i-1:i+1;if(k!=='del'&&(j<0||j>=n))return;
@@ -3223,22 +3225,29 @@ function imgRestore(sc,m){const cur=imgPlace(sc);if(JSON.stringify(cur)===JSON.s
   for(const [n,uid,sig] of m){const r=IMG_POOL.get(uid);if(!r)continue;const o={...r,id:cutId(sc.id,n),idx:n,sig};IMG.cut[o.id]=o;idb.put(o)}
   return true}
 const edState=()=>JSON.stringify(SCENES.map(sc=>({c:sc.cuts,e:sc.pageEdits||[],m:imgPlace(sc),t:sc.endTo||''})));
-function edButtons(){$('#wundo').disabled=!UNDO.length;$('#wredo').disabled=!REDO.length}
+function edButtons(){$('#wundo').disabled=$('#gundo-b').disabled=!UNDO.length;$('#wredo').disabled=$('#gredo-b').disabled=!REDO.length}
 function edRestore(json){edRestoring=true;const arr=JSON.parse(json);let text=false;SCENES.forEach((sc,i)=>{const v=arr[i];if(!v){sc.pageEdits=[];return}if(Array.isArray(v)){sc.pageEdits=v;return}
   if(JSON.stringify(sc.cuts)!==JSON.stringify(v.c)){sc.cuts.splice(0,sc.cuts.length,...v.c);text=true}sc.pageEdits=v.e||[];if(v.m)imgRestore(sc,v.m);if('t' in v){if(v.t)sc.endTo=v.t;else delete sc.endTo}});saveScenes();edRestoring=false;edSnap=json;if(text&&typeof compute==='function')compute(false);renderWebtoon();edButtons()}
-{const _ss=saveScenes;saveScenes=function(...a){
-  if(typeof VIEW!=='undefined'&&VIEW==='webtoon'&&!edRestoring){const cur=edState();
-    if(edSnap!==null&&cur!==edSnap){const now=Date.now();if(now-edLast>600||!UNDO.length)UNDO.push(edSnap);if(UNDO.length>100)UNDO.shift();REDO.length=0;edLast=now;edSavedAt=now;edSaveLabel()}
-    edSnap=cur;edButtons()}
-  return _ss(...a)}}
+// 원고(쓰기)·콘티·편집 화면 모두 같은 기록을 씀. 쓰기 화면은 타자 묶음을 길게(1.5초)
+const UNDO_VIEWS=['webtoon','layout','write'];
+function edRecord(){if(typeof VIEW==='undefined'||!UNDO_VIEWS.includes(VIEW)||edRestoring)return;const cur=edState();
+  if(edSnap!==null&&cur!==edSnap){const now=Date.now();if(now-edLast>(VIEW==='write'?1500:600)||!UNDO.length)UNDO.push(edSnap);if(UNDO.length>100)UNDO.shift();REDO.length=0;edLast=now;edSavedAt=now;edSaveLabel()}
+  edSnap=cur;edButtons()}
+{const _ss=saveScenes;saveScenes=function(...a){edRecord();return _ss(...a)}}
+// 되돌린 뒤 지금 화면 다시 그리기
+function edRefresh(){if(VIEW==='write'){renderCuts();compute(false)}else if(VIEW==='layout'){compute(false);rerenderCuts()}}
 function edSaveLabel(){const el=$('#edsave');if(!el)return;if(SAVE_FAIL){saveFailLabel();return}if(!edSavedAt){el.textContent='자동 저장';el.classList.remove('on');return}
   const s=Math.round((Date.now()-edSavedAt)/1000);el.textContent=s<5?'저장됨 · 방금':s<60?`저장됨 · ${s}초 전`:`저장됨 · ${Math.round(s/60)}분 전`;el.classList.add('on')}
 setInterval(edSaveLabel,5000);
-$('#wundo').addEventListener('click',()=>{if(!UNDO.length)return;REDO.push(edState());edRestore(UNDO.pop())});
-$('#wredo').addEventListener('click',()=>{if(!REDO.length)return;UNDO.push(edState());edRestore(REDO.pop())});
-document.addEventListener('keydown',e=>{if(typeof VIEW==='undefined'||VIEW!=='webtoon')return;const typing=e.target.closest('input,textarea,select,[contenteditable]');
-  if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==='z'&&!typing){e.preventDefault();(e.shiftKey?$('#wredo'):$('#wundo')).click();return}
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'&&!typing){e.preventDefault();$('#wredo').click();return}
+function edUndo(){if(!UNDO.length)return;REDO.push(edState());edRestore(UNDO.pop());edRefresh();edButtons()}
+function edRedo(){if(!REDO.length)return;UNDO.push(edState());edRestore(REDO.pop());edRefresh();edButtons()}
+$('#wundo').addEventListener('click',edUndo);$('#wredo').addEventListener('click',edRedo);
+$('#gundo-b').addEventListener('click',edUndo);$('#gredo-b').addEventListener('click',edRedo);
+document.addEventListener('keydown',e=>{if(typeof VIEW==='undefined'||!UNDO_VIEWS.includes(VIEW))return;const typing=e.target.closest('input,textarea,select,[contenteditable]');
+  // 글 칸 안에서는 브라우저 자체 실행 취소(타자 단위)를 그대로 씀
+  if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==='z'&&!typing){e.preventDefault();e.shiftKey?edRedo():edUndo();return}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'&&!typing){e.preventDefault();edRedo();return}
+  if(VIEW!=='webtoon')return;
   if(e.key==='Escape'&&materialMode){armMaterialLine('');return}
   if(e.key==='Escape'&&!typing&&selectedLetter){selectLetter(null);document.activeElement?.blur?.()}});
 
@@ -3252,6 +3261,7 @@ function showView(v){if(v==='nai')v='layout';  // 작화는 콘티에 합침(예
   if(v==='write')requestAnimationFrame(()=>document.querySelectorAll('.cutin').forEach(grow));
   $('#gscbar').hidden=!['write','layout','nai','webtoon'].includes(v);$('#gDb').setAttribute('aria-pressed',v==='db');
   if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons();refreshPageMaterials()}
+  if(v==='write'||v==='layout'){edSnap=edState();edButtons()}$('#gundo').hidden=!(v==='write'||v==='layout');
   if(v!=='webtoon'&&materialMode)armMaterialLine('');
   if(v==='plan')openComposition();
   if(v==='layout')renderNai();if(v==='db')loadDB();
@@ -3300,7 +3310,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   else if(a==='keyshow'){const i=$('#kin'),show=i.type==='password';i.type=show?'text':'password';el.textContent=show?'숨기기':'보기';el.setAttribute('aria-pressed',show)}});
 $('#filem').addEventListener('change',e=>{attachCuts(e.target.files,target&&target.kind==='cut'?+target.key:null);e.target.value=''});
 renderKey();
-const rerenderCuts=()=>{renderNai();if(VIEW==='layout'){renderTable();renderReading()}};
+const rerenderCuts=()=>{renderNai();if(VIEW==='layout'){renderTable();renderReading()}if(typeof edRecord==='function')edRecord()};
 for(const el of [$('#ncards'),$('#tbl'),$('#conti')]){
   el.addEventListener('click',e=>{const d=e.target.closest('[data-delcut]');if(d){e.stopPropagation();const id=cutId(SCENES[SCUR].id,+d.dataset.delcut);delete IMG.cut[id];idb.del(id);rerenderCuts();return}
     const s=e.target.closest('[data-cutslot]');if(s){target={kind:'cut',key:s.dataset.cutslot};$('#filem').click()}});
