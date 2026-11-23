@@ -5,6 +5,7 @@
 사용: python3 tools/ml/apply_review.py 판정.json [--write]   (--write: rough/db/db.json·cuts/index.json에도 반영)
 """
 import sys, json, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); import weights as WT
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 src = json.loads(pathlib.Path(sys.argv[1]).read_text())
 assert src.get('format') == 'rough-review', '판정 화면에서 내보낸 파일이 아니에요'
@@ -23,5 +24,10 @@ for s in stale: print('  확인 필요', s)
 out = pathlib.Path(sys.argv[1]).with_suffix('.edits.json')
 out.write_text(json.dumps([edits[k:k + 63] for k in range(0, len(edits), 63)], ensure_ascii=False)); print('시트 수정 묶음', out)
 for h in holds: print(f"  보류 {h['cut']} {h['field']} (지금 {h['current']}): {h['note'] or '(메모 없음)'}")
+# 사용자가 고른 값(지금 값 유지 포함)은 확인 기록으로 → 다음 학습에서 가중치 크게
 if '--write' in sys.argv:
+    V = WT.load()
+    for x in src['decisions']:
+        if not x['hold'] and x['pick']: WT.add(V, x['cut'], x['field'], x['pick'], 'user', x['at'][:10])
+    WT.save(V); print('확인 기록', WT.summary())
     (ROOT / 'rough' / 'db' / 'db.json').write_text(json.dumps(d, ensure_ascii=False, separators=(',', ':'))); print('DB 사본 반영(리비전은 시트 반영 후 맞춰 주세요)')

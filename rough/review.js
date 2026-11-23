@@ -20,7 +20,7 @@ document.querySelector('#v-db .wrap').appendChild(box);
 const gBtn=$('#gReview'),badge=()=>{const c=counts();$('#gReviewN').textContent=Q?(c.left+c.hold||''):''};
 load().then(badge);
 function sync(){const on=ON&&VIEW==='db';$('#dbfilter').hidden=on;document.querySelector('#v-db .dbgrid').hidden=on;box.hidden=!on;$('#dbtabs').hidden=on;
-  $('#dbdesc').textContent=on?'학습 모델이 지금 DB 값과 어긋난다고 본 컷이에요. 맞는 값을 고르거나, 애매하면 메모와 함께 보류해 주세요.':$('#dbdesc').textContent;
+  $('#dbdesc').textContent=on?'학습 모델이 지금 DB 값과 어긋난다고 본 컷이에요. 맞는 값을 고르거나, 애매하면 메모와 함께 보류해 주세요. 직접 고른 값(지금 값 유지 포함)은 다음 학습에서 일반 라벨의 5배로 반영돼요.':$('#dbdesc').textContent;
   document.querySelector('#v-db h1').textContent=on?'판정':'데이터베이스';
   gBtn.setAttribute('aria-pressed',on);$('#gDb').setAttribute('aria-pressed',VIEW==='db'&&!on);if(on)render()}
 gBtn.addEventListener('click',()=>{ON=true;if(VIEW!=='db')showView('db');load().then(()=>{badge();sync()});sync()});

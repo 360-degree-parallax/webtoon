@@ -8,6 +8,7 @@ from scipy import sparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, cohen_kappa_score
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); import weights as WT  # 사람이 확인한 라벨 가중치
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 A = sys.argv[1:]
 TOP = int(A[A.index('--top') + 1]) if '--top' in A else 4000  # 어휘 수(빈도순). 내보낼 때 전부 넣어 브라우저 계산이 학습과 같게
@@ -32,10 +33,10 @@ def vecs(fit_idx):
     return v, lambda idx: sparse.hstack([f([text[k] for k in idx]), 0.5 * f([prev[k] for k in idx]), 0.5 * f([nxt[k] for k in idx])]).tocsr()
 
 def lowo(y, name):
-    pred = np.empty_like(y)
+    pred = np.empty_like(y); sw = WT.sample_weights(ids, name, y)
     for w in sorted(set(work)):
         tr = np.where(work != w)[0]; te = np.where(work == w)[0]
-        v, F = vecs(tr); m = LogisticRegression(C=Creg, max_iter=3000).fit(F(tr), y[tr]); pred[te] = m.predict(F(te))
+        v, F = vecs(tr); m = LogisticRegression(C=Creg, max_iter=3000).fit(F(tr), y[tr], sample_weight=sw[tr]); pred[te] = m.predict(F(te))
     out = {'정확도': round(float((pred == y).mean()), 3), '가장 흔한 값': round(Cn.Counter(y).most_common(1)[0][1] / len(y), 3),
            'macro-F1': round(float(f1_score(y, pred, average='macro')), 3), 'kappa': round(float(cohen_kappa_score(y, pred)), 3)}
     if name == '강도': out['MAE'] = round(float(np.abs(pred.astype(int) - y.astype(int)).mean()), 3)
@@ -49,12 +50,12 @@ if __name__ == '__main__':
         allidx = np.arange(len(ids)); v, F = vecs(allidx); X = F(allidx); voc = v.get_feature_names_out(); nv = len(voc)
         heads = {}
         for name, y in (('emo', emo), ('int', inten)):
-            m = LogisticRegression(C=Creg, max_iter=4000).fit(X, y); W = m.coef_  # (클래스, 3*nv): 이 컷 · 앞 컷 · 뒤 컷
+            m = LogisticRegression(C=Creg, max_iter=4000).fit(X, y, sample_weight=WT.sample_weights(ids, {'emo': '감정', 'int': '강도'}[name], y)); W = m.coef_  # (클래스, 3*nv): 이 컷 · 앞 컷 · 뒤 컷
             heads[name] = {'classes': [str(k) for k in m.classes_], 'b': np.round(m.intercept_, 3).tolist(), 'W': [np.round(W[:, s * nv:(s + 1) * nv], 2).tolist() for s in range(3)]}
         meta = {'kind': "char_wb 1-3gram, tf 1+log, idf, l2 + logistic(multinomial)", 'vocab': nv, 'C': Creg, 'ctx': 0.5,
                 'eval': {'감정': r1, '강도': r2}, 'revision': d.get('__meta', {}).get('revision'), 'cuts': len(ids)}
         # 브라우저 계산 확인용: 앞 60컷의 (글·앞 글·뒤 글)과 이 모델(반올림 전) 예측
-        ms = {n: LogisticRegression(C=Creg, max_iter=4000).fit(X, y) for n, y in (('emo', emo), ('int', inten))}
+        ms = {n: LogisticRegression(C=Creg, max_iter=4000).fit(X, y, sample_weight=WT.sample_weights(ids, {'emo': '감정', 'int': '강도'}[n], y)) for n, y in (('emo', emo), ('int', inten))}
         chk = [{'t': text[k], 'p': prev[k], 'n': nxt[k], 'emo': str(ms['emo'].predict(X[k])[0]), 'int': int(ms['int'].predict(X[k])[0])} for k in range(60)]
         model = {'meta': meta, 'vocab': list(voc), 'idf': np.round(v.idf_, 4).tolist(), **heads, 'check': chk}
         js = ('/* 자동 생성: tools/ml/train_ngram.py — 컷 글(+앞뒤 컷)로 감정·강도를 매기는 가벼운 모델. 손으로 고치지 마세요. */\n'

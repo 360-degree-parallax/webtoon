@@ -7,6 +7,7 @@
 import sys, json, csv, pathlib, numpy as np, collections as Cn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, cohen_kappa_score
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); import weights as WT  # 사람이 확인한 라벨 가중치
 ROOT = pathlib.Path(__file__).resolve().parents[2]; CACHE = ROOT / 'tools' / 'ml' / 'cache'
 A = sys.argv[1:]; kind = A[0] if A and not A[0].startswith('--') else 'clip'
 Creg = float(A[A.index('--C') + 1]) if '--C' in A else 1.0
@@ -22,10 +23,10 @@ work = np.array([i[:2] for i in ids])
 ORDER = ['설정', '전경', '전신', '중경', '클로즈업', '디테일']
 
 def lowo(y, name, proba=False):
-    pred = np.empty_like(y); P = None; classes = None
+    pred = np.empty_like(y); P = None; classes = None; sw = WT.sample_weights(ids, name, y) if '--no-weight' not in A else np.ones(len(y))
     for w in sorted(set(work)):
         tr, te = work != w, work == w
-        m = LogisticRegression(C=Creg, max_iter=3000).fit(X[tr], y[tr]); pred[te] = m.predict(X[te])
+        m = LogisticRegression(C=Creg, max_iter=3000).fit(X[tr], y[tr], sample_weight=sw[tr]); pred[te] = m.predict(X[te])
         if proba:
             if P is None: classes = list(np.unique(y)); P = np.zeros((len(y), len(classes)))
             pp = m.predict_proba(X[te]); P[np.ix_(np.where(te)[0], [classes.index(k) for k in m.classes_])] = pp

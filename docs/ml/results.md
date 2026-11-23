@@ -86,3 +86,21 @@ node tools/eval_engine.js --preds tools/ml/cache/preds-ngram.json
 - **결과 저장 위치:** 이 브라우저에만 저장됨(작업 파일에도 들어감). '결과 복사'나 '파일로 저장'으로 꺼내 Claude에게 주면 다음 순서로 처리:
   1. `python3 tools/ml/apply_review.py 판정.json`으로 바꿀 값을 시트 수정 묶음으로 만들어 시트·DB 사본에 반영
   2. 보류는 메모를 읽고 원본 컷을 다시 보며 해소
+
+## 사람이 확인한 라벨의 학습 가중치
+
+- 확인 기록 파일: `rough/db/verified.json`. 모든 학습 스크립트가 공용 `tools/ml/weights.py`로 읽어 sample_weight를 줌
+  - 해당 스크립트: train_image, train_ngram(엔진 감정·강도 모델), make_review_queue
+- 가중치
+
+  | 누가 확인했나 | 가중치 |
+  |---|---|
+  | 사용자(판정 화면에서 고른 값, 지금 값 유지 포함) | **5** |
+  | Claude(원본을 보고 검수: 앵글 358컷, 샷 300컷) | 2 |
+  | 확인 기록 없음 | 1 |
+
+- 사용자 기록은 Claude 기록으로 덮지 않음
+- 확인 뒤 DB 값이 다시 바뀌면 그 컷은 가중치를 주지 않음
+- 판정 결과를 `apply_review.py --write`로 반영할 때 사용자 판정이 자동으로 이 기록에 들어감
+- 판정 큐를 다시 만들면 이미 확인한 컷은 빠짐. 지금 판정 중인 큐는 진행 중이라 다시 만들지 않음
+- 가중치는 학습할 때만 씀. 평가는 모든 컷을 같은 무게로 셈

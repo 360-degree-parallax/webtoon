@@ -8,6 +8,7 @@
 """
 import sys, json, csv, pathlib, datetime, numpy as np
 from sklearn.linear_model import LogisticRegression
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); import weights as WT  # 사람이 확인한 라벨: 학습 가중치↑, 큐에서는 뺌
 ROOT = pathlib.Path(__file__).resolve().parents[2]; C = ROOT / 'tools' / 'ml' / 'cache'
 A = sys.argv[1:]
 N = {k: int(A[A.index('--' + k) + 1]) if '--' + k in A else v for k, v in (('shot', 300), ('emo', 150), ('role', 150))}
@@ -24,14 +25,15 @@ items = []
 for key, col, feats in TASKS:
     ids = sorted(i for i in M['clip'] if all(i in M[f] for f in feats) and i in row)
     X = np.hstack([np.stack([M[f][i] for i in ids]) for f in feats]); y = np.array([str(row[i][I(col)]) for i in ids])
-    work = np.array([i[:2] for i in ids]); classes = sorted(set(y)); P = np.zeros((len(ids), len(classes)))
+    work = np.array([i[:2] for i in ids]); classes = sorted(set(y)); P = np.zeros((len(ids), len(classes))); sw = WT.sample_weights(ids, col, y)
+    done = {x['cut'] for x in WT.load()['labels'] if x['field'] == col}
     for w in sorted(set(work)):
         tr, te = work != w, work == w
-        m = LogisticRegression(C=1.0, max_iter=3000).fit(X[tr], y[tr])
+        m = LogisticRegression(C=1.0, max_iter=3000).fit(X[tr], y[tr], sample_weight=sw[tr])
         P[np.ix_(np.where(te)[0], [classes.index(k) for k in m.classes_])] = m.predict_proba(X[te])
     cand = []
     for k, i in enumerate(ids):
-        if key == 'shot' and i in seen: continue
+        if (key == 'shot' and i in seen) or i in done: continue
         cur = classes.index(y[k]); top = int(P[k].argmax())
         if top == cur: continue
         cand.append((P[k, top] - P[k, cur], k, i))
