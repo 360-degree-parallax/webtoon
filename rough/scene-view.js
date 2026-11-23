@@ -33,7 +33,8 @@ const ICON={shot:'<svg viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" heig
   ang:'<svg viewBox="0 0 16 16"><path d="M3 12l5-8 5 8" fill="none" stroke="currentColor"/></svg>'};
 function sideHTML(b,c,g){const D=b.dir||{},o=[],gd=g.edit||{};
   if(D.hl||c?.vng==='P')o.push(`<span class="svc hlc">★ 하이라이트${D.hl?'':' · 자동'}</span>`);
-  if(c){o.push(`<span class="svc${D.shot?'':' auto'}">${ICON.shot}${esc(c.shot)}${D.shot?'':' · 자동'}</span>`);o.push(`<span class="svc${D.ang?'':' auto'}">${ICON.ang}${esc(c.ang)}${D.ang?'':' · 자동'}</span>`)}
+  const tag=(f,on)=>on?'':/^내 취향/.test(c?.why?.[f]?.[0]||'')?' · 내 취향':' · 자동';
+  if(c){o.push(`<span class="svc${D.shot?'':' auto'}" title="${esc(c.why.shot[0]||'')}">${ICON.shot}${esc(c.shot)}${tag('shot',D.shot)}</span>`);o.push(`<span class="svc${D.ang?'':' auto'}" title="${esc(c.why.ang[0]||'')}">${ICON.ang}${esc(c.ang)}${tag('ang',D.ang)}</span>`)}
   if(D.h)o.push(`<span class="svc">▮ 길이 ${esc(lenWord(D.h))}</span>`);
   if(D.gap)o.push(`<span class="svc">⇣ ${esc(D.gap)}</span>`);
   if(gd.img)o.push(`<span class="svc fx">⤢ 확대 ${Math.round(gd.img.s*100)}%</span>`);
@@ -68,9 +69,24 @@ function stats(bs,P){const el=document.querySelector('.scmeta');if(!el)return;le
   const nd=bs.reduce((n,b)=>n+(b.dialogs||[]).filter(d=>d.text).length,0),nc=bs.reduce((n,b)=>n+(b.captions||[]).length,0),ns=bs.reduce((n,b)=>n+(b.sfx||[]).length,0);
   const tall=P.reduce((h,p)=>h+p.h*(W-60)+defaultPageGap(p),0),screens=Math.max(1,Math.round(tall*390/690/740));
   const hl=P.map((p,k)=>p.vng==='P'?k+1:0).filter(Boolean);const cast={};bs.forEach(b=>(b.dialogs||[]).forEach(d=>{if(d.who&&d.text)cast[d.who]=(cast[d.who]||0)+1}));
-  st.innerHTML=`<div class="ss-row"><span><b>${bs.length}</b>컷</span><span>대사 <b>${nd}</b></span><span>나레이션 <b>${nc}</b></span><span>효과음 <b>${ns}</b></span>${P.length?`<span>세로 약 <b>${Math.round(tall).toLocaleString()}px</b> · 휴대폰 ${screens}화면</span>`:''}${hl.length?`<span class="ss-hl">★ 하이라이트 ${hl.join('·')}컷</span>`:''}</div>${Object.keys(cast).length?`<div class="ss-cast">${Object.entries(cast).map(([n,k])=>`<span>${face(n,' sm')}${esc(n)} · 대사 ${k}</span>`).join('')}</div>`:''}`}
+  st.innerHTML=`<div class="ss-row"><span><b>${bs.length}</b>컷</span><span>대사 <b>${nd}</b></span><span>나레이션 <b>${nc}</b></span><span>효과음 <b>${ns}</b></span>${P.length?`<span>세로 약 <b>${Math.round(tall).toLocaleString()}px</b> · 휴대폰 ${screens}화면</span>`:''}${hl.length?`<span class="ss-hl">★ 하이라이트 ${hl.join('·')}컷</span>`:''}${RE.PREFS?`<span class="ss-pref" title="글 {…}로 엔진 값을 같은 방향으로 3번 이상 고친 것을 다음부터 반영해요">내 취향 반영 중 · <button type="button" class="link" onclick="resetPrefs()">초기화</button></span>`:''}</div>${Object.keys(cast).length?`<div class="ss-cast">${Object.entries(cast).map(([n,k])=>`<span>${face(n,' sm')}${esc(n)} · 대사 ${k}</span>`).join('')}</div>`:''}`}
+// ---------- 작가 취향 학습: 글 {…}로 엔진 값을 고친 기록 → 엔진이 다음부터 그쪽으로(엔진 setPrefs) ----------
+// 기록 키 = 씬 id:컷 자리:항목(마지막 값만). 엔진 원래 값(pre)과 글에 적은 값이 같아도 기록(동의도 근거)
+const PREF_KEY='rough-prefs-log';let PLOG={};try{PLOG=JSON.parse(localStorage.getItem(PREF_KEY)||'{}')}catch(_){}
+const gtag=g=>g<0.13?'붙임':g<0.33?'보통':g<0.65?'쉼':'큰 쉼';
+function recordPrefs(){const sc=SCENES[SCUR];if(!sc)return;let ch=false;
+  for(const c of state.panels||[]){const D=c.dir,pre=c.pre;if(!D||!pre)continue;const slot=+(/^#(\d+):/.exec(c.key||'')||[])[1];
+    const put=(f,auto,chosen)=>{const k=`${sc.id}:${slot}:${f}`,o=PLOG[k];if(!o||o.auto!==auto||o.chosen!==chosen){PLOG[k]={f,auto,chosen,at:Date.now()};ch=true}};  // 값이 바뀌면 새 기록(초기화로 꺼 둔 것도 다시 셈)
+    if(D.shot)put('shot',pre.shot,D.shot);if(D.ang)put('ang',pre.ang,D.ang);if(D.h)put('h',pre.h,D.h);if(D.gap)put('gap',gtag(pre.gap),D.gap)}
+  // 글에서 지시를 지운 컷은 기록도 지움
+  const live=new Set();for(const c of state.panels||[]){const slot=+(/^#(\d+):/.exec(c.key||'')||[])[1],D=c.dir||{};['shot','ang','h','gap'].forEach(f=>{if(D[f])live.add(`${sc.id}:${slot}:${f}`)})}
+  for(const k of Object.keys(PLOG))if(k.startsWith(sc.id+':')&&!live.has(k)){delete PLOG[k];ch=true}
+  if(ch){try{localStorage.setItem(PREF_KEY,JSON.stringify(PLOG))}catch(_){}const before=JSON.stringify(RE.PREFS);RE.setPrefs(PLOG);if(JSON.stringify(RE.PREFS)!==before)setTimeout(()=>compute(false),0)}}
+RE.setPrefs(PLOG);
+// 초기화: 지금까지 기록은 꺼 둠(muted). 글에 남아 있는 지시로 바로 다시 배우지 않고, 이후 새로 고친 것만 셈
+window.resetPrefs=()=>{for(const o of Object.values(PLOG))o.muted=true;try{localStorage.setItem(PREF_KEY,JSON.stringify(PLOG))}catch(_){}RE.setPrefs(PLOG);compute(false);toast('내 취향 학습을 초기화했어요 · 앞으로 고치는 것부터 다시 배워요')};
 {const _rp=renderParse;renderParse=function(...a){const r=_rp(...a);decorate();return r}}
-{const _c=compute;compute=function(...a){const r=_c(...a);if(VIEW==='write')decorate();return r}}
+{const _c=compute;compute=function(...a){const r=_c(...a);recordPrefs();if(VIEW==='write')decorate();return r}}
 decorate();
 
 // 컷 사이 + : 이 컷 바로 아래에 빈 컷(이미지·편집값도 한 칸씩 밀림)

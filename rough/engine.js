@@ -408,6 +408,19 @@
   }
 
   // 칸 길이 모델(tools/ml/train_layout.py): 컷 해석 특징 → log(칸 높이 비). train_layout.cut_feats와 같은 특징
+  // 작가 취향: 기록 {키: {f, auto, chosen}} → 바꿔 끼울 표. 같은 엔진 값에서 3번 이상 · 60% 이상 같은 값으로 고쳤을 때만
+  function setPrefs(log) {
+    const L = Object.values(log || {}).filter(x => !x.muted); if (!L.length) { E.PREFS = null; return null; }
+    const P = {}; let used = 0;
+    for (const f of ['shot', 'ang', 'gap']) {
+      const by = {}; L.filter(x => x.f === f).forEach(x => { const m = by[x.auto] ||= {}; m[x.chosen] = (m[x.chosen] || 0) + 1; });
+      for (const [a, m] of Object.entries(by)) { const tot = Object.values(m).reduce((s, v) => s + v, 0), [to, n] = Object.entries(m).sort((x, y) => y[1] - x[1])[0];
+        if (to !== a && n >= 3 && n / tot >= 0.6) { (P[f] ||= {})[a] = { to, n }; used += n; } }
+    }
+    const hs = L.filter(x => x.f === 'h' && x.auto > 0 && x.chosen > 0).map(x => Math.log(x.chosen / x.auto));
+    if (hs.length >= 3) { const m = hs.reduce((a, v) => a + v, 0) / hs.length; if (Math.abs(m) > 0.1) { P.hScale = Math.exp(clamp(m, Math.log(0.7), Math.log(1.4))); P.hN = hs.length; used += hs.length; } }
+    E.PREFS = used ? P : null; return E.PREFS;
+  }
   function useLayoutModel(M) { E._lay = M && M.h ? M : null; return !!E._lay; }
   function layFeats(an, k) {
     const bs = an.beats, n = bs.length, x = bs[k], nx = bs[k + 1], pv = bs[k - 1];
@@ -479,12 +492,21 @@
       let gap = (0.35 * (pc.gap ?? 0.3) + 0.65 * base) * tf; why.gap.unshift(`${tag} · 패턴 여백 ${(pc.gap ?? 0.3).toFixed(2)} 섞음${tf !== 1 ? ` · 템포 ${an.tempo}` : ''}`);
       const band = { 붙임: [0.06, 0.12], 보통: [0.13, 0.32], 쉼: [0.33, 0.64], '큰 쉼': [0.65, 1.2] }[tag];
       gap = +clamp(gap, band[0], band[1]).toFixed(2);
-      const D = b.dir || {};
+      const pre = { shot, ang, h, gap };  // 글 지시·취향을 넣기 전 엔진 값(취향 학습 기록용)
+      // 작가 취향(직접 고친 기록에서): 엔진이 X라 할 때 늘 Y로 고쳤으면 Y로. 글에 적은 값이 있으면 그게 우선
+      const D = b.dir || {}, PF = E.PREFS;
+      if (PF) {
+        const sw = (f, cur, set, list) => { const t = PF[f] && PF[f][cur]; if (t && !D[f]) { set(t.to); list.unshift(`내 취향 · ${cur} 대신 ${t.to} (직접 고친 ${t.n}번)`); } };
+        sw('shot', shot, v => { shot = v; }, why.shot); sw('ang', ang, v => { ang = v; }, why.ang);
+        if (PF.hScale && !D.h) { h = +clamp(h * PF.hScale, 0.45, 2.4).toFixed(2); why.h.unshift(`내 취향 · 길이 ×${PF.hScale.toFixed(2)} (직접 고친 ${PF.hN}번)`); }
+        const tag = gap < 0.13 ? '붙임' : gap < 0.33 ? '보통' : gap < 0.65 ? '쉼' : '큰 쉼';
+        if (PF.gap && PF.gap[tag] && !D.gap) { const t = PF.gap[tag]; gap = { 붙임: 0.09, 보통: 0.22, 쉼: 0.48, '큰 쉼': 0.9 }[t.to]; why.gap.unshift(`내 취향 · ${tag} 대신 ${t.to} (직접 고친 ${t.n}번)`); }
+      }
       if (D.shot) { shot = D.shot; why.shot.unshift('글에 적은 연출'); }
       if (D.ang) { ang = D.ang; why.ang.unshift('글에 적은 연출'); }
       if (D.h) { h = D.h; why.h.unshift('글에 적은 연출'); }
       if (D.gap) { gap = { 붙임: 0.09, 보통: 0.22, 쉼: 0.48, '큰 쉼': 0.9 }[D.gap]; why.gap.unshift(`${D.gap} · 글에 적은 연출`); }
-      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || (b.caption ? [b.caption] : []), sfx: b.sfx || [], sfxSize: b.sfxSize || [], dialogs: b.dialogs || [], dir: b.dir || null, key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
+      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || (b.caption ? [b.caption] : []), sfx: b.sfx || [], sfxSize: b.sfxSize || [], dialogs: b.dialogs || [], dir: b.dir || null, pre, key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
     });
   }
 
@@ -501,5 +523,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
