@@ -550,7 +550,11 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 #plan-fixed-warning:not(:empty){padding:9px 12px;border-radius:7px;background:#fff0de;color:#69390c;overflow-wrap:anywhere}
 #plan-output:empty,#plan-fixed-warning:empty{display:none}
 @media(max-width:540px){.plan-grid{grid-template-columns:1fr}.plan-length{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.materials [hidden]{display:none}
+.materials [hidden],#wimagefx [hidden]{display:none}
+#wimagefx summary{cursor:pointer;font-weight:600}
+#wimagefx input[type=number]{width:70px}
+#wimagefx select{max-width:100%;min-width:0}
+#wimagefx .btnrow{flex-wrap:wrap}
 .materials input[type=search],.materials select{width:100%;min-width:0;margin:5px 0 8px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--t1)}
 .materials .sfx-variants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:8px 0}
 .sfx-variants button{min-height:60px;display:grid;place-items:center;gap:3px;border:1px solid var(--line);border-radius:6px;padding:4px;color:var(--t1)}
@@ -994,6 +998,28 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       <div class="prop col"><span>시퀀스 템플릿 <small>(이 컷부터 몇 컷의 크기·간격·배경·전환·효과선을 저장해 다른 씬에 적용)</small></span><span class="btnrow"><button class="btn sm" id="wtplsave">이 컷부터 저장</button><select id="wtplsel" aria-label="시퀀스 템플릿"></select><button class="btn sm" id="wtplapply">이 컷부터 적용</button></span></div>
       <div class="prop"><span>식자</span><button class="btn sm" id="wletterreset">이 컷 식자 배치·스타일 초기화</button></div>
     </section>
+    <details class="insp" id="wimagefx" hidden>
+      <summary>이미지 소재 · 마스크</summary>
+      <div class="prop col"><label for="wimage-add">이미지 소재</label><div class="btnrow"><button type="button" class="btn sm" id="wimage-add">PNG 추가</button><select id="wimage-library" aria-label="등록한 소재"></select><button type="button" class="btn sm" id="wimage-place">이 컷에 놓기</button></div></div>
+      <input type="file" id="wimage-file" accept="image/png,.png" multiple hidden>
+      <label class="prop"><span>편집 대상</span><select id="wimage-target"></select></label>
+      <div id="wimage-transform" hidden>
+        <label class="prop"><span>가로 위치 (%)</span><input type="number" data-image-value="x" min="-50" max="150"></label>
+        <label class="prop"><span>세로 위치 (%)</span><input type="number" data-image-value="y" min="-50" max="150"></label>
+        <label class="prop"><span>크기 (%)</span><input type="number" data-image-value="scale" min="5" max="300"></label>
+        <label class="prop"><span>회전 (°)</span><input type="number" data-image-value="angle" min="-180" max="180"></label>
+        <label class="prop"><span>불투명도 (%)</span><input type="number" data-image-value="opacity" min="0" max="100"></label>
+        <label class="prop"><span>아래 여백까지</span><input type="checkbox" data-image-value="spill"></label>
+        <div class="prop"><button type="button" class="btn sm" id="wimage-copy">다음 컷에 복제</button><button type="button" class="btn sm" id="wimage-remove">컷에서 빼기</button></div>
+      </div>
+      <label class="prop"><span>마스크</span><select id="wimage-mask" data-image-mask="kind"><option value="">없음</option><option value="fade">부드러운 페이드</option><option value="watercolor">수채 경계</option><option value="ink">먹 번짐</option></select></label>
+      <div id="wimage-mask-options" hidden>
+        <label class="prop"><span>투명해지는 쪽</span><select data-image-mask="edge"><option value="bottom">아래</option><option value="top">위</option><option value="left">왼쪽</option><option value="right">오른쪽</option></select></label>
+        <label class="prop"><span>번지는 길이 (%)</span><input type="number" data-image-mask="length" min="5" max="100"></label>
+        <label class="prop"><span>가리는 강도 (%)</span><input type="number" data-image-mask="strength" min="0" max="100"></label>
+      </div>
+      <p id="wimage-status" class="status" role="status"></p>
+    </details>
     <section class="insp materials" id="wmaterials" hidden>
       <div class="insp-h"><span>소재</span></div>
       <div id="wmaterial-variants" class="sfx-variants" hidden></div>
@@ -1055,6 +1081,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script src="nai.js"></script>
 <script src="sfx.js"></script>
 <script src="materials.js"></script>
+<script src="image-materials.js"></script>
 <script src="export.js"></script>
 <script>
 // UX 시안(docs/ux-brief-plan.md): 기본은 채택안 C(컷 우선). ?ux=A(예전 화면) · B(문구 정리)는 사람 확인이 끝날 때까지 비교용으로 남김
@@ -1508,7 +1535,7 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
-function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false,sceneEnd=null}={}){let y=40,o='',gaps='',backgrounds='',lastEnd=null;const multi=panels.length>1;
+function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false,sceneEnd=null}={}){let y=40,o='',gaps='',backgrounds='',defs='',lastEnd=null;const multi=panels.length>1;
   let prev=null,handles='',tightGaps='';
   panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=edits?.[slot];const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
     // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
@@ -1526,13 +1553,18 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     const fp=pts||(interactive?box:null),poly=fp?fp.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' '):null;
     const fdata=interactive?` data-frame='${JSON.stringify({x:bx,y,w:bw,h,q:(pts||box).map((q,k)=>[Math.round(q[0]-box[k][0]),Math.round(q[1]-box[k][1])])})}'${prev?` data-prev="${prev[0]}:${prev[1]}"`:''}`:'';
     const c=!clean&&!im&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame?`stroke="#222" stroke-width="3"`:'stroke="none"';
-    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" fill="#fff" ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g clip-path="url(#${pre}${i})"><g data-art=""${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>`+
+    const bounds={x:bx,y,w:bw,h};
+    const base=defaultPageGap(p),size=edit?.gap??base;
+    const maskId=`${pre}${i}-art-mask`,mask=RoughImageMaterials.maskSVG(edit?.artMask,maskId,bounds);
+    const overlay=clean?{defs:'',art:''}:RoughImageMaterials.overlaysSVG(edit?.overlays,IMG.overlay,`${pre}${i}`,bounds,size,W);
+    defs+=mask+overlay.defs;
+    const frameFill=mask?'fill="none" pointer-events="all"':'fill="#fff"';
+    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g data-cut-art="" clip-path="url(#${pre}${i})"${mask?` mask="url(#${maskId})"`: ''}><g data-art=""${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>${overlay.art}`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
       (!clean&&edit?.materialLines?`<g clip-path="url(#${pre}${i})" pointer-events="none">${Object.values(edit.materialLines).map(effect=>window.RoughMaterials.lineEffect(effect,{x:bx,y,w:bw,h},rngL((p.key||p.act)+effect.kind))).join('')}</g>`:'')+
       (clean?'':letterSVG(rough?{...p,dialogs:[],said:'',sfx:[]}:p,{x:bx,y,w:bw,h,frame:B.frame,before:prev?.[1]??40},i,edit?.letters,interactive,edit?.materialSounds))+`</g>`;
     if(interactive)handles+=frameHandles(pts||box,slot,i);
-    const base=defaultPageGap(p),size=edit?.gap??base;
     y+=h;
     if(edits){
       const background=pageBackground(edit),next=panels[i+1];
@@ -1546,7 +1578,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     prev=[slot,size];y+=size;
   });
   if(lastEnd&&lastEnd!==PAGE_WHITE)backgrounds+=`<rect data-scene-end="1" y="${y}" width="${W}" height="24" fill="${lastEnd}"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="${esc(PAGE_FONT)}"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter></defs>${backgrounds}${gaps}${o}${tightGaps}${handles}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${y+24}" viewBox="0 0 ${W} ${y+24}" font-family="${esc(PAGE_FONT)}"><defs><filter id="gs"><feColorMatrix type="saturate" values="0"/></filter>${defs}</defs>${backgrounds}${gaps}${o}${tightGaps}${handles}</svg>`;
 }
 // 칸 안 그림 확대·이동(피그마 이미지 크롭처럼): 칸 가운데 기준 배율 s, 이동 dx·dy
 function zoomTf(z,bx,y,bw,h){if(!z||!(z.s>1))return'';const cx=bx+bw/2,cy=y+h/2;
@@ -1560,7 +1592,7 @@ function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false
 
 
 // ---------- reference images (캐릭터·장면) ----------
-const IMG={char:{},scene:[],cut:{},lib:{},lore:{},world:null,wlib:{},bg:{}};let target=null,showUnder=true;
+const IMG={char:{},scene:[],cut:{},lib:{},lore:{},world:null,wlib:{},bg:{},overlay:{}};let target=null,showUnder=true;
 const idb=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('rough-refs',1);r.onupgradeneeded=()=>r.result.createObjectStore('refs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('refs',mode);const st=t.objectStore('refs');const out=fn(st);t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
   return{all:()=>tx('readonly',st=>st.getAll()).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).then(r=>{saveOk();return r}).catch(e=>{saveFail(e,'이미지')}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
@@ -1614,7 +1646,7 @@ slotsEl.forEach(el=>{
 document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
 try{showUnder=localStorage.getItem('rough-under')!=='0'}catch(_){}$('#under').setAttribute('aria-pressed',showUnder);
 $('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);try{localStorage.setItem('rough-under',showUnder?'1':'0')}catch(_){}render()};
-idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='bgimg')IMG.bg[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render()});
+idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='bgimg')IMG.bg[r.id]=r;else if(r.kind==='overlay')IMG.overlay[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render();if(VIEW==='webtoon')renderWebtoon()});
 
 // ---------- prompt export ----------
 const RP=window.RoughPrompt;
@@ -2335,7 +2367,10 @@ function gapLayout(gap){
     .filter(el=>Number(el.dataset.p??el.dataset.pageGap??el.dataset.bgPanel)>index)
     .map(el=>[el,Number(el.dataset.shift||0)]);
   const transition=svg.querySelector(`[data-bg-panel="${index}"] > [data-page-transition]`);
-  return {gap,svg,following,transition,size:Number(gap.dataset.gapSize),height:svg.viewBox.baseVal.height,
+  const cut=svg.querySelector(`[data-p="${index}"][data-slot-index]`);
+  const clip=cut?.querySelector('clipPath');
+  const overflow=clip?[...svg.querySelectorAll(`[data-overlay-overflow="${CSS.escape(clip.id)}"] > rect`)]:[];
+  return {gap,svg,following,transition,overflow,frameHeight:cut?JSON.parse(cut.dataset.frame).h:0,size:Number(gap.dataset.gapSize),height:svg.viewBox.baseVal.height,
     y:Number(gap.dataset.gapY),key:gap.closest('section').dataset.pageScene+':'+gap.dataset.slot};
 }
 function resizeGap(layout,size){
@@ -2344,6 +2379,7 @@ function resizeGap(layout,size){
   gap.setAttribute('aria-valuenow',size);
   gap.querySelector('.gap-area').setAttribute('height',size);
   transition?.setAttribute('height',size);
+  layout.overflow.forEach(rect=>rect.setAttribute('height',layout.frameHeight+size));
   gap.querySelector('.gap-grip').setAttribute('transform',`translate(${W/2} ${y+size/2})`);
   gap.querySelector('text').textContent=`${size} px`;
   following.forEach(([el,offset])=>{
@@ -2573,7 +2609,7 @@ $('#wfitgap').addEventListener('click',()=>{if(!pageSelection)return;const si=pa
   gs.slice(0,-1).forEach(g=>{if(g===cur)return;pageSettings(true,pageKey(g)).gap=size;n++});
   saveScenes();renderWebtoon();toast(`${n}곳의 간격을 ${size}px로 맞췄어요 (Ctrl+Z로 되돌리기)`)});
 // 시퀀스 템플릿(#31): 연속한 컷의 레이아웃 값(글·레퍼런스·식자 제외)을 저장해 다른 자리에 붙임
-const TPL_KEYS=['frame','quad','gap','background','transition','transMid','transStop','bgImage','bgImageOp','materialLines'];
+const TPL_KEYS=['frame','quad','gap','background','transition','transMid','transStop','bgImage','bgImageOp','materialLines','artMask','overlays'];
 const tplLoad=()=>{try{return JSON.parse(localStorage.getItem('rough-seq-templates')||'[]')}catch(_){return[]}};
 const tplSave=t=>{try{localStorage.setItem('rough-seq-templates',JSON.stringify(t))}catch(e){saveFail(e,'템플릿')}};
 function refreshTpl(){const t=tplLoad();$('#wtplsel').innerHTML=t.length?t.map((x,i)=>`<option value="${i}">${esc(x.name)} · ${x.cuts.length}컷</option>`).join(''):'<option value="">저장한 템플릿 없음</option>';$('#wtplapply').disabled=!t.length}
@@ -3150,5 +3186,6 @@ Promise.all([
 <script src="refs.js"></script>
 <script src="dict.js"></script>
 <script src="workspace.js"></script>
+<script src="image-material-controls.js"></script>
 </body>
 </html>

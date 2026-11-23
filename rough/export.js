@@ -26,7 +26,7 @@ const hrefOf=el=>el.getAttribute('href')||el.getAttributeNS('http://www.w3.org/1
 
 // 원본 컷 크롭용 중첩 <svg viewBox>를 이미지+사각 클립으로 풀어 둠(피그마가 중첩 svg를 제대로 못 읽음)
 function flattenNested(root,pre){let n=0;
-  root.querySelectorAll('svg svg').forEach(s=>{const im=s.querySelector('image');if(!im){s.remove();return}
+  root.querySelectorAll('[data-art] svg').forEach(s=>{const im=s.querySelector('image');if(!im){s.remove();return}
     const x=+s.getAttribute('x')||0,y=+s.getAttribute('y')||0,w=+s.getAttribute('width'),h=+s.getAttribute('height');
     const [vx,vy,vw,vh]=(s.getAttribute('viewBox')||`0 0 ${w} ${h}`).split(/[\s,]+/).map(Number);
     const k=Math.max(w/vw,h/vh),tx=x+(w-vw*k)/2-vx*k,ty=y+(h-vh*k)/2-vy*k;
@@ -51,10 +51,13 @@ async function sceneModel(i){const ps=scenePanels(i);if(!ps.length)return null;
   flattenNested(root,`x${i}_`);await embedAll(root);
   const H=+root.getAttribute('height');
   const cuts=[...root.querySelectorAll(':scope > g[data-p]')].map((g,k)=>{const kids=[...g.children];
-    return {g,n:k+1,frame:kids.find(e=>e.matches('polygon,rect')),clip:kids.find(e=>e.matches('clipPath')),
-      art:kids.find(e=>e.matches('g[clip-path]')),other:kids.filter(e=>!e.matches('clipPath,g[data-layer]')&&e!==kids.find(x=>x.matches('polygon,rect'))&&e!==kids.find(x=>x.matches('g[clip-path]'))),letters:kids.filter(e=>e.matches('g[data-layer]')).map(e=>({el:e,kind:e.getAttribute('data-layer'),text:e.getAttribute('data-text')||''}))}});
+    const frame=kids.find(e=>e.matches('polygon,rect'));
+    return {g,n:k+1,frame,clip:kids.find(e=>e.matches('clipPath')),
+      art:kids.find(e=>e.matches('[data-cut-art]')),overlays:kids.filter(e=>e.matches('[data-overlay]')),
+      other:kids.filter(e=>e!==frame&&!e.matches('clipPath,[data-layer],[data-cut-art],[data-overlay]')),
+      letters:kids.filter(e=>e.matches('g[data-layer]')).map(e=>({el:e,kind:e.getAttribute('data-layer'),text:e.getAttribute('data-text')||''}))}});
   return {i,title:sceneLabel(SCENES[i],i),root,W:+root.getAttribute('width'),H,
-    bgs:[...root.querySelectorAll(':scope > g[data-bg-panel]')],defs:root.querySelector(':scope > defs'),cuts}}
+    bgs:[...root.querySelectorAll(':scope > [data-bg-panel],:scope > [data-scene-end]')],defs:root.querySelector(':scope > defs'),cuts}}
 
 async function models(st){if(typeof loadPageMaterials==='function')await loadPageMaterials();const out=[];for(let i=0;i<SCENES.length;i++){st&&st(`씬 ${i+1}/${SCENES.length} 준비 중`);const m=await sceneModel(i);if(m)out.push(m)}return out}
 
@@ -73,7 +76,8 @@ async function buildSVG(st){const ms=await models(st);if(!ms.length)return null;
       const kids=[...g.children];let ln=0;
       kids.forEach(e=>{if(e.matches('clipPath')){defs.appendChild(e);return}
         if(e.matches('polygon,rect'))setId(e,`컷${pad(c.n)}_칸`,used);
-        else if(e.matches('g[clip-path]'))setId(e,`컷${pad(c.n)}_그림`,used);
+        else if(e.matches('[data-cut-art]'))setId(e,`컷${pad(c.n)}_그림`,used);
+        else if(e.matches('[data-overlay]'))setId(e,`컷${pad(c.n)}_소재${Number(e.dataset.overlay)+1}`,used);
         else if(!e.matches('g[data-layer]'))setId(e,`컷${pad(c.n)}_효과`,used);
         if(e.matches('g[data-layer]')){setId(e,`컷${pad(c.n)}_`+letterName({kind:e.getAttribute('data-layer'),text:e.getAttribute('data-text')},++ln),used);e.removeAttribute('data-layer');e.removeAttribute('data-text')}});
       g.querySelectorAll('clipPath').forEach(cp=>defs.appendChild(cp));
@@ -99,18 +103,35 @@ function loadAgPsd(){if(window.agPsd)return Promise.resolve(window.agPsd);
   return new Promise((res,rej)=>{const s=document.createElement('script');s.src=AG_PSD;s.onload=()=>window.agPsd?res(window.agPsd):rej(new Error('PSD 모듈 없음'));s.onerror=()=>rej(new Error('PSD 모듈을 못 불러왔어요'));document.head.appendChild(s)})}
 
 // ---------- PSD (클립스튜디오) ----------
+async function imageLayer(m,name,element,subject,bounds){
+  const mask=subject.getAttribute('mask'),clip=element.getAttribute('clip-path');
+  const free=element.cloneNode(true);
+  free.removeAttribute('clip-path');
+  (subject===element?free:free.firstElementChild).removeAttribute('mask');
+  const art=await raster(m,free.outerHTML);
+  if(!art)return null;
+  const layer={name,canvas:art.canvas,left:art.left,top:art.top};
+  if(!clip&&!mask)return layer;
+
+  const transform=subject.getAttribute('transform');
+  const white=`<rect x="${bounds.x}" y="${bounds.y}" width="${bounds.w}" height="${bounds.h}" fill="#fff"/>`;
+  const coverage=`<g${clip?` clip-path="${clip}"`:''}><g${mask?` mask="${mask}"`:''}${transform?` transform="${transform}"`:''}>${white}</g></g>`;
+  const mk=await raster(m,coverage,{trim:false,bg:'#000'});
+  return {...layer,mask:{canvas:mk.canvas,left:0,top:0,right:m.W,bottom:m.H,defaultColor:0}};
+}
+
 // 씬마다 PSD 한 장. 레이어: 배경 / 컷 폴더(칸 · 그림[칸 모양 마스크] · 식자 하나씩)
 async function scenePSD(m,ag){const layer=(name,r,extra={})=>r?{name,canvas:r.canvas,left:r.left,top:r.top,...extra}:null;
   const children=[];
   children.push(layer('배경',await raster(m,`<rect width="${m.W}" height="${m.H}" fill="#fff"/>`+m.bgs.map(b=>b.outerHTML).join(''),{trim:false})));
   for(const c of m.cuts){const kids=[];
     if(c.frame)kids.push(layer('칸',await raster(m,c.frame.outerHTML)));
-    if(c.art){const free=c.art.cloneNode(true);free.removeAttribute('clip-path');
-      const art=await raster(m,free.outerHTML);
-      if(art&&c.clip){const shape=c.clip.firstElementChild.cloneNode(true);shape.setAttribute('fill','#fff');
-        const mk=await raster(m,shape.outerHTML,{trim:false,bg:'#000'});
-        kids.push(layer('그림',art,{mask:{canvas:mk.canvas,left:0,top:0,right:m.W,bottom:m.H,defaultColor:0}}))}
-      else if(art)kids.push(layer('그림',art))}
+    if(c.art)kids.push(await imageLayer(m,'그림',c.art,c.art,{x:0,y:0,w:m.W,h:m.H}));
+    for(const [i,overlay] of c.overlays.entries()){
+      const subject=overlay.firstElementChild, img=subject.querySelector('image');
+      const bounds={x:+img.getAttribute('x'),y:+img.getAttribute('y'),w:+img.getAttribute('width'),h:+img.getAttribute('height')};
+      kids.push(await imageLayer(m,`이미지 소재 ${i+1}`,overlay,subject,bounds));
+    }
     if(c.other.length)kids.push(layer('효과·기타',await raster(m,c.other.map(e=>e.outerHTML).join(''))));
     let n=0;for(const L of c.letters){const name=`${L.kind}${++n} ${short(L.text)}`,texts=[...L.el.querySelectorAll('text')];
       if(!texts.length){kids.push(layer(name,await raster(m,L.el.outerHTML)));continue}
