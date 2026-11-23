@@ -39,6 +39,10 @@ if (arg('--feel-shift')) R.FEEL_SHIFT = +arg('--feel-shift');
 if (arg('--preds')) { const P = JSON.parse(fs.readFileSync(arg('--preds'), 'utf8')), only = arg('--preds-only'), byText = {};
   for (const r of cut.rows) { const p = P[r[CI('컷ID')]]; if (p) byText[cutText(r[CI('내용')])] = p; }
   R.FEEL = b => { const p = byText[b.line]; if (!p) return null; return only === 'emo' ? { emo: p.emo } : only === 'i' ? { i: p.i } : { emo: p.emo, i: p.i }; }; }
+// --shot-preds 파일: 컷ID → {shot, role}(한 작품 빼고 학습한 샷·역할 모델 예측). --no-role이면 역할은 규칙 그대로
+if (arg('--shot-preds')) { const P = JSON.parse(fs.readFileSync(arg('--shot-preds'), 'utf8')), byText = {};
+  for (const r of cut.rows) { const p = P[r[CI('컷ID')]]; if (p) byText[cutText(r[CI('내용')])] = p; }
+  R.SHOT = b => byText[b.line] || null; R.ROLE_MODEL = !process.argv.includes('--no-role'); }
 const cases = [];
 for (const r of rh.rows) {
   const g = r[RI('묶음')], rows = byGroup[g]; if (!rows || rows.length < 2) continue;

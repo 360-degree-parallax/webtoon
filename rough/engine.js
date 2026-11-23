@@ -269,12 +269,21 @@
   // 컷 묶음 전체에 미리 예측을 붙임(앞뒤 컷 문맥). E.useFeelModel(model)로 켬
   function applyFeel(beats) { if (!E._feel) return beats; const T = beats.map(plain);
     beats.forEach((b, k) => { const r = E._feel(T[k], T[k - 1] || '', T[k + 1] || ''); b._m = { emo: r.emo, i: r.i, why: '글 전체로 판단(학습 모델)' }; }); return beats; }
+  // 샷·역할 모델(tools/ml/train_shot.py): 컷 글(+앞뒤) → 샷·역할. E.useShotModel(model)로 켬. E.SHOT(b) → {shot, role} 또는 null
+  function makeShot(M) {
+    const vec = ngramVec(M);
+    const pick = (H, xs) => { let m = 0, best = -Infinity; H.classes.forEach((_, c) => { const z = xs.reduce((a, x, s) => a + x.reduce((q, [k, v]) => q + v * H.W[s][c][k], 0) * (s ? M.meta.ctx : 1), H.b[c]); if (z > best) { best = z; m = c; } }); return H.classes[m]; };
+    return (t, p, n) => { const xs = [vec(t), vec(p), vec(n)]; return { shot: pick(M.shot, xs), role: pick(M.role, xs) }; };
+  }
+  function applyShot(beats) { if (!E._shotM) return beats; const T = beats.map(plain);
+    beats.forEach((b, k) => { b._s = E._shotM(T[k], T[k - 1] || '', T[k + 1] || ''); }); return beats; }
+  function useShotModel(M) { E._shotM = M && M.shot ? makeShot(M) : null; E.SHOT = E._shotM ? (b => b._s || null) : null; return !!E._shotM; }
   function useFeelModel(M) { E._feel = M ? makeFeel(M) : null; E.FEEL = M ? (b => b._m || null) : null; return !!M; }
   function analyzeChunk(raw) {
     // 학습 모델(E.FEEL)이 있으면 감정·강도를 덮어씀: FEEL(beat) → {emo, i, why} 또는 null
     const beats = raw.map(b => { const f = feel(b), m = E.FEEL && (E.FEEL_MODE !== 'fallback' || !f._hit) && E.FEEL(b); return { ...b, ...f, ...(m ? { emo: m.emo ?? f.emo, i: m.i != null ? Math.max(0, Math.min(3, m.i + E.FEEL_SHIFT)) : f.i, emoWhy: m.why || f.emoWhy } : {}) }; });
     beats.forEach((b, k) => {
-      const [r, why] = roleOf(b, k, beats[k - 1]); b.role = r; b.roleWhy = why;
+      let [r, why] = roleOf(b, k, beats[k - 1]); const sm = E.SHOT && E.ROLE_MODEL && E.SHOT(b); if (sm && sm.role) { if (sm.role !== r) why = '글 전체로 판단(학습 모델)'; r = sm.role; } b.role = r; b.roleWhy = why;
       // 드러남은 그 자체로 고비: 공개 컷은 강도 2 이상, 핵심 소품이면 +1
       if (r === '공개' && why.startsWith('드러남')) { const o = has(b.act, OBJ); const ni = Math.min(3, Math.max(b.i, 2) + (o ? 1 : 0)); if (ni > b.i) { b.i = ni; b.emoWhy += ` · 공개${o ? `+소품 '${o}'` : ''}`; } }
     });
@@ -357,7 +366,7 @@
   }
 
   function analyze(text, chars) { return chunk(parse(text, chars)).map(analyzeChunk); }
-  function analyzeCuts(cuts, chars) { return chunk(applyFeel(parseCuts(cuts, chars))).map(analyzeChunk); }
+  function analyzeCuts(cuts, chars) { return chunk(applyShot(applyFeel(parseCuts(cuts, chars)))).map(analyzeChunk); }
 
   // ---------- 6. 패턴 검색 ----------
   function lev(a, b) {
@@ -461,6 +470,7 @@
       const hw = has(b.act, HAND);
       if (hw && b.vng !== 'P' && RANK[shot] < 5) { shot = '디테일'; why.shot.push(`손 동작 '${hw}'은 인서트로`); }
       if (ow && (b.role === '공개' || (b.vng === 'P' && an.goal === '정보 강조'))) { shot = '디테일'; why.shot.push(`핵심 소품 '${ow}'`); }
+      { const sm = E.SHOT && E.SHOT(b); if (sm && sm.shot && SHOTS.includes(sm.shot)) { if (sm.shot !== shot) why.shot.unshift('글 해석으로 예측(학습 모델 · 연출 DB 샷)'); shot = sm.shot; } }
       let ang;
       if (ANGLES.includes(pc.ang)) { ang = pc.ang; why.ang.push('패턴 컷 앵글'); }
       else if (['결의', '분노'].includes(b.emo) && b.i >= 2) { ang = '로우앵글'; why.ang.push(`${b.emo}을 크게 보이게 아래에서`); }
@@ -523,5 +533,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useShotModel, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
