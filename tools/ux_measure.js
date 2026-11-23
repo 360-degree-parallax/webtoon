@@ -1,4 +1,5 @@
 // UX 시안 측정(docs/ux-brief-plan.md 1-3): 시안 A·B·C × 데스크톱·390px × 작화·콘티·씬
+// [정리됨 2026-11-23] ?ux=A/B/C 비교안을 없애 이 측정은 더 이상 A·B를 구분하지 않음(모두 지금 화면). 기록용으로만 남김
 //  첫 컷까지 스크롤(px, 첫 화면 안이면 0) · 첫 화면 툴 글자/덩어리 · 작품 글자([data-work], 컷 글 칸) · 작품 비율 · 작화 과제 클릭 수
 // 사용: (rough 서버 실행 뒤) node tools/ux_measure.js [URL] [--md out.md] [--shots dir]
 const {chromium}=require('playwright');const fs=require('fs'),path=require('path');
