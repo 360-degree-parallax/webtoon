@@ -68,10 +68,51 @@ def run(field, C=1.0, tw=1.0, top=3000, use_text=True, use_seq=True):
     return {'모델': round(float((pp == yy).mean()), 3), 'κ': round(float(cohen_kappa_score(yy, pp)), 3), '엔진': round(float((eng == yy).mean()), 3),
             '가장 흔한 값': round(collections.Counter(yy).most_common(1)[0][1] / len(yy), 3), 'n': int(ok.sum())}
 
-if __name__ == '__main__':
+if __name__ == '__main__' and '--export' not in A:
     for f in FIELDS:
         res = {}
         for cfg in ({'use_text': False}, {'use_seq': False}, {}, {'C': 0.3}, {'C': 3}, {'tw': 0.5}, {'tw': 2}):
             res[json.dumps(cfg)] = run(f, **cfg)
         best = max(res.items(), key=lambda kv: kv[1]['모델'])
         print(FIELDS[f], json.dumps({k: v['모델'] for k, v in res.items()}), '최선', best[0], best[1], flush=True)
+
+# ---------- 내보내기: 엔진보다 정보(κ)가 확실히 많은 항목만(서사 형태·감정 곡선은 엔진 규칙이 나음) ----------
+USE = {'goal': {'use_seq': False, 'C': 1.0}, 'tempo': {'C': 0.3}, 'dist': {'C': 0.3}, 'trans': {'use_seq': False, 'C': 1.0}}
+PRUNE = 0.05
+def fit_field(field, idx, cfg, v):
+    y = np.array([LAB[B[k]['g']][rc.index(FIELDS[field])] or '' for k in idx]); keep = y != ''; idx = np.array(idx)[keep]; y = y[keep]
+    parts = [cfg.get('tw', 1.0) * v.transform([text[k] for k in idx])]; dv = None
+    if cfg.get('use_seq', True): dv = DictVectorizer().fit([F[k] for k in idx]); parts.append(dv.transform([F[k] for k in idx]))
+    m = LogisticRegression(C=cfg.get('C', 1.0), max_iter=4000).fit(sparse.hstack(parts).tocsr(), y)
+    m.coef_[np.abs(m.coef_) < PRUNE] = 0
+    return m, dv
+def predict_field(m, dv, v, cfg, idx):
+    parts = [cfg.get('tw', 1.0) * v.transform([text[k] for k in idx])]
+    if dv is not None: parts.append(dv.transform([F[k] for k in idx]))
+    return m.predict(sparse.hstack(parts).tocsr())
+if '--export' in A:
+    res = {}
+    for field, cfg in USE.items():  # 내보낼 설정 그대로(가지치기 포함) 한 작품 빼고 다시 평가
+        y = np.array([LAB[b['g']][rc.index(FIELDS[field])] or '' for b in B]); pred = np.array([''] * len(B), dtype=object)
+        for w in sorted(set(work)):
+            tr = list(np.where(work != w)[0]); te = list(np.where(work == w)[0])
+            v = TfidfVectorizer(analyzer='char_wb', ngram_range=(1, 3), min_df=3, sublinear_tf=True, max_features=3000).fit([text[k] for k in tr])
+            m, dv = fit_field(field, tr, cfg, v); pred[te] = predict_field(m, dv, v, cfg, te)
+        ok = y != ''; eng = np.array([b['an'][field] for b in B])
+        res[field] = {'모델': round(float((pred[ok] == y[ok]).mean()), 3), 'κ': round(float(cohen_kappa_score(y[ok], pred[ok])), 3), '엔진': round(float((eng[ok] == y[ok]).mean()), 3), '가장 흔한 값': round(collections.Counter(y[ok]).most_common(1)[0][1] / ok.sum(), 3)}
+        print(FIELDS[field], res[field], flush=True)
+    allidx = list(range(len(B))); v = TfidfVectorizer(analyzer='char_wb', ngram_range=(1, 3), min_df=3, sublinear_tf=True, max_features=3000).fit(text); nv = len(v.vocabulary_)
+    fields = {}; chk = {}
+    for field, cfg in USE.items():
+        m, dv = fit_field(field, allidx, cfg, v); W = np.round(m.coef_, 3)
+        Wt = W[:, :nv]; Wf = W[:, nv:] if dv is not None else None
+        fields[field] = {'classes': [str(c) for c in m.classes_], 'b': np.round(m.intercept_, 3).tolist(), 'tw': cfg.get('tw', 1.0),
+                         'St': [[x for k in np.nonzero(r)[0] for x in (int(k), float(r[k]))] for r in Wt],
+                         'Wf': [{n: float(w) for n, w in zip(dv.feature_names_, r) if w} for r in Wf] if Wf is not None else [{} for _ in m.classes_]}
+        chk[field] = [str(x) for x in predict_field(m, dv, v, cfg, allidx[:60])]
+    model = {'meta': {'kind': '묶음 글 char_wb 1-3gram + 컷 예측 흐름 특징 → logistic', 'eval': res, 'fields_kept_by_engine': ['narr', 'curve'], 'bundles': len(B)},
+             'vocab': list(v.get_feature_names_out()), 'idf': np.round(v.idf_, 4).tolist(), 'fields': fields, 'check': chk}
+    js = ('/* 자동 생성: tools/ml/train_bundle.py — 묶음 판정(연출 목적·템포·거리 흐름·주된 컷 전환) 모델. 손으로 고치지 마세요. */\n'
+          '(function (M) { Object.assign(M, ' + json.dumps(model, ensure_ascii=False, separators=(',', ':')) + '); })'
+          "(typeof module !== 'undefined' ? module.exports : (window.RoughBundle = {}));\n")
+    p = ROOT / 'rough/bundle-model.js'; p.write_text(js); print('저장', p, round(len(js.encode()) / 1024), 'KB')

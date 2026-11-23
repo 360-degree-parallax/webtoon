@@ -477,7 +477,8 @@
     const out = {};
     for (const [field, H] of Object.entries(M.fields)) {
       let best = -Infinity, pick = null;
-      H.classes.forEach((cl, c) => { let z = H.b[c]; for (const [k, v] of x) z += v * H.tw * H.Wt[c][k]; for (const key in f) { const w = H.Wf[c][key]; if (w) z += w * f[key]; } if (z > best) { best = z; pick = cl; } });
+      if (!H._t) H._t = H.St.map(fl => { const a = new Float32Array(M.vocab.length); for (let i = 0; i < fl.length; i += 2) a[fl[i]] = fl[i + 1]; return a; });
+      H.classes.forEach((cl, c) => { let z = H.b[c]; for (const [k, v] of x) z += v * H.tw * H._t[c][k]; for (const key in f) { const w = H.Wf[c][key]; if (w) z += w * f[key]; } if (z > best) { best = z; pick = cl; } });
       out[field] = pick;
     }
     return out;
