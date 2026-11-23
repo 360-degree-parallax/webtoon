@@ -2683,10 +2683,17 @@ $('#wsheet').addEventListener('click',()=>{const o=$('#wtools').classList.toggle
 $('#wtoc').addEventListener('click',e=>{const b=e.target.closest('[data-tcut]');if(!b)return;e.preventDefault();pageCut.value=b.dataset.tcut;pageCut.dispatchEvent(new Event('change'))});
 // 실행 취소: 편집 화면에서 저장될 때마다 이전 상태(씬별 pageEdits)를 쌓음. 연속 드래그는 0.6초 단위로 묶음
 const UNDO=[],REDO=[];let edSnap=null,edLast=0,edRestoring=false,edSavedAt=0;
-const edState=()=>JSON.stringify(SCENES.map(sc=>({c:sc.cuts,e:sc.pageEdits||[]})));
+// 등록 이미지 위치도 기록(m: [패널 번호, 이미지 uid, sig]). 그림 자체는 IMG_POOL에 두고 uid로만 가리킴 → 컷 순서를 되돌리면 이미지도 제자리로
+const IMG_POOL=new Map();let imgUid=0;
+function imgPlace(sc){return Object.values(IMG.cut).filter(r=>r.scene===sc.id).map(r=>{if(!r.uid)r.uid='u'+Date.now().toString(36)+'-'+(imgUid++);IMG_POOL.set(r.uid,r);return[r.idx,r.uid,r.sig]}).sort((a,b)=>a[0]-b[0])}
+function imgRestore(sc,m){const cur=imgPlace(sc);if(JSON.stringify(cur)===JSON.stringify(m))return false;
+  Object.values(IMG.cut).filter(r=>r.scene===sc.id).forEach(r=>{delete IMG.cut[r.id];idb.del(r.id)});
+  for(const [n,uid,sig] of m){const r=IMG_POOL.get(uid);if(!r)continue;const o={...r,id:cutId(sc.id,n),idx:n,sig};IMG.cut[o.id]=o;idb.put(o)}
+  return true}
+const edState=()=>JSON.stringify(SCENES.map(sc=>({c:sc.cuts,e:sc.pageEdits||[],m:imgPlace(sc)})));
 function edButtons(){$('#wundo').disabled=!UNDO.length;$('#wredo').disabled=!REDO.length}
 function edRestore(json){edRestoring=true;const arr=JSON.parse(json);let text=false;SCENES.forEach((sc,i)=>{const v=arr[i];if(!v){sc.pageEdits=[];return}if(Array.isArray(v)){sc.pageEdits=v;return}
-  if(JSON.stringify(sc.cuts)!==JSON.stringify(v.c)){sc.cuts.splice(0,sc.cuts.length,...v.c);text=true}sc.pageEdits=v.e||[]});saveScenes();edRestoring=false;edSnap=json;if(text&&typeof compute==='function')compute(false);renderWebtoon();edButtons()}
+  if(JSON.stringify(sc.cuts)!==JSON.stringify(v.c)){sc.cuts.splice(0,sc.cuts.length,...v.c);text=true}sc.pageEdits=v.e||[];if(v.m)imgRestore(sc,v.m)});saveScenes();edRestoring=false;edSnap=json;if(text&&typeof compute==='function')compute(false);renderWebtoon();edButtons()}
 {const _ss=saveScenes;saveScenes=function(...a){
   if(typeof VIEW!=='undefined'&&VIEW==='webtoon'&&!edRestoring){const cur=edState();
     if(edSnap!==null&&cur!==edSnap){const now=Date.now();if(now-edLast>600||!UNDO.length)UNDO.push(edSnap);if(UNDO.length>100)UNDO.shift();REDO.length=0;edLast=now;edSavedAt=now;edSaveLabel()}
