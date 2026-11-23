@@ -112,12 +112,28 @@ async function scenePSD(m,ag){const layer=(name,r,extra={})=>r?{name,canvas:r.ca
         kids.push(layer('그림',art,{mask:{canvas:mk.canvas,left:0,top:0,right:m.W,bottom:m.H,defaultColor:0}}))}
       else if(art)kids.push(layer('그림',art))}
     if(c.other.length)kids.push(layer('효과·기타',await raster(m,c.other.map(e=>e.outerHTML).join(''))));
-    let n=0;for(const L of c.letters)kids.push(layer(`${L.kind}${++n} ${short(L.text)}`,await raster(m,L.el.outerHTML)));
+    let n=0;for(const L of c.letters){const name=`${L.kind}${++n} ${short(L.text)}`,texts=[...L.el.querySelectorAll('text')];
+      if(!texts.length){kids.push(layer(name,await raster(m,L.el.outerHTML)));continue}
+      // 말풍선·나레이션: 모양은 그림 레이어, 글자는 편집 가능한 텍스트 레이어(미리보기 픽셀도 함께 넣어 텍스트를 못 읽는 앱에서도 보이게)
+      const shape=L.el.cloneNode(true);shape.querySelectorAll('text').forEach(t=>t.remove());
+      const sh=await raster(m,shape.outerHTML),tx=await raster(m,texts.map(t=>t.outerHTML).join(''));
+      const sub=[layer('모양',sh),textLayer('글자',tx,texts)].filter(Boolean);
+      kids.push({name,opened:false,children:sub})}
     children.push({name:`컷 ${pad(c.n)}`,opened:true,children:kids.filter(Boolean)})}
   const flat=await raster(m,m.root.innerHTML,{trim:false,bg:'#fff'});
-  return ag.writePsdUint8Array({width:m.W,height:m.H,canvas:flat.canvas,children:children.filter(Boolean)},{generateThumbnail:false})}
+  return ag.writePsdUint8Array({width:m.W,height:m.H,canvas:flat.canvas,children:children.filter(Boolean)},{generateThumbnail:false,invalidateTextLayers:true})}
 
-function scriptText(ms,title){const L=[`${title}`,'',`클립스튜디오에서 텍스트 도구로 다시 입력할 때 쓰는 대사 목록이에요. PSD의 식자 레이어는 그림으로 들어가 있어요.`,''];
+// SVG <text> 줄들 → ag-psd 텍스트 레이어. 기준점은 첫 줄 기준선, 가운데 정렬이면 x가 가운데
+function textLayer(name,r,texts){if(!r)return null;const t0=texts[0],num=(e,k,d=0)=>parseFloat(e.getAttribute(k))||d;
+  const fs=num(t0,'font-size',20),x=num(t0,'x'),y=num(t0,'y'),lead=texts.length>1?num(texts[1],'y')-y:fs*1.3;
+  const hex=(t0.getAttribute('fill')||'#000000').replace('#',''),rgb={r:parseInt(hex.slice(0,2),16)||0,g:parseInt(hex.slice(2,4),16)||0,b:parseInt(hex.slice(4,6),16)||0};
+  const anchor=t0.getAttribute('text-anchor'),just=anchor==='middle'?'center':anchor==='end'?'right':'left',w=+t0.getAttribute('font-weight')||400;
+  const font=(PAGE_FONT||'Pretendard').split(',')[0].replace(/["']/g,'').trim();
+  return {name,canvas:r.canvas,left:r.left,top:r.top,text:{text:texts.map(t=>t.textContent).join('\r'),transform:[1,0,0,1,x,y],
+    style:{font:{name:font+(w>=600?'-SemiBold':w>=500?'-Medium':'-Regular')},fontSize:fs,leading:lead,autoLeading:false,tracking:Math.round((num(t0,'letter-spacing')/fs)*1000),fillColor:rgb},
+    paragraphStyle:{justification:just}}}}
+
+function scriptText(ms,title){const L=[`${title}`,'',`클립스튜디오에서 텍스트 도구로 다시 입력할 때 쓰는 대사 목록이에요. PSD의 말풍선·나레이션 글자는 텍스트 레이어로 들어 있어요(앱에 따라 그림으로 열릴 수 있어요). 효과음은 그림이에요.`,''];
   ms.forEach(m=>{L.push(`[${m.title}]`);m.cuts.forEach(c=>{if(!c.letters.length)return;L.push(`컷 ${pad(c.n)}`);c.letters.forEach(x=>L.push(`  ${x.kind}: ${x.text.replace(/\n/g,' / ')}`))});L.push('')});
   return L.join('\r\n')}
 
