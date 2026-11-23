@@ -101,6 +101,11 @@ textarea:focus{border-color:var(--t1)}
 .val.lock::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--blue)}
 .thumb{width:44px;height:58px;border-radius:6px;object-fit:cover;object-position:top;display:block;border:1px solid var(--line);cursor:pointer;background:var(--surface)}
 .thumb.empty{cursor:default}
+.tr .art{display:grid;gap:4px;justify-items:center}.tr .drop.artd{width:56px;height:74px;border-radius:6px}
+.artd img{width:100%;height:100%;object-fit:cover;object-position:top}.artd .refimg{position:absolute;inset:0;opacity:.35;filter:grayscale(1)}.artd .plus{position:relative;font-size:20px;color:var(--t2)}
+.artd.has{border-style:solid}.artd.stale{outline:2px solid var(--warn,#d97706);outline-offset:1px}.tr .drop.artd .x{top:2px;right:2px;width:20px;height:20px;line-height:20px;font-size:12px}.tr .drop.artd:focus-within .x{display:block}
+.tr .link.warn{color:var(--warn,#b45309);font-size:12px}.rowacts{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px}.rowacts .link{font-size:13px;color:var(--t2)}
+.trnp{margin:0 -8px;padding:12px 16px 16px 46px;border-bottom:1px solid var(--line);background:var(--surface)}.btnsep{width:1px;height:22px;background:var(--line2);margin:0 4px;align-self:center}.rhead .btnrow{align-items:center}.rhead .chip{font-size:13px;color:var(--t2);padding:0 4px}
 .menu{position:absolute;z-index:40;min-width:140px;padding:6px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);box-shadow:0 8px 24px rgba(0,0,0,.12)}
 .menu button{display:flex;justify-content:space-between;gap:12px;width:100%;height:34px;padding:0 10px;border-radius:6px;font-size:14px;text-align:left}
 .menu button:hover{background:var(--hover)}
@@ -542,7 +547,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .dbside dt{color:var(--t2)}.dbside dd{margin:0;word-break:break-word}
 .more{display:block;margin:12px auto;height:36px;padding:0 16px;border:1px solid var(--line2);border-radius:8px;font-size:14px;font-weight:600}
 @media(max-width:1100px){.dbgrid{grid-template-columns:1fr}.dbside{position:static;max-height:none}}
-@media(max-width:1180px){.page{grid-template-columns:minmax(0,1fr) 340px;gap:32px;padding:0 24px}.tr{grid-template-columns:28px minmax(0,1fr) 70px 86px 80px 80px 64px;}.tr>.ref{display:none}}
+@media(max-width:1180px){.page{grid-template-columns:minmax(0,1fr) 340px;gap:32px;padding:0 24px}.tr{grid-template-columns:28px minmax(0,1fr) 70px 86px 80px 80px 64px 56px;}}
 @media(max-width:900px){.page{grid-template-columns:1fr}.pv{position:relative;height:auto;padding-top:0}.canvas{max-height:80vh}}
 @media(max-width:640px){.page{padding:0 16px}.gnb{padding:0 12px}.wordmark span,.gnb .btn:not(.dark){display:none}.tr.head{display:none}}
 @media(max-width:640px){
@@ -560,7 +565,10 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   .tr>:nth-child(5){grid-column:2;grid-row:3}
   .tr>:nth-child(6){grid-column:3;grid-row:3}
   .tr>:nth-child(7){grid-column:4;grid-row:3}
-  .tr>.ref{display:none}
+  .tr{grid-template-columns:28px repeat(3,minmax(0,1fr)) 56px}
+  .tr>.beat{grid-column:2/5}
+  .tr>.ref{grid-column:5;grid-row:1/4}
+  .trnp{padding:12px 8px}
   .tr .why{display:none}
   .tr .val{height:28px;font-size:14px}
   .dbfilter input{min-width:0;flex:1 1 100%}
@@ -802,8 +810,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <button role="tab" data-view="plan" aria-selected="false"><b>3</b>구성</button>
   <button role="tab" data-view="write" aria-selected="false"><b>4</b>씬</button>
   <button role="tab" data-view="layout" aria-selected="false"><b>5</b>콘티</button>
-  <button role="tab" data-view="nai" aria-selected="true"><b>6</b>작화</button>
-  <button role="tab" data-view="webtoon" aria-selected="false"><b>7</b>편집</button>
+  <button role="tab" data-view="webtoon" aria-selected="false"><b>6</b>편집</button>
 </nav>
 
 <div class="view" id="v-chars" hidden>
@@ -950,7 +957,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="sh"><h2>컷</h2><span><span class="ux-a">값을 누르면 바꿀 수 있어요 · </span><b style="color:var(--blue)">●</b> 직접 고른 값</span></div>
     <div class="tbl" id="tbl"></div>
   </section>
-  <div class="next"><button class="btn" data-view="write">← 씬으로</button><span class="grow"></span><button class="btn dark big" data-view="nai">작화로 →</button></div>
+  <div class="next"><button class="btn" data-view="write">← 씬으로</button><span class="grow"></span><button class="btn dark big" data-view="webtoon">편집으로 →</button></div>
 </main>
 
 <aside class="pv" aria-label="미리보기">
@@ -1000,7 +1007,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
     <div class="toolbar"><span class="grow"></span><button class="btn" data-act="naimulti">이미지 여러 장 등록</button><button class="btn" data-act="naidown">txt 저장</button></div>
     <div class="pcards" id="ncards"></div>
   </section>
-  <div class="next"><button class="btn" data-view="layout">← 콘티로</button><span class="grow"></span><button class="btn dark big" data-view="webtoon">편집으로 →</button></div>
+  <div class="next" hidden><button class="btn" data-view="layout">← 콘티로</button><span class="grow"></span><button class="btn dark big" data-view="webtoon">편집으로 →</button></div>
 </div>
 </div>
 
@@ -1212,7 +1219,7 @@ function renderReading(){
   if(UX==='A'){$('#reading').innerHTML=blocks.join('');return}
   // B·C: 씬 제목 + 컷 수·한 줄 요약 + [컷 순서 편집] [연출 근거]. 판정 카드는 연출 근거 안에
   const sc=SCENES[SCUR],n=state.panels.length,lines=state.an.map(a=>oneLine(a));
-  $('#reading').innerHTML=`<div class="rhead"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><p>${n}컷 · ${state.an.length>1?lines.map((l,k)=>`${k+1}묶음 ${esc(l)}`).join(' / '):esc(lines[0])}</p><div class="btnrow"><button class="btn" data-view="write">컷 순서 편집</button><button class="btn" data-act="whytoggle" aria-expanded="${WHY_OPEN}">연출 근거</button></div></div><div class="whybox"${WHY_OPEN?'':' hidden'}><p class="hint">컷 글에서 감정·하이라이트·연출 목적을 계산하고, 연출 DB ${PATS.length}묶음 중 가장 닮은 패턴으로 짰어요.</p>${blocks.join('')}</div>`}
+  $('#reading').innerHTML=`<div class="rhead"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><p>${n}컷 · ${state.an.length>1?lines.map((l,k)=>`${k+1}묶음 ${esc(l)}`).join(' / '):esc(lines[0])}</p><div class="btnrow"><button class="btn" data-view="write">컷 순서 편집</button><button class="btn" data-act="whytoggle" aria-expanded="${WHY_OPEN}">연출 근거</button><span class="btnsep" aria-hidden="true"></span><span class="chip" id="naistat2">이미지 ${cutCount(SCUR,state.panels)}/${n}</span><button class="btn" data-act="naiset" aria-expanded="false">작화 설정</button><button class="btn" data-act="nairefine">Claude로 다듬기</button><button class="btn" data-act="naimulti" title="파일 이름 순으로 빈 컷부터 채워요">그림 여러 장</button></div></div><div class="whybox"${WHY_OPEN?'':' hidden'}><p class="hint">컷 글에서 감정·하이라이트·연출 목적을 계산하고, 연출 DB ${PATS.length}묶음 중 가장 닮은 패턴으로 짰어요.</p>${blocks.join('')}</div>`}
 // 서사 형태 코드 → 장면 한 줄(엔진 값은 그대로)
 function oneLine(a){const k=(a.peaks?.[0]??-1)+1;return {'끝 정점':'마지막 컷에서 터뜨려요','중간 정점':`${k}번 컷에서 가장 세게 가요`,'정점 선행':'첫 컷부터 세게 열어요','정점 연속':'세게 몰아붙여요','무정점':'고르게 흘러가요'}[a.narr]||narrLabel(a.narr)}
 let WHY_OPEN=false;
@@ -1224,19 +1231,30 @@ function altList(ci){const rs=state.ranks[ci]||[],cur=state.pick[ci];const alt=r
 const gapWord=g=>g<0.13?'붙임':g<0.33?'보통':g<0.65?'쉼':'큰 쉼';
 function renderTable(){
   if(!state.panels.length){$('#tbl').innerHTML='';return}
-  const head=`<div class="tr head"><span></span><span>컷</span><span>구조</span><span>감정·강도</span><span>샷</span><span>앵글</span><span>길이</span><span class="ref">참고</span></div>`;
+  const head=`<div class="tr head"><span></span><span>컷</span><span>구조</span><span>감정·강도</span><span>샷</span><span>앵글</span><span>길이</span><span class="ref">그림</span></div>`;const NC=OPENP.size?naiCuts():null;
   $('#tbl').innerHTML=head+state.panels.map((c,i)=>{const P=c.vng==='P';
     const v=(f,label,why)=>`<div><button class="val${c.lock[f]!==undefined?' lock':''}" data-f="${f}" data-i="${i}" title="${esc(why)}">${esc(label)}</button><div class="why">${esc(why)}</div></div>`;
     return `<div class="tr${i===state.sel?' on':''}" data-i="${i}">
       <button class="n" data-sel="${i}" aria-label="${i+1}번 컷 선택">${i+1}</button>
-      <div class="beat" data-sel="${i}" data-work><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`].filter(Boolean).join(' · '))}</small>${c.caption?`<span class="cap">${esc(c.caption)}</span>`:''}${(c.sfx||[]).map(x=>`<span class="cap sfx">-${esc(x)}-</span>`).join(' ')}</div>
+      <div class="beat" data-sel="${i}" data-work><b>${esc(c.act.replace(/["“][^"”]*["”]/,'').trim()||c.act)}</b><small>${esc([c.who,c.said&&`“${c.said}”`].filter(Boolean).join(' · '))}</small>${c.caption?`<span class="cap">${esc(c.caption)}</span>`:''}${(c.sfx||[]).map(x=>`<span class="cap sfx">-${esc(x)}-</span>`).join(' ')}<div class="rowacts"><button class="link" data-act="lprompt" data-i="${i}" aria-expanded="${OPENP.has(i)}">${OPENP.has(i)?'프롬프트 접기':'프롬프트'}</button>${c.ref?`<button class="link" data-ref="${i}" title="${esc(c.ref.label)}의 샷·앵글·길이를 이 컷에">레퍼런스 구도 입히기</button>`:''}</div></div>
       <div><span class="vng"><em class="${c.vng}">${c.vng}</em>${esc(c.role)}</span><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.roleWhy||'')}</div></div>
       <div><span style="font-size:14px;font-weight:600">${esc(c.emo)}</span><div class="dots${P?' P':''}">${[1,2,3].map(k=>`<i class="${c.i>=k?'on':''}"></i>`).join('')}</div><div class="why">${esc(state.an[c.chunk].beats.find(b=>b.key===c.key)?.emoWhy||'')}</div></div>
       ${v('shot',c.shot,c.lock.shot!==undefined?'직접 고름':c.why.shot.slice(1).join(' · ')||c.why.shot[0])}
       ${v('ang',c.ang,c.lock.ang!==undefined?'직접 고름':c.why.ang.join(' · '))}
       <div>${v('h',lenWord(c.h),c.lock.h!==undefined?'직접 고름':c.why.h.slice(1).join(' · ')||c.why.h[0])}<div class="gapw" title="${esc(c.why.gap.join(' · '))}">↓ <b>${gapWord(c.gap)}</b> <span class="gwhy">${esc(c.why.gap.slice(1).join(' · '))}</span></div></div>
-      <div class="ref">${c.ref?`<img class="thumb" data-ref="${i}" src="${c.ref.src}" alt="" title="${esc(c.ref.label)} 구도 적용" loading="lazy">`:'<span class="thumb empty"></span>'}</div>
-    </div>`}).join('')}
+      ${artCell(c,i)}
+    </div>${OPENP.has(i)&&NC?.[i]?`<div class="trnp" data-i="${i}">${naiPromptHTML(c,i,NC[i].o)}</div>`:''}`}).join('')}
+// 콘티 줄의 그림 칸: 넣은 그림, 없으면 레퍼런스를 흐리게 + 누르거나 끌어다 놓아 등록
+const OPENP=new Set();
+function artCell(c,i){const im=cutImg(SCUR,i,c),lab=`${i+1}번 컷 그림 ${im?'바꾸기':'등록'}`;
+  return `<div class="ref art"><div class="drop artd${im?' has':''}${im?.stale?' stale':''}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${lab}" title="${im?'눌러서 바꾸기 · 파일을 끌어다 놓아도 돼요':'눌러서 그림 등록 · 파일을 끌어다 놓아도 돼요'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${c.ref?`<img class="refimg" src="${c.ref.src}" alt="" loading="lazy">`:''}<span class="plus" aria-hidden="true">+</span>`}</div>${im?.stale?`<button class="link warn" data-act="nstale" data-i="${i}" title="그림을 넣은 뒤 원고가 바뀌었어요">변경 확인</button>`:''}</div>`}
+const nblk=(t,sub,txt)=>`<div class="nf"><header><h4>${t}${sub&&UX==='A'?`<small>${sub}</small>`:''}</h4><button class="btn" data-act="ncopy">복사</button></header><pre>${esc(txt)}</pre></div>`;
+function naiPromptHTML(p,i,o){const S=o.settings;
+  return `<div class="cmeta">${esc([p.who,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w} × ${o.size.h}${o.size.exact?'':' → 생성 후 '+esc(o.size.crop)}${o.ai?' · <span class="tag">Claude</span>':''}<button class="btn sm" data-act="ncopyall" data-i="${i}">전체 복사</button></div>
+    ${nblk('기본 프롬프트','',o.base)}${o.dbNote?`<p class="dbnote">${esc(o.dbNote)}</p>`:''}
+    ${o.chars.map((c,n)=>nblk(`캐릭터 ${n+1} · ${esc(c.name)}`,`위치 ${c.pos.cell}`,c.prompt)).join('')}
+    <div class="nset"><div><b>해상도</b>${o.size.w} × ${o.size.h}</div><div><b>Steps · Guidance</b>${S.steps} · ${S.guidance}</div><div><b>Sampler</b>${S.sampler} · ${S.noise}</div><div><b>img2img</b>Strength ${S.strength} · Noise ${S.noiseImg}</div><div><b>캐릭터 위치</b>${o.chars.map(c=>`${esc(c.name)} ${c.pos.cell}`).join(' · ')||'인물 없음'}</div><div><b>레퍼런스</b>${o.charRef?`Character Reference: ${esc(o.charRef)}`:o.vibe?'Vibe Transfer: 장면 이미지':'없음'}</div></div>
+    <div class="nbtns"><button class="btn" data-act="naibase" data-i="${i}">바탕 PNG (${o.size.w}×${o.size.h})</button>${o.charRef?`<button class="btn" data-act="nairef" data-n="${esc(o.charRef)}">캐릭터 레퍼런스 이미지</button>`:o.vibe?'<button class="btn" data-act="naivibe">장면 이미지</button>':''}</div>`}
 
 // ---------- menu (override) ----------
 let menuFor=null;
@@ -3030,7 +3048,8 @@ document.addEventListener('keydown',e=>{if(typeof VIEW==='undefined'||VIEW!=='we
 
 // ---------- 보기 전환 ----------
 let VIEW='nai';
-function showView(v){if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='write';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+function showView(v){if(v==='nai')v='layout';  // 작화는 콘티에 합침(예전 주소·저장된 화면 호환)
+  if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='write';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
   ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   // 숨겨진 채 그려진 컷 글 칸은 높이가 0으로 잡혀 글이 안 보임 → 보일 때 다시 맞춤
@@ -3039,7 +3058,7 @@ function showView(v){if(!['chars','world','plan','write','layout','nai','webtoon
   if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons();refreshPageMaterials()}
   if(v!=='webtoon'&&materialMode)armMaterialLine('');
   if(v==='plan')openComposition();
-  if(v==='nai')renderNai();if(v==='db')loadDB();
+  if(v==='layout')renderNai();if(v==='db')loadDB();
   scrollTo(0,0);try{localStorage.setItem('rough-view',v)}catch(_){}}
 let compositionModule;
 function openComposition(){
@@ -3072,8 +3091,8 @@ function addCompositionScenes(cards){
   toast(`구성안에서 ${scenes.length}개 씬을 추가했어요`);
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
-{const _c=compute;compute=function(...a){_c(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon')renderWebtoon()}}
-{const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='nai')renderNai();else if(VIEW==='webtoon'&&!pageDrag&&!gapDrag&&!tailDrag)renderWebtoon()}}
+{const _c=compute;compute=function(...a){_c(...a);if(VIEW==='layout')renderNai();else if(VIEW==='webtoon')renderWebtoon()}}
+{const _r=renderSlots;renderSlots=function(...a){_r(...a);if(VIEW==='layout'){renderNai();renderTable()}else if(VIEW==='webtoon'&&!pageDrag&&!gapDrag&&!tailDrag)renderWebtoon()}}
 
 // ---------- 프롬프트 시안 ----------
 function copyText(t){navigator.clipboard?.writeText(t).then(()=>toast('프롬프트를 복사했어요'),()=>toast('복사가 막혀 있어요. 글을 직접 선택해 복사하세요'))}
@@ -3085,15 +3104,15 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   else if(a==='keyshow'){const i=$('#kin'),show=i.type==='password';i.type=show?'text':'password';el.textContent=show?'숨기기':'보기';el.setAttribute('aria-pressed',show)}});
 $('#filem').addEventListener('change',e=>{attachCuts(e.target.files,target&&target.kind==='cut'?+target.key:null);e.target.value=''});
 renderKey();
-const rerenderCuts=()=>renderNai();
-{const el=$('#ncards');
+const rerenderCuts=()=>{renderNai();if(VIEW==='layout'){renderTable();renderReading()}};
+for(const el of [$('#ncards'),$('#tbl')]){
   el.addEventListener('click',e=>{const d=e.target.closest('[data-delcut]');if(d){e.stopPropagation();const id=cutId(SCENES[SCUR].id,+d.dataset.delcut);delete IMG.cut[id];idb.del(id);rerenderCuts();return}
     const s=e.target.closest('[data-cutslot]');if(s){target={kind:'cut',key:s.dataset.cutslot};$('#filem').click()}});
   el.addEventListener('keydown',e=>{const s=e.target.closest('[data-cutslot]');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();s.click()}});
   el.addEventListener('focusin',e=>{const s=e.target.closest('[data-cutslot]');if(s)target={kind:'cut',key:s.dataset.cutslot}});
   el.addEventListener('dragover',e=>{const s=e.target.closest('[data-cutslot]');if(s){e.preventDefault();s.classList.add('over')}});
   el.addEventListener('dragleave',e=>{e.target.closest('[data-cutslot]')?.classList.remove('over')});
-  el.addEventListener('drop',e=>{const s=e.target.closest('[data-cutslot]');if(!s)return;e.preventDefault();s.classList.remove('over');attachCuts(e.dataTransfer.files,+s.dataset.cutslot)});}
+  el.addEventListener('drop',e=>{const s=e.target.closest('[data-cutslot]');if(!s)return;e.preventDefault();s.classList.remove('over');attachCuts(e.dataTransfer.files,+s.dataset.cutslot)})}
 // ---------- 작화 (NovelAI V4.5) ----------
 const NAI=window.RoughNAI;
 const NAI_STYLE_DEF='webtoon, korean webtoon, soft shading, flat color, thin lineart, muted colors, watercolor (medium)';
@@ -3119,7 +3138,7 @@ async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷
   if(!AIKEY){openKey(naiRefine);return}const st=t=>$('#naist').textContent=t;naiBusy=true;$('#naibtn').disabled=true;const sid=SCENES[SCUR].id,payload=naiPayload();
   let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,payload,{onStatus:st});
     AIN[sid]={sig:sigOf(payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
-    NAIVIEW='ai';st(`다듬었어요 · ${r.model}`);if(SCENES[SCUR].id===sid&&VIEW==='nai')renderNai()}
+    NAIVIEW='ai';st(`다듬었어요 · ${r.model}`);toast(`Claude로 다듬었어요 · 컷 줄의 '프롬프트'에서 확인`,2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';st(m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false}}
 $('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;NAIVIEW=b.dataset.v;renderNai()});
 // 전체 복사: 기본 프롬프트와 캐릭터 프롬프트만, 각 줄 끝에 쉼표, 빈 줄로 구분
@@ -3133,7 +3152,7 @@ function renderNai(){$('#naistyle').value!==NAISTYLE&&document.activeElement!==$
   const ai=ainFor();$('#naiview').hidden=!ai;document.querySelectorAll('#naiview button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===NAIVIEW));
   if(ai&&!naiBusy)$('#naist').textContent=ai.stale?'글이나 태그가 바뀌었어요. 다시 다듬으면 반영돼요':`다듬은 결과 · ${new Date(ai.at).toLocaleString()}`;
   if(!ps.length){$('#ncards').innerHTML='<p class="empty">씬 단계에서 컷을 적어주세요.</p>';$('#naicount').textContent='';return}
-  $('#naicount').textContent=UX==='A'?`이미지 ${cutCount(SCUR,ps)}/${ps.length}컷 등록 · 칸마다 복사 버튼`:`이미지 ${cutCount(SCUR,ps)}/${ps.length}`;if($('#naistat'))$('#naistat').textContent=`이미지 ${cutCount(SCUR,ps)}/${ps.length}`;
+  $('#naicount').textContent=UX==='A'?`이미지 ${cutCount(SCUR,ps)}/${ps.length}컷 등록 · 칸마다 복사 버튼`:`이미지 ${cutCount(SCUR,ps)}/${ps.length}`;if($('#naistat2'))$('#naistat2').textContent=`이미지 ${cutCount(SCUR,ps)}/${ps.length}`;
   const blk=(t,sub,txt)=>`<div class="nf"><header><h4>${t}${sub&&UX==='A'?`<small>${sub}</small>`:''}</h4><button class="btn" data-act="ncopy">복사</button></header><pre>${esc(txt)}</pre></div>`;
   $('#ncards').innerHTML=naiCuts().map(({p,i,o})=>{const im=cutImg(SCUR,i,p),S=o.settings;
     if(UX==='C')return naiCardC(p,i,o,im,blk);
@@ -3163,7 +3182,7 @@ function openStale(i){const p=state.panels[i],r=IMG.cut[cutId(SCENES[SCUR].id,i)
   let d=$('#staledlg');if(!d){d=document.createElement('dialog');d.id='staledlg';d.className='keydlg';document.body.appendChild(d)}
   d.innerHTML=`<h3>${i+1}번 컷 · 원고가 바뀌었어요</h3><div class="stalecmp"><div><small>그림을 등록할 때</small><p>${esc(strip(r.sig))}</p></div><div><small>지금</small><p>${esc(strip(p.key))}</p></div></div><img src="${r.src}" alt="" style="max-width:100%;max-height:220px;display:block;margin:8px auto;border-radius:6px"><div class="acts"><button class="btn" data-r="x">닫기</button><button class="btn" data-r="swap">교체</button><button class="btn dark" data-r="keep">그림 그대로 쓰기</button></div>`;
   d.onclick=e=>{const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;d.close();
-    if(k==='keep'){r.sig=p.key;idb.put(r);renderNai();if(VIEW==='webtoon')renderWebtoon();toast('이 그림을 지금 원고에 맞는 것으로 표시했어요')}
+    if(k==='keep'){r.sig=p.key;idb.put(r);rerenderCuts();if(VIEW==='webtoon')renderWebtoon();toast('이 그림을 지금 원고에 맞는 것으로 표시했어요')}
     if(k==='swap'){target={kind:'cut',key:String(i)};$('#filem').click()}};
   d.showModal()}
 // Claude 실행 확인: 실행·전송을 정하는 자리에서 모델과 보내는 내용을 보여 줌
@@ -3171,14 +3190,12 @@ function confirmRefine(){let d=$('#refinedlg');if(!d){d=document.createElement('
   d.innerHTML=`<h3>Claude로 다듬기</h3><p>씬 전체를 읽고 연속성·위치·소품을 추론해 태그와 캐릭터 위치를 다시 짜요.</p><ul class="refinel"><li><b>모델</b>Claude Opus 5.5 (내 API 키)</li><li><b>보내는 것</b>이 씬의 컷 글 · 인물 태그 · 화풍 태그</li><li><b>보내지 않는 것</b>이미지 · 다른 씬</li><li><b>API 키</b>${AIKEY?'입력됨':'없음 — 먼저 입력해 주세요'}</li></ul><div class="acts"><button class="btn" data-r="x">닫기</button>${AIKEY?'':'<button class="btn" data-r="key">API 키 입력</button>'}<button class="btn dark" data-r="go"${AIKEY?'':' disabled'}>실행</button></div>`;
   d.onclick=e=>{const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;d.close();if(k==='key')openKey(null);if(k==='go')naiRefine()};d.showModal()}
 // C안: 설정 섹션을 '작화 설정' 서랍으로 옮기고, 위에 상태·도구 막대
-if(UX==='C'){const v=$('#v-nai .wrap'),cuts=$('#nsec-cuts');
-  const bar=document.createElement('div');bar.className='naibar';bar.innerHTML=`<h1>작화</h1><span class="chip" id="naistat"></span><span class="grow"></span><button class="btn" data-act="naiset" aria-expanded="false">작화 설정</button><button class="btn" data-act="nairefine">Claude로 다듬기</button><button class="btn" data-act="naimulti">여러 장 등록</button><button class="btn" data-act="naidown">txt</button>`;
-  const dr=document.createElement('aside');dr.className='naidrawer';dr.id='naidrawer';dr.hidden=true;dr.innerHTML='<div class="sh"><h2>작화 설정</h2><button class="btn sm" data-act="naiset">닫기</button></div><p class="model">모델 · NovelAI Diffusion V4.5 Full</p>';
-  ['#nsec-style','#nsec-chars','#nsec-imgs','#nsec-ai'].forEach(q=>dr.appendChild($(q)));
-  dr.querySelector('#nsec-style .hint')?.classList.add('small');
-  v.querySelector('h1').remove();v.querySelector('.desc').remove();v.querySelector('.psteps').remove();$('#nsec-refs').hidden=true;
-  v.prepend(bar);v.appendChild(dr);cuts.querySelector('.sh').hidden=true;cuts.querySelectorAll('.toolbar').forEach(t=>t.hidden=true);
-  document.addEventListener('click',e=>{if(e.target.closest('[data-act="naiset"]')){dr.hidden=!dr.hidden;bar.querySelector('[data-act="naiset"]').setAttribute('aria-expanded',!dr.hidden)}})}
+// 작화 설정 서랍(화풍·인물 태그·장면 이미지·Claude 다듬기): 콘티 화면에 붙임. 작화 단계는 콘티에 합침
+{const dr=document.createElement('aside');dr.className='naidrawer';dr.id='naidrawer';dr.hidden=true;dr.setAttribute('aria-label','작화 설정');dr.innerHTML='<div class="sh"><h2>작화 설정</h2><button class="btn sm" data-act="naiset">닫기</button></div><p class="model">모델 · NovelAI Diffusion V4.5 Full</p>';
+  ['#nsec-style','#nsec-chars','#nsec-imgs','#nsec-ai'].forEach(q=>dr.appendChild($(q)));dr.querySelector('#nsec-ai').appendChild($('#naiview'));{const t=document.createElement('section');t.innerHTML='<div class="sh"><h2>프롬프트 내보내기</h2></div><button class="btn" data-act="naidown">모든 컷 프롬프트 txt 저장</button>';dr.appendChild(t)}
+  dr.querySelector('#nsec-style .hint')?.classList.add('small');$('#v-layout').appendChild(dr);
+  document.addEventListener('click',e=>{if(e.target.closest('[data-act="naiset"]')){dr.hidden=!dr.hidden;document.querySelectorAll('[data-act="naiset"][aria-expanded]').forEach(b=>b.setAttribute('aria-expanded',!dr.hidden))}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!dr.hidden){dr.hidden=true}})}
 // img2img 바탕: 이 컷의 러프를 NovelAI 해상도로 (밑그림 레퍼런스 사진은 빼고 선만)
 // img2img 바탕: 이 컷의 원본 레퍼런스(그림 영역만, 흑백)를 NovelAI 해상도로. 레퍼런스가 없으면 만들지 않음
 async function naiBase(i){const p=state.panels[i];if(!p)return;if(!p.ref){toast('이 컷은 맞는 레퍼런스가 없어 바탕 PNG를 만들 수 없어요');return}
@@ -3190,9 +3207,10 @@ async function naiBase(i){const p=state.panels[i];if(!p)return;if(!p.ref){toast(
 function dataUrlDownload(name,src){fetch(src).then(r=>r.blob()).then(b=>download(name,URL.createObjectURL(b)))}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   if(a==='nstale'){openStale(+el.dataset.i);return}
+  if(a==='lprompt'){const i=+el.dataset.i;OPENP.has(i)?OPENP.delete(i):OPENP.add(i);renderTable();return}
   if(a==='nprompt'){const c=el.closest('.pcard'),b=c.querySelector('.nprompt');b.hidden=!b.hidden;el.setAttribute('aria-expanded',!b.hidden);el.textContent=b.hidden?'프롬프트':'프롬프트 접기';return}
   if(a==='ncopy')copyText(el.closest('.nf').querySelector('pre').textContent);
-  else if(a==='ncopyall'){const i=+el.closest('.pcard').querySelector('[data-cutslot]').dataset.cutslot;copyText(naiCopy(naiCuts()[i].o))}
+  else if(a==='ncopyall'){const i=+(el.dataset.i??el.closest('.pcard').querySelector('[data-cutslot]').dataset.cutslot);copyText(naiCopy(naiCuts()[i].o))}
   else if(a==='naidown'){download(`${sceneLabel(SCENES[SCUR],SCUR)}-novelai.txt`,URL.createObjectURL(new Blob([naiText()],{type:'text/plain'})));toast('txt로 저장했어요')}
   else if(a==='naimulti'){target=null;$('#filem').click()}
   else if(a==='naibase')naiBase(+el.dataset.i);

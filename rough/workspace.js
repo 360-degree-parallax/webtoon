@@ -438,7 +438,7 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
       grid('배경 이미지',bimgs)+'<p class="as-note">컷을 고른 상태에서 누르면 그 컷 아래 전환에, 컷 사이 간격으로 끌어 놓으면 그 자리에 들어가요. 중간색·위치·씬 끝 색은 속성 서랍에서.</p><div class="as-acts"><button class="btn sm" data-as="bgup">+ 배경 이미지 올리기</button></div>'}
   else if(k==='seq'){const L=seqList().filter(t=>match(t.name));h=L.length?grid('저장한 시퀀스',L.map(t=>item('seq',seqList().indexOf(t),`${t.name} · ${t.cuts.length}컷`,'<i class="seqi"></i>'))):'<p class="as-empty">저장한 시퀀스가 없어요.</p>';
     h+='<p class="as-note">컷을 고르고 누르면 그 컷부터 적용해요. 저장은 시작할 컷을 고른 뒤 속성 서랍 › 시퀀스 템플릿 › 이 컷부터 저장.</p><div class="as-acts"><button class="btn sm" data-as="seqsave">고른 컷부터 저장…</button></div>'}
-  else if(k==='up')h=grid('올린 배경 이미지',bimgs)+`<div class="as-acts"><button class="btn sm" data-as="bgup">+ 배경 이미지</button><button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button><button class="btn sm" data-as="cutup">컷 그림 등록 (작화)</button></div><p class="as-note">올린 파일은 이 브라우저에 남고 작업 파일(.rough.json)에도 들어가요.</p>`;
+  else if(k==='up')h=grid('올린 배경 이미지',bimgs)+`<div class="as-acts"><button class="btn sm" data-as="bgup">+ 배경 이미지</button><button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button><button class="btn sm" data-as="cutup">컷 그림 등록 (콘티)</button></div><p class="as-note">올린 파일은 이 브라우저에 남고 작업 파일(.rough.json)에도 들어가요.</p>`;
   else if(k==='star'){const fav=typeof materialFavorites!=='undefined'&&typeof materialRows!=='undefined'?materialRows.filter(r=>materialFavorites.has(r.id)):[];
     h=grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).map(x=>item(x.k,x.v,x.label,x.k==='bg'?bgThumb(x.v):x.k==='balloon'?swatch(x.v):x.k==='bgimg'&&IMG.bg?.[x.v]?`<img src="${IMG.bg[x.v].src}" alt="">`:'')))+grid('즐겨찾기 효과음',fav.map(r=>item('pack',r.id,r.word,'')),'words')||'<p class="as-empty">아직 쓴 에셋이 없어요.</p>'}
   asBody.innerHTML=h||'<p class="as-empty">찾는 에셋이 없어요.</p>'}
@@ -459,7 +459,7 @@ assetBody.addEventListener('click',e=>{const t=e.target;const tb=t.closest('[dat
   const r=t.closest('[data-ref-id]');if(r&&asBody.contains(r)){if(pageSelection)RoughRefs.apply(r.dataset.refId);else flash('레퍼런스를 바꿀 컷을 먼저 고르세요');return}
   const a=t.closest('[data-as]')?.dataset.as;
   if(a==='zip')$('#wmaterial-import').click();
-  if(a==='cutup')showView('nai');
+  if(a==='cutup')showView('layout');
   if(a==='seqsave'){if(!pageSelection){flash('시작할 컷을 먼저 고르세요');return}$('#wtplsave').click();setTimeout(renderAssets,300)}
   if(a==='bgup'){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;f.onchange=async()=>{for(const file of f.files){const im=await shrink(file,1380);const o={id:'bg:'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'bgimg',name:file.name,src:im.src,w:im.w,h:im.h,at:Date.now()};IMG.bg[o.id]=o;await idb.put(o)}renderAssets();flash('배경 이미지를 올렸어요')};f.click()}
   const b=t.closest('[data-mat]');if(b&&asBody.contains(b))applyAsset(b.dataset.mat,b.dataset.v)});
