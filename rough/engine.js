@@ -292,8 +292,18 @@
       return H.classes[m]; };
     return (t, p, n) => { const xs = [vec(t), vec(p), vec(n)]; if (wvec) xs.push(wvec(t)); return { shot: pick(M.shot, xs), role: pick(M.role, xs) }; };
   }
-  function applyShot(beats) { if (!E._shotM) return beats; const T = beats.map(plain);
-    beats.forEach((b, k) => { b._s = E._shotM(T[k], T[k - 1] || '', T[k + 1] || ''); }); return beats; }
+  function applyShot(beats) { if (!E._shotM && !E._angM) return beats; const T = beats.map(plain);
+    beats.forEach((b, k) => { if (E._shotM) b._s = E._shotM(T[k], T[k - 1] || '', T[k + 1] || ''); if (E._angM) b._a = E._angM(T[k], T[k - 1] || '', T[k + 1] || ''); }); return beats; }
+  // 앵글 모델(tools/ml/train_angle.py): 하이·로우는 확률이 문턱(meta.th)을 넘을 때만, 아니면 아이레벨
+  function makeAngle(M) {
+    const vec = ngramVec(M), nv = M.vocab.length, H = M.ang, th = M.meta.th, ctx = M.meta.ctx;
+    return (t, p, n) => { const D = denseHead(H, nv, 0), xs = [vec(t), vec(p), vec(n)];
+      const z = H.classes.map((_, c) => xs.reduce((a, x, s) => { const w = D[s][c]; let q = 0; for (const [i, v] of x) q += v * w[i]; return a + q * (s ? ctx : 1); }, H.b[c]));
+      const mx = Math.max(...z), e = z.map(v => Math.exp(v - mx)), tot = e.reduce((a, v) => a + v, 0), pr = e.map(v => v / tot);
+      let k = 0; pr.forEach((v, c) => { if (v > pr[k]) k = c; });
+      const lab = H.classes[k]; return lab !== '아이레벨' && pr[k] >= th ? { ang: lab, p: pr[k] } : { ang: '아이레벨', p: pr[H.classes.indexOf('아이레벨')] }; };
+  }
+  function useAngleModel(M) { E._angM = M && M.ang ? makeAngle(M) : null; return !!E._angM; }
   function useShotModel(M) { E._shotM = M && M.shot ? makeShot(M) : null; E.SHOT = E._shotM ? (b => b._s || null) : null; return !!E._shotM; }
   function useFeelModel(M) { E._feel = M ? makeFeel(M) : null; E.FEEL = M ? (b => b._m || null) : null; return !!M; }
   function analyzeChunk(raw) {
@@ -532,6 +542,8 @@
       else if (['쓸쓸', '당황'].includes(b.emo) && b.i >= 2) { ang = '하이앵글'; why.ang.push(`${b.emo}을 작게 보이게 위에서`); }
       else if (b.role === '설정' && shot === '설정') { ang = '하이앵글'; why.ang.push('공간을 내려다보며 소개'); }
       else { ang = '아이레벨'; why.ang.push('기본 눈높이'); }
+      // 앵글 모델이 있으면 규칙 대신(규칙은 로우 정밀도 4.5%·하이 7.4%로 오히려 틀린 앵글을 넣었음)
+      if (b._a) { ang = b._a.ang; why.ang = [ang === '아이레벨' ? '기본 눈높이(학습 모델이 하이·로우를 확신하지 않음)' : `글 해석으로 예측(학습 모델 · 확신 ${Math.round(b._a.p * 100)}%)`]; }
       let h = clamp(pc.h || 1, 0.45, 2.2); why.h.push(`패턴 길이 ${(+pc.h || 1).toFixed(2)}`);
       const im = 1 + 0.15 * (b.i - 1.5); if (Math.abs(im - 1) > 0.01) { h *= im; why.h.push(`강도 ${b.i}`); }
       if (b.vng === 'P' && h < 1.1) { h = 1.1; why.h.push('하이라이트는 크게'); }
@@ -588,5 +600,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
