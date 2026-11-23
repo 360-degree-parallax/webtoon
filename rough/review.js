@@ -15,12 +15,17 @@ const counts=()=>{const c={left:0,hold:0,done:0};(Q?.items||[]).forEach(it=>c[st
 // DB 화면에 '판정' 탭을 붙임
 const box=document.createElement('div');box.id='reviewbox';box.className='rv';box.hidden=true;
 document.querySelector('#v-db .wrap').appendChild(box);
-{const _r=renderDB;renderDB=function(...a){_r(...a);addTab();sync()}}
-function addTab(){const t=$('#dbtabs');if(!t||t.querySelector('[data-rv]'))return;const c=counts();
-  t.insertAdjacentHTML('beforeend',`<button data-rv aria-pressed="${ON}">판정<small>${Q?`${c.left+c.hold}`:'…'}</small></button>`)}
-function sync(){$('#dbfilter').hidden=ON;document.querySelector('#v-db .dbgrid').hidden=ON;box.hidden=!ON;
-  document.querySelectorAll('#dbtabs button').forEach(b=>b.setAttribute('aria-pressed',b.hasAttribute('data-rv')?ON:(!ON&&b.dataset.s===dbSheet)));if(ON)render()}
-$('#dbtabs').addEventListener('click',e=>{if(e.target.closest('[data-rv]')){ON=true;load().then(()=>{const t=$('#dbtabs [data-rv] small');if(t){const c=counts();t.textContent=c.left+c.hold}sync()});sync()}else if(e.target.closest('[data-s]'))ON=false},true);
+{const _r=renderDB;renderDB=function(...a){_r(...a);sync()}}
+// 상단 '판정' 버튼(DB 옆): 누르면 DB 화면을 판정 모드로 엶. 남은 수를 배지로
+const gBtn=$('#gReview'),badge=()=>{const c=counts();$('#gReviewN').textContent=Q?(c.left+c.hold||''):''};
+load().then(badge);
+function sync(){const on=ON&&VIEW==='db';$('#dbfilter').hidden=on;document.querySelector('#v-db .dbgrid').hidden=on;box.hidden=!on;$('#dbtabs').hidden=on;
+  $('#dbdesc').textContent=on?'학습 모델이 지금 DB 값과 어긋난다고 본 컷이에요. 맞는 값을 고르거나, 애매하면 메모와 함께 보류해 주세요.':$('#dbdesc').textContent;
+  document.querySelector('#v-db h1').textContent=on?'판정':'데이터베이스';
+  gBtn.setAttribute('aria-pressed',on);$('#gDb').setAttribute('aria-pressed',VIEW==='db'&&!on);if(on)render()}
+gBtn.addEventListener('click',()=>{ON=true;if(VIEW!=='db')showView('db');load().then(()=>{badge();sync()});sync()});
+$('#gDb').addEventListener('click',()=>{ON=false;if(typeof renderDB==='function'&&DB)renderDB();sync()});
+{const _sv=showView;showView=function(...a){const r=_sv(...a);if(a[0]!=='db')ON=false;sync();return r}}
 
 const pct=p=>Math.round(p*100)+'%';
 function render(){
@@ -51,7 +56,7 @@ function render(){
     </div>
   </div>`}
   <div class="rvstrip">${L.slice(Math.max(0,cur-6),cur+18).map(x=>{const i=L.indexOf(x);return `<button data-rvgo="${i}" class="${i===cur?'cur ':''}${st(x)}" title="${esc(x.cut)} · ${esc(x.field)}"><img loading="lazy" src="${typeof cutThumb==='function'?cutThumb(x.cut):CUT_BASE+x.file}" onerror="this.onerror=null;this.src='${CUT_BASE}${x.file}'" alt=""></button>`}).join('')}</div>`;
-  const tab=$('#dbtabs [data-rv] small');if(tab)tab.textContent=c.left+c.hold}
+  badge()}
 const step=()=>{if(F.state==='all'||F.state==='done')cur++};  // 남음·보류 보기에서는 고른 컷이 빠지므로 같은 자리가 곧 다음 컷
 function pick(label){const it=list()[cur];if(!it)return;const was=PIN===it.id;PIN=null;R[it.id]={pick:label,hold:false,note:'',at:Date.now()};save();if(!was||F.state!=='left')step();render()}
 function hold(){const it=list()[cur];if(!it)return;PIN=it.id;R[it.id]={pick:null,hold:true,note:R[it.id]?.note||'',at:Date.now()};save();render();cur=list().indexOf(it);render();$('#rvnote')?.focus()}
