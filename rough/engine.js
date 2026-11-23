@@ -250,13 +250,17 @@
 
   // ---------- 학습한 감정·강도 모델(rough/feel-model.js, tools/ml/train_ngram.py) ----------
   // 글자 1~3그램(단어 경계) TF-IDF를 이 컷·앞 컷·뒤 컷으로 만들고 선형 점수로 감정 14종·강도 1~3을 고름. sklearn과 같은 계산
-  function makeFeel(M) {
+  // 글자 1~3그램 TF-IDF(sklearn char_wb, 1+log tf, idf, l2와 같게) — 감정 모델·연출명 모델이 같이 씀
+  function ngramVec(M) {
     const vi = new Map(M.vocab.map((w, k) => [w, k]));
-    const vec = s => { const tf = new Map(), add = g => { const k = vi.get(g); if (k !== undefined) tf.set(k, (tf.get(k) || 0) + 1); };
+    return s => { const tf = new Map(), add = g => { const k = vi.get(g); if (k !== undefined) tf.set(k, (tf.get(k) || 0) + 1); };
       for (const w of String(s || '').toLowerCase().split(/\s+/).filter(Boolean)) { const p = ' ' + w + ' ', L = p.length;
         for (let n = 1; n <= 3; n++) { let o = 0; add(p.slice(0, n)); while (o + n < L) { o++; add(p.slice(o, o + n)); } if (o === 0) break; } }
       let nn = 0; const out = []; for (const [k, c] of tf) { const v = (1 + Math.log(c)) * M.idf[k]; out.push([k, v]); nn += v * v; }
       nn = Math.sqrt(nn) || 1; return out.map(([k, v]) => [k, v / nn]); };
+  }
+  function makeFeel(M) {
+    const vec = ngramVec(M);
     const score = (H, xs) => H.classes.map((_, c) => xs.reduce((z, x, s) => z + x.reduce((a, [k, v]) => a + v * H.W[s][c][k], 0) * (s ? M.meta.ctx : 1), H.b[c]));
     const pick = (H, xs) => { const z = score(H, xs); let m = 0; z.forEach((v, c) => { if (v > z[m]) m = c; }); return { label: H.classes[m], z }; };
     return (t, p, n) => { const xs = [vec(t), vec(p), vec(n)], e = pick(M.emo, xs), i = pick(M.int, xs); return { emo: e.label, i: +i.label }; };
@@ -386,10 +390,38 @@
     let s = 0; for (const k in W) s += W[k] * parts[k];
     return { p, s, pct: Math.round(s / WSUM * 100), parts };
   }
+  // 연출명 모델(tools/ml/train_rank.py): 씬 글 → 연출명 확률. E.useRankModel(model)로 켬
+  const rankText = an => an.beats.map(b => String(b.line || b.act || '').replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()).join(' ');
+  function useRankModel(M) { E._rank = M && M.vocab ? { M, vec: ngramVec(M) } : null; return !!E._rank; }
+  function nameProbs(an) { const R = E._rank; if (!R) return null; const x = R.vec(rankText(an)), M = R.M;
+    const z = M.classes.map((_, c) => x.reduce((a, [k, v]) => a + v * M.W[c][k], M.b[c])), mx = Math.max(...z), e = z.map(v => Math.exp(v - mx)), t = e.reduce((a, v) => a + v, 0);
+    return Object.fromEntries(M.classes.map((n, c) => [n, e[c] / t])); }
+  // 패턴 고르기: 모델이 있으면 연출명 확률 순으로, 같은 연출명 안에선 규칙 점수(가장 닮은 패턴). 앞쪽 대안은 연출명이 겹치지 않게
   function rank(an, patterns, top = 12) {
-    return patterns.filter(p => p.cuts.some(c => c.t === '그림')).map(p => score(an, p)).sort((a, b) => b.s - a.s).slice(0, top);
+    const all = patterns.filter(p => p.cuts.some(c => c.t === '그림')).map(p => score(an, p)).sort((a, b) => b.s - a.s);
+    const P = nameProbs(an); if (!P) return all.slice(0, top);
+    all.forEach(x => { x.np = P[x.p.name] ?? 0; });
+    const firsts = [], seen = new Set(), rest = [];
+    for (const x of all) { if (!seen.has(x.p.name)) { seen.add(x.p.name); firsts.push(x); } else rest.push(x); }
+    firsts.sort((a, b) => b.np - a.np || b.s - a.s); rest.sort((a, b) => (b.np - a.np) || (b.s - a.s));
+    return [...firsts, ...rest].slice(0, top);
   }
 
+  // 칸 길이 모델(tools/ml/train_layout.py): 컷 해석 특징 → log(칸 높이 비). train_layout.cut_feats와 같은 특징
+  function useLayoutModel(M) { E._lay = M && M.h ? M : null; return !!E._lay; }
+  function layFeats(an, k) {
+    const bs = an.beats, n = bs.length, x = bs[k], nx = bs[k + 1], pv = bs[k - 1];
+    const ln = b => (b.act || '').length, nd = b => (b.dialogs || []).length;
+    const f = { bias: 1, pos: k / Math.max(1, n - 1), first: +(k === 0), last: +(k === n - 1), n: n / 5, i: x.i / 3, said: +!!x.said, nd: Math.min(3, nd(x)) / 3,
+      cap: Math.min(2, (x.captions || []).length), sfx: Math.min(2, (x.sfx || []).length), len: Math.min(120, ln(x)) / 60,
+      ['emo=' + x.emo]: 1, ['role=' + x.role]: 1, ['vng=' + x.vng]: 1, ['tr=' + (x.trans || '')]: 1,
+      ['tempo=' + an.tempo]: 1, ['narr=' + an.narr]: 1, ['goal=' + an.goal]: 1, peak: +an.peaks.includes(k) };
+    if (nx) Object.assign(f, { ['nvng=' + nx.vng]: 1, ['ntr=' + (nx.trans || '')]: 1, ['nrole=' + nx.role]: 1, ndi: (x.i - nx.i) / 2, nsaid: +!!nx.said, samewho: +(!!x.who && x.who === nx.who) });
+    else f.nonext = 1;
+    if (pv) Object.assign(f, { ['pvng=' + pv.vng]: 1, pdi: (x.i - pv.i) / 2 });
+    return f;
+  }
+  function predictH(an, k) { const M = E._lay.h, f = layFeats(an, k); let z = M.b; for (const key in f) if (M.w[key]) z += M.w[key] * f[key]; return M.log ? Math.exp(z) : z; }
   // ---------- 7. 컷 배치 ----------
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   function layout(an, p) {
@@ -426,6 +458,7 @@
       const im = 1 + 0.15 * (b.i - 1.5); if (Math.abs(im - 1) > 0.01) { h *= im; why.h.push(`강도 ${b.i}`); }
       if (b.vng === 'P' && h < 1.1) { h = 1.1; why.h.push('하이라이트는 크게'); }
       if (tf !== 1) { h *= tf === 0.8 ? 0.9 : 1.1; why.h.push(`템포 ${an.tempo}`); }
+      if (E._lay) { h = predictH(an, k); why.h = ['글 해석으로 예측(학습 모델 · 연출 DB 칸 높이)']; }
       h = +clamp(h, 0.45, 2.4).toFixed(2);
       // 컷 사이 간격 = 다음 컷과의 관계로 중요도 단계를 정하고(붙임·보통·쉼·큰 쉼), 패턴 여백과 섞는다
       const nx = an.beats[k + 1]; let base = 0.25, tag = '보통';
@@ -468,5 +501,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
