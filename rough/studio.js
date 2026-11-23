@@ -22,6 +22,8 @@ const STEPS=[.1,.25,.33,.5,.67,.75,1,1.25,1.5,2,3,4];
 const stepZoom=d=>{const i=d>0?STEPS.findIndex(s=>s>CZ+1e-3):STEPS.length-1-[...STEPS].reverse().findIndex(s=>s<CZ-1e-3);zoomTo(STEPS[clamp(i,0,STEPS.length-1)]??CZ)};
 function fitAll(){const ab=reader.classList.contains('artboards'),h=reader.scrollHeight/CZ,w=ab?reader.scrollWidth/CZ:BASE,avail=innerHeight-STICKY-40;CZ=clamp(Math.min(avail/h,(canvas.clientWidth-48)/w),CZ_MIN,CZ_MAX);applyZoom();canvas.scrollLeft=0;
   scrollTo(0,reader.getBoundingClientRect().top+scrollY-STICKY-12)}
+// 폭 맞춤(모바일 첫 화면): 캔버스 폭에 원고 폭을 맞춤
+function fitWidth(){CZ=clamp((canvas.clientWidth-16)/BASE,CZ_MIN,1);applyZoom();canvas.scrollLeft=0}
 function fitSelected(){const g=selGroup();if(!g){fitAll();return}const b=g.getBoundingClientRect(),h=b.height/CZ,w=b.width/CZ;
   CZ=clamp(Math.min((innerHeight-STICKY-60)*.85/h,(canvas.clientWidth-48)/w),CZ_MIN,CZ_MAX);applyZoom();g.scrollIntoView({block:'center',inline:'center'})}
 canvas.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey)||e.defaultPrevented)return;e.preventDefault();
@@ -157,5 +159,5 @@ document.addEventListener('keydown',e=>{if(typingIn(e.target))return;
 {const _sw=switchScene;switchScene=function(i){const r=_sw(i);if(inEdit())document.getElementById('ws-'+i)?.scrollIntoView({behavior:'smooth'});return r}}
 
 applyZoom();
-window.RoughStudio={zoomTo,fitAll,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
+window.RoughStudio={zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
 })();

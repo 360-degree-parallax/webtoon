@@ -234,14 +234,13 @@ function renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
       <label>그림 확대 <input type="range" data-ctx="zoom" min="100" max="500" step="5" value="${$('#wzoom').value}"><output>${$('#wzoom').value}%</output></label>
       <button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
   else mid=`<span class="cb-hint">${esc(t.hint)}</span>`;
-  ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"><div class="seg3 cb-ab" role="group" aria-label="씬 배치"><button data-ab="0" aria-pressed="${!AB}" title="씬을 세로로 이어 보기">세로</button><button data-ab="1" aria-pressed="${AB}" title="씬을 대지처럼 나란히 보기">나란히</button></div><label class="cb-ws">작업 공간 <select id="wsws" aria-label="작업 공간">${WS_OPTS}</select></label><button class="cb" data-ctx="wsreset" title="이 작업 공간의 기본 배치로">배치 초기화</button></span>`;
-  $('#wsws').value=LAYOUT.preset||'custom'}
+  ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;}
 ctx.addEventListener('change',e=>{const c=e.target.dataset.ctx;
   if(c==='bstyle'){opt.balloon=e.target.value;SS('rough-tool-balloon',opt.balloon)}
   if(c==='lstyle'){const s=$('#wballoonstyle');s.value=e.target.value;s.dispatchEvent(new Event('change'))}
   if(c==='gap'&&pageSelection){const s=pageSettings(true),v=e.target.value;if(v==='')delete s.gap;else s.gap=clamp(Math.round(+v),0,1600);saveScenes();renderWebtoon()}
   if(c==='zoom'){const z=$('#wzoom');z.value=e.target.value;z.dispatchEvent(new Event('change'))}
-  if(e.target.id==='wsws'){applyPreset(e.target.value)}});
+});
 ctx.addEventListener('input',e=>{const c=e.target.dataset.ctx;
   if(c==='sfxword'){opt.sfx=e.target.value.replace(/[-\s]/g,'')||'쾅';SS('rough-tool-sfx',opt.sfx)}
   if(c==='lsize'){const s=$('#wballoonsize');s.value=e.target.value;s.dispatchEvent(new Event('input'));e.target.nextElementSibling.textContent=e.target.value+'%'}
@@ -383,7 +382,7 @@ function openOff(id){if(id==='refs'){assetTab('ref');return}if(id==='library'){a
 drawer.addEventListener('click',e=>{const k=e.target.closest('[data-dt]')?.dataset.dt;if(!k)return;if(k==='close')setDrawer(false);else drawerTab(k)});
 miniWrap.addEventListener('click',e=>{if(e.target.closest('[data-mini="close"]')){miniWrap.hidden=true;SS('rough-ws-mini',false);renderCtx()}});
 {const _rc=renderCtx;renderCtx=function(...a){_rc(...a);const r=ctx.querySelector('.cb-right');if(!r||r.querySelector('[data-off]'))return;
-  r.insertAdjacentHTML('afterbegin',`<button class="cb${drawer.hidden?'':' on'}" data-off="drawer" aria-expanded="${!drawer.hidden}" title="속성·글자·정렬·기록">속성 ${drawer.hidden?'▾':'▴'}</button><button class="cb${miniWrap.hidden?'':' on'}" data-off="mini" aria-pressed="${!miniWrap.hidden}" title="미니맵 켜고 끄기">미니맵</button>`)}}
+  r.insertAdjacentHTML('afterbegin',`<button class="cb${drawer.hidden?'':' on'}" data-off="drawer" aria-expanded="${!drawer.hidden}" title="속성·글자·정렬·기록">속성 ${drawer.hidden?'▾':'▴'}</button>`)}}
 ctx.addEventListener('click',e=>{const o=e.target.closest('[data-off]')?.dataset.off;if(!o)return;if(o==='drawer')setDrawer(drawer.hidden);if(o==='mini'){miniWrap.hidden=!miniWrap.hidden;SS('rough-ws-mini',!miniWrap.hidden);if(!miniWrap.hidden)RoughStudio.mini.refresh();renderCtx()}});
 
 // ---------- 에셋 패널(오른쪽 전용) ----------
@@ -585,8 +584,18 @@ function gapMenu(gap){const si=gap.closest('section').dataset.pageScene,key=`${s
   return [{label:'간격',sub:()=>[{label:'붙임 · 0px',run:()=>setGap(key,0)},{label:'기본',run:()=>setGap(key,null)},{label:'쉼 · 300px',run:()=>setGap(key,300)},{label:'큰 쉼 · 600px',run:()=>setGap(key,600)},{label:'아주 길게 · 1200px',run:()=>setGap(key,1200)}]},
     {label:'전환 질감',sub:bgSub(g)},{label:'배경 이미지',sub:()=>[...Object.values(IMG.bg||{}).map(r=>({label:r.name||'배경 이미지',run:()=>applyAsset('bgimg',r.id,g)})),{label:'이미지 올리기…',run:()=>{selectPageCut(g);assetTab('bg',true);assetBody.querySelector('[data-as="bgup"]')?.click()}}]},
     {label:'배경 세부(중간색·씬 끝 색)…',run:()=>{selectPageCut(g);setDrawer(true,'props')}},SEP,{label:'여기에 새 컷…',run:()=>askCut(key,true,gap)}]}
+// 보기 메뉴(위 막대): 화면 배치 설정을 한곳에 — 상황 막대에는 선택한 것만
+function viewMenu(){return [{label:'미니맵',check:!miniWrap.hidden,run:()=>{miniWrap.hidden=!miniWrap.hidden;SS('rough-ws-mini',!miniWrap.hidden);if(!miniWrap.hidden)RoughStudio.mini.refresh();renderCtx()}},
+  {label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},SEP,
+  {label:'씬 세로로 이어 보기',check:!AB,run:()=>setAB(false)},{label:'씬 나란히(대지)',check:AB,run:()=>setAB(true)},SEP,
+  {label:'작업 공간',sub:()=>Object.entries(PRESETS).map(([k,p])=>({label:p.name,check:LAYOUT.preset===k,run:()=>applyPreset(k)}))},
+  {label:'배치 초기화',run:()=>applyPreset(LAYOUT.preset&&PRESETS[LAYOUT.preset]?LAYOUT.preset:'edit')},SEP,
+  {label:'전체 보기',key:'Shift+1',run:()=>RoughStudio.fitAll()},{label:'100%',key:'Shift+0',run:()=>RoughStudio.zoomTo(1)}]}
+{const vb=document.createElement('button');vb.className='btn';vb.id='wviewmenu';vb.setAttribute('aria-haspopup','menu');vb.title='미니맵 · 씬 배치 · 작업 공간';vb.textContent='보기';
+  const z=V.querySelector('.edtop-r .czoom');z?z.after(vb):V.querySelector('.edtop-r')?.prepend(vb);
+  vb.addEventListener('click',e=>{e.stopPropagation();const r=vb.getBoundingClientRect();cmOpen(viewMenu(),r.left,r.bottom+4)})}
 function emptyMenu(){return [{label:'전체 보기',key:'Shift+1',run:()=>RoughStudio.fitAll()},{label:'100%',key:'Shift+0',run:()=>RoughStudio.zoomTo(1)},pageSelection&&{label:'선택한 컷 보기',key:'Shift+2',run:()=>RoughStudio.fitSelected()},SEP,
-  {label:'미니맵',check:!miniWrap.hidden,run:()=>ctx.querySelector('[data-off="mini"]')?.click()},{label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},{label:'읽기 모드',key:'P',run:()=>$('#wread').click()},
+  {label:'미니맵',check:!miniWrap.hidden,run:()=>viewMenu()[0].run()},{label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},{label:'읽기 모드',key:'P',run:()=>$('#wread').click()},
   SEP,{label:'대사 교정…',run:()=>$('#wproof').click()},{label:'완성본 점검(다음 문제 컷)',run:()=>typeof jumpArtCheck==='function'&&jumpArtCheck()}]}
 reader.addEventListener('contextmenu',e=>{if(!inEdit()||!pageEditing)return;e.preventDefault();e.stopPropagation();hideFly();
   const L=e.target.closest('[data-letter]'),g=e.target.closest('[data-slot-index]'),gap=e.target.closest('[data-page-gap]');let items=null;
