@@ -594,21 +594,38 @@ reader.addEventListener('contextmenu',e=>{if(!inEdit()||!pageEditing)return;e.pr
 document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||!(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')))return;e.preventDefault();
   const el=selectedLetter||selGroup();if(!el)return;const r=el.getBoundingClientRect();el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:r.left+Math.min(40,r.width/2),clientY:r.top+Math.min(40,r.height/2)}))});
 
-// ---------- 말풍선 변형 손잡이: 누르면 바로 끌어 옮기고(기존), 모서리를 끌어 크기 ----------
-const tbox=mk('tbox');tbox.hidden=true;tbox.innerHTML=['nw','ne','se','sw'].map(c=>`<i class="th" data-th="${c}" title="끌어서 크기 (Shift: 1% 단위 대신 5% 단위)"></i>`).join('')+'<output class="tb-v"></output>';document.body.appendChild(tbox);
-let tdrag=null;
-function tArt(){return selectedLetter?.querySelector('[data-balloon]')||null}
-function placeTbox(){const art=tArt();if(!art||!inEdit()||tool!=='select'||tdrag===false){tbox.hidden=true;return}
-  const r=art.getBoundingClientRect();if(!r.width){tbox.hidden=true;return}tbox.hidden=false;Object.assign(tbox.style,{left:r.left-4+'px',top:r.top-4+'px',width:r.width+8+'px',height:r.height+8+'px'})}
+// ---------- 변형 손잡이: 식자는 누르면 바로 끌어 옮기고(기존) 모서리로 크기, 컷 그림은 바로 끌고 모서리로 확대 ----------
+const tbox=mk('tbox');tbox.hidden=true;tbox.innerHTML=['nw','ne','se','sw'].map(c=>`<i class="th" data-th="${c}" title="끌어서 크기 (Shift: 5% 단위)"></i>`).join('')+'<output class="tb-v"></output>';document.body.appendChild(tbox);
+let tdrag=null,tmode=null; // tmode: 'letter' | 'art'
+const letterScale=L=>{const g=L.closest('[data-slot-index]');const s=withKey(pageKey(g),()=>pageSettings()?.letters?.[L.dataset.letter]?.scale);return +s||1};
+function tTarget(){if(!inEdit()||tool!=='select'||cropKey)return null;
+  if(selectedLetter){const art=selectedLetter.querySelector('[data-balloon]');return {mode:'letter',el:art||selectedLetter,box:(art||selectedLetter)}}
+  const g=selGroup();if(g&&!isLocked(g,'cut')){const art=g.querySelector('[data-art]');if(art)return {mode:'art',el:art,g,box:{getBoundingClientRect:()=>frameRect(g)}}}
+  return null}
+function frameRect(g){const f=JSON.parse(g.dataset.frame),m=g.ownerSVGElement.getScreenCTM(),a=new DOMPoint(f.x,f.y).matrixTransform(m),b=new DOMPoint(f.x+f.w,f.y+f.h).matrixTransform(m);return {left:a.x,top:a.y,width:b.x-a.x,height:b.y-a.y}}
+function setTbox(r,pad){Object.assign(tbox.style,{left:r.left-pad+'px',top:r.top-pad+'px',width:r.width+pad*2+'px',height:r.height+pad*2+'px'})}
+function placeTbox(){const t=tTarget();if(!t){tbox.hidden=true;return}const r=t.box.getBoundingClientRect();if(!r.width){tbox.hidden=true;return}
+  tbox.hidden=false;tbox.classList.toggle('art',t.mode==='art');setTbox(r,t.mode==='art'?-30:4)}
 (function loop(){if(!tdrag)placeTbox();requestAnimationFrame(loop)})();
-tbox.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-th]'),art=tArt();if(!h||!art)return;e.preventDefault();e.stopPropagation();
-  if(isLocked(selectedLetter.closest('[data-slot-index]'),selectedLetter.dataset.letter)){flash('잠긴 식자예요');return}
-  const r=art.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,s0=Number($('#wballoonsize').value)/100||1;
-  tdrag={art,cx,cy,s0,d0:Math.hypot(e.clientX-cx,e.clientY-cy)||1,meta:JSON.parse(art.dataset.balloon),L:selectedLetter,s:s0};h.setPointerCapture(e.pointerId)});
-tbox.addEventListener('pointermove',e=>{if(!tdrag)return;const d=Math.hypot(e.clientX-tdrag.cx,e.clientY-tdrag.cy);let s=tdrag.s0*d/tdrag.d0;
-  s=Math.max(.5,Math.min(2,Math.round(s*(e.shiftKey?20:100))/(e.shiftKey?20:100)));tdrag.s=s;tdrag.art.setAttribute('transform',balloonTransform(tdrag.meta,s));
-  tbox.querySelector('.tb-v').textContent=Math.round(s*100)+'%';const r=tdrag.art.getBoundingClientRect();Object.assign(tbox.style,{left:r.left-4+'px',top:r.top-4+'px',width:r.width+8+'px',height:r.height+8+'px'})});
-tbox.addEventListener('pointerup',()=>{if(!tdrag)return;const {L,s}=tdrag;tdrag=null;tbox.querySelector('.tb-v').textContent='';const b=$('#wballoonsize');b.value=Math.round(s*100);b.dispatchEvent(new Event('input'));saveLetter(L,{scale:s});flash(`말풍선 크기 ${Math.round(s*100)}%`)});
+tbox.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-th]'),t=tTarget();if(!h||!t)return;e.preventDefault();e.stopPropagation();
+  const r=t.box.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,d0=Math.hypot(e.clientX-cx,e.clientY-cy)||1;
+  if(t.mode==='letter'){const L=selectedLetter;if(isLocked(L.closest('[data-slot-index]'),L.dataset.letter)){flash('잠긴 식자예요');return}
+    const art=L.querySelector('[data-balloon]');let wrap=null;
+    if(!art){wrap=L.querySelector(':scope > .lsc');if(!wrap){wrap=document.createElementNS('http://www.w3.org/2000/svg','g');wrap.setAttribute('class','lsc');wrap.setAttribute('style','transform-box:fill-box;transform-origin:center');while(L.firstChild)wrap.appendChild(L.firstChild);L.appendChild(wrap)}}
+    tdrag={mode:'letter',L,art,wrap,meta:art?JSON.parse(art.dataset.balloon):null,cx,cy,d0,s0:art?(Number($('#wballoonsize').value)/100||1):letterScale(L)}}
+  else{const z=(pageSettings()?.img)||{s:1,dx:0,dy:0};tdrag={mode:'art',g:t.g,cx,cy,d0,s0:z.s||1,z}}
+  tdrag.s=tdrag.s0;h.setPointerCapture(e.pointerId)});
+tbox.addEventListener('pointermove',e=>{if(!tdrag)return;const d=Math.hypot(e.clientX-tdrag.cx,e.clientY-tdrag.cy),q=e.shiftKey?20:100;let s=Math.round(tdrag.s0*d/tdrag.d0*q)/q;
+  if(tdrag.mode==='letter'){s=Math.max(.5,Math.min(tdrag.art?2:3,s));tdrag.s=s;if(tdrag.art)tdrag.art.setAttribute('transform',balloonTransform(tdrag.meta,s));else tdrag.wrap.style.transform=`scale(${s})`;
+    const el=tdrag.art||tdrag.L;setTbox(el.getBoundingClientRect(),4)}
+  else{s=Math.max(1,Math.min(5,s));tdrag.s=s;setZoom(tdrag.g,{...tdrag.z,s})}
+  tbox.querySelector('.tb-v').textContent=Math.round(s*100)+'%'});
+tbox.addEventListener('pointerup',()=>{if(!tdrag)return;const t=tdrag;tdrag=null;tbox.querySelector('.tb-v').textContent='';
+  if(t.mode==='letter'){if(t.art){const b=$('#wballoonsize');b.value=Math.round(t.s*100);b.dispatchEvent(new Event('input'))}else{saveLetter(t.L,{scale:t.s});renderWebtoon()}flash(`크기 ${Math.round(t.s*100)}%`)}
+  else{saveZoom(t.g);flash(`그림 확대 ${Math.round(t.s*100)}% · 그림을 끌어 위치를 옮겨요`)}});
+// 고른 컷의 그림 위에서 Alt+휠로도 확대·축소
+reader.addEventListener('wheel',e=>{if(!e.altKey||!inEdit())return;const g=e.target.closest('[data-slot-index]');if(!g||pageKey(g)!==pageSelection||isLocked(g,'cut'))return;e.preventDefault();
+  const z=(pageSettings()?.img)||{s:1,dx:0,dy:0},s=Math.max(1,Math.min(5,(z.s||1)*(e.deltaY<0?1.1:1/1.1)));setZoom(g,{...z,s});clearTimeout(reader._zt);reader._zt=setTimeout(()=>saveZoom(g),250)},{passive:false});
 
 // ---------- 연결 ----------
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);renderCtx();return r}}

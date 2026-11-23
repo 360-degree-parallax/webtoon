@@ -200,6 +200,7 @@ dialog textarea{min-height:360px;font-size:13px;font-family:ui-monospace,SFMono-
 .cmenu-box .cm-l{flex:1;display:flex;gap:6px;align-items:center}.cmenu-box kbd{font-size:11.5px;color:var(--t2);font-family:inherit}.cmenu-box .cm-a{font-style:normal;color:var(--t2)}.cmenu-box .cm-c{font-style:normal;width:12px;color:var(--blue,#2d71f7)}.cmenu-box .danger{color:#c2410c}.cm-sep{height:1px;background:var(--line);margin:4px 2px}
 .tbox{position:fixed;z-index:35;pointer-events:none;border:1.5px dashed #2d71f7;border-radius:6px}.tbox .th{position:absolute;width:12px;height:12px;background:#fff;border:2px solid #2d71f7;border-radius:3px;pointer-events:auto;touch-action:none}
 .tbox [data-th=nw]{left:-7px;top:-7px;cursor:nwse-resize}.tbox [data-th=ne]{right:-7px;top:-7px;cursor:nesw-resize}.tbox [data-th=se]{right:-7px;bottom:-7px;cursor:nwse-resize}.tbox [data-th=sw]{left:-7px;bottom:-7px;cursor:nesw-resize}
+.tbox.art{border-color:rgba(45,113,247,.0)}.tbox.art .th{width:16px;height:16px;border-radius:50%;background:#2d71f7;border-color:#fff;box-shadow:0 0 0 1px #2d71f7}.tbox.art .th::after{content:'';position:absolute;inset:3px;border:1.5px solid #fff;border-radius:50%}
 .tbox .tb-v{position:absolute;left:50%;top:-26px;transform:translateX(-50%);font-size:12px;background:#2d71f7;color:#fff;border-radius:4px;padding:1px 6px}.tbox .tb-v:empty{display:none}
 .btnrow{display:flex;gap:6px;flex-wrap:wrap}
 .xsep{border:0;border-top:1px solid var(--line);margin:4px 0}.histl{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.histl li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.histl small{display:block;color:var(--t3);font-size:12px}
@@ -1490,7 +1491,9 @@ function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key
     const move=Number.isFinite(pos?.x)&&Number.isFinite(pos?.y)?` transform="translate(${pos.x} ${pos.y})"`:'';
     const attrText=esc(text).replace(/\n/g,'&#10;');
     const access=interactive?` data-letter="${key}" data-letter-text="${attrText}" tabindex="0" aria-label="${label} ${attrText}"`:'';
-    const svg=draw(text,pos);
+    let svg=draw(text,pos);
+    // 나레이션·효과음 크기(scale): 제 자리 가운데를 기준으로 키움. 말풍선은 balloonTransform이 따로 처리
+    const lsc=+pos?.scale||1;if(!/^dialog/.test(key)&&lsc!==1)svg=`<g class="lsc" style="transform-box:fill-box;transform-origin:center;transform:scale(${lsc})">${svg}</g>`;
     o+=LAYER_TAGS?`<g data-layer="${label}" data-text="${attrText}"${move}>${svg}</g>`:move||access?`<g${move}${access}>${svg}</g>`:svg;
   };
   (p.sfx||[]).forEach((text,n)=>add('effect-'+n,'효과음',text,(value,pos)=>soundEffectSVG(value,box,p.side,n,pos)));
@@ -2466,7 +2469,7 @@ pageReader.addEventListener('pointerdown',e=>{
   selectPageCut(group);
   const letter=e.target.closest('[data-letter]');
   selectLetter(letter);
-  if(!letter){if(was&&(pageSettings()?.img?.s||1)>1)startArtDrag(group,e);return}
+  if(!letter){if((pageSettings()?.img?.s||1)>1&&e.target.closest('[data-art]'))startArtDrag(group,e);return}  // 확대한 그림은 처음 누를 때부터 바로 끌기
   e.preventDefault();
   const handle=e.target.closest('[data-tail-handle]');
   if(handle){
