@@ -56,8 +56,11 @@ if __name__ == '__main__':
     if '--export' in A:
         allidx = np.arange(len(ids)); (v, wv), F = vecs(allidx); X = F(allidx); voc = v.get_feature_names_out(); nv = len(voc); wvoc = wv.get_feature_names_out(); heads = {}
         for key, name in (('shot', '샷'), ('role', '역할')):
-            y = Y[name]; m = LogisticRegression(C=C, max_iter=4000).fit(X, y, sample_weight=WT.sample_weights(ids, name, y)); W = m.coef_
-            heads[key] = {'classes': [str(k) for k in m.classes_], 'b': np.round(m.intercept_, 3).tolist(), 'W': [np.round(W[:, s * nv:(s + 1) * nv], 2).tolist() for s in range(3)], 'Ww': np.round(W[:, 3 * nv:], 2).tolist(),
+            y = Y[name]; m = LogisticRegression(C=C, max_iter=4000).fit(X, y, sample_weight=WT.sample_weights(ids, name, y))
+            if PRUNE: m.coef_[np.abs(m.coef_) < PRUNE] = 0
+            W = np.round(m.coef_, 2); cuts = [0, nv, 2 * nv, 3 * nv, W.shape[1]]
+            sp = lambda row: [x for k in np.nonzero(row)[0] for x in (int(k), float(row[k]))]
+            heads[key] = {'classes': [str(k) for k in m.classes_], 'b': np.round(m.intercept_, 3).tolist(), 'S': [[sp(W[c, cuts[s]:cuts[s + 1]]) for c in range(W.shape[0])] for s in range(4)],
                           'check': [str(x) for x in m.predict(X[:40])]}
         model = {'meta': {'kind': 'char_wb 1-3gram, tf 1+log, idf, l2 + logistic(multinomial)', 'vocab': nv, 'C': C, 'ctx': 0.5, 'eval': res, 'cuts': len(ids)},
                  'vocab': list(voc), 'idf': np.round(v.idf_, 4).tolist(), 'wvocab': list(wvoc), 'widf': np.round(wv.idf_, 4).tolist(), 'wpat': WPAT, **heads, 'checkText': [[text[k], prev[k], nxt[k]] for k in range(40)]}

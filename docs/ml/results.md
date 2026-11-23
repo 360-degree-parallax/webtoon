@@ -175,3 +175,17 @@ node tools/eval_engine.js --preds tools/ml/cache/preds-ngram.json
 - 역할을 모델로 바꿔도 묶음 판정은 거의 그대로(서사 형태 31.8→31.1%, VNG 39.4→38.8%, 감정 곡선 35.2→35.5%, 연출명 9.9→10.0%)
 - 글에 적은 `{샷}`·작가 취향이 여전히 우선
 - 파일: `rough/shot-model.js`(836KB) · `python3 tools/ml/train_shot.py --C 2 --export` · 평가용 `--preds tools/ml/cache/preds-shot.json` → `node tools/eval_engine.js --preds tools/ml/cache/preds-ngram.json --shot-preds tools/ml/cache/preds-shot.json`. 브라우저 계산 일치 40/40
+
+### ⑧-2 샷·역할 모델 설정 탐색 (적용)
+
+- `tools/ml/tune_cut.py`로 C·문맥 가중·어휘 수·단어 n-그램·n-그램 범위를 한 작품 빼고 비교(샷·역할·감정·강도 각 15설정 + 조합 4)
+- 샷: 글자 8000 + **단어 1~2그램 4000(문맥 없이)**이 가장 좋음. 작은 가중치(|w|<0.2)를 0으로 해도 정확도 그대로라 버려서 파일을 줄임
+
+  | | 이전 | 적용 |
+  |---|---|---|
+  | 샷 | 47.8% (한 단계 차이까지 71.6%) | **50.0%** (73.5%, κ 0.34) |
+  | 역할 | 52.9% | **53.4%** |
+  | 파일 | 836KB | **600KB** |
+
+- 감정·강도는 가장 좋은 설정도 +0.3~0.9%p(여러 설정 중 고른 효과로 부풀 수 있는 크기)라 바꾸지 않음
+- 브라우저 계산 확인: 3,668컷 전체에서 샷 3,664 · 역할 3,668 일치(어긋난 4컷은 가중치 반올림 때문인 경계 사례)
