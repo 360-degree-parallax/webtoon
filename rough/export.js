@@ -137,21 +137,29 @@ async function scenePSD(m,ag){const layer=(name,r,extra={})=>r?{name,canvas:r.ca
       if(!texts.length){kids.push(layer(name,await raster(m,L.el.outerHTML)));continue}
       // 말풍선·나레이션: 모양은 그림 레이어, 글자는 편집 가능한 텍스트 레이어(미리보기 픽셀도 함께 넣어 텍스트를 못 읽는 앱에서도 보이게)
       const shape=L.el.cloneNode(true);shape.querySelectorAll('text').forEach(t=>t.remove());
-      const sh=await raster(m,shape.outerHTML),tx=await raster(m,texts.map(t=>t.outerHTML).join(''));
-      const sub=[layer('모양',sh),textLayer('글자',tx,texts)].filter(Boolean);
+      // 글자 픽셀·위치는 옮김(translate)·크기(.lsc scale)·말풍선 변형을 그대로 지닌 채로: 글자만 남긴 복제본으로 그림
+      const only=L.el.cloneNode(true);only.querySelectorAll('*').forEach(e=>{if(e.tagName!=='text'&&!e.querySelector('text')&&!e.closest('text'))e.remove()});
+      const sh=await raster(m,shape.outerHTML),tx=await raster(m,only.outerHTML);
+      const sub=[layer('모양',sh),textLayer('글자',tx,texts,textCTM(m,L.el))].filter(Boolean);
       kids.push({name,opened:false,children:sub})}
     children.push({name:`컷 ${pad(c.n)}`,opened:true,children:kids.filter(Boolean)})}
   const flat=await raster(m,m.root.innerHTML,{trim:false,bg:'#fff'});
   return ag.writePsdUint8Array({width:m.W,height:m.H,canvas:flat.canvas,children:children.filter(Boolean)},{generateThumbnail:false,invalidateTextLayers:true})}
 
 // SVG <text> 줄들 → ag-psd 텍스트 레이어. 기준점은 첫 줄 기준선, 가운데 정렬이면 x가 가운데
-function textLayer(name,r,texts){if(!r)return null;const t0=texts[0],num=(e,k,d=0)=>parseFloat(e.getAttribute(k))||d;
-  const fs=num(t0,'font-size',20),x=num(t0,'x'),y=num(t0,'y'),lead=texts.length>1?num(texts[1],'y')-y:fs*1.3;
+// 글자 묶음을 화면 밖 SVG에 잠깐 붙여 첫 글자의 누적 변형(옮김·크기·회전)을 잼 → [a,b,c,d,e,f]
+function textCTM(m,el){const host=document.createElementNS(NS,'svg');host.setAttribute('width',m.W);host.setAttribute('height',m.H);
+  host.style.cssText='position:absolute;left:-100000px;top:0;visibility:hidden';host.appendChild(document.importNode(el,true));document.body.appendChild(host);
+  try{const t=host.querySelector('text'),k=t&&t.getCTM();return k?[k.a,k.b,k.c,k.d,k.e,k.f]:[1,0,0,1,0,0]}catch(_){return [1,0,0,1,0,0]}finally{host.remove()}}
+function textLayer(name,r,texts,M=[1,0,0,1,0,0]){if(!r)return null;const t0=texts[0],num=(e,k,d=0)=>parseFloat(e.getAttribute(k))||d;
+  const sc=Math.hypot(M[0],M[1])||1,x0=num(t0,'x'),y0=num(t0,'y');
+  // 크기는 글자 크기에 녹이고(클립스튜디오가 변형 배율을 무시해도 같은 크기), 회전만 변형으로 남김
+  const fs=num(t0,'font-size',20)*sc,x=M[0]*x0+M[2]*y0+M[4],y=M[1]*x0+M[3]*y0+M[5],lead=(texts.length>1?num(texts[1],'y')-y0:num(t0,'font-size',20)*1.3)*sc;
   const hex=(t0.getAttribute('fill')||'#000000').replace('#',''),rgb={r:parseInt(hex.slice(0,2),16)||0,g:parseInt(hex.slice(2,4),16)||0,b:parseInt(hex.slice(4,6),16)||0};
   const anchor=t0.getAttribute('text-anchor'),just=anchor==='middle'?'center':anchor==='end'?'right':'left',w=+t0.getAttribute('font-weight')||400;
   const font=(PAGE_FONT||'Pretendard').split(',')[0].replace(/["']/g,'').trim();
-  return {name,canvas:r.canvas,left:r.left,top:r.top,text:{text:texts.map(t=>t.textContent).join('\r'),transform:[1,0,0,1,x,y],
-    style:{font:{name:font+(w>=600?'-SemiBold':w>=500?'-Medium':'-Regular')},fontSize:fs,leading:lead,autoLeading:false,tracking:Math.round((num(t0,'letter-spacing')/fs)*1000),fillColor:rgb},
+  return {name,canvas:r.canvas,left:r.left,top:r.top,text:{text:texts.map(t=>t.textContent).join('\r'),transform:[M[0]/sc,M[1]/sc,M[2]/sc,M[3]/sc,x,y],
+    style:{font:{name:font+(w>=600?'-SemiBold':w>=500?'-Medium':'-Regular')},fontSize:fs,leading:lead,autoLeading:false,tracking:Math.round((num(t0,'letter-spacing')*sc/fs)*1000),fillColor:rgb},
     paragraphStyle:{justification:just}}}}
 
 function scriptText(ms,title){const L=[`${title}`,'',`클립스튜디오에서 텍스트 도구로 다시 입력할 때 쓰는 대사 목록이에요. PSD의 말풍선·나레이션 글자는 텍스트 레이어로 들어 있어요(앱에 따라 그림으로 열릴 수 있어요). 효과음은 그림이에요.`,''];
