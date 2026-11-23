@@ -22,7 +22,6 @@ const TOOLS=[
   {id:'hand',name:'손',key:'H',icon:'<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.9-2.6L3.3 14a1.6 1.6 0 0 1 2.5-2L8 14"/>',hint:'끌어서 캔버스를 옮겨요 · Space를 누른 채 끌어도 돼요'},
   {id:'zoom',name:'돋보기',key:'Z',icon:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8M10.5 7.5v6M7.5 10.5h6"/>',hint:'누른 곳을 확대 · Alt+클릭은 축소'},
   0,
-  {id:'split',name:'칸 나누기',key:'F',icon:'<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M3.5 14L20.5 9.5"/>',hint:'나눌 컷을 누르면 바로 아래에 새 칸이 생겨요 · 새 칸 글은 씬 화면에서 고쳐요'},
   {id:'crop',name:'그림 편집',key:'C',icon:'<path d="M6.5 2.5v15h15M2.5 6.5h15v15"/>',hint:'컷을 누르면 그림 확대·이동 모드 · Ctrl+휠 확대, 끌어 이동'},
   0,
   {id:'balloon',name:'말풍선',key:'B',sub:true,icon:'<path d="M12 4c5 0 9 3.1 9 7s-4 7-9 7c-1 0-2-.1-2.9-.4L4.5 19.5l1.4-3.6A6.6 6.6 0 0 1 3 11c0-3.9 4-7 9-7z"/>',hint:'컷 안을 누른 자리에 말풍선 · 형태는 막대 왼쪽에서 고르거나 아이콘을 길게 눌러요'},
@@ -169,7 +168,7 @@ leftDock.querySelector('.ltabs')?.remove();
 const propsBody=mk('ws-props');[...rightDock.children].filter(x=>!x.classList.contains('sheet-h')).forEach(x=>propsBody.appendChild(x));
 const navBody=mk('ws-nav',`<div class="nav-row"><input type="range" id="wsnavz" min="10" max="400" step="1" value="100" aria-label="캔버스 배율"><output id="wsnavzv">100%</output></div>
   <div class="nav-btns"><button class="btn sm" data-nav="all" title="Shift+1">전체</button><button class="btn sm" data-nav="100" title="Shift+0">100%</button><button class="btn sm" data-nav="sel" title="Shift+2">선택한 컷</button></div><div class="nav-map"></div><p class="nav-note" hidden>나란히 보기에서는 미니맵 대신 가로 스크롤로 이동해요.</p>`);
-const histBody=mk('ws-hist','<ol class="hist" id="wshist"></ol><p class="hist-note">항목을 누르면 그때 상태로 돌아가요. 칸 나누기·말풍선 추가도 되돌릴 수 있어요.</p>');
+const histBody=mk('ws-hist','<ol class="hist" id="wshist"></ol><p class="hist-note">항목을 누르면 그때 상태로 돌아가요. 컷 추가·말풍선 추가도 되돌릴 수 있어요.</p>');
 const textBody=mk('ws-text');const alignBody=mk('ws-align');const libBody=mk('ws-lib');const assetBody=mk('ws-assets');
 $('#wtoc').hidden=false;$('#wrefs').hidden=false;
 const PANELS={
@@ -541,10 +540,10 @@ document.addEventListener('pointerdown',e=>{if(!cm.hidden&&!cm.contains(e.target
 addEventListener('blur',cmClose);addEventListener('resize',cmClose);document.addEventListener('scroll',()=>{if(!cm.hidden)cmClose()},true);
 const K=id=>KEYS[id]||'';
 // 컷 넣기·복제·옮기기(이미지·편집값이 함께 움직이게 remapCuts 사용)
-function insertCut(key,after,copy){const [si,slot]=key.split(':').map(Number),sc=SCENES[si],len=sc.cuts.length,at=slot+(after?1:0);
-  remapCuts(si,()=>{sc.cuts.splice(at,0,copy?sc.cuts[slot]:'(새 컷) 장면을 적어 주세요');if(sc.pageEdits.length>at||copy)sc.pageEdits.splice(at,0,copy&&sc.pageEdits[slot]?structuredClone(sc.pageEdits[slot]):null);return moveMap(len,x=>x>=at?x+1:x)});
+function insertCut(key,after,copy,text){const [si,slot]=key.split(':').map(Number),sc=SCENES[si],len=sc.cuts.length,at=slot+(after?1:0);
+  remapCuts(si,()=>{sc.cuts.splice(at,0,copy?sc.cuts[slot]:(text||'(새 컷) 장면을 적어 주세요'));if(sc.pageEdits.length>at||copy)sc.pageEdits.splice(at,0,copy&&sc.pageEdits[slot]?structuredClone(sc.pageEdits[slot]):null);return moveMap(len,x=>x>=at?x+1:x)});
   if(si===SCUR)CUTS=sc.cuts;refreshText(si);const g=groupBy(`${si}:${at}`);if(g){selectPageCut(g);g.scrollIntoView({block:'center',behavior:'smooth'})}
-  flash(copy?'컷을 복제했어요 · 그림은 복제되지 않아요':'새 컷을 넣었어요 · 글은 씬 화면이나 대사 교정에서 고쳐요')}
+  flash(copy?'컷을 복제했어요 · 그림은 복제되지 않아요':'새 컷을 넣었어요 · Ctrl+Z로 되돌리기')}
 function moveCutBy(key,d){const [si,slot]=key.split(':').map(Number),sc=SCENES[si],j=slot+d,len=sc.cuts.length;if(j<0||j>=len)return;
   remapCuts(si,()=>{[sc.cuts[slot],sc.cuts[j]]=[sc.cuts[j],sc.cuts[slot]];while(sc.pageEdits.length<=Math.max(slot,j))sc.pageEdits.push(null);[sc.pageEdits[slot],sc.pageEdits[j]]=[sc.pageEdits[j],sc.pageEdits[slot]];return moveMap(len,x=>x===slot?j:x===j?slot:x)});
   if(si===SCUR)CUTS=sc.cuts;refreshText(si);const g=groupBy(`${si}:${j}`);if(g)selectPageCut(g)}
@@ -569,8 +568,7 @@ function cutMenu(g,pt){const key=pageKey(g),[si,slot]=key.split(':').map(Number)
     {label:'레퍼런스 바꾸기…',run:()=>{selectPageCut(g);assetTab('ref',true)}},
     {label:'이 컷에 맞는 에셋 추천',run:()=>{selectPageCut(g);assetTab('rec',true)}},
     si===SCUR&&{label:'컷 그림 등록·교체…',run:()=>{target={kind:'cut',key:String(g.dataset.p)};$('#filem').click()}},SEP,
-    {label:'칸 나누기',key:K('split'),disabled:locked,run:()=>splitCut(g)},
-    {label:'위에 새 컷',run:()=>insertCut(key,false)},{label:'아래에 새 컷',run:()=>insertCut(key,true)},{label:'컷 복제',run:()=>insertCut(key,true,true)},
+    {label:'위에 새 컷…',run:()=>askCut(key,false)},{label:'아래에 새 컷…',run:()=>askCut(key,true)},{label:'컷 복제',run:()=>insertCut(key,true,true)},
     {label:'위로 옮기기',disabled:slot===0,run:()=>moveCutBy(key,-1)},{label:'아래로 옮기기',disabled:slot>=len-1,run:()=>moveCutBy(key,1)},SEP,
     {label:'아래 전환 질감',sub:bgSub(g)},{label:'프레임 처음대로',disabled:locked,run:()=>{selectPageCut(g);$('#wframereset').click()}},
     {label:'여기부터 시퀀스로 저장…',run:()=>{selectPageCut(g);$('#wtplsave').click()}},{label:locked?'컷 잠금 풀기':'컷 잠그기',run:()=>toggleLock(key,'cut')},SEP,
@@ -578,7 +576,7 @@ function cutMenu(g,pt){const key=pageKey(g),[si,slot]=key.split(':').map(Number)
 function gapMenu(gap){const si=gap.closest('section').dataset.pageScene,key=`${si}:${gap.dataset.slot}`,g=groupBy(key);if(!g)return null;
   return [{label:'간격',sub:()=>[{label:'붙임 · 0px',run:()=>setGap(key,0)},{label:'기본',run:()=>setGap(key,null)},{label:'쉼 · 300px',run:()=>setGap(key,300)},{label:'큰 쉼 · 600px',run:()=>setGap(key,600)},{label:'아주 길게 · 1200px',run:()=>setGap(key,1200)}]},
     {label:'전환 질감',sub:bgSub(g)},{label:'배경 이미지',sub:()=>[...Object.values(IMG.bg||{}).map(r=>({label:r.name||'배경 이미지',run:()=>applyAsset('bgimg',r.id,g)})),{label:'이미지 올리기…',run:()=>{selectPageCut(g);assetTab('bg',true);assetBody.querySelector('[data-as="bgup"]')?.click()}}]},
-    {label:'배경 세부(중간색·씬 끝 색)…',run:()=>{selectPageCut(g);setDrawer(true,'props')}},SEP,{label:'여기에 새 컷',run:()=>insertCut(key,true)}]}
+    {label:'배경 세부(중간색·씬 끝 색)…',run:()=>{selectPageCut(g);setDrawer(true,'props')}},SEP,{label:'여기에 새 컷…',run:()=>askCut(key,true,gap)}]}
 function emptyMenu(){return [{label:'전체 보기',key:'Shift+1',run:()=>RoughStudio.fitAll()},{label:'100%',key:'Shift+0',run:()=>RoughStudio.zoomTo(1)},pageSelection&&{label:'선택한 컷 보기',key:'Shift+2',run:()=>RoughStudio.fitSelected()},SEP,
   {label:'미니맵',check:!miniWrap.hidden,run:()=>ctx.querySelector('[data-off="mini"]')?.click()},{label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},{label:'읽기 모드',key:'P',run:()=>$('#wread').click()},
   SEP,{label:'대사 교정…',run:()=>$('#wproof').click()},{label:'완성본 점검(다음 문제 컷)',run:()=>typeof jumpArtCheck==='function'&&jumpArtCheck()}]}
@@ -626,6 +624,30 @@ tbox.addEventListener('pointerup',()=>{if(!tdrag)return;const t=tdrag;tdrag=null
 // 고른 컷의 그림 위에서 Alt+휠로도 확대·축소
 reader.addEventListener('wheel',e=>{if(!e.altKey||!inEdit())return;const g=e.target.closest('[data-slot-index]');if(!g||pageKey(g)!==pageSelection||isLocked(g,'cut'))return;e.preventDefault();
   const z=(pageSettings()?.img)||{s:1,dx:0,dy:0},s=Math.max(1,Math.min(5,(z.s||1)*(e.deltaY<0?1.1:1/1.1)));setZoom(g,{...z,s});clearTimeout(reader._zt);reader._zt=setTimeout(()=>saveZoom(g),250)},{passive:false});
+
+// ---------- 컷 추가: 컷 사이에 마우스를 올리면 +, 씬 끝에는 '+ 컷 추가'. 누르면 새 컷 장면 글을 바로 적음 ----------
+const plus=mk('gapplus');plus.hidden=true;plus.innerHTML='<button type="button" title="여기에 새 컷 넣기" aria-label="여기에 새 컷 넣기">+</button>';document.body.appendChild(plus);
+const ask=mk('cutask');ask.hidden=true;ask.innerHTML=`<label for="cutasktext">새 컷 장면</label><textarea id="cutasktext" rows="2" placeholder="예: @준 창가로 다가간다. &quot;누구세요?&quot;"></textarea><div class="ca-acts"><span>Enter 넣기 · Shift+Enter 줄바꿈 · Esc 취소</span><button class="btn sm" data-ca="x">취소</button><button class="btn sm dark" data-ca="go">넣기</button></div>`;document.body.appendChild(ask);
+let plusKey=null,plusHide=0;
+function gapKey(gap){return `${gap.closest('section').dataset.pageScene}:${gap.dataset.slot}`}
+reader.addEventListener('pointermove',e=>{if(!inEdit()||tool!=='select'||!pageEditing||e.buttons||!ask.hidden)return;const gap=e.target.closest('[data-page-gap]');
+  if(!gap){clearTimeout(plusHide);plusHide=setTimeout(()=>{if(!plus.matches(':hover'))plus.hidden=true},250);return}
+  clearTimeout(plusHide);const r=gap.getBoundingClientRect();plusKey=gapKey(gap);plus.hidden=false;
+  Object.assign(plus.style,{left:Math.min(r.right-40,Math.max(r.left+8,e.clientX+28))+'px',top:r.top+r.height/2+'px'})});
+plus.addEventListener('pointerleave',()=>{plusHide=setTimeout(()=>plus.hidden=true,200)});
+plus.addEventListener('click',()=>{if(plusKey){const r=plus.getBoundingClientRect();plus.hidden=true;askCut(plusKey,true,null,r)}});
+function askCut(key,after,anchorEl,rect){const g=groupBy(key);if(!g)return;const r=rect||(anchorEl||g).getBoundingClientRect();ask.hidden=false;ask._k={key,after};
+  const W=Math.min(380,innerWidth-24);Object.assign(ask.style,{width:W+'px',left:Math.max(12,Math.min(innerWidth-W-12,r.left+r.width/2-W/2))+'px',top:Math.max(60,Math.min(innerHeight-170,(rect?r.top:after?r.bottom:r.top)-20))+'px'});
+  const t=ask.querySelector('textarea');t.value='';t.focus()}
+function askDone(go){const k=ask._k;ask.hidden=true;if(!go||!k)return;const v=ask.querySelector('textarea').value.trim();insertCut(k.key,k.after,false,v||undefined)}
+ask.addEventListener('click',e=>{const a=e.target.closest('[data-ca]')?.dataset.ca;if(a)askDone(a==='go')});
+ask.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();askDone(false)}else if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();askDone(true)}});
+document.addEventListener('pointerdown',e=>{if(!ask.hidden&&!ask.contains(e.target))askDone(false)},true);
+// 씬 끝 '+ 컷 추가'
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);if(pageEditing)reader.querySelectorAll('section[data-page-scene]').forEach(sec=>{if(sec.querySelector(':scope > .scene-add'))return;const si=+sec.dataset.pageScene,n=SCENES[si]?.cuts.length;if(!n)return;
+  sec.insertAdjacentHTML('beforeend',`<button type="button" class="scene-add" data-scene-add="${si}">+ 컷 추가</button>`)});return r}}
+reader.addEventListener('click',e=>{const b=e.target.closest('[data-scene-add]');if(!b)return;const si=+b.dataset.sceneAdd,gs=groups().filter(g=>g.closest('section').dataset.pageScene==String(si)),last=gs[gs.length-1];
+  if(!last){const sc=SCENES[si];sc.cuts.push('(새 컷) 장면을 적어 주세요');refreshText(si);return}askCut(pageKey(last),true,b)});
 
 // ---------- 연결 ----------
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);renderCtx();return r}}
