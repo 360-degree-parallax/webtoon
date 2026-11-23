@@ -1,0 +1,616 @@
+﻿번호,단어,분류,기존 매핑,A,B,C,D
+001,똑,문·자물쇠,있음,png/001/A.png,png/001/B.png,png/001/C.png,png/001/D.png
+002,똑똑,문·자물쇠,있음,png/002/A.png,png/002/B.png,png/002/C.png,png/002/D.png
+003,톡,문·자물쇠,있음,png/003/A.png,png/003/B.png,png/003/C.png,png/003/D.png
+004,톡톡,문·자물쇠,있음,png/004/A.png,png/004/B.png,png/004/C.png,png/004/D.png
+005,딱딱,문·자물쇠,,png/005/A.png,png/005/B.png,png/005/C.png,png/005/D.png
+006,쾅쾅,문·자물쇠,,png/006/A.png,png/006/B.png,png/006/C.png,png/006/D.png
+007,콩콩,문·자물쇠,,png/007/A.png,png/007/B.png,png/007/C.png,png/007/D.png
+008,쿵쿵,문·자물쇠,,png/008/A.png,png/008/B.png,png/008/C.png,png/008/D.png
+009,달칵,문·자물쇠,,png/009/A.png,png/009/B.png,png/009/C.png,png/009/D.png
+010,딸깍,문·자물쇠,,png/010/A.png,png/010/B.png,png/010/C.png,png/010/D.png
+011,딸칵,문·자물쇠,,png/011/A.png,png/011/B.png,png/011/C.png,png/011/D.png
+012,철컥,문·자물쇠,,png/012/A.png,png/012/B.png,png/012/C.png,png/012/D.png
+013,철커덕,문·자물쇠,,png/013/A.png,png/013/B.png,png/013/C.png,png/013/D.png
+014,찰칵,문·자물쇠,,png/014/A.png,png/014/B.png,png/014/C.png,png/014/D.png
+015,찰칵찰칵,문·자물쇠,,png/015/A.png,png/015/B.png,png/015/C.png,png/015/D.png
+016,덜컥,문·자물쇠,,png/016/A.png,png/016/B.png,png/016/C.png,png/016/D.png
+017,덜커덕,문·자물쇠,,png/017/A.png,png/017/B.png,png/017/C.png,png/017/D.png
+018,끼익,문·자물쇠,있음,png/018/A.png,png/018/B.png,png/018/C.png,png/018/D.png
+019,끼이익,문·자물쇠,있음,png/019/A.png,png/019/B.png,png/019/C.png,png/019/D.png
+020,끼익…,문·자물쇠,있음,png/020/A.png,png/020/B.png,png/020/C.png,png/020/D.png
+021,삐걱,문·자물쇠,,png/021/A.png,png/021/B.png,png/021/C.png,png/021/D.png
+022,삐거덕,문·자물쇠,,png/022/A.png,png/022/B.png,png/022/C.png,png/022/D.png
+023,삐걱삐걱,문·자물쇠,,png/023/A.png,png/023/B.png,png/023/C.png,png/023/D.png
+024,드르륵,문·자물쇠,,png/024/A.png,png/024/B.png,png/024/C.png,png/024/D.png
+025,드르르륵,문·자물쇠,,png/025/A.png,png/025/B.png,png/025/C.png,png/025/D.png
+026,사르륵,문·자물쇠,,png/026/A.png,png/026/B.png,png/026/C.png,png/026/D.png
+027,쾅,문·자물쇠,,png/027/A.png,png/027/B.png,png/027/C.png,png/027/D.png
+028,탕,문·자물쇠,,png/028/A.png,png/028/B.png,png/028/C.png,png/028/D.png
+029,콰당,문·자물쇠,,png/029/A.png,png/029/B.png,png/029/C.png,png/029/D.png
+030,쿵,문·자물쇠,,png/030/A.png,png/030/B.png,png/030/C.png,png/030/D.png
+031,또각,발걸음·구두·맨발,,png/031/A.png,png/031/B.png,png/031/C.png,png/031/D.png
+032,또각또각,발걸음·구두·맨발,,png/032/A.png,png/032/B.png,png/032/C.png,png/032/D.png
+033,똑각,발걸음·구두·맨발,,png/033/A.png,png/033/B.png,png/033/C.png,png/033/D.png
+034,타닥,발걸음·구두·맨발,,png/034/A.png,png/034/B.png,png/034/C.png,png/034/D.png
+035,타닥타닥,발걸음·구두·맨발,,png/035/A.png,png/035/B.png,png/035/C.png,png/035/D.png
+036,다닥다닥,발걸음·구두·맨발,,png/036/A.png,png/036/B.png,png/036/C.png,png/036/D.png
+037,탁탁,발걸음·구두·맨발,,png/037/A.png,png/037/B.png,png/037/C.png,png/037/D.png
+038,뚜벅,발걸음·구두·맨발,,png/038/A.png,png/038/B.png,png/038/C.png,png/038/D.png
+039,뚜벅뚜벅,발걸음·구두·맨발,,png/039/A.png,png/039/B.png,png/039/C.png,png/039/D.png
+040,저벅,발걸음·구두·맨발,,png/040/A.png,png/040/B.png,png/040/C.png,png/040/D.png
+041,저벅저벅,발걸음·구두·맨발,,png/041/A.png,png/041/B.png,png/041/C.png,png/041/D.png
+042,터벅,발걸음·구두·맨발,,png/042/A.png,png/042/B.png,png/042/C.png,png/042/D.png
+043,터벅터벅,발걸음·구두·맨발,,png/043/A.png,png/043/B.png,png/043/C.png,png/043/D.png
+044,성큼,발걸음·구두·맨발,,png/044/A.png,png/044/B.png,png/044/C.png,png/044/D.png
+045,성큼성큼,발걸음·구두·맨발,,png/045/A.png,png/045/B.png,png/045/C.png,png/045/D.png
+046,사박,발걸음·구두·맨발,,png/046/A.png,png/046/B.png,png/046/C.png,png/046/D.png
+047,사박사박,발걸음·구두·맨발,,png/047/A.png,png/047/B.png,png/047/C.png,png/047/D.png
+048,사뿐,발걸음·구두·맨발,,png/048/A.png,png/048/B.png,png/048/C.png,png/048/D.png
+049,사뿐사뿐,발걸음·구두·맨발,,png/049/A.png,png/049/B.png,png/049/C.png,png/049/D.png
+050,살금,발걸음·구두·맨발,,png/050/A.png,png/050/B.png,png/050/C.png,png/050/D.png
+051,살금살금,발걸음·구두·맨발,,png/051/A.png,png/051/B.png,png/051/C.png,png/051/D.png
+052,총총,발걸음·구두·맨발,,png/052/A.png,png/052/B.png,png/052/C.png,png/052/D.png
+053,종종종,발걸음·구두·맨발,,png/053/A.png,png/053/B.png,png/053/C.png,png/053/D.png
+054,아장아장,발걸음·구두·맨발,,png/054/A.png,png/054/B.png,png/054/C.png,png/054/D.png
+055,우다다다,발걸음·구두·맨발,,png/055/A.png,png/055/B.png,png/055/C.png,png/055/D.png
+056,후다닥,발걸음·구두·맨발,,png/056/A.png,png/056/B.png,png/056/C.png,png/056/D.png
+057,헐레벌떡,발걸음·구두·맨발,,png/057/A.png,png/057/B.png,png/057/C.png,png/057/D.png
+058,쿵쾅,발걸음·구두·맨발,,png/058/A.png,png/058/B.png,png/058/C.png,png/058/D.png
+059,스윽,옷·종이·몸 스침,있음,png/059/A.png,png/059/B.png,png/059/C.png,png/059/D.png
+060,스으윽,옷·종이·몸 스침,있음,png/060/A.png,png/060/B.png,png/060/C.png,png/060/D.png
+061,슥,옷·종이·몸 스침,있음,png/061/A.png,png/061/B.png,png/061/C.png,png/061/D.png
+062,슥슥,옷·종이·몸 스침,,png/062/A.png,png/062/B.png,png/062/C.png,png/062/D.png
+063,살랑,옷·종이·몸 스침,,png/063/A.png,png/063/B.png,png/063/C.png,png/063/D.png
+064,살랑살랑,옷·종이·몸 스침,,png/064/A.png,png/064/B.png,png/064/C.png,png/064/D.png
+065,나풀,옷·종이·몸 스침,,png/065/A.png,png/065/B.png,png/065/C.png,png/065/D.png
+066,나풀나풀,옷·종이·몸 스침,,png/066/A.png,png/066/B.png,png/066/C.png,png/066/D.png
+067,펄럭,옷·종이·몸 스침,,png/067/A.png,png/067/B.png,png/067/C.png,png/067/D.png
+068,펄럭펄럭,옷·종이·몸 스침,,png/068/A.png,png/068/B.png,png/068/C.png,png/068/D.png
+069,팔랑,옷·종이·몸 스침,,png/069/A.png,png/069/B.png,png/069/C.png,png/069/D.png
+070,팔랑팔랑,옷·종이·몸 스침,,png/070/A.png,png/070/B.png,png/070/C.png,png/070/D.png
+071,파닥,옷·종이·몸 스침,,png/071/A.png,png/071/B.png,png/071/C.png,png/071/D.png
+072,파닥파닥,옷·종이·몸 스침,,png/072/A.png,png/072/B.png,png/072/C.png,png/072/D.png
+073,부스럭,옷·종이·몸 스침,,png/073/A.png,png/073/B.png,png/073/C.png,png/073/D.png
+074,부스럭부스럭,옷·종이·몸 스침,,png/074/A.png,png/074/B.png,png/074/C.png,png/074/D.png
+075,바스락,옷·종이·몸 스침,,png/075/A.png,png/075/B.png,png/075/C.png,png/075/D.png
+076,바스락바스락,옷·종이·몸 스침,,png/076/A.png,png/076/B.png,png/076/C.png,png/076/D.png
+077,바삭,옷·종이·몸 스침,,png/077/A.png,png/077/B.png,png/077/C.png,png/077/D.png
+078,꼬깃꼬깃,옷·종이·몸 스침,,png/078/A.png,png/078/B.png,png/078/C.png,png/078/D.png
+079,구깃구깃,옷·종이·몸 스침,,png/079/A.png,png/079/B.png,png/079/C.png,png/079/D.png
+080,꼼지락,옷·종이·몸 스침,,png/080/A.png,png/080/B.png,png/080/C.png,png/080/D.png
+081,꿈틀,옷·종이·몸 스침,,png/081/A.png,png/081/B.png,png/081/C.png,png/081/D.png
+082,꿈틀꿈틀,옷·종이·몸 스침,,png/082/A.png,png/082/B.png,png/082/C.png,png/082/D.png
+083,바르르,옷·종이·몸 스침,,png/083/A.png,png/083/B.png,png/083/C.png,png/083/D.png
+084,파르르,옷·종이·몸 스침,,png/084/A.png,png/084/B.png,png/084/C.png,png/084/D.png
+085,덜덜,옷·종이·몸 스침,,png/085/A.png,png/085/B.png,png/085/C.png,png/085/D.png
+086,뒤척,옷·종이·몸 스침,,png/086/A.png,png/086/B.png,png/086/C.png,png/086/D.png
+087,부비적,옷·종이·몸 스침,,png/087/A.png,png/087/B.png,png/087/C.png,png/087/D.png
+088,쓱,옷·종이·몸 스침,,png/088/A.png,png/088/B.png,png/088/C.png,png/088/D.png
+089,쓰윽,옷·종이·몸 스침,,png/089/A.png,png/089/B.png,png/089/C.png,png/089/D.png
+090,스르륵,옷·종이·몸 스침,,png/090/A.png,png/090/B.png,png/090/C.png,png/090/D.png
+091,툭,손·일상 동작,,png/091/A.png,png/091/B.png,png/091/C.png,png/091/D.png
+092,콕,손·일상 동작,,png/092/A.png,png/092/B.png,png/092/C.png,png/092/D.png
+093,쿡,손·일상 동작,,png/093/A.png,png/093/B.png,png/093/C.png,png/093/D.png
+094,꾹,손·일상 동작,,png/094/A.png,png/094/B.png,png/094/C.png,png/094/D.png
+095,꾹꾹,손·일상 동작,,png/095/A.png,png/095/B.png,png/095/C.png,png/095/D.png
+096,꼬옥,손·일상 동작,,png/096/A.png,png/096/B.png,png/096/C.png,png/096/D.png
+097,꽉,손·일상 동작,,png/097/A.png,png/097/B.png,png/097/C.png,png/097/D.png
+098,꽈악,손·일상 동작,,png/098/A.png,png/098/B.png,png/098/C.png,png/098/D.png
+099,덥석,손·일상 동작,,png/099/A.png,png/099/B.png,png/099/C.png,png/099/D.png
+100,덥썩,손·일상 동작,,png/100/A.png,png/100/B.png,png/100/C.png,png/100/D.png
+101,와락,손·일상 동작,,png/101/A.png,png/101/B.png,png/101/C.png,png/101/D.png
+102,꼼짝,손·일상 동작,,png/102/A.png,png/102/B.png,png/102/C.png,png/102/D.png
+103,움찔,손·일상 동작,,png/103/A.png,png/103/B.png,png/103/C.png,png/103/D.png
+104,움칫,손·일상 동작,,png/104/A.png,png/104/B.png,png/104/C.png,png/104/D.png
+105,멈칫,손·일상 동작,,png/105/A.png,png/105/B.png,png/105/C.png,png/105/D.png
+106,흠칫,손·일상 동작,,png/106/A.png,png/106/B.png,png/106/C.png,png/106/D.png
+107,척,손·일상 동작,있음,png/107/A.png,png/107/B.png,png/107/C.png,png/107/D.png
+108,척!,손·일상 동작,있음,png/108/A.png,png/108/B.png,png/108/C.png,png/108/D.png
+109,척척,손·일상 동작,,png/109/A.png,png/109/B.png,png/109/C.png,png/109/D.png
+110,꾸벅,손·일상 동작,있음,png/110/A.png,png/110/B.png,png/110/C.png,png/110/D.png
+111,꾸벅꾸벅,손·일상 동작,,png/111/A.png,png/111/B.png,png/111/C.png,png/111/D.png
+112,끄덕,손·일상 동작,,png/112/A.png,png/112/B.png,png/112/C.png,png/112/D.png
+113,끄덕끄덕,손·일상 동작,,png/113/A.png,png/113/B.png,png/113/C.png,png/113/D.png
+114,도리도리,손·일상 동작,,png/114/A.png,png/114/B.png,png/114/C.png,png/114/D.png
+115,절레절레,손·일상 동작,,png/115/A.png,png/115/B.png,png/115/C.png,png/115/D.png
+116,힐끔,손·일상 동작,,png/116/A.png,png/116/B.png,png/116/C.png,png/116/D.png
+117,흘깃,손·일상 동작,,png/117/A.png,png/117/B.png,png/117/C.png,png/117/D.png
+118,슬쩍,손·일상 동작,,png/118/A.png,png/118/B.png,png/118/C.png,png/118/D.png
+119,빤히,손·일상 동작,,png/119/A.png,png/119/B.png,png/119/C.png,png/119/D.png
+120,물끄러미,손·일상 동작,,png/120/A.png,png/120/B.png,png/120/C.png,png/120/D.png
+121,탁,충돌·낙하·파손,있음,png/121/A.png,png/121/B.png,png/121/C.png,png/121/D.png
+122,탁—,충돌·낙하·파손,있음,png/122/A.png,png/122/B.png,png/122/C.png,png/122/D.png
+123,턱,충돌·낙하·파손,있음,png/123/A.png,png/123/B.png,png/123/C.png,png/123/D.png
+124,텅,충돌·낙하·파손,있음,png/124/A.png,png/124/B.png,png/124/C.png,png/124/D.png
+125,터엉,충돌·낙하·파손,있음,png/125/A.png,png/125/B.png,png/125/C.png,png/125/D.png
+126,덜컹,충돌·낙하·파손,있음,png/126/A.png,png/126/B.png,png/126/C.png,png/126/D.png
+127,덜컹—,충돌·낙하·파손,있음,png/127/A.png,png/127/B.png,png/127/C.png,png/127/D.png
+128,덜컹덜컹,충돌·낙하·파손,,png/128/A.png,png/128/B.png,png/128/C.png,png/128/D.png
+129,쿵덕,충돌·낙하·파손,,png/129/A.png,png/129/B.png,png/129/C.png,png/129/D.png
+130,쿠웅,충돌·낙하·파손,,png/130/A.png,png/130/B.png,png/130/C.png,png/130/D.png
+131,쿠궁,충돌·낙하·파손,,png/131/A.png,png/131/B.png,png/131/C.png,png/131/D.png
+132,콰앙,충돌·낙하·파손,,png/132/A.png,png/132/B.png,png/132/C.png,png/132/D.png
+133,꽝,충돌·낙하·파손,,png/133/A.png,png/133/B.png,png/133/C.png,png/133/D.png
+134,펑,충돌·낙하·파손,,png/134/A.png,png/134/B.png,png/134/C.png,png/134/D.png
+135,빵,충돌·낙하·파손,,png/135/A.png,png/135/B.png,png/135/C.png,png/135/D.png
+136,팡,충돌·낙하·파손,,png/136/A.png,png/136/B.png,png/136/C.png,png/136/D.png
+137,퍽,충돌·낙하·파손,,png/137/A.png,png/137/B.png,png/137/C.png,png/137/D.png
+138,퍽퍽,충돌·낙하·파손,,png/138/A.png,png/138/B.png,png/138/C.png,png/138/D.png
+139,툭툭,충돌·낙하·파손,,png/139/A.png,png/139/B.png,png/139/C.png,png/139/D.png
+140,툭탁,충돌·낙하·파손,,png/140/A.png,png/140/B.png,png/140/C.png,png/140/D.png
+141,털썩,충돌·낙하·파손,,png/141/A.png,png/141/B.png,png/141/C.png,png/141/D.png
+142,털퍼덕,충돌·낙하·파손,,png/142/A.png,png/142/B.png,png/142/C.png,png/142/D.png
+143,쿵쾅쾅,충돌·낙하·파손,,png/143/A.png,png/143/B.png,png/143/C.png,png/143/D.png
+144,우당탕,충돌·낙하·파손,,png/144/A.png,png/144/B.png,png/144/C.png,png/144/D.png
+145,쿠당탕,충돌·낙하·파손,,png/145/A.png,png/145/B.png,png/145/C.png,png/145/D.png
+146,와당탕,충돌·낙하·파손,,png/146/A.png,png/146/B.png,png/146/C.png,png/146/D.png
+147,와르르,충돌·낙하·파손,,png/147/A.png,png/147/B.png,png/147/C.png,png/147/D.png
+148,우르르,충돌·낙하·파손,,png/148/A.png,png/148/B.png,png/148/C.png,png/148/D.png
+149,와장창,충돌·낙하·파손,,png/149/A.png,png/149/B.png,png/149/C.png,png/149/D.png
+150,쨍그랑,충돌·낙하·파손,,png/150/A.png,png/150/B.png,png/150/C.png,png/150/D.png
+151,쨍강,충돌·낙하·파손,,png/151/A.png,png/151/B.png,png/151/C.png,png/151/D.png
+152,째앵,충돌·낙하·파손,,png/152/A.png,png/152/B.png,png/152/C.png,png/152/D.png
+153,짤랑,충돌·낙하·파손,,png/153/A.png,png/153/B.png,png/153/C.png,png/153/D.png
+154,뚝,충돌·낙하·파손,,png/154/A.png,png/154/B.png,png/154/C.png,png/154/D.png
+155,뚜둑,충돌·낙하·파손,,png/155/A.png,png/155/B.png,png/155/C.png,png/155/D.png
+156,투둑,충돌·낙하·파손,,png/156/A.png,png/156/B.png,png/156/C.png,png/156/D.png
+157,우지끈,충돌·낙하·파손,,png/157/A.png,png/157/B.png,png/157/C.png,png/157/D.png
+158,뿌직,충돌·낙하·파손,,png/158/A.png,png/158/B.png,png/158/C.png,png/158/D.png
+159,뿌드득,충돌·낙하·파손,,png/159/A.png,png/159/B.png,png/159/C.png,png/159/D.png
+160,빠직,충돌·낙하·파손,,png/160/A.png,png/160/B.png,png/160/C.png,png/160/D.png
+161,뚝딱,충돌·낙하·파손,,png/161/A.png,png/161/B.png,png/161/C.png,png/161/D.png
+162,쩍,충돌·낙하·파손,,png/162/A.png,png/162/B.png,png/162/C.png,png/162/D.png
+163,쩌억,충돌·낙하·파손,,png/163/A.png,png/163/B.png,png/163/C.png,png/163/D.png
+164,두근,설렘·접촉·온기,,png/164/A.png,png/164/B.png,png/164/C.png,png/164/D.png
+165,두근두근,설렘·접촉·온기,,png/165/A.png,png/165/B.png,png/165/C.png,png/165/D.png
+166,콩닥,설렘·접촉·온기,,png/166/A.png,png/166/B.png,png/166/C.png,png/166/D.png
+167,콩닥콩닥,설렘·접촉·온기,,png/167/A.png,png/167/B.png,png/167/C.png,png/167/D.png
+168,쿵덕쿵덕,설렘·접촉·온기,,png/168/A.png,png/168/B.png,png/168/C.png,png/168/D.png
+169,쿵쾅쿵쾅,설렘·접촉·온기,,png/169/A.png,png/169/B.png,png/169/C.png,png/169/D.png
+170,콩닥쿵닥,설렘·접촉·온기,,png/170/A.png,png/170/B.png,png/170/C.png,png/170/D.png
+171,심쿵,설렘·접촉·온기,,png/171/A.png,png/171/B.png,png/171/C.png,png/171/D.png
+172,찌릿,설렘·접촉·온기,,png/172/A.png,png/172/B.png,png/172/C.png,png/172/D.png
+173,찌르르,설렘·접촉·온기,,png/173/A.png,png/173/B.png,png/173/C.png,png/173/D.png
+174,간질,설렘·접촉·온기,,png/174/A.png,png/174/B.png,png/174/C.png,png/174/D.png
+175,간질간질,설렘·접촉·온기,,png/175/A.png,png/175/B.png,png/175/C.png,png/175/D.png
+176,찡,설렘·접촉·온기,,png/176/A.png,png/176/B.png,png/176/C.png,png/176/D.png
+177,뭉클,설렘·접촉·온기,,png/177/A.png,png/177/B.png,png/177/C.png,png/177/D.png
+178,사르르,설렘·접촉·온기,,png/178/A.png,png/178/B.png,png/178/C.png,png/178/D.png
+179,스르르,설렘·접촉·온기,,png/179/A.png,png/179/B.png,png/179/C.png,png/179/D.png
+180,살포시,설렘·접촉·온기,,png/180/A.png,png/180/B.png,png/180/C.png,png/180/D.png
+181,포옥,설렘·접촉·온기,,png/181/A.png,png/181/B.png,png/181/C.png,png/181/D.png
+182,폭,설렘·접촉·온기,,png/182/A.png,png/182/B.png,png/182/C.png,png/182/D.png
+183,화끈,설렘·접촉·온기,,png/183/A.png,png/183/B.png,png/183/C.png,png/183/D.png
+184,후끈,설렘·접촉·온기,,png/184/A.png,png/184/B.png,png/184/C.png,png/184/D.png
+185,발그레,설렘·접촉·온기,,png/185/A.png,png/185/B.png,png/185/C.png,png/185/D.png
+186,붉그레,설렘·접촉·온기,,png/186/A.png,png/186/B.png,png/186/C.png,png/186/D.png
+187,화르륵,설렘·접촉·온기,,png/187/A.png,png/187/B.png,png/187/C.png,png/187/D.png
+188,화악,설렘·접촉·온기,,png/188/A.png,png/188/B.png,png/188/C.png,png/188/D.png
+189,홧,설렘·접촉·온기,,png/189/A.png,png/189/B.png,png/189/C.png,png/189/D.png
+190,씨익,표정·시선·반응,,png/190/A.png,png/190/B.png,png/190/C.png,png/190/D.png
+191,씩,표정·시선·반응,,png/191/A.png,png/191/B.png,png/191/C.png,png/191/D.png
+192,빙긋,표정·시선·반응,,png/192/A.png,png/192/B.png,png/192/C.png,png/192/D.png
+193,방긋,표정·시선·반응,,png/193/A.png,png/193/B.png,png/193/C.png,png/193/D.png
+194,활짝,표정·시선·반응,,png/194/A.png,png/194/B.png,png/194/C.png,png/194/D.png
+195,싱긋,표정·시선·반응,,png/195/A.png,png/195/B.png,png/195/C.png,png/195/D.png
+196,찡긋,표정·시선·반응,,png/196/A.png,png/196/B.png,png/196/C.png,png/196/D.png
+197,씰룩,표정·시선·반응,,png/197/A.png,png/197/B.png,png/197/C.png,png/197/D.png
+198,씰룩씰룩,표정·시선·반응,,png/198/A.png,png/198/B.png,png/198/C.png,png/198/D.png
+199,찔끔,표정·시선·반응,,png/199/A.png,png/199/B.png,png/199/C.png,png/199/D.png
+200,지끈,표정·시선·반응,,png/200/A.png,png/200/B.png,png/200/C.png,png/200/D.png
+201,지끈지끈,표정·시선·반응,,png/201/A.png,png/201/B.png,png/201/C.png,png/201/D.png
+202,부들,표정·시선·반응,,png/202/A.png,png/202/B.png,png/202/C.png,png/202/D.png
+203,부들부들,표정·시선·반응,,png/203/A.png,png/203/B.png,png/203/C.png,png/203/D.png
+204,벌벌,표정·시선·반응,,png/204/A.png,png/204/B.png,png/204/C.png,png/204/D.png
+205,오들오들,표정·시선·반응,,png/205/A.png,png/205/B.png,png/205/C.png,png/205/D.png
+206,덜덜덜,표정·시선·반응,,png/206/A.png,png/206/B.png,png/206/C.png,png/206/D.png
+207,으득,표정·시선·반응,,png/207/A.png,png/207/B.png,png/207/C.png,png/207/D.png
+208,빠득,표정·시선·반응,,png/208/A.png,png/208/B.png,png/208/C.png,png/208/D.png
+209,울컥,표정·시선·반응,,png/209/A.png,png/209/B.png,png/209/C.png,png/209/D.png
+210,움푹,표정·시선·반응,,png/210/A.png,png/210/B.png,png/210/C.png,png/210/D.png
+211,째릿,표정·시선·반응,,png/211/A.png,png/211/B.png,png/211/C.png,png/211/D.png
+212,번뜩,표정·시선·반응,,png/212/A.png,png/212/B.png,png/212/C.png,png/212/D.png
+213,번쩍,표정·시선·반응,,png/213/A.png,png/213/B.png,png/213/C.png,png/213/D.png
+214,반짝,표정·시선·반응,,png/214/A.png,png/214/B.png,png/214/C.png,png/214/D.png
+215,반짝반짝,표정·시선·반응,,png/215/A.png,png/215/B.png,png/215/C.png,png/215/D.png
+216,초롱초롱,표정·시선·반응,,png/216/A.png,png/216/B.png,png/216/C.png,png/216/D.png
+217,말똥말똥,표정·시선·반응,,png/217/A.png,png/217/B.png,png/217/C.png,png/217/D.png
+218,휘둥그레,표정·시선·반응,,png/218/A.png,png/218/B.png,png/218/C.png,png/218/D.png
+219,뻣뻣,표정·시선·반응,,png/219/A.png,png/219/B.png,png/219/C.png,png/219/D.png
+220,헉,숨·목소리·웃음,있음,png/220/A.png,png/220/B.png,png/220/C.png,png/220/D.png
+221,헉헉,숨·목소리·웃음,,png/221/A.png,png/221/B.png,png/221/C.png,png/221/D.png
+222,허억,숨·목소리·웃음,,png/222/A.png,png/222/B.png,png/222/C.png,png/222/D.png
+223,허억허억,숨·목소리·웃음,,png/223/A.png,png/223/B.png,png/223/C.png,png/223/D.png
+224,하아,숨·목소리·웃음,,png/224/A.png,png/224/B.png,png/224/C.png,png/224/D.png
+225,후우,숨·목소리·웃음,,png/225/A.png,png/225/B.png,png/225/C.png,png/225/D.png
+226,후,숨·목소리·웃음,,png/226/A.png,png/226/B.png,png/226/C.png,png/226/D.png
+227,훅,숨·목소리·웃음,,png/227/A.png,png/227/B.png,png/227/C.png,png/227/D.png
+228,휴,숨·목소리·웃음,,png/228/A.png,png/228/B.png,png/228/C.png,png/228/D.png
+229,휴우,숨·목소리·웃음,,png/229/A.png,png/229/B.png,png/229/C.png,png/229/D.png
+230,쌕쌕,숨·목소리·웃음,,png/230/A.png,png/230/B.png,png/230/C.png,png/230/D.png
+231,씩씩,숨·목소리·웃음,,png/231/A.png,png/231/B.png,png/231/C.png,png/231/D.png
+232,흐읍,숨·목소리·웃음,,png/232/A.png,png/232/B.png,png/232/C.png,png/232/D.png
+233,훌쩍,숨·목소리·웃음,,png/233/A.png,png/233/B.png,png/233/C.png,png/233/D.png
+234,훌쩍훌쩍,숨·목소리·웃음,,png/234/A.png,png/234/B.png,png/234/C.png,png/234/D.png
+235,엉엉,숨·목소리·웃음,,png/235/A.png,png/235/B.png,png/235/C.png,png/235/D.png
+236,흑,숨·목소리·웃음,,png/236/A.png,png/236/B.png,png/236/C.png,png/236/D.png
+237,흑흑,숨·목소리·웃음,,png/237/A.png,png/237/B.png,png/237/C.png,png/237/D.png
+238,흐윽,숨·목소리·웃음,,png/238/A.png,png/238/B.png,png/238/C.png,png/238/D.png
+239,흑흐윽,숨·목소리·웃음,,png/239/A.png,png/239/B.png,png/239/C.png,png/239/D.png
+240,킁,숨·목소리·웃음,,png/240/A.png,png/240/B.png,png/240/C.png,png/240/D.png
+241,킁킁,숨·목소리·웃음,,png/241/A.png,png/241/B.png,png/241/C.png,png/241/D.png
+242,끙,숨·목소리·웃음,,png/242/A.png,png/242/B.png,png/242/C.png,png/242/D.png
+243,끙끙,숨·목소리·웃음,,png/243/A.png,png/243/B.png,png/243/C.png,png/243/D.png
+244,으으,숨·목소리·웃음,,png/244/A.png,png/244/B.png,png/244/C.png,png/244/D.png
+245,으악,숨·목소리·웃음,,png/245/A.png,png/245/B.png,png/245/C.png,png/245/D.png
+246,아악,숨·목소리·웃음,,png/246/A.png,png/246/B.png,png/246/C.png,png/246/D.png
+247,꺅,숨·목소리·웃음,,png/247/A.png,png/247/B.png,png/247/C.png,png/247/D.png
+248,꺄악,숨·목소리·웃음,,png/248/A.png,png/248/B.png,png/248/C.png,png/248/D.png
+249,으아아,숨·목소리·웃음,,png/249/A.png,png/249/B.png,png/249/C.png,png/249/D.png
+250,으아악,숨·목소리·웃음,,png/250/A.png,png/250/B.png,png/250/C.png,png/250/D.png
+251,허허,숨·목소리·웃음,,png/251/A.png,png/251/B.png,png/251/C.png,png/251/D.png
+252,하하,숨·목소리·웃음,,png/252/A.png,png/252/B.png,png/252/C.png,png/252/D.png
+253,하하하,숨·목소리·웃음,,png/253/A.png,png/253/B.png,png/253/C.png,png/253/D.png
+254,크크,숨·목소리·웃음,,png/254/A.png,png/254/B.png,png/254/C.png,png/254/D.png
+255,킥,숨·목소리·웃음,,png/255/A.png,png/255/B.png,png/255/C.png,png/255/D.png
+256,키득,숨·목소리·웃음,,png/256/A.png,png/256/B.png,png/256/C.png,png/256/D.png
+257,키득키득,숨·목소리·웃음,,png/257/A.png,png/257/B.png,png/257/C.png,png/257/D.png
+258,깔깔,숨·목소리·웃음,,png/258/A.png,png/258/B.png,png/258/C.png,png/258/D.png
+259,낄낄,숨·목소리·웃음,,png/259/A.png,png/259/B.png,png/259/C.png,png/259/D.png
+260,낄낄낄,숨·목소리·웃음,,png/260/A.png,png/260/B.png,png/260/C.png,png/260/D.png
+261,풉,숨·목소리·웃음,,png/261/A.png,png/261/B.png,png/261/C.png,png/261/D.png
+262,푸흡,숨·목소리·웃음,,png/262/A.png,png/262/B.png,png/262/C.png,png/262/D.png
+263,픽,숨·목소리·웃음,,png/263/A.png,png/263/B.png,png/263/C.png,png/263/D.png
+264,히힛,숨·목소리·웃음,,png/264/A.png,png/264/B.png,png/264/C.png,png/264/D.png
+265,헤헤,숨·목소리·웃음,,png/265/A.png,png/265/B.png,png/265/C.png,png/265/D.png
+266,흐흐,숨·목소리·웃음,,png/266/A.png,png/266/B.png,png/266/C.png,png/266/D.png
+267,킬킬,숨·목소리·웃음,,png/267/A.png,png/267/B.png,png/267/C.png,png/267/D.png
+268,흠,머뭇거림·정적·기호,있음,png/268/A.png,png/268/B.png,png/268/C.png,png/268/D.png
+269,으음,머뭇거림·정적·기호,,png/269/A.png,png/269/B.png,png/269/C.png,png/269/D.png
+270,음,머뭇거림·정적·기호,,png/270/A.png,png/270/B.png,png/270/C.png,png/270/D.png
+271,어,머뭇거림·정적·기호,,png/271/A.png,png/271/B.png,png/271/C.png,png/271/D.png
+272,어라,머뭇거림·정적·기호,,png/272/A.png,png/272/B.png,png/272/C.png,png/272/D.png
+273,엥,머뭇거림·정적·기호,,png/273/A.png,png/273/B.png,png/273/C.png,png/273/D.png
+274,응,머뭇거림·정적·기호,,png/274/A.png,png/274/B.png,png/274/C.png,png/274/D.png
+275,저,머뭇거림·정적·기호,있음,png/275/A.png,png/275/B.png,png/275/C.png,png/275/D.png
+276,저기,머뭇거림·정적·기호,,png/276/A.png,png/276/B.png,png/276/C.png,png/276/D.png
+277,그,머뭇거림·정적·기호,,png/277/A.png,png/277/B.png,png/277/C.png,png/277/D.png
+278,움,머뭇거림·정적·기호,,png/278/A.png,png/278/B.png,png/278/C.png,png/278/D.png
+279,하,머뭇거림·정적·기호,,png/279/A.png,png/279/B.png,png/279/C.png,png/279/D.png
+280,참,머뭇거림·정적·기호,,png/280/A.png,png/280/B.png,png/280/C.png,png/280/D.png
+281,앗,머뭇거림·정적·기호,,png/281/A.png,png/281/B.png,png/281/C.png,png/281/D.png
+282,쉿,머뭇거림·정적·기호,,png/282/A.png,png/282/B.png,png/282/C.png,png/282/D.png
+283,조용,머뭇거림·정적·기호,,png/283/A.png,png/283/B.png,png/283/C.png,png/283/D.png
+284,정적,머뭇거림·정적·기호,,png/284/A.png,png/284/B.png,png/284/C.png,png/284/D.png
+285,싸늘,머뭇거림·정적·기호,,png/285/A.png,png/285/B.png,png/285/C.png,png/285/D.png
+286,머뭇,머뭇거림·정적·기호,,png/286/A.png,png/286/B.png,png/286/C.png,png/286/D.png
+287,우물쭈물,머뭇거림·정적·기호,,png/287/A.png,png/287/B.png,png/287/C.png,png/287/D.png
+288,중얼중얼,머뭇거림·정적·기호,,png/288/A.png,png/288/B.png,png/288/C.png,png/288/D.png
+289,웅얼웅얼,머뭇거림·정적·기호,,png/289/A.png,png/289/B.png,png/289/C.png,png/289/D.png
+290,궁시렁궁시렁,머뭇거림·정적·기호,,png/290/A.png,png/290/B.png,png/290/C.png,png/290/D.png
+291,웅성웅성,머뭇거림·정적·기호,,png/291/A.png,png/291/B.png,png/291/C.png,png/291/D.png
+292,수군수군,머뭇거림·정적·기호,,png/292/A.png,png/292/B.png,png/292/C.png,png/292/D.png
+293,소곤소곤,머뭇거림·정적·기호,,png/293/A.png,png/293/B.png,png/293/C.png,png/293/D.png
+294,왁자지껄,머뭇거림·정적·기호,,png/294/A.png,png/294/B.png,png/294/C.png,png/294/D.png
+295,시끌시끌,머뭇거림·정적·기호,,png/295/A.png,png/295/B.png,png/295/C.png,png/295/D.png
+296,북적북적,머뭇거림·정적·기호,,png/296/A.png,png/296/B.png,png/296/C.png,png/296/D.png
+297,…,머뭇거림·정적·기호,,png/297/A.png,png/297/B.png,png/297/C.png,png/297/D.png
+298,……,머뭇거림·정적·기호,,png/298/A.png,png/298/B.png,png/298/C.png,png/298/D.png
+299,?,머뭇거림·정적·기호,있음,png/299/A.png,png/299/B.png,png/299/C.png,png/299/D.png
+300,!,머뭇거림·정적·기호,,png/300/A.png,png/300/B.png,png/300/C.png,png/300/D.png
+301,??,머뭇거림·정적·기호,,png/301/A.png,png/301/B.png,png/301/C.png,png/301/D.png
+302,!!,머뭇거림·정적·기호,,png/302/A.png,png/302/B.png,png/302/C.png,png/302/D.png
+303,?!,머뭇거림·정적·기호,,png/303/A.png,png/303/B.png,png/303/C.png,png/303/D.png
+304,!?,머뭇거림·정적·기호,,png/304/A.png,png/304/B.png,png/304/C.png,png/304/D.png
+305,♪,머뭇거림·정적·기호,,png/305/A.png,png/305/B.png,png/305/C.png,png/305/D.png
+306,♡,머뭇거림·정적·기호,,png/306/A.png,png/306/B.png,png/306/C.png,png/306/D.png
+307,똑똑똑,비·물·액체,,png/307/A.png,png/307/B.png,png/307/C.png,png/307/D.png
+308,똑또독,비·물·액체,,png/308/A.png,png/308/B.png,png/308/C.png,png/308/D.png
+309,똑또록,비·물·액체,,png/309/A.png,png/309/B.png,png/309/C.png,png/309/D.png
+310,주룩,비·물·액체,,png/310/A.png,png/310/B.png,png/310/C.png,png/310/D.png
+311,주룩주룩,비·물·액체,,png/311/A.png,png/311/B.png,png/311/C.png,png/311/D.png
+312,좍좍,비·물·액체,,png/312/A.png,png/312/B.png,png/312/C.png,png/312/D.png
+313,쏴아,비·물·액체,,png/313/A.png,png/313/B.png,png/313/C.png,png/313/D.png
+314,쏴아아,비·물·액체,,png/314/A.png,png/314/B.png,png/314/C.png,png/314/D.png
+315,쏴아쏴아,비·물·액체,,png/315/A.png,png/315/B.png,png/315/C.png,png/315/D.png
+316,촤아,비·물·액체,,png/316/A.png,png/316/B.png,png/316/C.png,png/316/D.png
+317,촤악,비·물·액체,,png/317/A.png,png/317/B.png,png/317/C.png,png/317/D.png
+318,촤르륵,비·물·액체,,png/318/A.png,png/318/B.png,png/318/C.png,png/318/D.png
+319,쫙,비·물·액체,,png/319/A.png,png/319/B.png,png/319/C.png,png/319/D.png
+320,쫘악,비·물·액체,,png/320/A.png,png/320/B.png,png/320/C.png,png/320/D.png
+321,첨벙,비·물·액체,,png/321/A.png,png/321/B.png,png/321/C.png,png/321/D.png
+322,철벅,비·물·액체,,png/322/A.png,png/322/B.png,png/322/C.png,png/322/D.png
+323,철벅철벅,비·물·액체,,png/323/A.png,png/323/B.png,png/323/C.png,png/323/D.png
+324,찰박,비·물·액체,,png/324/A.png,png/324/B.png,png/324/C.png,png/324/D.png
+325,찰박찰박,비·물·액체,,png/325/A.png,png/325/B.png,png/325/C.png,png/325/D.png
+326,찰싹,비·물·액체,,png/326/A.png,png/326/B.png,png/326/C.png,png/326/D.png
+327,촐랑,비·물·액체,,png/327/A.png,png/327/B.png,png/327/C.png,png/327/D.png
+328,출렁,비·물·액체,,png/328/A.png,png/328/B.png,png/328/C.png,png/328/D.png
+329,출렁출렁,비·물·액체,,png/329/A.png,png/329/B.png,png/329/C.png,png/329/D.png
+330,찰랑,비·물·액체,,png/330/A.png,png/330/B.png,png/330/C.png,png/330/D.png
+331,찰랑찰랑,비·물·액체,,png/331/A.png,png/331/B.png,png/331/C.png,png/331/D.png
+332,졸졸,비·물·액체,,png/332/A.png,png/332/B.png,png/332/C.png,png/332/D.png
+333,줄줄,비·물·액체,,png/333/A.png,png/333/B.png,png/333/C.png,png/333/D.png
+334,콸콸,비·물·액체,,png/334/A.png,png/334/B.png,png/334/C.png,png/334/D.png
+335,좔좔,비·물·액체,,png/335/A.png,png/335/B.png,png/335/C.png,png/335/D.png
+336,콸콸콸,비·물·액체,,png/336/A.png,png/336/B.png,png/336/C.png,png/336/D.png
+337,방울방울,비·물·액체,,png/337/A.png,png/337/B.png,png/337/C.png,png/337/D.png
+338,또르르,비·물·액체,,png/338/A.png,png/338/B.png,png/338/C.png,png/338/D.png
+339,또로록,비·물·액체,,png/339/A.png,png/339/B.png,png/339/C.png,png/339/D.png
+340,뚝뚝,비·물·액체,,png/340/A.png,png/340/B.png,png/340/C.png,png/340/D.png
+341,휘익,바람·나뭇잎·날씨,,png/341/A.png,png/341/B.png,png/341/C.png,png/341/D.png
+342,휙,바람·나뭇잎·날씨,,png/342/A.png,png/342/B.png,png/342/C.png,png/342/D.png
+343,휙휙,바람·나뭇잎·날씨,,png/343/A.png,png/343/B.png,png/343/C.png,png/343/D.png
+344,휘잉,바람·나뭇잎·날씨,,png/344/A.png,png/344/B.png,png/344/C.png,png/344/D.png
+345,휘이잉,바람·나뭇잎·날씨,,png/345/A.png,png/345/B.png,png/345/C.png,png/345/D.png
+346,휘오오,바람·나뭇잎·날씨,,png/346/A.png,png/346/B.png,png/346/C.png,png/346/D.png
+347,쌩,바람·나뭇잎·날씨,,png/347/A.png,png/347/B.png,png/347/C.png,png/347/D.png
+348,쌩쌩,바람·나뭇잎·날씨,,png/348/A.png,png/348/B.png,png/348/C.png,png/348/D.png
+349,씽,바람·나뭇잎·날씨,,png/349/A.png,png/349/B.png,png/349/C.png,png/349/D.png
+350,씽씽,바람·나뭇잎·날씨,,png/350/A.png,png/350/B.png,png/350/C.png,png/350/D.png
+351,후욱,바람·나뭇잎·날씨,,png/351/A.png,png/351/B.png,png/351/C.png,png/351/D.png
+352,슈욱,바람·나뭇잎·날씨,,png/352/A.png,png/352/B.png,png/352/C.png,png/352/D.png
+353,슈우욱,바람·나뭇잎·날씨,,png/353/A.png,png/353/B.png,png/353/C.png,png/353/D.png
+354,슝,바람·나뭇잎·날씨,,png/354/A.png,png/354/B.png,png/354/C.png,png/354/D.png
+355,슈웅,바람·나뭇잎·날씨,,png/355/A.png,png/355/B.png,png/355/C.png,png/355/D.png
+356,피융,바람·나뭇잎·날씨,,png/356/A.png,png/356/B.png,png/356/C.png,png/356/D.png
+357,하늘하늘,바람·나뭇잎·날씨,,png/357/A.png,png/357/B.png,png/357/C.png,png/357/D.png
+358,너울너울,바람·나뭇잎·날씨,,png/358/A.png,png/358/B.png,png/358/C.png,png/358/D.png
+359,일렁,바람·나뭇잎·날씨,,png/359/A.png,png/359/B.png,png/359/C.png,png/359/D.png
+360,일렁일렁,바람·나뭇잎·날씨,,png/360/A.png,png/360/B.png,png/360/C.png,png/360/D.png
+361,솨아,바람·나뭇잎·날씨,,png/361/A.png,png/361/B.png,png/361/C.png,png/361/D.png
+362,사락,바람·나뭇잎·날씨,,png/362/A.png,png/362/B.png,png/362/C.png,png/362/D.png
+363,사락사락,바람·나뭇잎·날씨,,png/363/A.png,png/363/B.png,png/363/C.png,png/363/D.png
+364,사르락,바람·나뭇잎·날씨,,png/364/A.png,png/364/B.png,png/364/C.png,png/364/D.png
+365,소슬소슬,바람·나뭇잎·날씨,,png/365/A.png,png/365/B.png,png/365/C.png,png/365/D.png
+366,바스스,바람·나뭇잎·날씨,,png/366/A.png,png/366/B.png,png/366/C.png,png/366/D.png
+367,보슬보슬,바람·나뭇잎·날씨,,png/367/A.png,png/367/B.png,png/367/C.png,png/367/D.png
+368,부슬부슬,바람·나뭇잎·날씨,,png/368/A.png,png/368/B.png,png/368/C.png,png/368/D.png
+369,우르릉,바람·나뭇잎·날씨,,png/369/A.png,png/369/B.png,png/369/C.png,png/369/D.png
+370,우르릉쾅,바람·나뭇잎·날씨,,png/370/A.png,png/370/B.png,png/370/C.png,png/370/D.png
+371,콰르릉,바람·나뭇잎·날씨,,png/371/A.png,png/371/B.png,png/371/C.png,png/371/D.png
+372,쿠르릉,바람·나뭇잎·날씨,,png/372/A.png,png/372/B.png,png/372/C.png,png/372/D.png
+373,톡타닥,불·빛·전기·마법,,png/373/A.png,png/373/B.png,png/373/C.png,png/373/D.png
+374,파직,불·빛·전기·마법,,png/374/A.png,png/374/B.png,png/374/C.png,png/374/D.png
+375,파지직,불·빛·전기·마법,,png/375/A.png,png/375/B.png,png/375/C.png,png/375/D.png
+376,파지지직,불·빛·전기·마법,,png/376/A.png,png/376/B.png,png/376/C.png,png/376/D.png
+377,치직,불·빛·전기·마법,,png/377/A.png,png/377/B.png,png/377/C.png,png/377/D.png
+378,치지직,불·빛·전기·마법,,png/378/A.png,png/378/B.png,png/378/C.png,png/378/D.png
+379,지직,불·빛·전기·마법,,png/379/A.png,png/379/B.png,png/379/C.png,png/379/D.png
+380,지지직,불·빛·전기·마법,,png/380/A.png,png/380/B.png,png/380/C.png,png/380/D.png
+381,찌지직,불·빛·전기·마법,,png/381/A.png,png/381/B.png,png/381/C.png,png/381/D.png
+382,번쩍번쩍,불·빛·전기·마법,,png/382/A.png,png/382/B.png,png/382/C.png,png/382/D.png
+383,파앗,불·빛·전기·마법,,png/383/A.png,png/383/B.png,png/383/C.png,png/383/D.png
+384,파아앗,불·빛·전기·마법,,png/384/A.png,png/384/B.png,png/384/C.png,png/384/D.png
+385,팟,불·빛·전기·마법,,png/385/A.png,png/385/B.png,png/385/C.png,png/385/D.png
+386,팍,불·빛·전기·마법,,png/386/A.png,png/386/B.png,png/386/C.png,png/386/D.png
+387,퐁,불·빛·전기·마법,,png/387/A.png,png/387/B.png,png/387/C.png,png/387/D.png
+388,퐁퐁,불·빛·전기·마법,,png/388/A.png,png/388/B.png,png/388/C.png,png/388/D.png
+389,뿅,불·빛·전기·마법,,png/389/A.png,png/389/B.png,png/389/C.png,png/389/D.png
+390,뾰롱,불·빛·전기·마법,,png/390/A.png,png/390/B.png,png/390/C.png,png/390/D.png
+391,뾰로롱,불·빛·전기·마법,,png/391/A.png,png/391/B.png,png/391/C.png,png/391/D.png
+392,뿌웅,불·빛·전기·마법,,png/392/A.png,png/392/B.png,png/392/C.png,png/392/D.png
+393,슈륵,불·빛·전기·마법,,png/393/A.png,png/393/B.png,png/393/C.png,png/393/D.png
+394,스르르륵,불·빛·전기·마법,,png/394/A.png,png/394/B.png,png/394/C.png,png/394/D.png
+395,푸스스,불·빛·전기·마법,,png/395/A.png,png/395/B.png,png/395/C.png,png/395/D.png
+396,푸석,불·빛·전기·마법,,png/396/A.png,png/396/B.png,png/396/C.png,png/396/D.png
+397,스르릉,불·빛·전기·마법,,png/397/A.png,png/397/B.png,png/397/C.png,png/397/D.png
+398,우웅,불·빛·전기·마법,,png/398/A.png,png/398/B.png,png/398/C.png,png/398/D.png
+399,우우웅,불·빛·전기·마법,,png/399/A.png,png/399/B.png,png/399/C.png,png/399/D.png
+400,웅,불·빛·전기·마법,,png/400/A.png,png/400/B.png,png/400/C.png,png/400/D.png
+401,웅웅,불·빛·전기·마법,,png/401/A.png,png/401/B.png,png/401/C.png,png/401/D.png
+402,둥실,불·빛·전기·마법,,png/402/A.png,png/402/B.png,png/402/C.png,png/402/D.png
+403,둥실둥실,불·빛·전기·마법,,png/403/A.png,png/403/B.png,png/403/C.png,png/403/D.png
+404,홀연,불·빛·전기·마법,,png/404/A.png,png/404/B.png,png/404/C.png,png/404/D.png
+405,이글이글,불·빛·전기·마법,,png/405/A.png,png/405/B.png,png/405/C.png,png/405/D.png
+406,활활,불·빛·전기·마법,,png/406/A.png,png/406/B.png,png/406/C.png,png/406/D.png
+407,훨훨,불·빛·전기·마법,,png/407/A.png,png/407/B.png,png/407/C.png,png/407/D.png
+408,챙,금속·유리·도구,,png/408/A.png,png/408/B.png,png/408/C.png,png/408/D.png
+409,챙챙,금속·유리·도구,,png/409/A.png,png/409/B.png,png/409/C.png,png/409/D.png
+410,채앵,금속·유리·도구,,png/410/A.png,png/410/B.png,png/410/C.png,png/410/D.png
+411,챙그랑,금속·유리·도구,,png/411/A.png,png/411/B.png,png/411/C.png,png/411/D.png
+412,징,금속·유리·도구,,png/412/A.png,png/412/B.png,png/412/C.png,png/412/D.png
+413,지잉,금속·유리·도구,,png/413/A.png,png/413/B.png,png/413/C.png,png/413/D.png
+414,찡그랑,금속·유리·도구,,png/414/A.png,png/414/B.png,png/414/C.png,png/414/D.png
+415,쩡,금속·유리·도구,,png/415/A.png,png/415/B.png,png/415/C.png,png/415/D.png
+416,쩌엉,금속·유리·도구,,png/416/A.png,png/416/B.png,png/416/C.png,png/416/D.png
+417,쨍,금속·유리·도구,,png/417/A.png,png/417/B.png,png/417/C.png,png/417/D.png
+418,쟁그랑,금속·유리·도구,,png/418/A.png,png/418/B.png,png/418/C.png,png/418/D.png
+419,철컹,금속·유리·도구,,png/419/A.png,png/419/B.png,png/419/C.png,png/419/D.png
+420,철렁,금속·유리·도구,,png/420/A.png,png/420/B.png,png/420/C.png,png/420/D.png
+421,철렁철렁,금속·유리·도구,,png/421/A.png,png/421/B.png,png/421/C.png,png/421/D.png
+422,철그럭,금속·유리·도구,,png/422/A.png,png/422/B.png,png/422/C.png,png/422/D.png
+423,철그럭철그럭,금속·유리·도구,,png/423/A.png,png/423/B.png,png/423/C.png,png/423/D.png
+424,딸랑,금속·유리·도구,,png/424/A.png,png/424/B.png,png/424/C.png,png/424/D.png
+425,딸랑딸랑,금속·유리·도구,,png/425/A.png,png/425/B.png,png/425/C.png,png/425/D.png
+426,달랑달랑,금속·유리·도구,,png/426/A.png,png/426/B.png,png/426/C.png,png/426/D.png
+427,짤랑짤랑,금속·유리·도구,,png/427/A.png,png/427/B.png,png/427/C.png,png/427/D.png
+428,잘그락,금속·유리·도구,,png/428/A.png,png/428/B.png,png/428/C.png,png/428/D.png
+429,잘그락잘그락,금속·유리·도구,,png/429/A.png,png/429/B.png,png/429/C.png,png/429/D.png
+430,달그락,금속·유리·도구,,png/430/A.png,png/430/B.png,png/430/C.png,png/430/D.png
+431,달그락달그락,금속·유리·도구,,png/431/A.png,png/431/B.png,png/431/C.png,png/431/D.png
+432,덜그럭,금속·유리·도구,,png/432/A.png,png/432/B.png,png/432/C.png,png/432/D.png
+433,덜그럭덜그럭,금속·유리·도구,,png/433/A.png,png/433/B.png,png/433/C.png,png/433/D.png
+434,긁적,금속·유리·도구,,png/434/A.png,png/434/B.png,png/434/C.png,png/434/D.png
+435,긁적긁적,금속·유리·도구,,png/435/A.png,png/435/B.png,png/435/C.png,png/435/D.png
+436,까드득,금속·유리·도구,,png/436/A.png,png/436/B.png,png/436/C.png,png/436/D.png
+437,까각,금속·유리·도구,,png/437/A.png,png/437/B.png,png/437/C.png,png/437/D.png
+438,깡깡,금속·유리·도구,,png/438/A.png,png/438/B.png,png/438/C.png,png/438/D.png
+439,까앙,금속·유리·도구,,png/439/A.png,png/439/B.png,png/439/C.png,png/439/D.png
+440,싹둑,금속·유리·도구,,png/440/A.png,png/440/B.png,png/440/C.png,png/440/D.png
+441,싹뚝,금속·유리·도구,,png/441/A.png,png/441/B.png,png/441/C.png,png/441/D.png
+442,서걱,금속·유리·도구,,png/442/A.png,png/442/B.png,png/442/C.png,png/442/D.png
+443,서걱서걱,금속·유리·도구,,png/443/A.png,png/443/B.png,png/443/C.png,png/443/D.png
+444,사각,금속·유리·도구,,png/444/A.png,png/444/B.png,png/444/C.png,png/444/D.png
+445,사각사각,금속·유리·도구,,png/445/A.png,png/445/B.png,png/445/C.png,png/445/D.png
+446,팔락,종이·책·연필,,png/446/A.png,png/446/B.png,png/446/C.png,png/446/D.png
+447,팔락팔락,종이·책·연필,,png/447/A.png,png/447/B.png,png/447/C.png,png/447/D.png
+448,파락파락,종이·책·연필,,png/448/A.png,png/448/B.png,png/448/C.png,png/448/D.png
+449,후루룩,종이·책·연필,,png/449/A.png,png/449/B.png,png/449/C.png,png/449/D.png
+450,촤라락,종이·책·연필,,png/450/A.png,png/450/B.png,png/450/C.png,png/450/D.png
+451,파라락,종이·책·연필,,png/451/A.png,png/451/B.png,png/451/C.png,png/451/D.png
+452,쓱쓱,종이·책·연필,,png/452/A.png,png/452/B.png,png/452/C.png,png/452/D.png
+453,슥슥슥,종이·책·연필,,png/453/A.png,png/453/B.png,png/453/C.png,png/453/D.png
+454,샥샥,종이·책·연필,,png/454/A.png,png/454/B.png,png/454/C.png,png/454/D.png
+455,벅벅,종이·책·연필,,png/455/A.png,png/455/B.png,png/455/C.png,png/455/D.png
+456,빡빡,종이·책·연필,,png/456/A.png,png/456/B.png,png/456/C.png,png/456/D.png
+457,슥싹,종이·책·연필,,png/457/A.png,png/457/B.png,png/457/C.png,png/457/D.png
+458,박박,종이·책·연필,,png/458/A.png,png/458/B.png,png/458/C.png,png/458/D.png
+459,북북,종이·책·연필,,png/459/A.png,png/459/B.png,png/459/C.png,png/459/D.png
+460,부욱,종이·책·연필,,png/460/A.png,png/460/B.png,png/460/C.png,png/460/D.png
+461,쭈욱,종이·책·연필,,png/461/A.png,png/461/B.png,png/461/C.png,png/461/D.png
+462,찌익,종이·책·연필,,png/462/A.png,png/462/B.png,png/462/C.png,png/462/D.png
+463,찍찍,종이·책·연필,,png/463/A.png,png/463/B.png,png/463/C.png,png/463/D.png
+464,와삭,종이·책·연필,,png/464/A.png,png/464/B.png,png/464/C.png,png/464/D.png
+465,크득,종이·책·연필,,png/465/A.png,png/465/B.png,png/465/C.png,png/465/D.png
+466,크드득,종이·책·연필,,png/466/A.png,png/466/B.png,png/466/C.png,png/466/D.png
+467,사부작,종이·책·연필,,png/467/A.png,png/467/B.png,png/467/C.png,png/467/D.png
+468,사부작사부작,종이·책·연필,,png/468/A.png,png/468/B.png,png/468/C.png,png/468/D.png
+469,끄적끄적,종이·책·연필,,png/469/A.png,png/469/B.png,png/469/C.png,png/469/D.png
+470,긁긁,종이·책·연필,,png/470/A.png,png/470/B.png,png/470/C.png,png/470/D.png
+471,냠,음식·입·소화,,png/471/A.png,png/471/B.png,png/471/C.png,png/471/D.png
+472,냠냠,음식·입·소화,,png/472/A.png,png/472/B.png,png/472/C.png,png/472/D.png
+473,냠냠냠,음식·입·소화,,png/473/A.png,png/473/B.png,png/473/C.png,png/473/D.png
+474,얌냠,음식·입·소화,,png/474/A.png,png/474/B.png,png/474/C.png,png/474/D.png
+475,우물우물,음식·입·소화,,png/475/A.png,png/475/B.png,png/475/C.png,png/475/D.png
+476,오물오물,음식·입·소화,,png/476/A.png,png/476/B.png,png/476/C.png,png/476/D.png
+477,아작,음식·입·소화,,png/477/A.png,png/477/B.png,png/477/C.png,png/477/D.png
+478,아작아작,음식·입·소화,,png/478/A.png,png/478/B.png,png/478/C.png,png/478/D.png
+479,오독,음식·입·소화,,png/479/A.png,png/479/B.png,png/479/C.png,png/479/D.png
+480,오독오독,음식·입·소화,,png/480/A.png,png/480/B.png,png/480/C.png,png/480/D.png
+481,아삭,음식·입·소화,,png/481/A.png,png/481/B.png,png/481/C.png,png/481/D.png
+482,아삭아삭,음식·입·소화,,png/482/A.png,png/482/B.png,png/482/C.png,png/482/D.png
+483,바삭바삭,음식·입·소화,,png/483/A.png,png/483/B.png,png/483/C.png,png/483/D.png
+484,와그작,음식·입·소화,,png/484/A.png,png/484/B.png,png/484/C.png,png/484/D.png
+485,와작와작,음식·입·소화,,png/485/A.png,png/485/B.png,png/485/C.png,png/485/D.png
+486,호로록,음식·입·소화,,png/486/A.png,png/486/B.png,png/486/C.png,png/486/D.png
+487,호록호록,음식·입·소화,,png/487/A.png,png/487/B.png,png/487/C.png,png/487/D.png
+488,쩝,음식·입·소화,,png/488/A.png,png/488/B.png,png/488/C.png,png/488/D.png
+489,쩝쩝,음식·입·소화,,png/489/A.png,png/489/B.png,png/489/C.png,png/489/D.png
+490,쩝쩝쩝,음식·입·소화,,png/490/A.png,png/490/B.png,png/490/C.png,png/490/D.png
+491,쪽,음식·입·소화,,png/491/A.png,png/491/B.png,png/491/C.png,png/491/D.png
+492,쪽쪽,음식·입·소화,,png/492/A.png,png/492/B.png,png/492/C.png,png/492/D.png
+493,쭙쭙,음식·입·소화,,png/493/A.png,png/493/B.png,png/493/C.png,png/493/D.png
+494,꿀꺽,음식·입·소화,,png/494/A.png,png/494/B.png,png/494/C.png,png/494/D.png
+495,꿀꺽꿀꺽,음식·입·소화,,png/495/A.png,png/495/B.png,png/495/C.png,png/495/D.png
+496,꼴깍,음식·입·소화,,png/496/A.png,png/496/B.png,png/496/C.png,png/496/D.png
+497,꼴깍꼴깍,음식·입·소화,,png/497/A.png,png/497/B.png,png/497/C.png,png/497/D.png
+498,꼬르륵,음식·입·소화,,png/498/A.png,png/498/B.png,png/498/C.png,png/498/D.png
+499,꾸르륵,음식·입·소화,,png/499/A.png,png/499/B.png,png/499/C.png,png/499/D.png
+500,꼬록,음식·입·소화,,png/500/A.png,png/500/B.png,png/500/C.png,png/500/D.png
+501,끄억,음식·입·소화,,png/501/A.png,png/501/B.png,png/501/C.png,png/501/D.png
+502,꾸르르,음식·입·소화,,png/502/A.png,png/502/B.png,png/502/C.png,png/502/D.png
+503,츄릅,음식·입·소화,,png/503/A.png,png/503/B.png,png/503/C.png,png/503/D.png
+504,흐음,음식·입·소화,,png/504/A.png,png/504/B.png,png/504/C.png,png/504/D.png
+505,띠링,기기·알림·기계,,png/505/A.png,png/505/B.png,png/505/C.png,png/505/D.png
+506,띠리링,기기·알림·기계,,png/506/A.png,png/506/B.png,png/506/C.png,png/506/D.png
+507,띠잉,기기·알림·기계,,png/507/A.png,png/507/B.png,png/507/C.png,png/507/D.png
+508,디링,기기·알림·기계,,png/508/A.png,png/508/B.png,png/508/C.png,png/508/D.png
+509,디리링,기기·알림·기계,,png/509/A.png,png/509/B.png,png/509/C.png,png/509/D.png
+510,딩동,기기·알림·기계,,png/510/A.png,png/510/B.png,png/510/C.png,png/510/D.png
+511,딩동댕,기기·알림·기계,,png/511/A.png,png/511/B.png,png/511/C.png,png/511/D.png
+512,땡,기기·알림·기계,,png/512/A.png,png/512/B.png,png/512/C.png,png/512/D.png
+513,땡땡,기기·알림·기계,,png/513/A.png,png/513/B.png,png/513/C.png,png/513/D.png
+514,땡그랑,기기·알림·기계,,png/514/A.png,png/514/B.png,png/514/C.png,png/514/D.png
+515,삑,기기·알림·기계,,png/515/A.png,png/515/B.png,png/515/C.png,png/515/D.png
+516,삐빅,기기·알림·기계,,png/516/A.png,png/516/B.png,png/516/C.png,png/516/D.png
+517,삐삐,기기·알림·기계,,png/517/A.png,png/517/B.png,png/517/C.png,png/517/D.png
+518,삐비빅,기기·알림·기계,,png/518/A.png,png/518/B.png,png/518/C.png,png/518/D.png
+519,삐빅삑,기기·알림·기계,,png/519/A.png,png/519/B.png,png/519/C.png,png/519/D.png
+520,삐이,기기·알림·기계,,png/520/A.png,png/520/B.png,png/520/C.png,png/520/D.png
+521,삑삑,기기·알림·기계,,png/521/A.png,png/521/B.png,png/521/C.png,png/521/D.png
+522,위잉,기기·알림·기계,,png/522/A.png,png/522/B.png,png/522/C.png,png/522/D.png
+523,윙,기기·알림·기계,,png/523/A.png,png/523/B.png,png/523/C.png,png/523/D.png
+524,윙윙,기기·알림·기계,,png/524/A.png,png/524/B.png,png/524/C.png,png/524/D.png
+525,둥둥,기기·알림·기계,,png/525/A.png,png/525/B.png,png/525/C.png,png/525/D.png
+526,웽,기기·알림·기계,,png/526/A.png,png/526/B.png,png/526/C.png,png/526/D.png
+527,탁타닥,기기·알림·기계,,png/527/A.png,png/527/B.png,png/527/C.png,png/527/D.png
+528,타다닥,기기·알림·기계,,png/528/A.png,png/528/B.png,png/528/C.png,png/528/D.png
+529,딸깍딸깍,기기·알림·기계,,png/529/A.png,png/529/B.png,png/529/C.png,png/529/D.png
+530,또르르르,기기·알림·기계,,png/530/A.png,png/530/B.png,png/530/C.png,png/530/D.png
+531,뚜뚜,기기·알림·기계,,png/531/A.png,png/531/B.png,png/531/C.png,png/531/D.png
+532,뚜우,기기·알림·기계,,png/532/A.png,png/532/B.png,png/532/C.png,png/532/D.png
+533,뚜루루,기기·알림·기계,,png/533/A.png,png/533/B.png,png/533/C.png,png/533/D.png
+534,따르릉,기기·알림·기계,,png/534/A.png,png/534/B.png,png/534/C.png,png/534/D.png
+535,드르렁,기기·알림·기계,,png/535/A.png,png/535/B.png,png/535/C.png,png/535/D.png
+536,부릉,차량·길거리,,png/536/A.png,png/536/B.png,png/536/C.png,png/536/D.png
+537,부르릉,차량·길거리,,png/537/A.png,png/537/B.png,png/537/C.png,png/537/D.png
+538,부릉부릉,차량·길거리,,png/538/A.png,png/538/B.png,png/538/C.png,png/538/D.png
+539,붕,차량·길거리,,png/539/A.png,png/539/B.png,png/539/C.png,png/539/D.png
+540,부웅,차량·길거리,,png/540/A.png,png/540/B.png,png/540/C.png,png/540/D.png
+541,빵빵,차량·길거리,,png/541/A.png,png/541/B.png,png/541/C.png,png/541/D.png
+542,빠앙,차량·길거리,,png/542/A.png,png/542/B.png,png/542/C.png,png/542/D.png
+543,빠바방,차량·길거리,,png/543/A.png,png/543/B.png,png/543/C.png,png/543/D.png
+544,빼액,차량·길거리,,png/544/A.png,png/544/B.png,png/544/C.png,png/544/D.png
+545,끼이이익,차량·길거리,,png/545/A.png,png/545/B.png,png/545/C.png,png/545/D.png
+546,끼기긱,차량·길거리,,png/546/A.png,png/546/B.png,png/546/C.png,png/546/D.png
+547,푸드득,차량·길거리,,png/547/A.png,png/547/B.png,png/547/C.png,png/547/D.png
+548,덜더덜덜,차량·길거리,,png/548/A.png,png/548/B.png,png/548/C.png,png/548/D.png
+549,드드드득,차량·길거리,,png/549/A.png,png/549/B.png,png/549/C.png,png/549/D.png
+550,드드득,차량·길거리,,png/550/A.png,png/550/B.png,png/550/C.png,png/550/D.png
+551,쐐액,차량·길거리,,png/551/A.png,png/551/B.png,png/551/C.png,png/551/D.png
+552,우두두두,차량·길거리,,png/552/A.png,png/552/B.png,png/552/C.png,png/552/D.png
+553,푸슉,차량·길거리,,png/553/A.png,png/553/B.png,png/553/C.png,png/553/D.png
+554,푸쉬익,차량·길거리,,png/554/A.png,png/554/B.png,png/554/C.png,png/554/D.png
+555,쉬익,차량·길거리,,png/555/A.png,png/555/B.png,png/555/C.png,png/555/D.png
+556,쉬이익,차량·길거리,,png/556/A.png,png/556/B.png,png/556/C.png,png/556/D.png
+557,엥엥,차량·길거리,,png/557/A.png,png/557/B.png,png/557/C.png,png/557/D.png
+558,애앵,차량·길거리,,png/558/A.png,png/558/B.png,png/558/C.png,png/558/D.png
+559,위용위용,차량·길거리,,png/559/A.png,png/559/B.png,png/559/C.png,png/559/D.png
+560,획,추격·급전환·액션,,png/560/A.png,png/560/B.png,png/560/C.png,png/560/D.png
+561,획획,추격·급전환·액션,,png/561/A.png,png/561/B.png,png/561/C.png,png/561/D.png
+562,쏙,추격·급전환·액션,,png/562/A.png,png/562/B.png,png/562/C.png,png/562/D.png
+563,쏙쏙,추격·급전환·액션,,png/563/A.png,png/563/B.png,png/563/C.png,png/563/D.png
+564,불쑥,추격·급전환·액션,,png/564/A.png,png/564/B.png,png/564/C.png,png/564/D.png
+565,벌떡,추격·급전환·액션,,png/565/A.png,png/565/B.png,png/565/C.png,png/565/D.png
+566,벌컥,추격·급전환·액션,,png/566/A.png,png/566/B.png,png/566/C.png,png/566/D.png
+567,벌렁,추격·급전환·액션,,png/567/A.png,png/567/B.png,png/567/C.png,png/567/D.png
+568,홱,추격·급전환·액션,,png/568/A.png,png/568/B.png,png/568/C.png,png/568/D.png
+569,홱홱,추격·급전환·액션,,png/569/A.png,png/569/B.png,png/569/C.png,png/569/D.png
+570,확,추격·급전환·액션,,png/570/A.png,png/570/B.png,png/570/C.png,png/570/D.png
+571,쐑,추격·급전환·액션,,png/571/A.png,png/571/B.png,png/571/C.png,png/571/D.png
+572,슈악,추격·급전환·액션,,png/572/A.png,png/572/B.png,png/572/C.png,png/572/D.png
+573,슈악슈악,추격·급전환·액션,,png/573/A.png,png/573/B.png,png/573/C.png,png/573/D.png
+574,파박,추격·급전환·액션,,png/574/A.png,png/574/B.png,png/574/C.png,png/574/D.png
+575,파바박,추격·급전환·액션,,png/575/A.png,png/575/B.png,png/575/C.png,png/575/D.png
+576,퍼억,추격·급전환·액션,,png/576/A.png,png/576/B.png,png/576/C.png,png/576/D.png
+577,퍽!,추격·급전환·액션,,png/577/A.png,png/577/B.png,png/577/C.png,png/577/D.png
+578,쿠구궁,추격·급전환·액션,,png/578/A.png,png/578/B.png,png/578/C.png,png/578/D.png
+579,쿨럭,추격·급전환·액션,,png/579/A.png,png/579/B.png,png/579/C.png,png/579/D.png
+580,콜록,추격·급전환·액션,,png/580/A.png,png/580/B.png,png/580/C.png,png/580/D.png
+581,콜록콜록,추격·급전환·액션,,png/581/A.png,png/581/B.png,png/581/C.png,png/581/D.png
+582,쿠광,추격·급전환·액션,,png/582/A.png,png/582/B.png,png/582/C.png,png/582/D.png
+583,바앙,추격·급전환·액션,,png/583/A.png,png/583/B.png,png/583/C.png,png/583/D.png
+584,멍멍,동물·자연의 반복음,,png/584/A.png,png/584/B.png,png/584/C.png,png/584/D.png
+585,왈왈,동물·자연의 반복음,,png/585/A.png,png/585/B.png,png/585/C.png,png/585/D.png
+586,컹컹,동물·자연의 반복음,,png/586/A.png,png/586/B.png,png/586/C.png,png/586/D.png
+587,으르렁,동물·자연의 반복음,,png/587/A.png,png/587/B.png,png/587/C.png,png/587/D.png
+588,그르릉,동물·자연의 반복음,,png/588/A.png,png/588/B.png,png/588/C.png,png/588/D.png
+589,야옹,동물·자연의 반복음,,png/589/A.png,png/589/B.png,png/589/C.png,png/589/D.png
+590,먀옹,동물·자연의 반복음,,png/590/A.png,png/590/B.png,png/590/C.png,png/590/D.png
+591,냐옹,동물·자연의 반복음,,png/591/A.png,png/591/B.png,png/591/C.png,png/591/D.png
+592,고르릉,동물·자연의 반복음,,png/592/A.png,png/592/B.png,png/592/C.png,png/592/D.png
+593,갸르릉,동물·자연의 반복음,,png/593/A.png,png/593/B.png,png/593/C.png,png/593/D.png
+594,하악,동물·자연의 반복음,,png/594/A.png,png/594/B.png,png/594/C.png,png/594/D.png
+595,짹짹,동물·자연의 반복음,,png/595/A.png,png/595/B.png,png/595/C.png,png/595/D.png
+596,삐약삐약,동물·자연의 반복음,,png/596/A.png,png/596/B.png,png/596/C.png,png/596/D.png
+597,짹,동물·자연의 반복음,,png/597/A.png,png/597/B.png,png/597/C.png,png/597/D.png
+598,까악,동물·자연의 반복음,,png/598/A.png,png/598/B.png,png/598/C.png,png/598/D.png
+599,꺅꺅,동물·자연의 반복음,,png/599/A.png,png/599/B.png,png/599/C.png,png/599/D.png
+600,깍깍,동물·자연의 반복음,,png/600/A.png,png/600/B.png,png/600/C.png,png/600/D.png
+601,꾸꾸,동물·자연의 반복음,,png/601/A.png,png/601/B.png,png/601/C.png,png/601/D.png
+602,꼬끼오,동물·자연의 반복음,,png/602/A.png,png/602/B.png,png/602/C.png,png/602/D.png
+603,꼬꼬댁,동물·자연의 반복음,,png/603/A.png,png/603/B.png,png/603/C.png,png/603/D.png
+604,꼬꼬,동물·자연의 반복음,,png/604/A.png,png/604/B.png,png/604/C.png,png/604/D.png
+605,꿀꿀,동물·자연의 반복음,,png/605/A.png,png/605/B.png,png/605/C.png,png/605/D.png
+606,음메,동물·자연의 반복음,,png/606/A.png,png/606/B.png,png/606/C.png,png/606/D.png
+607,매애,동물·자연의 반복음,,png/607/A.png,png/607/B.png,png/607/C.png,png/607/D.png
+608,히힝,동물·자연의 반복음,,png/608/A.png,png/608/B.png,png/608/C.png,png/608/D.png
+609,따각따각,동물·자연의 반복음,,png/609/A.png,png/609/B.png,png/609/C.png,png/609/D.png
+610,개굴개굴,동물·자연의 반복음,,png/610/A.png,png/610/B.png,png/610/C.png,png/610/D.png
+611,맴맴,동물·자연의 반복음,,png/611/A.png,png/611/B.png,png/611/C.png,png/611/D.png
+612,찌르륵,동물·자연의 반복음,,png/612/A.png,png/612/B.png,png/612/C.png,png/612/D.png
+613,구구구,동물·자연의 반복음,,png/613/A.png,png/613/B.png,png/613/C.png,png/613/D.png
+614,뻐꾹,동물·자연의 반복음,,png/614/A.png,png/614/B.png,png/614/C.png,png/614/D.png
+615,쿨쿨,동물·자연의 반복음,,png/615/A.png,png/615/B.png,png/615/C.png,png/615/D.png
