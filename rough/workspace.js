@@ -477,6 +477,42 @@ function autoTab(){renderTarget();if(!ASSET.auto)return;const want=selectedLette
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);autoTab();return r}}
 if(LS('rough-ws-drawer',false))setTimeout(()=>setDrawer(true),0);if(LS('rough-ws-mini',false))miniWrap.hidden=false;
 
+// ---------- Delete·Backspace로 지우기 ----------
+// 말풍선·나레이션·효과음은 원고(컷 글)의 해당 줄을 지우고, 뒤쪽 식자의 배치값 번호를 한 칸씩 당김. 컷을 고른 상태면 컷을 지움. 모두 Ctrl+Z로 되돌림
+const SFX_RE=/(^|\s)-([^\s-][^-\n]{0,10}?)-(?=\s|$|[.,!?])/g;
+const DLG_RE=/^(?:@([^\s"“]+)\s*)?["“](.*)["”]\s*[.!?…]*$/;
+function dropFromText(text,kind,n){const lines=String(text||'').split('\n');let c=-1,done=false;
+  if(kind==='effect'){for(let i=0;i<lines.length&&!done;i++)lines[i]=lines[i].replace(SFX_RE,(m,a)=>{if(done)return m;c++;if(c===n){done=true;return a}return m});
+    return done?lines.map(l=>l.replace(/\s{2,}/g,' ').replace(/\s+$/,'')).filter((l,i)=>l.trim()||!lines[i].trim()).join('\n'):null}
+  for(let i=0;i<lines.length;i++){const bare=lines[i].replace(SFX_RE,'$1').replace(/\s{2,}/g,' ').trim();if(!bare)continue;
+    const hit=kind==='caption'?/^\[(.+)\]$/.test(bare):kind==='dialog'?DLG_RE.test(bare):false;if(!hit)continue;c++;
+    if(c===n){const keep=[...lines[i].matchAll(SFX_RE)].map(m=>'-'+m[2]+'-').join(' ');if(keep)lines[i]=keep;else lines.splice(i,1);return lines.join('\n')}}
+  return null}
+const kindOfKey=k=>{let m;if(k==='caption')return['caption',0];if(m=k.match(/^(dialog|caption|effect)-(\d+)$/))return[m[1],+m[2]];return null};
+function shiftLetters(settings,kind,n){const L=settings?.letters;if(!L)return;const name=i=>kind==='caption'&&i===0?'caption':`${kind}-${i}`;
+  delete L[name(n)];for(let i=n+1;i<60;i++){if(L[name(i)]!==undefined){L[name(i-1)]=L[name(i)];delete L[name(i)]}}
+  const lk=settings.lock?.letters;if(lk){delete lk[name(n)];for(let i=n+1;i<60;i++)if(lk[name(i)]!==undefined){lk[name(i-1)]=lk[name(i)];delete lk[name(i)]}}}
+function deleteLetterEls(els){const jobs=[];let locked=0;
+  for(const L of els){const g=L.closest('[data-slot-index]');if(!g)continue;const lk=L.dataset.letter;if(isLocked(g,lk)){locked++;continue}jobs.push({key:pageKey(g),lk})}
+  // 같은 컷·같은 종류는 뒤 번호부터 지워야 앞 번호가 안 밀림
+  jobs.sort((a,b)=>a.key.localeCompare(b.key)||((kindOfKey(b.lk)||[,0])[1]-(kindOfKey(a.lk)||[,0])[1]));let n=0;const touched=new Set();
+  for(const j of jobs){const [si,slot]=j.key.split(':').map(Number),sc=SCENES[si];const settings=withKey(j.key,()=>pageSettings(true));
+    if(j.lk.startsWith('material-')){const id=j.lk.slice(9);settings.materialSounds=(settings.materialSounds||[]).filter(x=>x.id!==id);if(settings.letters)delete settings.letters[j.lk];n++;touched.add(si);continue}
+    const kk=kindOfKey(j.lk);if(!kk)continue;const t=dropFromText(sc.cuts[slot],kk[0],kk[1]);if(t===null)continue;
+    sc.cuts[slot]=t;shiftLetters(settings,kk[0],kk[1]);n++;touched.add(si)}
+  if(!n){flash(locked?'잠긴 식자라 지우지 않았어요':'지울 수 있는 식자가 아니에요');return}
+  MULTI.clear();selectLetter(null);touched.forEach(si=>{if(si===SCUR)CUTS=SCENES[si].cuts;refreshText(si)});
+  flash(`식자 ${n}개를 지웠어요${locked?` · 잠긴 ${locked}개는 그대로`:''} · Ctrl+Z로 되돌리기`)}
+function deleteCut(key){const [si,slot]=key.split(':').map(Number),sc=SCENES[si],g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}
+  const len=sc.cuts.length;if(len<=1){flash('씬의 마지막 컷은 지울 수 없어요');return}
+  const label=pageCut.selectedOptions[0]?.textContent||'컷';
+  remapCuts(si,()=>{sc.cuts.splice(slot,1);if(sc.pageEdits.length>slot)sc.pageEdits.splice(slot,1);return moveMap(len,x=>x===slot?-1:x>slot?x-1:x)});
+  if(si===SCUR)CUTS=sc.cuts;pageSelection=null;refreshText(si);flash(`${label}을 지웠어요 · Ctrl+Z로 되돌리기`)}
+document.addEventListener('keydown',e=>{if(!inEdit()||(e.key!=='Delete'&&e.key!=='Backspace'))return;if(typing(e.target)||document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(MULTI.size>1){e.preventDefault();deleteLetterEls([...MULTI].map(k=>{const [key,lk]=k.split('|');return groupBy(key)?.querySelector(`[data-letter="${CSS.escape(lk)}"]`)}).filter(Boolean));return}
+  if(selectedLetter){e.preventDefault();deleteLetterEls([selectedLetter]);return}
+  if(pageSelection){e.preventDefault();deleteCut(pageSelection)}});
+
 // ---------- 연결 ----------
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);renderCtx();return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);renderCtx();return r}}
