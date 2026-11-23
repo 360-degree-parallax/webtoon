@@ -904,20 +904,13 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .ct-alldone{padding:40px 0;text-align:center;color:var(--t3)}
 @media(max-width:640px){.ct-nav{top:var(--ctnav,96px)}.ct-keys{display:none}}
 
-/* 콘티 상자 시각화: 카드·그림·프롬프트 영역을 옅은 상자로, 태그는 종류별 색 칩 */
+/* 콘티: 컷마다 상자로 구분 */
 #conti .ccard{border:1px solid var(--line2);border-radius:16px;background:var(--bg);padding:22px 24px 24px;margin:0 0 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 #conti .ccard.cur{border-color:rgba(45,113,247,.5);box-shadow:0 0 0 3px rgba(45,113,247,.1)}
-#conti .ccard.copied .ct-prompt{box-shadow:inset 0 0 0 1px rgba(45,113,247,.35)}
-#conti .ct-prompt{padding:14px 16px;border-radius:12px;background:var(--surface)}
-#conti .nf{padding:10px 12px 12px;margin:0 0 10px;border:0;border-radius:10px;background:var(--bg);box-shadow:0 0 0 1px var(--line)}#conti .nf:last-child{margin-bottom:0}
-#conti .nf pre.tgs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px!important;font-size:13.5px;line-height:1.4}
-#conti .tgsep{font-size:0;width:0;overflow:hidden}
-.tg{display:inline-block;padding:3px 9px;border-radius:7px;font-style:normal;font-size:13px;line-height:1.45;background:#eef1f5;color:#2b3340;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}
-.tg.k-shot{background:#e8f0ff;color:#1f4fb5}.tg.k-place{background:#e7f5ec;color:#22663b}.tg.k-light{background:#fff4dc;color:#8a5a00}.tg.k-emo{background:#fdeaf1;color:#a2325c}.tg.k-look{background:#f1ebfd;color:#5e3aa6}.tg.k-style{background:transparent;color:var(--t3);box-shadow:inset 0 0 0 1px var(--line2)}
-:root[data-theme=dark] .tg{filter:brightness(.85) saturate(.9)}
-.ct-legend{display:flex;flex-wrap:wrap;gap:4px}.ct-legend .tg{font-size:11.5px;padding:1px 7px}
 #conti .ct-drop.drop{box-shadow:0 0 0 1px var(--line2)}
-@media(max-width:640px){#conti .ccard{padding:16px 14px}#conti .ct-prompt{padding:10px}.ct-legend{display:none}}
+.ct-keys{display:flex;gap:12px;align-items:center;font-size:12.5px;color:var(--t2);letter-spacing:0}.ct-keys>span{display:inline-flex;align-items:center;gap:3px}
+.ct-keys kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:5px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line2),0 1px 0 var(--line2);font-size:11.5px;font-weight:600;color:var(--t1);margin-right:2px}
+@media(max-width:640px){#conti .ccard{padding:16px 14px}}
 </style>
 </head>
 <body>
@@ -3344,18 +3337,10 @@ function renderNai(){if(VIEW==='layout')setTimeout(renderConti);$('#naistyle').v
 // 콘티 작업 상태: 그림 없는 컷만 보기 · 복사한 컷(붙여 넣기 대상) · 지금 컷(J/K)
 let CT_EMPTY=false,CT_CUR=-1;const CT_COPIED=new Set();
 // 프롬프트 칸: 모든 컷에 똑같이 붙는 화풍 태그는 흐리게(복사에는 그대로 들어감)
-// 프롬프트 태그를 종류별 상자로(복사에는 원래 쉼표 글이 그대로: 구분 쉼표는 화면에서만 숨김)
-const TAG_KIND=[
-  ['shot',/^(\d+(girl|boy|other)s?|solo|multiple|no humans|upper body|full body|cowboy shot|close-up|portrait|face focus|head out of frame|hands only|feet out of frame|from (above|below|side|behind)|straight-on|dutch angle|pov|wide shot|very wide shot|profile|back|negative space|looking (at viewer|away|back|down|up|at .*))$/],
-  ['place',/(indoors|outdoors|room|bedroom|street|window|door|curtain|city|school|house|forest|sky|night|day|evening|sunset|morning|rain|snow|victorian|century|medieval|modern|background|scenery|castle|garden|hallway|cafe|office)/],
-  ['light',/(light|lighting|dark|shadow|contrast|bloom|low key|high key|glow|backlight|rim|silhouette|dramatic|moody|atmosphere|candle|lens flare|depth of field|blurry)/],
-  ['emo',/(smile|blush|embarrass|angry|sad|tear|cry|surprise|calm|shock|nervous|scared|happy|serious|frown|open mouth|closed mouth|parted lips|closed eyes|wide-eyed|holding|walking|running|sitting|standing|reaching|hug|kiss|pointing)/],
-  ['look',/(hair|eyes|ponytail|braid|bangs|uniform|apron|maid|dress|shirt|coat|jacket|suit|skirt|glasses|hat|ribbon|earring|necklace|gloves|boots|tall|short|male|female|mature|young|butler|knight|noble|student|teacher|soldier)/]];
-const TAG_NAME={shot:'구도·인물',place:'장소·시간',light:'빛·분위기',emo:'표정·동작',look:'외형',style:'화풍',etc:'기타'};
-const tagKind=(t,dim)=>{const x=t.trim().toLowerCase().replace(/^[\d.]+::|::$/g,'');if(dim&&dim.has(t.trim().toLowerCase()))return 'style';for(const [k,re] of TAG_KIND)if(re.test(x))return k;return 'etc'};
-function ctBlk(title,txt,dim){const tags=String(txt||'').split(/,\s*/).filter(t=>t.trim());
-  const html=tags.map((t,k)=>`<span class="tg k-${tagKind(t,dim)}">${esc(t)}</span>${k<tags.length-1?'<span class="tgsep">, </span>':''}`).join('');
-  return `<div class="nf"><header><h4>${title}</h4><button class="btn" data-act="ncopy">복사</button></header><pre class="tgs">${html}</pre></div>`}
+// 프롬프트 칸: 모든 컷에 똑같이 붙는 화풍 태그는 흐리게(복사에는 그대로 들어감)
+function ctBlk(title,txt,dim){const tags=String(txt||'').split(/,\s*/);
+  const html=tags.map((t,k)=>{const sep=k<tags.length-1?', ':'';return dim&&dim.has(t.trim().toLowerCase())?`<span class="ct-dim">${esc(t)}${sep}</span>`:esc(t)+sep}).join('');
+  return `<div class="nf"><header><h4>${title}</h4><button class="btn" data-act="ncopy">복사</button></header><pre>${html}</pre></div>`}
 function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,sc=SCENES[SCUR];
   if(!ps.length){el.innerHTML='<p class="empty">씬 단계에서 컷을 적어주세요.</p>';return}
   const L=naiCuts(),done=cutCount(SCUR,ps),ai=ainFor(),dim=new Set(String(NAISTYLE||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
@@ -3363,7 +3348,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const head=`<div class="ct-head"><div><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><p>${ps.length}컷 · 그림 <b>${done}</b>/${ps.length}${ai?` · ${ai.stale?'<span class="ct-warn">글이 바뀌어 Claude 프롬프트가 예전 것</span>':'Claude로 다듬은 프롬프트'}`:''}</p></div>
     <div class="ct-tools"><button class="tbtn" data-act="naiset" aria-expanded="false">작화 설정</button><button class="tbtn" data-act="nairefine">Claude로 다듬기</button><button class="tbtn" data-act="naimulti" title="파일 이름 순으로 빈 컷부터 채워요">그림 여러 장</button><button class="tbtn" data-act="naidown">프롬프트 txt</button></div></div>
     <nav class="ct-nav" aria-label="컷 이동"><div class="ct-dots">${L.map(({i})=>`<button type="button" class="ct-dot${has[i]?' on':''}${i===CT_CUR?' cur':''}" data-ctgo="${i}" title="${i+1}번 컷 · ${has[i]?'그림 있음':'그림 없음'}">${i+1}</button>`).join('')}</div>
-      <label class="ct-filter"><input type="checkbox" data-ctempty${CT_EMPTY?' checked':''}> 그림 없는 컷만 <span>${ps.length-done}</span></label><span class="ct-legend">${['shot','place','light','emo','look','style'].map(k=>`<i class="tg k-${k}">${TAG_NAME[k]}</i>`).join('')}</span><span class="ct-keys" title="J·K 다음·이전 컷 · C 전체 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기">J·K 이동 · C 복사 · Ctrl+V 붙여 넣기</span></nav>`;
+      <label class="ct-filter"><input type="checkbox" data-ctempty${CT_EMPTY?' checked':''}> 그림 없는 컷만 <span>${ps.length-done}</span></label><span class="ct-keys" title="J·K 다음·이전 컷 · C 지금 컷 전체 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기"><span><kbd>J</kbd><kbd>K</kbd>이동</span><span><kbd>C</kbd>복사</span><span><kbd>Ctrl</kbd>+<kbd>V</kbd>붙여 넣기</span></span></nav>`;
   el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
     return `<article class="ccard${CT_COPIED.has(i)?' copied':''}${i===CT_CUR?' cur':''}" data-ct="${i}"${CT_EMPTY&&im?' hidden':''}>
       <header><b class="ct-no">${String(i+1).padStart(2,'0')}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([p.who,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}</header>
