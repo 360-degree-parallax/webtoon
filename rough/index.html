@@ -979,6 +979,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       <div class="prop"><span>그림 확대</span><span class="zoomrow"><input id="wzoom" type="range" min="100" max="500" step="5" value="100" aria-label="칸 안 그림 확대"><b id="wzoomvalue">100%</b><button class="btn sm" id="wzoomreset">원래대로</button></span></div>
       <div class="prop"><span>프레임</span><button class="btn sm" id="wframereset">크기·모양 초기화</button></div>
       <div class="prop"><span>씬 전체에</span><span class="btnrow"><button class="btn sm" id="wfitw" title="이 컷의 폭과 좌우 위치를 같은 씬의 모든 컷에">폭·좌우 맞춤</button><button class="btn sm" id="wfitgap" title="이 컷의 아래 간격을 같은 씬의 모든 컷 사이에">간격 맞춤</button></span></div>
+      <div class="prop col"><span>시퀀스 템플릿 <small>(이 컷부터 몇 컷의 크기·간격·배경·전환·효과선을 저장해 다른 씬에 적용)</small></span><span class="btnrow"><button class="btn sm" id="wtplsave">이 컷부터 저장</button><select id="wtplsel" aria-label="시퀀스 템플릿"></select><button class="btn sm" id="wtplapply">이 컷부터 적용</button></span></div>
       <div class="prop"><span>식자</span><button class="btn sm" id="wletterreset">이 컷 식자 배치·스타일 초기화</button></div>
     </section>
     <section class="insp materials" id="wmaterials" hidden>
@@ -2542,6 +2543,20 @@ $('#wfitgap').addEventListener('click',()=>{if(!pageSelection)return;const si=pa
   if(!Number.isFinite(size)){toast('이 컷은 아래 간격이 없어요(씬 마지막 컷)');return}let n=0;
   gs.slice(0,-1).forEach(g=>{if(g===cur)return;pageSettings(true,pageKey(g)).gap=size;n++});
   saveScenes();renderWebtoon();toast(`${n}곳의 간격을 ${size}px로 맞췄어요 (Ctrl+Z로 되돌리기)`)});
+// 시퀀스 템플릿(#31): 연속한 컷의 레이아웃 값(글·레퍼런스·식자 제외)을 저장해 다른 자리에 붙임
+const TPL_KEYS=['frame','quad','gap','background','transition','transMid','transStop','bgImage','bgImageOp','materialLines'];
+const tplLoad=()=>{try{return JSON.parse(localStorage.getItem('rough-seq-templates')||'[]')}catch(_){return[]}};
+const tplSave=t=>{try{localStorage.setItem('rough-seq-templates',JSON.stringify(t))}catch(e){saveFail(e,'템플릿')}};
+function refreshTpl(){const t=tplLoad();$('#wtplsel').innerHTML=t.length?t.map((x,i)=>`<option value="${i}">${esc(x.name)} · ${x.cuts.length}컷</option>`).join(''):'<option value="">저장한 템플릿 없음</option>';$('#wtplapply').disabled=!t.length}
+refreshTpl();
+$('#wtplsave').addEventListener('click',()=>{if(!pageSelection)return;const [si,slot]=pageSelection.split(':').map(Number),gs=sceneGroups(si),k0=gs.findIndex(g=>pageKey(g)===pageSelection);if(k0<0)return;
+  const max=gs.length-k0,n=Math.round(+prompt(`이 컷부터 몇 컷을 저장할까요? (1~${max})`,Math.min(5,max)));if(!(n>=1))return;
+  const name=prompt('템플릿 이름',`${sceneLabel(SCENES[si],si)} ${k0+1}~${k0+Math.min(n,max)}컷`);if(!name)return;
+  const cuts=gs.slice(k0,k0+n).map(g=>{const e=pageSettings(false,pageKey(g))||{},f=JSON.parse(g.dataset.frame);const o={};TPL_KEYS.forEach(k=>{if(e[k]!=null)o[k]=structuredClone(e[k])});o.frame??={x:Math.round(f.x),w:Math.round(f.w),h:Math.round(f.h)};return o});
+  const t=tplLoad();t.push({name,cuts,at:Date.now()});tplSave(t);refreshTpl();$('#wtplsel').value=t.length-1;toast(`템플릿 「${name}」을 저장했어요 · ${cuts.length}컷`)});
+$('#wtplapply').addEventListener('click',()=>{if(!pageSelection)return;const tp=tplLoad()[+$('#wtplsel').value];if(!tp)return;const [si]=pageSelection.split(':').map(Number),gs=sceneGroups(si),k0=gs.findIndex(g=>pageKey(g)===pageSelection);if(k0<0)return;
+  const tg=gs.slice(k0,k0+tp.cuts.length);tg.forEach((g,k)=>{const e=pageSettings(true,pageKey(g));TPL_KEYS.forEach(key=>delete e[key]);Object.assign(e,structuredClone(tp.cuts[k]))});
+  saveScenes();renderWebtoon();toast(`「${tp.name}」을 ${tg.length}컷에 적용했어요${tg.length<tp.cuts.length?` (씬에 남은 컷이 ${tg.length}개라 나머지는 건너뜀)`:''} · Ctrl+Z로 되돌리기`,3000)});
 $('#wframereset').addEventListener('click',()=>{if(!pageSelection)return;const set=pageSettings();if(set){delete set.frame;delete set.quad}saveScenes();renderWebtoon()});
 function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
 async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 만드는 중');
