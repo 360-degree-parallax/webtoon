@@ -362,7 +362,11 @@
     // 목표 거리 흐름
     const dist = goal === '관계 대비' ? '교차' : { '끝 정점': '좁혀감', '정점 선행': '넓혀감', '중간 정점': '좁혔다 넓힘', '정점 연속': '교차', '무정점': beats[0].role === '설정' ? '유지·넓게' : '유지·좁게' }[narr];
 
-    return { beats, peaks, narr, narrWhy, curve, trans, goal, goalWhy, tempo, dist, vng: vng.join('→') };
+    const res = { beats, peaks, narr, narrWhy, curve, trans, goal, goalWhy, tempo, dist, vng: vng.join('→') };
+    // 묶음 판정 모델이 있으면 서사 형태 등을 모델 값으로(규칙 값은 rule에 남김). 모델이 없는 항목은 규칙 그대로
+    const bp = E._bun && E.BUNDLE_MODE !== 'off' && bundlePredict(beats);
+    if (bp) { res.rule = {}; for (const [k, v] of Object.entries(bp)) if (v && res[k] !== undefined) { res.rule[k] = res[k]; if (res[k] !== v) { res[k] = v; if (k === 'narr') res.narrWhy = '글 전체로 판단(학습 모델)'; if (k === 'goal') res.goalWhy = '글 전체로 판단(학습 모델)'; } } }
+    return res;
   }
 
   function analyze(text, chars) { return chunk(parse(text, chars)).map(analyzeChunk); }
@@ -417,6 +421,40 @@
   }
 
   // 칸 길이 모델(tools/ml/train_layout.py): 컷 해석 특징 → log(칸 높이 비). train_layout.cut_feats와 같은 특징
+  // 묶음 판정 모델(tools/ml/train_bundle.py): 묶음 글 n-그램 + 컷 예측 흐름(샷 거리·강도·감정·역할·인물·대사) → 서사 형태 등. E.useBundleModel(model)
+  const SRANK = { 설정: 0, 전경: 1, 전신: 2, 중경: 3, 클로즈업: 4, 디테일: 5, '효과 배경': 2.5 };
+  function seqFeats(shots, ints, emos, roles, beats) {  // train_bundle.seq_feats와 같음
+    const n = shots.length, f = { n: n / 5 }, r = shots.map(s => SRANK[s] ?? 3), add = (k, v) => { f[k] = (f[k] || 0) + v; };
+    const sum = a => a.reduce((x, y) => x + y, 0), pairs = a => a.slice(1).map((v, k) => [a[k], v]);
+    f.r_first = r[0] / 5; f.r_last = r[n - 1] / 5; f.r_mean = sum(r) / n / 5; f.r_range = (Math.max(...r) - Math.min(...r)) / 5;
+    f.r_slope = (r[n - 1] - r[0]) / 5; f.r_up = pairs(r).filter(([a, b]) => b > a).length / Math.max(1, n - 1); f.r_down = pairs(r).filter(([a, b]) => b < a).length / Math.max(1, n - 1);
+    const mid = n > 2 ? r.slice(1, -1) : [r[0]]; f.r_mid_dip = Math.min(...mid) / 5 - (r[0] + r[n - 1]) / 10; f.r_mid_peak = Math.max(...mid) / 5 - (r[0] + r[n - 1]) / 10;
+    shots.forEach(s => add('shot=' + s, 1 / n)); f['first=' + shots[0]] = 1; f['last=' + shots[n - 1]] = 1;
+    const i = ints; f.i_mean = sum(i) / n / 3; f.i_max = Math.max(...i) / 3; f.i_min = Math.min(...i) / 3; f.i_first = i[0] / 3; f.i_last = i[n - 1] / 3;
+    f.i_slope = (i[n - 1] - i[0]) / 2; f.i_peakpos = i.indexOf(Math.max(...i)) / Math.max(1, n - 1); f.i_flat = +(Math.max(...i) === Math.min(...i));
+    f.i_up = pairs(i).filter(([a, b]) => b > a).length / Math.max(1, n - 1); f.i_down = pairs(i).filter(([a, b]) => b < a).length / Math.max(1, n - 1);
+    emos.forEach(e => add('emo=' + e, 1 / n)); f.emo_kinds = new Set(emos).size / n;
+    roles.forEach(x => add('role=' + x, 1 / n)); f['role_first=' + roles[0]] = 1; f['role_last=' + roles[n - 1]] = 1;
+    const who = beats.map(b => b.who || ''); f.who_chg = pairs(who).filter(([a, b]) => a && b && a !== b).length / Math.max(1, n - 1);
+    f.who_kinds = new Set(who.filter(Boolean)).size / n; f.no_who = who.filter(w => !w).length / n;
+    f.said = beats.filter(b => b.said).length / n; f.said_alt = pairs(beats).filter(([a, b]) => a.said && b.said && (a.who || '') !== (b.who || '')).length / Math.max(1, n - 1);
+    f.cap = sum(beats.map(b => (b.captions || []).length)) / n; f.sfx = sum(beats.map(b => (b.sfx || []).length)) / n; f.len = sum(beats.map(b => (b.act || '').length)) / n / 60;
+    for (const k in f) if (f[k] === 0 && !/=/.test(k)) { /* 0도 그대로(선형 모델이라 영향 없음) */ }
+    return f;
+  }
+  function useBundleModel(M) { E._bun = M && M.fields ? { M, vec: ngramVec(M) } : null; return !!E._bun; }
+  function bundlePredict(beats) {
+    const R = E._bun; if (!R) return null; const M = R.M;
+    const shots = beats.map(b => (b._s && b._s.shot) || '중경'), roles = beats.map(b => b.role), emos = beats.map(b => b.emo), ints = beats.map(b => Math.round(b.i));
+    const f = seqFeats(shots, ints, emos, roles, beats), x = R.vec(beats.map(b => String(b.line || b.act || '').replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()).join(' ').replace(/\s+/g, ' ').trim());
+    const out = {};
+    for (const [field, H] of Object.entries(M.fields)) {
+      let best = -Infinity, pick = null;
+      H.classes.forEach((cl, c) => { let z = H.b[c]; for (const [k, v] of x) z += v * H.tw * H.Wt[c][k]; for (const key in f) { const w = H.Wf[c][key]; if (w) z += w * f[key]; } if (z > best) { best = z; pick = cl; } });
+      out[field] = pick;
+    }
+    return out;
+  }
   // 작가 취향: 기록 {키: {f, auto, chosen}} → 바꿔 끼울 표. 같은 엔진 값에서 3번 이상 · 60% 이상 같은 값으로 고쳤을 때만
   function setPrefs(log) {
     const L = Object.values(log || {}).filter(x => !x.muted); if (!L.length) { E.PREFS = null; return null; }
@@ -533,5 +571,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useShotModel, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));

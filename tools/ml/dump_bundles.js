@@ -34,7 +34,7 @@ for (const r of rh.rows) {
   const texts = rows.map(x => cutText(x[CI('내용')]));
   const beats = R.parseCuts(texts, chars[r[0]] || []); if (beats.length < 2) continue;
   const an = R.analyzeCuts(texts, chars[r[0]] || [])[0]; if (!an) continue;
-  const others = PATS.filter(p => pid(p) !== g);
+  const others = PATS.filter(p => pid(p) !== g && (!process.env.LOWO || p.src !== g.slice(0, 2)));
   const ranked = R.rank(an, others, 40).map(x => ({ id: pid(x.p), name: x.p.name, s: +x.s.toFixed(4), parts: x.parts }));
   const top = R.rank(an, others, 1)[0], lay = top ? R.layout(an, top.p) : [];
   const pat = patById[g], pics = pat ? pat.cuts.filter(c => c.t === '그림') : [];
@@ -42,7 +42,7 @@ for (const r of rh.rows) {
     an: { narr: an.narr, curve: an.curve, goal: an.goal, tempo: an.tempo, dist: an.dist, trans: an.trans, vng: an.vng, peaks: an.peaks },
     beats: an.beats.map(b => ({ emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans || '', who: b.who || '', said: !!b.said, nd: (b.dialogs || []).length, cap: (b.captions || []).length, sfx: (b.sfx || []).length, len: (b.act || '').length, text: b.line })),
     truth: pics.map(c => ({ h: c.h, gap: c.gap, shot: c.shot, id: c.id })),
-    eng: lay.map(c => ({ h: c.h, gap: c.gap, shot: c.shot })),
+    eng: lay.map(c => ({ h: c.h, gap: c.gap, shot: c.shot, ang: c.ang, src: c.src })),
     ranked });
 }
 const file = process.argv[2] || path.join(__dirname, 'cache', 'bundles.json');
