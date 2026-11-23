@@ -170,17 +170,21 @@ const propsBody=mk('ws-props');[...rightDock.children].filter(x=>!x.classList.co
 const navBody=mk('ws-nav',`<div class="nav-row"><input type="range" id="wsnavz" min="10" max="400" step="1" value="100" aria-label="캔버스 배율"><output id="wsnavzv">100%</output></div>
   <div class="nav-btns"><button class="btn sm" data-nav="all" title="Shift+1">전체</button><button class="btn sm" data-nav="100" title="Shift+0">100%</button><button class="btn sm" data-nav="sel" title="Shift+2">선택한 컷</button></div><div class="nav-map"></div><p class="nav-note" hidden>나란히 보기에서는 미니맵 대신 가로 스크롤로 이동해요.</p>`);
 const histBody=mk('ws-hist','<ol class="hist" id="wshist"></ol><p class="hist-note">항목을 누르면 그때 상태로 돌아가요. 칸 나누기·말풍선 추가도 되돌릴 수 있어요.</p>');
-const textBody=mk('ws-text');const alignBody=mk('ws-align');const libBody=mk('ws-lib');
+const textBody=mk('ws-text');const alignBody=mk('ws-align');const libBody=mk('ws-lib');const assetBody=mk('ws-assets');
 $('#wtoc').hidden=false;$('#wrefs').hidden=false;
 const PANELS={
   layers:{title:'레이어',el:$('#wtoc')},refs:{title:'레퍼런스',el:$('#wrefs')},props:{title:'속성',el:propsBody},
-  nav:{title:'내비게이터',el:navBody},history:{title:'기록',el:histBody},library:{title:'소재',el:libBody},text:{title:'글자',el:textBody},align:{title:'정렬',el:alignBody}};
+  nav:{title:'내비게이터',el:navBody},history:{title:'기록',el:histBody},library:{title:'소재',el:libBody},text:{title:'글자',el:textBody},align:{title:'정렬',el:alignBody},
+  assets:{title:'에셋',el:assetBody}};
+// 오른쪽은 에셋 전용(docs/edit-asset-panel-plan.md). 나머지 패널은 독(X)에서 빼서 속성 서랍·떠 있는 미니맵·에셋 탭으로 옮김
+const OFFDOCK=['refs','props','nav','history','library','text','align'];
+// 작업 공간 프리셋 = 에셋 패널의 처음 탭
 const PRESETS={
-  edit:{name:'편집',L:[['layers',0],['refs',1]],R:[['props',0],['nav',0],['history',1],['library',1],['text',1],['align',1]]},
-  letter:{name:'식자',L:[['layers',0],['refs',1]],R:[['props',0],['text',0],['align',0],['library',0],['history',1],['nav',1]]},
-  ref:{name:'연출 참고',L:[['refs',0],['layers',1]],R:[['props',0],['nav',0],['history',1],['library',1],['text',1],['align',1]]}};
-const fromPreset=id=>{const P=PRESETS[id],panels={};['L','R'].forEach(d=>P[d].forEach(([p,c],i)=>panels[p]={dock:d,order:i,collapsed:!!c}));return {preset:id,panels}};
-let LAYOUT=LS('rough-ws-layout',null);if(!LAYOUT||!LAYOUT.panels||Object.keys(PANELS).some(k=>!LAYOUT.panels[k]))LAYOUT=fromPreset('edit');
+  edit:{name:'편집',L:[['layers',0]],R:[['assets',0]],tab:'rec'},
+  letter:{name:'식자',L:[['layers',0]],R:[['assets',0]],tab:'balloon'},
+  ref:{name:'연출 참고',L:[['layers',0]],R:[['assets',0]],tab:'ref'}};
+const fromPreset=id=>{const P=PRESETS[id],panels={};['L','R'].forEach(d=>P[d].forEach(([p,c],i)=>panels[p]={dock:d,order:i,collapsed:!!c}));OFFDOCK.forEach((p,i)=>panels[p]={dock:'X',order:i,collapsed:false});return {preset:id,panels}};
+let LAYOUT=LS('rough-ws-layout',null);if(!LAYOUT||!LAYOUT.panels||Object.keys(PANELS).some(k=>!LAYOUT.panels[k])||OFFDOCK.some(k=>LAYOUT.panels[k].dock!=='X'))LAYOUT=fromPreset(PRESETS[LAYOUT?.preset]?LAYOUT.preset:'edit');
 const saveLayout=()=>SS('rough-ws-layout',LAYOUT);
 for(const [id,P] of Object.entries(PANELS)){const s=document.createElement('section');s.className='wpanel';s.dataset.panel=id;
   s.innerHTML=`<header class="wp-h"><button class="wp-col" aria-expanded="true" aria-label="${P.title} 접기·펼치기">${ico('<path d="M5.5 8.5h13L12 16z"/>')}</button><b>${P.title}</b><span class="wp-acts"><button data-wp="move" title="반대쪽으로 옮기기" aria-label="${P.title} 패널 반대쪽으로">${ico('<path d="M15 2.5l6 5-6 5V9.2H4V5.8h11zM9 11.5v3.3h11v3.4H9v3.3l-6-5z"/>')}</button><button data-wp="float" title="떼어 띄우기 / 다시 붙이기" aria-label="${P.title} 패널 떼어 띄우기">${ico('<path fill-rule="evenodd" d="M8 8h13v13H8zm2.3 2.3v8.4h8.4v-8.4zM3 3h13v3.6h-2.3V5.3H5.3v8.4h1.3V16H3z"/>')}</button></span></header><div class="wp-body"></div>`;
@@ -188,11 +192,11 @@ for(const [id,P] of Object.entries(PANELS)){const s=document.createElement('sect
 function renderDocks(){
   for(const d of ['L','R']){const dock=d==='L'?leftDock:rightDock;
     Object.entries(LAYOUT.panels).filter(([,v])=>v.dock===d&&!v.float).sort((a,b)=>a[1].order-b[1].order).forEach(([id])=>dock.appendChild(PANELS[id].sec))}
-  for(const [id,v] of Object.entries(LAYOUT.panels)){const s=PANELS[id].sec;s.classList.toggle('collapsed',!!v.collapsed);s.querySelector('.wp-col').setAttribute('aria-expanded',!v.collapsed);
+  for(const [id,v] of Object.entries(LAYOUT.panels)){if(v.dock==='X')continue;const s=PANELS[id].sec;s.classList.toggle('collapsed',!!v.collapsed);s.querySelector('.wp-col').setAttribute('aria-expanded',!v.collapsed);
     s.classList.toggle('floating',!!v.float);s.querySelector('.wp-h').draggable=!v.float;
     if(v.float){document.body.appendChild(s);s.style.left=clamp(v.float.x,0,innerWidth-120)+'px';s.style.top=clamp(v.float.y,60,Math.max(60,innerHeight-160))+'px';s.hidden=!inEdit()}else{s.style.left=s.style.top='';s.hidden=false}}
   $('#wsws')&&($('#wsws').value=LAYOUT.preset||'custom')}
-function openPanel(id){const v=LAYOUT.panels[id];if(!v)return;if(v.collapsed){v.collapsed=false;saveLayout();renderDocks();onOpen(id)}PANELS[id].sec.scrollIntoView({block:'nearest'})}
+function openPanel(id){const v=LAYOUT.panels[id];if(!v)return;if(v.dock==='X'){openOff(id);return}if(v.collapsed){v.collapsed=false;saveLayout();renderDocks();onOpen(id)}PANELS[id].sec.scrollIntoView({block:'nearest'})}
 function custom(){LAYOUT.preset='custom';saveLayout()}
 function orderFromDom(){for(const d of ['L','R']){const dock=d==='L'?leftDock:rightDock;[...dock.querySelectorAll(':scope > .wpanel')].forEach((s,i)=>{const v=LAYOUT.panels[s.dataset.panel];v.dock=d;v.order=i})}}
 document.addEventListener('click',e=>{const s=e.target.closest('.wpanel');if(!s)return;const id=s.dataset.panel,v=LAYOUT.panels[id];
@@ -212,7 +216,7 @@ let fdrag=null;
 document.addEventListener('pointerdown',e=>{const h=e.target.closest('.wpanel.floating .wp-h');if(!h||e.target.closest('button'))return;const s=h.closest('.wpanel'),r=s.getBoundingClientRect();fdrag={s,dx:e.clientX-r.left,dy:e.clientY-r.top};h.setPointerCapture(e.pointerId)});
 document.addEventListener('pointermove',e=>{if(!fdrag)return;fdrag.s.style.left=clamp(e.clientX-fdrag.dx,0,innerWidth-120)+'px';fdrag.s.style.top=clamp(e.clientY-fdrag.dy,56,innerHeight-40)+'px'});
 document.addEventListener('pointerup',()=>{if(!fdrag)return;const v=LAYOUT.panels[fdrag.s.dataset.panel];v.float={x:parseInt(fdrag.s.style.left),y:parseInt(fdrag.s.style.top)};custom();fdrag=null});
-function onOpen(id){if(id==='nav')RoughStudio.mini.refresh();if(id==='history')renderHistory();if(id==='refs')RoughRefs.showTab('refs');if(id==='text')renderText();if(id==='align')renderAlign();if(id==='library')renderLib()}
+function onOpen(id){if(id==='assets'){renderAssets();return}if(id==='nav')RoughStudio.mini.refresh();if(id==='history')renderHistory();if(id==='refs')RoughRefs.showTab('refs');if(id==='text')renderText();if(id==='align')renderAlign();if(id==='library')renderLib()}
 
 // ---------- 상황 막대 ----------
 const ctx=document.createElement('div');ctx.className='ctxbar';ctx.setAttribute('role','toolbar');ctx.setAttribute('aria-label','도구 옵션');$('#wst').after(ctx);
@@ -254,7 +258,7 @@ ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return
   if(c==='frame')$('#wframereset').click();
   if(c==='ref')$('#wrefchange').click();
   if(c==='wsreset')applyPreset(LAYOUT.preset&&PRESETS[LAYOUT.preset]?LAYOUT.preset:'edit')});
-function applyPreset(id){if(!PRESETS[id])return;LAYOUT=fromPreset(id);saveLayout();renderDocks();Object.keys(PANELS).forEach(k=>!LAYOUT.panels[k].collapsed&&onOpen(k));flash(`작업 공간: ${PRESETS[id].name}`)}
+function applyPreset(id){if(!PRESETS[id])return;LAYOUT=fromPreset(id);saveLayout();renderDocks();ASSET.auto=true;assetTab(PRESETS[id].tab);flash(`작업 공간: ${PRESETS[id].name}`)}
 
 // ---------- 내비게이터 ----------
 const mini=RoughStudio.mini;mini.box.classList.add('docked');navBody.querySelector('.nav-map').appendChild(mini.box);
@@ -366,6 +370,113 @@ document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||e.ctrlKe
   if(e.shiftKey||e.key.length!==1)return;const k=e.key.toUpperCase(),id=Object.keys(KEYS).find(t=>KEYS[t]===k);
   if(id){e.preventDefault();setTool(id)}});
 
+// ---------- 오른쪽 밖으로 옮긴 패널: 속성 서랍 · 떠 있는 미니맵 ----------
+const drawer=mk('wsdrawer');drawer.hidden=true;ctx.after(drawer);
+const DTABS=[['props','속성'],['text','글자'],['align','정렬'],['history','기록']];
+drawer.innerHTML=`<div class="wsd-tabs" role="tablist">${DTABS.map(([k,n])=>`<button role="tab" data-dt="${k}">${n}</button>`).join('')}<span class="grow"></span><button class="cb" data-dt="close" aria-label="속성 서랍 닫기">닫기 ✕</button></div><div class="wsd-body"></div>`;
+const miniWrap=mk('wsmini');miniWrap.hidden=true;miniWrap.innerHTML='<div class="wsmini-h"><b>미니맵</b><button class="cb" data-mini="close" aria-label="미니맵 닫기">✕</button></div>';V.querySelector('.edgrid').appendChild(miniWrap);
+let DT=LS('rough-ws-drawer-tab','props');
+function mountOff(){const b=drawer.querySelector('.wsd-body');DTABS.forEach(([k])=>{const el=PANELS[k].el;el.dataset.dt=k;b.appendChild(el)});miniWrap.appendChild(navBody);libBody.remove()}
+function drawerTab(k){DT=k;SS('rough-ws-drawer-tab',k);drawer.querySelectorAll('[data-dt]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dt===k));DTABS.forEach(([t])=>PANELS[t].el.hidden=t!==k);onOpen(k)}
+function setDrawer(on,k){drawer.hidden=!on;SS('rough-ws-drawer',!!on);if(on)drawerTab(k||DT);renderCtx()}
+function openOff(id){if(id==='refs'){assetTab('ref');return}if(id==='library'){assetTab('rec');return}if(id==='nav'){miniWrap.hidden=false;RoughStudio.mini.refresh();return}setDrawer(true,id)}
+drawer.addEventListener('click',e=>{const k=e.target.closest('[data-dt]')?.dataset.dt;if(!k)return;if(k==='close')setDrawer(false);else drawerTab(k)});
+miniWrap.addEventListener('click',e=>{if(e.target.closest('[data-mini="close"]')){miniWrap.hidden=true;SS('rough-ws-mini',false);renderCtx()}});
+{const _rc=renderCtx;renderCtx=function(...a){_rc(...a);const r=ctx.querySelector('.cb-right');if(!r||r.querySelector('[data-off]'))return;
+  r.insertAdjacentHTML('afterbegin',`<button class="cb${drawer.hidden?'':' on'}" data-off="drawer" aria-expanded="${!drawer.hidden}" title="속성·글자·정렬·기록">속성 ${drawer.hidden?'▾':'▴'}</button><button class="cb${miniWrap.hidden?'':' on'}" data-off="mini" aria-pressed="${!miniWrap.hidden}" title="미니맵 켜고 끄기">미니맵</button>`)}}
+ctx.addEventListener('click',e=>{const o=e.target.closest('[data-off]')?.dataset.off;if(!o)return;if(o==='drawer')setDrawer(drawer.hidden);if(o==='mini'){miniWrap.hidden=!miniWrap.hidden;SS('rough-ws-mini',!miniWrap.hidden);if(!miniWrap.hidden)RoughStudio.mini.refresh();renderCtx()}});
+
+// ---------- 에셋 패널(오른쪽 전용) ----------
+// 미리캔버스·망고보드처럼 에셋을 한 서랍에: 검색 · 적용 대상 · 탭. 클릭하면 고른 대상에, 끌어 놓으면 놓은 자리에
+const ATABS=[['rec','추천'],['balloon','말풍선'],['sfx','효과음'],['line','효과선'],['bg','배경'],['ref','컷 참고'],['seq','시퀀스'],['up','업로드'],['star','★']];
+const ASSET={tab:'rec',auto:true,q:''};
+const RECENT=()=>LS('rough-asset-recent',[]);
+function remember(k,v,label){const r=RECENT().filter(x=>!(x.k===k&&x.v===v));r.unshift({k,v,label});SS('rough-asset-recent',r.slice(0,24))}
+assetBody.innerHTML=`<div class="as-top"><input type="search" id="asq" placeholder="에셋 검색 (말풍선·효과음·질감·컷 내용…)" aria-label="에셋 검색"><div class="as-target" id="astarget"></div>
+  <div class="as-tabs" role="tablist">${ATABS.map(([k,n])=>`<button role="tab" data-at="${k}">${n}</button>`).join('')}</div></div><div class="as-body" id="asbody"></div><div class="as-refs" id="asrefs" hidden></div>`;
+const asBody=assetBody.querySelector('#asbody'),asRefs=assetBody.querySelector('#asrefs');asRefs.appendChild(PANELS.refs.el);
+function selPanel(){if(!pageSelection)return null;const [si,slot]=pageSelection.split(':').map(Number),ps=scenePanels(si);return ps.find((p,i)=>cutSlot(p,i)===slot)||null}
+function targetText(){if(selectedLetter){const k=selectedLetter.dataset.letter;return `${/^dialog/.test(k)?'말풍선':/^caption/.test(k)?'나레이션':'효과음'} · ${(selectedLetter.dataset.letterText||'').slice(0,14)}`}
+  if(pageSelection)return `${pageCut.selectedOptions[0]?.textContent||'컷'}`;return ''}
+function renderTarget(){const t=targetText();assetBody.querySelector('#astarget').innerHTML=t?`<span>적용 대상</span><b>${esc(t)}</b>`:'<span>컷을 고르면 클릭으로 넣고, 아니면 캔버스로 끌어다 놓아요</span>'}
+function assetTab(k,user){if(!ATABS.some(t=>t[0]===k))k='rec';ASSET.tab=k;if(user)ASSET.auto=false;assetBody.querySelectorAll('[data-at]').forEach(b=>b.setAttribute('aria-selected',b.dataset.at===k));
+  const refs=k==='ref';asRefs.hidden=!refs;asBody.hidden=refs;if(refs){if(!assetTab.busy){assetTab.busy=true;try{RoughRefs.showTab('refs')}finally{assetTab.busy=false}}const q=$('#rfq');if(q&&ASSET.q&&q.value!==ASSET.q){q.value=ASSET.q;q.dispatchEvent(new Event('input',{bubbles:true}))}}else renderAssets();renderTarget()}
+const item=(k,v,label,inner,extra='')=>`<button class="asi" draggable="true" data-mat="${k}" data-v="${esc(String(v))}" data-label="${esc(label)}" title="${esc(label)}"${extra}>${inner}<span>${esc(label)}</span></button>`;
+const match=s=>!ASSET.q||String(s).toLowerCase().includes(ASSET.q.toLowerCase());
+const EMO_BG={'설렘':3,'기쁨':3,'다정':3,'긴장':2,'분노':2,'결의':2,'쓸쓸':4,'회상':4,'놀람':5,'당황':5,'냉담':6,'평온':1,'의아':1,'개그':1};
+const EMO_SFX={'설렘':['두근'],'놀람':['쾅','휘청'],'분노':['쾅','쿵'],'긴장':['두근','툭'],'당황':['휘청'],'개그':['펑']};
+const bgThumb=i=>$(`#wbgpresets [data-bg-preset="${i}"]`)?.querySelector('svg')?.outerHTML||'';
+function seqList(){try{return JSON.parse(localStorage.getItem('rough-seq-templates')||'[]')}catch(_){return[]}}
+function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASSET.tab;let h='';
+  const grid=(t,items,cls='')=>items.length?`<h5>${t}</h5><div class="asgrid ${cls}">${items.join('')}</div>`:'';
+  const balloons=BALLOON_STYLES.filter(s=>match(s[1])).map(s=>item('balloon',s[0],s[1].split(' · ')[0],swatch(s[0])));
+  const words=[...new Set([...SFXW,...(typeof materialRows!=='undefined'?materialRows.map(r=>r.word):[])])];
+  const sfxQuick=SFXW.filter(match).map(w=>item('sfx',w,w,''));
+  const bgs=PAGE_BACKGROUNDS.map((p,i)=>p&&match(p.name)?item('bg',i,p.name,bgThumb(i)):'').filter(Boolean);
+  const bimgs=Object.values(IMG.bg||{}).filter(r=>match(r.name||'배경 이미지')).map(r=>item('bgimg',r.id,r.name||'배경 이미지',`<img src="${r.src}" alt="">`));
+  const lines=[['focus','집중선'],['speed','속도선']].filter(x=>match(x[1])).map(([v,n])=>item('line',v,n,`<i class="ln ${v}"></i>`));
+  if(k==='rec'){const p=selPanel();
+    if(!p)h='<p class="as-empty">컷을 고르면 그 컷의 감정·샷·연출에 맞는 에셋을 골라 보여 줘요.</p>'+grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).slice(0,8).map(x=>item(x.k,x.v,x.label,x.k==='bg'?bgThumb(x.v):x.k==='balloon'?swatch(x.v):'')));
+    else{const emo=p.emo||'',hot=(p.i||0)>=2,act=String(p.act||'');
+      const bgI=EMO_BG[emo]||1,bal=/!|！/.test((p.dialogs||[]).map(d=>d.text).join(''))?(hot?'torn':'charcoal'):/…|\.\.\./.test(p.said||'')?'hazy':'round-box';
+      const recs=[item('bg',bgI,`${PAGE_BACKGROUNDS[bgI].name} · ${emo||'기본'}에 어울림`,bgThumb(bgI))];
+      if(hot&&['놀람','분노','긴장','당황','결의'].includes(emo))recs.push(item('line','focus',`집중선 · ${emo} 하이라이트`,'<i class="ln focus"></i>'));
+      if(/달리|뛰|돌진|휙|급히|쫓|날아/.test(act))recs.push(item('line','speed','속도선 · 빠른 동작','<i class="ln speed"></i>'));
+      recs.push(item('balloon',bal,(BALLOON_STYLES.find(s=>s[0]===bal)||['',''])[1].split(' · ')[0]+' 말풍선',swatch(bal)));
+      [...new Set([...(p.sfx||[]),...(EMO_SFX[emo]||[])])].slice(0,4).forEach(w=>recs.push(item('sfx',w,w,'')));
+      const refs=Object.values(typeof REF_PICK!=='undefined'?REF_PICK:{}).filter(r=>r.shot===p.shot&&(r.emotion===p.emo||r.angle===p.ang)).slice(0,6);
+      h=`<p class="as-why">${esc([p.shot,p.ang,emo&&`${emo} ${p.i||0}`,p.vng==='P'&&'하이라이트'].filter(Boolean).join(' · '))} 기준 추천</p>`+grid('이 컷에',recs)+
+        grid('비슷한 컷 참고',refs.map(r=>`<button class="asi ref" draggable="true" data-ref-id="${esc(r.source_cut)}" title="${esc(r.label||r.source_cut)}"><img src="${r.thumb||cutThumb(r.source_cut)||r.src}" alt="" loading="lazy"><span>${esc(r.source_cut)}</span></button>`),'refs')+
+        grid('저장한 시퀀스',seqList().map((t,i)=>item('seq',i,`${t.name} · ${t.cuts.length}컷`,'<i class="seqi"></i>')))}}
+  else if(k==='balloon')h=grid('말풍선 형태',balloons)+'<p class="as-note">말풍선을 고른 상태에서 누르면 형태가 바뀌고, 컷을 고른 상태면 새로 넣어요. 컷 위로 끌어 놓으면 그 자리에.</p>';
+  else if(k==='sfx'){const pack=typeof materialRows!=='undefined'?materialRows.filter(r=>match(r.word)||match(r.category)).slice(0,120):[];
+    h=grid('자주 쓰는 효과음',sfxQuick,'words')+(pack.length?grid(`효과음 소재 ${ASSET.q?`· "${esc(ASSET.q)}"`:''} (${pack.length}${pack.length===120?'+':''})`,pack.map(r=>item('pack',r.id,r.word,'',` data-cat="${esc(r.category)}"`)),'words'):
+      `<p class="as-note">효과음 소재 묶음(ZIP)을 불러오면 600여 개를 검색해 쓸 수 있어요. <button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button></p>`);}
+  else if(k==='line')h=grid('효과선',lines)+'<p class="as-note">누르면 고른 컷에 효과선을 넣을 준비가 돼요. 컷 안 중심이 될 곳을 눌러 주세요. 세부(색·밀도)는 속성 서랍에서.</p>';
+  else if(k==='bg'){const colors=[...new Set(SCENES.flatMap(sc=>(sc.pageEdits||[]).map(e=>e?.background).filter(c=>/^#/.test(c||''))))].slice(0,10).concat(['#ffffff','#111111','#1d2433','#5a2a22','#86c99c','#f3d9e0']);
+    h=grid('컷 아래 전환 질감',[item('bg',0,'기본(질감 없음)','<i class="bg0"></i>'),...bgs])+grid('배경색 (컷 바탕)',[...new Set(colors)].filter(match).map(c=>item('color',c,c,`<i class="cs" style="background:${c}"></i>`)),'colors')+
+      grid('배경 이미지',bimgs)+'<p class="as-note">컷을 고른 상태에서 누르면 그 컷 아래 전환에, 컷 사이 간격으로 끌어 놓으면 그 자리에 들어가요. 중간색·위치·씬 끝 색은 속성 서랍에서.</p><div class="as-acts"><button class="btn sm" data-as="bgup">+ 배경 이미지 올리기</button></div>'}
+  else if(k==='seq'){const L=seqList().filter(t=>match(t.name));h=L.length?grid('저장한 시퀀스',L.map(t=>item('seq',seqList().indexOf(t),`${t.name} · ${t.cuts.length}컷`,'<i class="seqi"></i>'))):'<p class="as-empty">저장한 시퀀스가 없어요.</p>';
+    h+='<p class="as-note">컷을 고르고 누르면 그 컷부터 적용해요. 저장은 시작할 컷을 고른 뒤 속성 서랍 › 시퀀스 템플릿 › 이 컷부터 저장.</p><div class="as-acts"><button class="btn sm" data-as="seqsave">고른 컷부터 저장…</button></div>'}
+  else if(k==='up')h=grid('올린 배경 이미지',bimgs)+`<div class="as-acts"><button class="btn sm" data-as="bgup">+ 배경 이미지</button><button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button><button class="btn sm" data-as="cutup">컷 그림 등록 (작화)</button></div><p class="as-note">올린 파일은 이 브라우저에 남고 작업 파일(.rough.json)에도 들어가요.</p>`;
+  else if(k==='star'){const fav=typeof materialFavorites!=='undefined'&&typeof materialRows!=='undefined'?materialRows.filter(r=>materialFavorites.has(r.id)):[];
+    h=grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).map(x=>item(x.k,x.v,x.label,x.k==='bg'?bgThumb(x.v):x.k==='balloon'?swatch(x.v):x.k==='bgimg'&&IMG.bg?.[x.v]?`<img src="${IMG.bg[x.v].src}" alt="">`:'')))+grid('즐겨찾기 효과음',fav.map(r=>item('pack',r.id,r.word,'')),'words')||'<p class="as-empty">아직 쓴 에셋이 없어요.</p>'}
+  asBody.innerHTML=h||'<p class="as-empty">찾는 에셋이 없어요.</p>'}
+// 적용: 클릭은 고른 대상에, 끌어 놓기는 놓은 자리에
+function cutCenter(g){try{const f=JSON.parse(g.dataset.frame);return {x:f.x+f.w/2,y:f.y+f.h*.35}}catch(_){return {x:345,y:200}}}
+function applyAsset(k,v,g,pt,target){const label=asBody.querySelector(`[data-mat="${k}"][data-v="${CSS.escape(String(v))}"]`)?.dataset.label||String(v);
+  g=g||(pageSelection?selGroup():null);
+  if(k==='balloon'||k==='sfx'||k==='line'){if(k==='balloon'&&!g&&selectedLetter){const sg=selectedLetter.closest('[data-slot-index]');useMat('balloon',v,sg,cutCenter(sg),selectedLetter)}else useMat(k,v,g,pt||(g?cutCenter(g):null),target||(k==='balloon'?selectedLetter:null));remember(k,v,label);return}
+  if(!g){flash('먼저 컷을 고르거나, 캔버스의 컷으로 끌어다 놓아요');return}
+  if(g&&pageKey(g)!==pageSelection)selectPageCut(g);
+  if(k==='bg'){const e=pageSettings(true);if(+v)e.transition=+v;else delete e.transition;saveScenes();renderWebtoon();flash('전환 질감을 넣었어요')}
+  else if(k==='color'){pageSettings(true).background=v;saveScenes();renderWebtoon();flash('배경색을 바꿨어요')}
+  else if(k==='bgimg'){const e=pageSettings(true);e.bgImage=v;saveScenes();renderWebtoon();flash('배경 이미지를 넣었어요')}
+  else if(k==='pack'){filterMaterials();materialResult.value=v;$('#wmaterial-add').disabled=false;$('#wmaterial-add').click()}
+  else if(k==='seq'){$('#wtplsel').value=v;$('#wtplapply').click()}
+  remember(k,v,label);if(typeof refreshBackgroundTools==='function'&&pageSelection)refreshBackgroundTools()}
+assetBody.addEventListener('click',e=>{const t=e.target;const tb=t.closest('[data-at]');if(tb){assetTab(tb.dataset.at,true);return}
+  const r=t.closest('[data-ref-id]');if(r&&asBody.contains(r)){if(pageSelection)RoughRefs.apply(r.dataset.refId);else flash('레퍼런스를 바꿀 컷을 먼저 고르세요');return}
+  const a=t.closest('[data-as]')?.dataset.as;
+  if(a==='zip')$('#wmaterial-import').click();
+  if(a==='cutup')showView('nai');
+  if(a==='seqsave'){if(!pageSelection){flash('시작할 컷을 먼저 고르세요');return}$('#wtplsave').click();setTimeout(renderAssets,300)}
+  if(a==='bgup'){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;f.onchange=async()=>{for(const file of f.files){const im=await shrink(file,1380);const o={id:'bg:'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind:'bgimg',name:file.name,src:im.src,w:im.w,h:im.h,at:Date.now()};IMG.bg[o.id]=o;await idb.put(o)}renderAssets();flash('배경 이미지를 올렸어요')};f.click()}
+  const b=t.closest('[data-mat]');if(b&&asBody.contains(b))applyAsset(b.dataset.mat,b.dataset.v)});
+assetBody.addEventListener('input',e=>{if(e.target.id!=='asq')return;ASSET.q=e.target.value.trim();if(ASSET.tab==='ref'){const q=$('#rfq');if(q){q.value=ASSET.q;q.dispatchEvent(new Event('input',{bubbles:true}))}}else{clearTimeout(renderAssets.t);renderAssets.t=setTimeout(renderAssets,150)}});
+assetBody.addEventListener('dragstart',e=>{const b=e.target.closest('[data-mat]');if(!b||!asBody.contains(b))return;e.dataTransfer.setData('application/x-rough-mat',JSON.stringify({k:b.dataset.mat,v:b.dataset.v}));e.dataTransfer.effectAllowed='copy'});
+// 컷 사이 간격으로 끌어 놓기 → 그 위 컷의 아래 전환
+reader.addEventListener('dragover',e=>{if(!e.dataTransfer.types.includes('application/x-rough-mat'))return;const gap=e.target.closest('[data-page-gap]');if(gap){e.preventDefault();e.dataTransfer.dropEffect='copy';reader.querySelectorAll('.gap-drop').forEach(x=>x!==gap&&x.classList.remove('gap-drop'));gap.classList.add('gap-drop')}},true);
+reader.addEventListener('drop',e=>{reader.querySelectorAll('.gap-drop').forEach(x=>x.classList.remove('gap-drop'));const raw=e.dataTransfer.getData('application/x-rough-mat');if(!raw)return;const {k,v}=JSON.parse(raw);
+  const gap=e.target.closest('[data-page-gap]'),g0=e.target.closest('[data-slot-index]');
+  if(gap){e.preventDefault();e.stopPropagation();const si=gap.closest('section').dataset.pageScene,g=groups().find(x=>pageKey(x)===`${si}:${gap.dataset.slot}`);if(g)applyAsset(k,v,g);return}
+  if(g0&&['bg','color','bgimg','pack','seq'].includes(k)){e.preventDefault();e.stopPropagation();applyAsset(k,v,g0)}},true);
+// 고른 대상에 따라 탭 바꾸기(사용자가 탭을 직접 고르기 전까지)
+function autoTab(){renderTarget();if(!ASSET.auto)return;const want=selectedLetter&&/^(dialog|caption)/.test(selectedLetter.dataset.letter)?'balloon':selectedLetter?'sfx':'rec';if(want!==ASSET.tab)assetTab(want);else if(want==='rec')renderAssets()}
+{const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);autoTab();return r}}
+{const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);autoTab();return r}}
+if(LS('rough-ws-drawer',false))setTimeout(()=>setDrawer(true),0);if(LS('rough-ws-mini',false))miniWrap.hidden=false;
+
 // ---------- 연결 ----------
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);renderCtx();return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);renderCtx();return r}}
@@ -373,7 +484,7 @@ document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||e.ctrlKe
 {const _sv=showView;showView=function(v){const r=_sv(v);Object.entries(LAYOUT.panels).forEach(([id,p])=>{if(p.float)PANELS[id].sec.hidden=v!=='webtoon'});if(v!=='webtoon'){hideFly();if(tool!=='select')setTool('select')}return r}}
 propsBody.querySelector('#wballoonsize').addEventListener('input',()=>{const r=ctx.querySelector('[data-ctx="lsize"]');if(r&&document.activeElement!==r){r.value=$('#wballoonsize').value;r.nextElementSibling.textContent=r.value+'%'}});
 renderDocks();renderCtx();renderAlign();syncHelp();
-Object.keys(PANELS).forEach(k=>{if(!LAYOUT.panels[k].collapsed)onOpen(k)});
+Object.keys(PANELS).forEach(k=>{if(!LAYOUT.panels[k].collapsed&&LAYOUT.panels[k].dock!=='X')onOpen(k)});mountOff();assetTab(PRESETS[LAYOUT.preset]?.tab||'rec');
 reader.classList.toggle('artboards',AB);if(AB)RoughStudio.applyZoom();
 window.RoughWS={get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI};
 })();
