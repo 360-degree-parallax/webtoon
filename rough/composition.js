@@ -118,5 +118,5 @@ export function previewDocument(code,interactive) {
   return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
     '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src '+script+
     '; style-src \'unsafe-inline\'; img-src data:; font-src data:; form-action \'none\'; base-uri \'none\'; object-src \'none\'; frame-src \'none\'">'+
-    '<style>*,*::before,*::after{box-sizing:border-box}body{margin:12px;font:16px system-ui,sans-serif}img{max-width:100%}</style></head><body>'+code+'</body></html>';
+    '<style>*,*::before,*::after{box-sizing:border-box}body{margin:12px;font:16px "Pretendard Variable",Pretendard,system-ui,sans-serif}img{max-width:100%}</style></head><body>'+code+'</body></html>';
 }
