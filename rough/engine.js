@@ -588,7 +588,22 @@
   }
 
   // 컷 하나에 가장 가까운 참고 그림
+  // 레퍼런스 글 색인(tools/ml/export_refs.py): 있으면 꼬리표 점수 + λ × 글 코사인으로 고름.
+  // 평가(한 작품 빼고, 고른 레퍼런스와 실제 컷 그림의 CLIP 유사도): 패턴 컷 그대로 0.722 · 꼬리표만 0.737 · 꼬리표+글 0.753 (무작위 0.713, 그림으로 고른 상한 0.874)
+  function useRefText(M) { E._refT = M && M.refs ? { M, vec: ngramVec(M) } : null; return !!E._refT; }
+  function suggestRefText(cut, refs) {
+    const T = E._refT, M = T.M, raw = String(cut.key || '').replace(/^#\d+:/, '') || [cut.act, cut.said].filter(Boolean).join(' ');
+    const q = new Map(T.vec(raw.replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()));
+    let best = null, bs = -1;
+    for (const r of refs) {
+      let s = (r.shot === cut.shot ? 2 : RANK[r.shot] != null && Math.abs(RANK[r.shot] - RANK[cut.shot]) === 1 ? 0.8 : 0) + (r.angle === cut.ang ? 1 : 0) + (r.role && r.role === cut.role ? 0.3 : 0) + (r.emotion && r.emotion === cut.emo ? 0.2 : 0);
+      const v = M.refs[r.source_cut]; if (v) { let c = 0; for (let i = 0; i < v.length; i += 2) { const w = q.get(v[i]); if (w) c += w * v[i + 1]; } s += M.meta.lam * c; }
+      if (s > bs) { bs = s; best = r; }
+    }
+    return best;
+  }
   function suggestRef(cut, refs) {
+    if (E._refT && E.REF_MODE !== 'pattern') return suggestRefText(cut, refs);
     const exact = cut.src && refs.find(ref => ref.source_cut === cut.src);
     if (exact) return exact;
     let best = null, bs = -1;
@@ -600,5 +615,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, useRefText, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
