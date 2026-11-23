@@ -3496,14 +3496,22 @@ Promise.all([
   // 그림 위주 컷만 레퍼런스로(말풍선 위주·덜 차지·여러 칸 섞인 컷은 자동 판정으로 제외)
   REFS=cuts.items.filter(g=>g.fit==='ok'||g.fixed).map(g=>({...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}${g.frame==='slant'?' · 사선 칸':''}${g.fixed?' · 수정본':''}`}));REF_ALL=cuts.items.length;CUTMETA=Object.fromEntries(cuts.items.map(g=>[g.source_cut,g]));REF_PICK=Object.fromEntries(cuts.items.filter(g=>g.art).map(g=>[g.source_cut,{...g,kind:'cut',src:g.fixed?FIX_BASE+g.fixed:CUT_BASE+g.file,label:`${g.source_cut} ${g.shot}·${g.angle}`,picked:true}]));
   compute(true);if(VIEW==='webtoon')refreshPageMaterials()}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
-// 학습한 감정·강도 모델(tools/ml/train_ngram.py, 약 1.1MB): 따로 불러와 붙으면 다시 계산. 못 불러오면 규칙 판정 그대로
-{const s=document.createElement('script');s.src='bundle-model.js';s.onload=()=>{if(window.RoughBundle?.fields&&RE.useBundleModel(window.RoughBundle)&&PATS.length)compute(false)};document.head.appendChild(s)}
-{const s=document.createElement('script');s.src='ref-text.js';s.onload=()=>{if(window.RoughRefText?.refs&&RE.useRefText(window.RoughRefText)&&PATS.length)compute(false)};document.head.appendChild(s)}
-{const s=document.createElement('script');s.src='angle-model.js';s.onload=()=>{if(window.RoughAngle?.ang&&RE.useAngleModel(window.RoughAngle)&&PATS.length)compute(false)};document.head.appendChild(s)}
-{const s=document.createElement('script');s.src='shot-model.js';s.onload=()=>{if(window.RoughShot?.shot&&RE.useShotModel(window.RoughShot)&&PATS.length)compute(false)};document.head.appendChild(s)}
-{const s=document.createElement('script');s.src='layout-model.js';s.onload=()=>{if(window.RoughLayoutModel?.h&&RE.useLayoutModel(window.RoughLayoutModel)&&PATS.length)compute(false)};document.head.appendChild(s)}
-{const s=document.createElement('script');s.src='rank-model.js';s.onload=()=>{if(window.RoughRank?.vocab&&RE.useRankModel(window.RoughRank)&&PATS.length)compute(false)};document.head.appendChild(s)}
-{const s=document.createElement('script');s.src='feel-model.js';s.onload=()=>{if(window.RoughFeel?.vocab&&RE.useFeelModel(window.RoughFeel)&&PATS.length)compute(false)};document.head.appendChild(s)}
+// 학습 모델 7개(합계 약 4MB): 첫 화면이 뜬 뒤(load + 한가할 때) 중요한 순서로 하나씩 불러와 붙임.
+// 붙을 때마다 다시 계산하지 않고 잠깐 모았다가 한 번만 계산. 못 불러오면 규칙 판정 그대로
+{const Q=[['shot-model.js',()=>window.RoughShot?.shot&&RE.useShotModel(window.RoughShot)],
+  ['feel-model.js',()=>window.RoughFeel?.vocab&&RE.useFeelModel(window.RoughFeel)],
+  ['angle-model.js',()=>window.RoughAngle?.ang&&RE.useAngleModel(window.RoughAngle)],
+  ['layout-model.js',()=>window.RoughLayoutModel?.h&&RE.useLayoutModel(window.RoughLayoutModel)],
+  ['rank-model.js',()=>window.RoughRank?.vocab&&RE.useRankModel(window.RoughRank)],
+  ['bundle-model.js',()=>window.RoughBundle?.fields&&RE.useBundleModel(window.RoughBundle)],
+  ['ref-text.js',()=>window.RoughRefText?.refs&&RE.useRefText(window.RoughRefText)]];
+ let dirty=false,tm=0;const flush=()=>{tm=0;if(dirty&&PATS.length){dirty=false;compute(false)}};
+ const idle=f=>window.requestIdleCallback?requestIdleCallback(f,{timeout:1500}):setTimeout(f,50);
+ const next=()=>{const it=Q.shift();if(!it){flush();return}
+  const s=document.createElement('script');s.src=it[0];
+  s.onload=()=>{try{if(it[1]())dirty=true}catch(e){console.warn(it[0],e)}clearTimeout(tm);tm=setTimeout(flush,400);idle(next)};
+  s.onerror=()=>idle(next);document.head.appendChild(s)};
+ const go=()=>idle(next);document.readyState==='complete'?go():addEventListener('load',go,{once:true})}
 </script>
 <script src="studio.js"></script>
 <script src="refs.js"></script>
