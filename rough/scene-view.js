@@ -42,8 +42,8 @@ function sideHTML(b,c,g){const D=b.dir||{},o=[],gd=g.edit||{};
   if(bg)o.push(`<span class="svc bg" style="--sw:${bg}"><i></i>배경 ${esc(gd.transition?PAGE_BACKGROUNDS[gd.transition].name:(D.fx||[]).find(t=>/^배경/.test(t))?.replace(/^배경색?\s*/,'')||bg)}</span>`);
   if(gd.gap!=null)o.push(`<span class="svc">↕ 간격 ${gd.gap}px</span>`);
   if(gd.endTo)o.push(`<span class="svc">씬 끝 ${{white:'흰색',hold:'유지',next:'이어서'}[gd.endTo]}</span>`);
-  const bs=[...new Set(Object.entries(gd.letters||{}).filter(([k,v])=>/^dialog/.test(k)&&v.style).map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean))];
-  if(bs.length)o.push(`<span class="svc fx">◌ 말풍선 ${esc(bs.join('·'))}</span>`);
+  const ls=Object.entries(gd.letters||{}).filter(([k,v])=>/^dialog/.test(k)&&v.style),bs=[...new Set(ls.map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean))],auto=ls.length&&ls.every(([,v])=>v.auto);
+  if(bs.length)o.push(`<span class="svc fx${auto?' auto':''}" ${auto?'title="감정·강도로 자동으로 골랐어요. 대사 줄에 {…}나 (메모)를 적으면 그게 우선"':''}>◌ 말풍선 ${esc(bs.join('·'))}${auto?' · 자동':''}</span>`);
   for(const w of g.unknown){const s=suggest(w);o.push(`<button type="button" class="svc warn" ${s?`data-fix="${esc(w)}" data-to="${esc(s)}" title="눌러서 고치기"`:'title="연출로 읽지 못했어요"'}>${esc(w)}${s?` → ${esc(s)}?`:' ?'}</button>`)}
   return o.join('')}
 
@@ -57,7 +57,7 @@ function decorate(){const bs=RE.parseCuts(CUTS,engineChars()),by={};bs.forEach(b
     let lb=li.querySelector('.lenbar');if(!lb){lb=document.createElement('i');lb.className='lenbar';li.querySelector('.cn')?.after(lb)}
     const has=!!String(CUTS[i]||'').trim();box.classList.toggle('has',has);
     if(!b||!has){sd.innerHTML='';li.style.removeProperty('--gap');li.removeAttribute('data-gap');li.classList.remove('hl');li.style.removeProperty('--band');lb.style.height='0';return}
-    const c=P.find(x=>x.key===b.key),g=RoughGrammar.derive(b),gd=g.edit||{};
+    const c=P.find(x=>x.key===b.key),g=RoughGrammar.derive(c?{...b,emo:c.emo,i:c.i}:b),gd=g.edit||{};
     sd.innerHTML=sideHTML(b,c,g);
     const lw=c?lenWord(c.h):'보통';lb.style.height={짧게:14,보통:26,길게:42,'아주 길게':62}[lw]+'px';lb.classList.toggle('dir',!!b.dir?.h);lb.title=`칸 길이 · ${lw}`;
     li.classList.toggle('hl',!!(b.dir?.hl||c?.vng==='P'));

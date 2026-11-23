@@ -16,6 +16,10 @@
     [/전화|통화|무전|스피커/,'phone'],[/화내|분노|버럭|격분/,'charcoal'],[/헐떡|숨을|숨 가|가쁘/,'breath'],[/떨며|떨리|덜덜/,'tight-wave']];
   const styleOf=t=>{for(const [re,k] of BALLOON_WORDS)if(re.test(t))return k;
     const named=typeof BALLOON_STYLES!=='undefined'&&BALLOON_STYLES.find(s=>s[0]===t||s[1]===t||s[1].split(' · ')[0]===t);return named?named[0]:null};
+  // 지시·메모가 없을 때: 엔진(학습 모델)이 매긴 감정·강도로. 센 감정(강도 3)과 회상만 — 나머지는 기본 말풍선
+  // DB에는 말풍선 '모양' 라벨이 없어(개수만 있음) 모양 자체를 학습할 수는 없음 → 감정·강도 모델 위의 규칙
+  const autoStyle=(p,d)=>{const e=p?.emo,i=+p?.i||0;if(e==='회상')return'hazy';if(i<3)return /[!?]{2,}/.test(d?.text||'')&&i>=2?'torn':null;
+    return e==='분노'?'charcoal':(e==='놀람'||e==='당황')?'torn':e==='긴장'?'tight-wave':null};
   const noteStyle=n=>{if(!n)return null;for(const [re,k] of NOTE_WORDS)if(re.test(n))return k;return null};
   const presetOf=t=>{if(typeof PAGE_BACKGROUNDS==='undefined')return -1;return PAGE_BACKGROUNDS.findIndex(b=>b&&(b.name===t||b.name.replace(/\s/g,'')===t.replace(/\s/g,'')))};
   const colorOf=t=>/^#[\da-f]{6}$/i.test(t)?t.toLowerCase():/^#[\da-f]{3}$/i.test(t)?'#'+[...t.slice(1)].map(c=>c+c).join('').toLowerCase():COLORS[t.replace(/색$/,'')]||COLORS[t]||null;
@@ -39,7 +43,8 @@
       else unknown.push(t)}
     // 말풍선: 대사 줄의 {…} → 대사 메모(괄호) → 컷 전체 {…} 순
     const ds=(p.dialogs||[]).filter(d=>d.text);const L={};
-    ds.forEach((d,n)=>{const own=(d.fx||[]).map(styleOf).find(Boolean),st=own||noteStyle(d.note)||cutStyle;if(st)L['dialog-'+n]={style:st}});
+    ds.forEach((d,n)=>{const own=(d.fx||[]).map(styleOf).find(Boolean),st=own||noteStyle(d.note)||cutStyle;if(st){L['dialog-'+n]={style:st};return}
+      const a=autoStyle(p,d);if(a)L['dialog-'+n]={style:a,auto:true}});
     (p.sfxSize||[]).forEach((z,n)=>{if(z>1)L['effect-'+n]={scale:z===2?1.6:2.2}});
     if(Object.keys(L).length)out.letters=L;
     return{edit:Object.keys(out).length?out:null,unknown}}
