@@ -127,11 +127,11 @@ $('#wread').addEventListener('click',openRead);$('#rdclose').addEventListener('c
 rd.addEventListener('click',e=>{if(e.target===rd)closeRead();const b=e.target.closest('[data-w]');if(b){rd.style.setProperty('--rdw',b.dataset.w+'px');rd.querySelectorAll('[data-w]').forEach(x=>x.setAttribute('aria-pressed',x===b))}});
 
 // ---------- 단축키 ----------
-const KEYS=[['어디서나',[['?','단축키 보기'],['Esc','닫기 · 선택 해제']]],
+const KEYS=[...(UX!=='A'?[['씬 쓰기',[['[그날 밤]','식자(나레이션)'],['@준 "(놀라서)에드가?"','대사 · 괄호 안은 연기'],['-툭-','효과음'],['그 밖의 글','행동·장면 묘사'],['@','인물 목록 열기'],['Ctrl + Enter','아래에 새 컷']]]]:[]),['어디서나',[['?','단축키 보기'],['Esc','닫기 · 선택 해제']]],
   ['편집 · 캔버스',[[`${MODK} + 휠 / 핀치`,'캔버스 확대·축소'],[`${MODK} + = / −`,'한 단계 확대·축소'],['Shift + 0','100%'],['Shift + 1','전체 보기'],['Shift + 2','선택한 컷 보기'],['Space + 끌기','캔버스 이동(가운데 버튼 끌기도)']]],
   ['편집 · 선택',[['[ / ]','이전 · 다음 컷'],['Shift + [ / ]','이전 · 다음 씬'],['그림 더블클릭',`그림 편집: ${MODK} + 휠 확대, 끌어 이동`],['방향키','식자 1px 이동 (Shift 10px)'],[`${MODK} + Z`,'실행 취소 (Shift 다시 실행)'],['P','읽기 모드']]]];
 const kd=document.createElement('dialog');kd.className='keysdlg';kd.setAttribute('aria-labelledby','kdt');
-kd.innerHTML=`<h3 id="kdt">단축키</h3>${KEYS.map(([h,rows])=>`<h4>${h}</h4><dl>${rows.map(([k,d])=>`<dt>${k.split(' / ').map(x=>`<kbd>${esc(x)}</kbd>`).join(' / ')}</dt><dd>${esc(d)}</dd>`).join('')}</dl>`).join('')}<form method="dialog"><button class="btn dark">닫기</button></form>`;
+kd.innerHTML=`<h3 id="kdt">${UX==='A'?'단축키':'도움말'}</h3>${KEYS.map(([h,rows])=>`<h4>${h}</h4><dl>${rows.map(([k,d])=>`<dt>${k.split(' / ').map(x=>`<kbd>${esc(x)}</kbd>`).join(' / ')}</dt><dd>${esc(d)}</dd>`).join('')}</dl>`).join('')}<form method="dialog"><button class="btn dark">닫기</button></form>`;
 document.body.appendChild(kd);$('#gkeys').addEventListener('click',()=>kd.showModal());
 document.addEventListener('keydown',e=>{if(typingIn(e.target))return;
   if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){e.preventDefault();kd.open?kd.close():kd.showModal();return}
