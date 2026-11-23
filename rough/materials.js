@@ -74,10 +74,19 @@
     for(const entry of rows){byWord.set(clean(entry.word),entry);byId.set(entry.id,entry)}
     installed=rows;return rows;
   }
+  // 사이트에 기본으로 들어 있는 묶음(rough/sfx/list.csv + png/번호/A~D.png). 그림은 쓸 때 하나씩 받아 옴
+  async function builtin(){
+    const res=await fetch('sfx/list.csv');if(!res.ok)return [];
+    const rows=(await res.text()).trim().split(/\r?\n/).slice(1).map(line=>line.split(','));
+    return rows.filter(([id,word,category,,...paths])=>/^\d{3}$/.test(id)&&word&&category&&paths.length===4&&
+      paths.every((path,i)=>path==='png/'+id+'/'+variants[i]+'.png'))
+      .map(([id,word,category,,...paths])=>({id,word,category,paths,source:path=>fetch('sfx/'+path).then(r=>{if(!r.ok)throw error();return r.blob()})}));
+  }
   function ready(){
     if(installed)return Promise.resolve(installed);
+    // 이 브라우저에 직접 불러온 ZIP이 있으면 그것, 없으면 사이트 기본 묶음
     if(!indexRequest)indexRequest=assetStorage('readonly').then(async file=>file?archive(file):[])
-      .catch(()=>[]).then(rows=>installed||register(rows));
+      .catch(()=>[]).then(async rows=>rows.length?rows:builtin().catch(()=>[])).then(rows=>installed||register(rows));
     return indexRequest;
   }
   async function install(file){
