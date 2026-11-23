@@ -150,6 +150,8 @@ dialog h3{margin:0 0 4px;font-size:18px}
 dialog p{margin:0 0 12px;font-size:13px;color:var(--t2)}
 dialog textarea{min-height:360px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.6}
 .tmid{display:flex;gap:8px;align-items:center}.tmid .chk{font-size:12px;display:flex;gap:4px;align-items:center}.bg-imgs{display:flex;flex-wrap:wrap;gap:4px}.bg-imgs button{position:relative;width:46px;height:30px;border:1px solid var(--line);border-radius:5px;overflow:hidden;padding:0;background:var(--bg2,#f4f4f4)}.bg-imgs button img{width:100%;height:100%;object-fit:cover}.bg-imgs button[aria-pressed=true]{outline:2px solid #2d71f7;outline-offset:1px}.bg-imgs button span{position:absolute;top:0;right:0;width:14px;height:14px;line-height:13px;font-size:11px;background:rgba(0,0,0,.6);color:#fff;display:none}.bg-imgs button:hover span{display:block}.bg-imgs .add{width:auto;padding:0 8px;font-size:12px;color:var(--t2)}.pall{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.pall li{display:flex;align-items:center;gap:8px;padding:4px 0}.pall .sw{width:22px;height:22px;border-radius:4px;border:1px solid var(--line2)}.pall small{color:var(--t3);flex:1}
+.proofdlg{width:min(760px,calc(100vw - 32px))}.proofdlg h3 small{font-weight:400;color:var(--t3);font-size:13px}.pfbar{display:flex;gap:6px;margin:8px 0}.pfbar input{flex:1;padding:6px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--t1)}.pfl{list-style:none;margin:0;padding:0;max-height:60vh;overflow:auto}.pfl li{display:flex;gap:8px;align-items:center;padding:3px 0}.pfl .pfh{font-weight:600;padding-top:12px;border-bottom:1px solid var(--line)}.pfl .pfh small{font-weight:400;color:var(--t3)}.pfl .pfk{flex:0 0 150px;font-size:12px;color:var(--t3)}.pfl input{flex:1;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--t1);font-size:14px}.pfl li.hit input{border-color:#e0a100;background:rgba(224,161,0,.08)}.proofdlg .acts{align-items:center}.proofdlg .acts .hint{flex:1;font-size:12px;color:var(--t3)}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap}
 .xsep{border:0;border-top:1px solid var(--line);margin:4px 0}.histl{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.histl li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.histl small{display:block;color:var(--t3);font-size:12px}
 #slicedlg{width:min(520px,calc(100vw - 32px))}.slicef{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:10px 0}.slicef label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--t2)}.slicef label.chk{grid-column:1/-1;flex-direction:row;align-items:center;gap:8px}.slicef input[type=number],.slicef select{padding:6px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--t1)}
 dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
@@ -924,7 +926,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <div class="edtop">
   <div class="edtop-l"><b class="edcrumb">편집</b><span class="edsave" id="edsave" aria-live="polite">자동 저장</span></div>
   <div class="edtop-c"><div class="seg3" id="wmode"><button data-m="final" aria-pressed="true">완성본</button><button data-m="rough" aria-pressed="false">러프</button></div></div>
-  <div class="edtop-r"><div class="czoom" role="group" aria-label="캔버스 배율"><button class="ib" id="wczout" title="축소 (Ctrl −)" aria-label="캔버스 축소">−</button><button class="czlab" id="wczlab" title="100%로 (Shift+0) · 전체 보기 Shift+1 · 선택한 컷 보기 Shift+2" aria-label="캔버스 배율, 눌러서 100%">100%</button><button class="ib" id="wczin" title="확대 (Ctrl +)" aria-label="캔버스 확대">+</button></div><button class="btn" id="wread" title="모바일 폭으로 읽어 보기 (P)">읽기</button><span class="edsep" aria-hidden="true"></span><button class="ib" id="wundo" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="ib" id="wredo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button class="btn" id="wedit" aria-pressed="false" aria-controls="wtools">미리보기</button></div>
+  <div class="edtop-r"><div class="czoom" role="group" aria-label="캔버스 배율"><button class="ib" id="wczout" title="축소 (Ctrl −)" aria-label="캔버스 축소">−</button><button class="czlab" id="wczlab" title="100%로 (Shift+0) · 전체 보기 Shift+1 · 선택한 컷 보기 Shift+2" aria-label="캔버스 배율, 눌러서 100%">100%</button><button class="ib" id="wczin" title="확대 (Ctrl +)" aria-label="캔버스 확대">+</button></div><button class="btn" id="wread" title="모바일 폭으로 읽어 보기 (P)">읽기</button><button class="btn" id="wproof" title="모든 씬의 대사·나레이션·효과음을 한 화면에서 고치기">대사 교정</button><span class="edsep" aria-hidden="true"></span><button class="ib" id="wundo" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="ib" id="wredo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button class="btn" id="wedit" aria-pressed="false" aria-controls="wtools">미리보기</button></div>
 </div>
 <span class="status edst" id="wst"></span>
 <div class="artcheck" id="artcheck" hidden></div>
@@ -976,6 +978,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       </div>
       <div class="prop"><span>그림 확대</span><span class="zoomrow"><input id="wzoom" type="range" min="100" max="500" step="5" value="100" aria-label="칸 안 그림 확대"><b id="wzoomvalue">100%</b><button class="btn sm" id="wzoomreset">원래대로</button></span></div>
       <div class="prop"><span>프레임</span><button class="btn sm" id="wframereset">크기·모양 초기화</button></div>
+      <div class="prop"><span>씬 전체에</span><span class="btnrow"><button class="btn sm" id="wfitw" title="이 컷의 폭과 좌우 위치를 같은 씬의 모든 컷에">폭·좌우 맞춤</button><button class="btn sm" id="wfitgap" title="이 컷의 아래 간격을 같은 씬의 모든 컷 사이에">간격 맞춤</button></span></div>
       <div class="prop"><span>식자</span><button class="btn sm" id="wletterreset">이 컷 식자 배치·스타일 초기화</button></div>
     </section>
     <section class="insp materials" id="wmaterials" hidden>
@@ -2529,6 +2532,16 @@ const selGroup=()=>[...pageReader.querySelectorAll('[data-slot-index]')].find(g=
 zoomRange.addEventListener('input',()=>{const g=selGroup();if(g)zoomAt(g,zoomRange.value/100)});
 zoomRange.addEventListener('change',()=>{const g=selGroup();if(g)saveZoom(g)});
 $('#wzoomreset').addEventListener('click',()=>{const g=selGroup();if(!g)return;setZoom(g,{s:1,dx:0,dy:0});saveZoom(g)});
+// 씬 전체 맞춤(#6): 고른 컷의 폭·좌우 위치 또는 아래 간격을 같은 씬의 다른 컷에 한 번에
+function sceneGroups(si){return [...pageReader.querySelectorAll(`section[data-page-scene="${si}"] [data-slot-index]`)]}
+$('#wfitw').addEventListener('click',()=>{if(!pageSelection)return;const si=pageSelection.split(':')[0],cur=sceneGroups(si).find(g=>pageKey(g)===pageSelection);if(!cur)return;const f0=JSON.parse(cur.dataset.frame);let n=0;
+  for(const g of sceneGroups(si)){if(g===cur)continue;const f=JSON.parse(g.dataset.frame),set=pageSettings(true,pageKey(g));set.frame={x:Math.round(f0.x),w:Math.round(f0.w),h:Math.round(f.h)};delete set.quad;n++}
+  saveScenes();renderWebtoon();toast(`${n}컷의 폭·좌우 위치를 맞췄어요 (Ctrl+Z로 되돌리기)`)});
+$('#wfitgap').addEventListener('click',()=>{if(!pageSelection)return;const si=pageSelection.split(':')[0],gs=sceneGroups(si),cur=gs.find(g=>pageKey(g)===pageSelection);if(!cur)return;
+  const size=pageSettings()?.gap??Number(pageReader.querySelector(`section[data-page-scene="${si}"] [data-page-gap][data-slot="${pageSelection.split(':')[1]}"]`)?.dataset.gapSize);
+  if(!Number.isFinite(size)){toast('이 컷은 아래 간격이 없어요(씬 마지막 컷)');return}let n=0;
+  gs.slice(0,-1).forEach(g=>{if(g===cur)return;pageSettings(true,pageKey(g)).gap=size;n++});
+  saveScenes();renderWebtoon();toast(`${n}곳의 간격을 ${size}px로 맞췄어요 (Ctrl+Z로 되돌리기)`)});
 $('#wframereset').addEventListener('click',()=>{if(!pageSelection)return;const set=pageSettings();if(set){delete set.frame;delete set.quad}saveScenes();renderWebtoon()});
 function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src})}
 async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 만드는 중');
@@ -2573,6 +2586,25 @@ async function openHistory(){const snaps=(await idb.all()).filter(r=>r.kind==='s
     if(!confirm(`${new Date(r.at).toLocaleString()} 원고로 되돌릴까요?`))return;snapAt=0;autoSnapshot();
     const arr=JSON.parse(r.scenes);SCENES.splice(0,SCENES.length,...arr);SCUR=Math.min(SCUR,SCENES.length-1);CUTS=SCENES[SCUR].cuts;saveScenes();renderSceneList();renderCuts();compute(true);if(VIEW==='webtoon')renderWebtoon();d.close();toast('이전 버전으로 되돌렸어요')};
   d.showModal()}
+
+// ---------- 대사 교정(#19): 모든 씬의 대사·나레이션·효과음 줄을 한 화면에서 고치고, 찾아 바꾸기 ----------
+const PROOF_RE=[[/^(\s*(?:@\S+\s*)?(?:\([^)]*\)\s*)?["“])(.*)(["”]\s*)$/,'대사'],[/^(\s*\[)(.*)(\]\s*)$/,'나레이션'],[/^(\s*-)([^-].*?)(-\s*)$/,'효과음']];
+function proofLines(){const out=[];SCENES.forEach((sc,si)=>sc.cuts.forEach((c,ci)=>String(c).split('\n').forEach((l,li)=>{for(const [re,kind] of PROOF_RE){const m=l.match(re);if(m){out.push({si,ci,li,kind,pre:m[1],text:m[2],post:m[3],who:(l.match(/@(\S+)/)||[])[1]||''});break}}})));return out}
+function openProof(){let d=$('#proofdlg');if(!d){d=document.createElement('dialog');d.id='proofdlg';d.className='proofdlg';document.body.appendChild(d)}
+  const draw=()=>{const L=proofLines(),q=d.querySelector('#pfq')?.value||'';const over=SCENES.map(sc=>(sc.pageEdits||[]).reduce((n,e)=>n+Object.values(e?.letters||{}).filter(x=>typeof x?.text==='string').length,0));
+    let last=-1;d.querySelector('.pfl').innerHTML=L.map((x,k)=>{const head=x.si!==last?`<li class="pfh">${esc(sceneLabel(SCENES[x.si],x.si))}${over[x.si]?` <small>· 편집 화면에서 직접 고친 문구 ${over[x.si]}개는 그 화면에서 우선해 보여요</small>`:''}</li>`:'';last=x.si;
+      const hit=q&&x.text.includes(q);return head+`<li${hit?' class="hit"':''}><span class="pfk">${x.ci+1}컷 · ${x.kind}${x.who?' · '+esc(x.who):''}</span><input data-pf="${k}" value="${esc(x.text)}" spellcheck="true" lang="ko"></li>`}).join('')||'<li class="empty">대사·나레이션·효과음 줄이 없어요</li>';
+    d.querySelector('#pfn').textContent=`${L.length}줄${q?` · "${q}" ${L.filter(x=>x.text.includes(q)).length}줄`:''}`;d._L=L};
+  d.innerHTML=`<h3>대사 교정 <small id="pfn"></small></h3><div class="pfbar"><input id="pfq" placeholder="찾기"><input id="pfr" placeholder="바꿀 말"><button class="btn" data-pfall>모두 바꾸기</button></div><ul class="pfl"></ul><div class="acts"><span class="hint">칸을 고치면 바로 원고에 반영돼요 · Ctrl+Z로 되돌리기(편집 화면)</span><button class="btn dark" data-r="x">닫기</button></div>`;
+  draw();
+  d.addEventListener('change',e=>{const i=e.target.closest('[data-pf]');if(!i)return;const x=d._L[+i.dataset.pf],sc=SCENES[x.si],lines=String(sc.cuts[x.ci]).split('\n');lines[x.li]=x.pre+i.value.replace(/\n/g,' ')+x.post;sc.cuts[x.ci]=lines.join('\n');if(x.si===SCUR)CUTS=sc.cuts;saveScenes();d._dirty=true;draw()});
+  d.querySelector('#pfq').addEventListener('input',draw);
+  d.addEventListener('click',e=>{if(e.target.closest('[data-r]')){d.close();return}if(!e.target.closest('[data-pfall]'))return;const q=$('#pfq').value,r=$('#pfr').value;if(!q)return;let n=0;
+    for(const x of d._L){if(!x.text.includes(q))continue;const sc=SCENES[x.si],lines=String(sc.cuts[x.ci]).split('\n');lines[x.li]=x.pre+x.text.split(q).join(r)+x.post;sc.cuts[x.ci]=lines.join('\n');n++}
+    if(n){CUTS=SCENES[SCUR].cuts;saveScenes();d._dirty=true}toast(`${n}줄을 바꿨어요`);draw()});
+  d.onclose=()=>{if(d._dirty){d._dirty=false;renderCuts();compute(false);if(VIEW==='webtoon')renderWebtoon()}};
+  d.showModal();d.querySelector('#pfq').focus()}
+$('#wproof').addEventListener('click',openProof);
 
 // ---------- 연재용 분할 내보내기: 폭·한 장 최대 높이·형식을 정해 여러 장(ZIP)으로. 씬 제목 없이 이어 붙이고, 컷 사이 여백(한 줄이 모두 같은 색)에서 자름 ----------
 const SLICE_DEF={w:690,h:1280,fmt:'jpg',q:92,gap:0,title:false,smart:true};
