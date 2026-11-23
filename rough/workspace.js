@@ -417,16 +417,26 @@ function packTile(id){const e=materialCatalog.entry(id),art=e&&materialCatalog.i
 // 자주 쓰는 낱말: 묶음에 있으면 그 소재(고른 타입)로, 없으면 기본 레터링
 const quickItem=w=>{const e=packOf(w);return e?item('pack',e.id,w,packTile(e.id),` data-cat="${esc(e.category)}"`):item('sfx',w,w,sfxTile(w))};
 function sfxMatches(){const q=SFXQ.q.normalize('NFKC').toLowerCase();return (materialRows||[]).filter(r=>(!SFXQ.cat||r.category===SFXQ.cat)&&(!q||r.word.normalize('NFKC').toLowerCase().includes(q)||r.category.toLowerCase().includes(q)))}
-function renderSfxGrid(){const el=asBody.querySelector('#sfxgrid');if(!el)return;const L=sfxMatches();
+// 효과음 소재는 60개씩: 맨 아래(더 보기 자리)가 보이면 다음 60개 그림을 풀어 붙임
+const SFX_PAGE=60;let sfxShown=0,sfxList=[],sfxIO=null;
+const sfxLoad=rows=>Promise.all(rows.map(e=>materialCatalog.load(e).catch(()=>{})));
+const packItem=r=>item('pack',r.id,r.word,packTile(r.id),` data-cat="${esc(r.category)}"`);
+function renderSfxGrid(){const el=asBody.querySelector('#sfxgrid');if(!el)return;sfxList=sfxMatches();sfxShown=0;
   el.innerHTML=(SFXQ.q||SFXQ.cat?'':`<h5>자주 쓰는 효과음</h5><div class="asgrid sfxs">${SFXW.map(quickItem).join('')}</div>`)+
-    (materialRows?.length?`<h5>효과음 소재 · ${SFX_TYPES.find(t=>t[0]===SFX_TYPE)[1]} (${L.length})</h5>`+(L.length?`<div class="asgrid sfxs">${L.map(r=>item('pack',r.id,r.word,packTile(r.id),` data-cat="${esc(r.category)}"`)).join('')}</div>`:'<p class="as-empty">찾는 효과음이 없어요.</p>'):
-      `<p class="as-note">효과음 소재 묶음(ZIP, 615종 × 타입 4)을 한 번 불러오면 이 브라우저에 남아 다음부터는 처음부터 다 불러와요. <button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button></p>`)}
-// 처음부터 효과음 소재를 다 불러 둠(한가할 때 40개씩) → 타일·캔버스에 바로 실제 그림
+    (materialRows?.length?`<h5>효과음 소재 · ${SFX_TYPES.find(t=>t[0]===SFX_TYPE)[1]} (${sfxList.length})</h5>`+(sfxList.length?'<div class="asgrid sfxs" id="sfxpack"></div><div class="sfxmore" id="sfxmore" hidden>더 불러오는 중…</div>':'<p class="as-empty">찾는 효과음이 없어요.</p>'):
+      `<p class="as-note">효과음 소재 묶음(ZIP, 615종 × 타입 4)을 한 번 불러오면 이 브라우저에 남아 다음부터 바로 써요. <button class="btn sm" data-as="zip">효과음 ZIP 불러오기</button></p>`);
+  // 자주 쓰는 낱말 그림이 아직 안 풀렸으면 풀고 그 칸만 다시
+  const quick=SFXW.map(packOf).filter(e=>e&&!materialCatalog.image(e,SFX_TYPE));if(quick.length)sfxLoad(quick).then(()=>{const q=el.querySelector('.asgrid.sfxs');if(q&&!SFXQ.q&&!SFXQ.cat)q.innerHTML=SFXW.map(quickItem).join('')});
+  sfxMore()}
+function sfxMore(){const grid=asBody.querySelector('#sfxpack'),more=asBody.querySelector('#sfxmore');if(!grid||sfxMore.busy)return;
+  const page=sfxList.slice(sfxShown,sfxShown+SFX_PAGE);if(!page.length){if(more)more.hidden=true;return}
+  sfxMore.busy=true;const list=sfxList;sfxLoad(page).then(()=>{sfxMore.busy=false;if(list!==sfxList||!grid.isConnected)return;
+    grid.insertAdjacentHTML('beforeend',page.map(packItem).join(''));sfxShown+=page.length;
+    if(more){more.hidden=sfxShown>=sfxList.length;if(!more.hidden){sfxIO?.disconnect();sfxIO=new IntersectionObserver(es=>{if(es.some(x=>x.isIntersecting))sfxMore()},{rootMargin:'300px'});sfxIO.observe(more)}}})}
+// 처음에는 첫 60개(+자주 쓰는 낱말)만 미리 풀어 둠. 나머지는 스크롤할 때
 const sfxPreload=(()=>{let started=false;return ()=>{if(started||typeof materialCatalog==='undefined')return;started=true;
-  materialCatalog.ready().then(rows=>{if(!rows.length){started=false;return}materialRows=rows;let i=0;
-    const idle=f=>window.requestIdleCallback?requestIdleCallback(f,{timeout:800}):setTimeout(f,30);
-    const step=()=>{const b=rows.slice(i,i+40);i+=40;if(!b.length){if(ASSET.tab==='sfx')renderSfxGrid();else if(['rec','star'].includes(ASSET.tab))renderAssets();return}
-      Promise.all(b.map(e=>materialCatalog.load(e).catch(()=>{}))).then(()=>{if(ASSET.tab==='sfx'&&i%200===0)renderSfxGrid();idle(step)})};idle(step)})}})();
+  materialCatalog.ready().then(rows=>{if(!rows.length){started=false;return}materialRows=rows;
+    sfxLoad([...rows.slice(0,SFX_PAGE),...SFXW.map(packOf).filter(Boolean)]).then(()=>{if(ASSET.tab==='sfx')renderSfxGrid()})})}})();
 if(document.readyState==='complete')setTimeout(sfxPreload,300);else addEventListener('load',()=>setTimeout(sfxPreload,300),{once:true});
 
 const match=s=>!ASSET.q||String(s).toLowerCase().includes(ASSET.q.toLowerCase());
@@ -509,7 +519,10 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
       grid('배경',of(['bg']).map(tile),'strips')+grid('배경색',of(['color']).map(tile),'tints')+grid('배경 이미지·시퀀스',of(['bgimg','seq']).map(tile)):
       '<p class="as-empty">타일 오른쪽 위 ★를 누르면 여기 모여요.</p>';
     h+=grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).map(x=>item(x.k,x.v,x.label,x.k==='pack'?packTile(x.v):tileFor(x.k,x.v))),'big')}
-  asBody.innerHTML=h||'<p class="as-empty">찾는 에셋이 없어요.</p>';if(k==='sfx')renderSfxGrid();fitTiles(asBody)}
+  asBody.innerHTML=h||'<p class="as-empty">찾는 에셋이 없어요.</p>';if(k==='sfx')renderSfxGrid();fitTiles(asBody);
+  // ★·추천에 있는 소재 효과음 그림이 아직 안 풀렸으면 그것만 풀고 다시
+  if(k!=='sfx'&&typeof materialCatalog!=='undefined'){const miss=[...asBody.querySelectorAll('[data-mat="pack"]')].map(b=>materialCatalog.entry(b.dataset.v)).filter(e=>e&&!materialCatalog.image(e,SFX_TYPE));
+    if(miss.length)sfxLoad(miss).then(()=>{if(ASSET.tab===k)renderAssets()})}}
 // 적용: 클릭은 고른 대상에, 끌어 놓기는 놓은 자리에
 function cutCenter(g){try{const f=JSON.parse(g.dataset.frame);return {x:f.x+f.w/2,y:f.y+f.h*.35}}catch(_){return {x:345,y:200}}}
 // 소재 효과음을 고른 타입(A~D)으로 넣기
