@@ -95,36 +95,23 @@ list.addEventListener('keydown',e=>{const t=e.target.closest('.cutin');if(!t||ac
 ac.addEventListener('mousedown',e=>{const b=e.target.closest('[data-ai]');if(b&&TA){e.preventDefault();acPick(TA,+b.dataset.ai)}});
 list.addEventListener('focusout',()=>setTimeout(()=>{if(!list.contains(document.activeElement))ac.hidden=true},150));
 
-// ---------- 오른쪽 실시간 미리보기: 편집 화면과 같은 그리기(연출 지시·직접 고친 배치·등록 그림 모두 반영) ----------
+// ---------- 오른쪽 실시간 미리보기: 보기 전용(스크롤만). 바꾸는 건 왼쪽 글(문법)로만 ----------
+// 편집 화면과 같은 그리기라 연출 지시·직접 고친 배치·등록 그림이 그대로 보임. 고른 컷은 파랗게 표시하고 따라감
 {const side=document.querySelector('.scside');if(side){
-  const tabs=document.createElement('div');tabs.className='sstabs';tabs.setAttribute('role','tablist');
-  tabs.innerHTML='<button type="button" role="tab" data-st="pv" aria-selected="true">미리보기</button><button type="button" role="tab" data-st="info" aria-selected="false">인물·세계관</button>';
-  const pv=document.createElement('section');pv.className='wpv';
-  pv.innerHTML='<div class="wpv-h"><span id="wpvlab"></span><span class="grow"></span><div class="seg3" id="wpvmode"><button type="button" data-m="final">완성본</button><button type="button" data-m="rough">러프</button></div><button type="button" class="link" data-view="webtoon">편집에서 열기</button></div><div class="wpvbox" id="wpvbox"></div>';
-  side.prepend(pv);side.prepend(tabs);
-  let tab='pv',mode='final',sel=-1,raf=0;try{tab=localStorage.getItem('rough-scside')||'pv';mode=localStorage.getItem('rough-wpvmode')||'final'}catch(_){}
-  const others=()=>[...side.querySelectorAll(':scope>section.insp')];
-  function setTab(t){tab=t;tabs.querySelectorAll('[data-st]').forEach(b=>b.setAttribute('aria-selected',b.dataset.st===t));pv.hidden=t!=='pv';others().forEach(x=>x.hidden=t==='pv');side.classList.toggle('pvmode',t==='pv');try{localStorage.setItem('rough-scside',t)}catch(_){}if(t==='pv')draw()}
-  tabs.addEventListener('click',e=>{const b=e.target.closest('[data-st]');if(b)setTab(b.dataset.st)});
-  pv.querySelector('#wpvmode').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;mode=b.dataset.m;try{localStorage.setItem('rough-wpvmode',mode)}catch(_){}draw()});
-  const slotOf=p=>+(/^#(\d+):/.exec(p?.key||'')||[])[1];
-  function render(){raf=0;if(VIEW!=='write'||tab!=='pv'||!side.offsetParent)return;const box=pv.querySelector('#wpvbox'),ps=state.panels||[];
-    pv.querySelectorAll('#wpvmode [data-m]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===mode));
-    if(!ps.length){box.innerHTML='<p class="empty">컷을 쓰면 여기에 바로 그려져요</p>';pv.querySelector('#wpvlab').textContent='';return}
-    const imgs=mode==='final'?ps.map((p,k)=>cutImg(SCUR,k,p)||null):null,n=imgs?imgs.filter(Boolean).length:0;
-    const keep=box.scrollTop;
-    box.innerHTML=renderSVG(ps,sel,'sp_',true,imgs,false,{edits:SCENES[SCUR].pageEdits,interactive:false,rough:mode==='rough',sceneEnd:sceneEndColor(SCUR,ps)});
-    box.scrollTop=keep;pv.querySelector('#wpvlab').textContent=mode==='final'?(n?`그림 ${n}/${ps.length}컷 · 나머지 레퍼런스`:'레퍼런스로 미리보기'):'러프(글자 빼고)';
-    if(sel>=0)reveal(sel)}
+  side.querySelectorAll(':scope>section.insp').forEach(x=>x.hidden=true);  // 인물·세계관 요약은 이 화면에서 뺌(요소는 다른 코드가 써서 남겨 둠)
+  const box=document.createElement('div');box.className='wpvbox';box.id='wpvbox';box.setAttribute('aria-label','연출 미리보기(보기 전용)');side.prepend(box);side.classList.add('pvmode');
+  let sel=-1,raf=0;const slotOf=p=>+(/^#(\d+):/.exec(p?.key||'')||[])[1];
+  function render(){raf=0;if(VIEW!=='write'||!side.offsetParent)return;const ps=state.panels||[];
+    if(!ps.length){box.innerHTML='<p class="empty">컷을 쓰면 여기에 바로 그려져요</p>';return}
+    const imgs=ps.map((p,k)=>cutImg(SCUR,k,p)||null),keep=box.scrollTop;
+    box.innerHTML=renderSVG(ps,sel,'sp_',true,imgs,false,{edits:SCENES[SCUR].pageEdits,interactive:false,sceneEnd:sceneEndColor(SCUR,ps)});
+    box.scrollTop=keep;if(sel>=0)reveal(sel)}
   function draw(){if(!raf)raf=requestAnimationFrame(render)}
-  function reveal(i){const box=pv.querySelector('#wpvbox'),g=box.querySelector(`[data-p="${i}"]`);if(!g)return;const gr=g.getBoundingClientRect(),br=box.getBoundingClientRect();
+  function reveal(i){const g=box.querySelector(`[data-p="${i}"]`);if(!g)return;const gr=g.getBoundingClientRect(),br=box.getBoundingClientRect();
     if(gr.top<br.top||gr.bottom>br.bottom)box.scrollTo({top:box.scrollTop+gr.top-br.top-Math.max(16,(br.height-gr.height)/2),behavior:'smooth'})}
-  // 글 고치면(계산 뒤) 다시 그림 · 고른 컷 따라가기 · 미리보기 컷 누르면 그 컷 글로
   {const _c=compute;compute=function(...a){const r=_c(...a);if(VIEW==='write')draw();return r}}
   {const _r=renderSlots;renderSlots=function(...a){const r=_r(...a);if(VIEW==='write')draw();return r}}
   {const _s=showView;showView=function(...a){const r=_s(...a);if(VIEW==='write')draw();return r}}
   list.addEventListener('focusin',e=>{const li=e.target.closest('li[data-i]');if(!li)return;const i=(state.panels||[]).findIndex(p=>slotOf(p)===+li.dataset.i);if(i!==sel){sel=i;draw()}});
-  pv.querySelector('#wpvbox').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(!g)return;const p=state.panels[+g.dataset.p],li=list.querySelector(`li[data-i="${slotOf(p)}"]`);if(!li)return;
-    li.scrollIntoView({block:'center',behavior:'smooth'});const t=li.querySelector('.cutin');t?.focus({preventScroll:true});if(t){const n=t.value.length;t.setSelectionRange(n,n)}});
-  setTab(tab)}}
+  draw()}}
 })();
