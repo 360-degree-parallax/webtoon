@@ -1812,7 +1812,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     if(u){const c=u.crop&&u.w?u.crop:null;const vb=c?`${(c[0]*u.w).toFixed(0)} ${(c[1]*u.h).toFixed(0)} ${((c[2]-c[0])*u.w).toFixed(0)} ${((c[3]-c[1])*u.h).toFixed(0)}`:null;
       art=c?`<svg x="${bx}" y="${y}" width="${bw}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${u.src}" width="${u.w}" height="${u.h}" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/></svg>`:`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`}
     else if(!im)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;
-    // 원본 칸이 사선이면 칸 모양도 그 꼭짓점대로(그림 영역 상자 기준으로 옮김)
+    // (지금은 자동 칸이 늘 네모라 u.quad가 비어 있음 — 아래 편집 꼭짓점만 칸 모양을 바꿈)
     const box=[[bx,y],[bx+bw,y],[bx+bw,y+h],[bx,y+h]];
     let pts=u&&u.quad&&u.crop?u.quad.map(([qx,qy])=>[bx+(qx-u.crop[0])/(u.crop[2]-u.crop[0])*bw,y+(qy-u.crop[1])/(u.crop[3]-u.crop[1])*h]):null;
     // 편집 화면에서 꼭짓점을 끌어 바꾼 칸 모양(상자 모서리 기준 오프셋)
@@ -1879,7 +1879,8 @@ function underlay(p){if(!showUnder)return null;
   if(p.shot==='클로즈업'){const c=p.who&&IMG.char[p.who];if(c)return{src:c.src,op:.32}}
   if(['설정','전경','전신','중경','효과 배경'].includes(p.shot)){const sc=sceneFor(p);if(sc)return{src:sc.src,op:p.shot==='설정'||p.shot==='전경'?.38:.22}}
   // 직접 넣은 참고 이미지가 없으면 엔진이 고른 구도 레퍼런스를 컬러로 깔기
-  if(p.ref)return{src:p.ref.src,op:1,color:true,crop:p.ref.art,w:p.ref.w,h:p.ref.h,quad:p.ref.frame==='slant'?p.ref.quad:null};
+  // 자동 칸은 늘 네모: 레퍼런스가 사선 칸이어도 꼭짓점은 따라가지 않음(칸 모양은 편집 화면 꼭짓점 끌기로만)
+  if(p.ref)return{src:p.ref.src,op:1,color:true,crop:p.ref.art,w:p.ref.w,h:p.ref.h,quad:null};
   return null}
 function names(){return [...new Set([...CHARS.map(c=>c.name).filter(Boolean),...RE.parseCuts(CUTS,engineChars()).map(b=>b.who).filter(Boolean)])]}
 function slotHTML(kind,key,ref,label,off){return `<div class="slot${off?' off':''}"><div class="drop${ref?' has':''}" tabindex="0" role="button" data-slot="${kind}" data-key="${esc(key)}" aria-label="${esc(label)} 이미지 ${ref?'바꾸기':'첨부'}">${ref?`<img src="${ref.src}" alt=""><button class="x" data-del="${kind}" data-key="${esc(key)}" aria-label="삭제">×</button>`:'+ 이미지'}</div>
