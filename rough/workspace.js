@@ -594,6 +594,22 @@ reader.addEventListener('contextmenu',e=>{if(!inEdit()||!pageEditing)return;e.pr
 document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||!(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')))return;e.preventDefault();
   const el=selectedLetter||selGroup();if(!el)return;const r=el.getBoundingClientRect();el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:r.left+Math.min(40,r.width/2),clientY:r.top+Math.min(40,r.height/2)}))});
 
+// ---------- 말풍선 변형 손잡이: 누르면 바로 끌어 옮기고(기존), 모서리를 끌어 크기 ----------
+const tbox=mk('tbox');tbox.hidden=true;tbox.innerHTML=['nw','ne','se','sw'].map(c=>`<i class="th" data-th="${c}" title="끌어서 크기 (Shift: 1% 단위 대신 5% 단위)"></i>`).join('')+'<output class="tb-v"></output>';document.body.appendChild(tbox);
+let tdrag=null;
+function tArt(){return selectedLetter?.querySelector('[data-balloon]')||null}
+function placeTbox(){const art=tArt();if(!art||!inEdit()||tool!=='select'||tdrag===false){tbox.hidden=true;return}
+  const r=art.getBoundingClientRect();if(!r.width){tbox.hidden=true;return}tbox.hidden=false;Object.assign(tbox.style,{left:r.left-4+'px',top:r.top-4+'px',width:r.width+8+'px',height:r.height+8+'px'})}
+(function loop(){if(!tdrag)placeTbox();requestAnimationFrame(loop)})();
+tbox.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-th]'),art=tArt();if(!h||!art)return;e.preventDefault();e.stopPropagation();
+  if(isLocked(selectedLetter.closest('[data-slot-index]'),selectedLetter.dataset.letter)){flash('잠긴 식자예요');return}
+  const r=art.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,s0=Number($('#wballoonsize').value)/100||1;
+  tdrag={art,cx,cy,s0,d0:Math.hypot(e.clientX-cx,e.clientY-cy)||1,meta:JSON.parse(art.dataset.balloon),L:selectedLetter,s:s0};h.setPointerCapture(e.pointerId)});
+tbox.addEventListener('pointermove',e=>{if(!tdrag)return;const d=Math.hypot(e.clientX-tdrag.cx,e.clientY-tdrag.cy);let s=tdrag.s0*d/tdrag.d0;
+  s=Math.max(.5,Math.min(2,Math.round(s*(e.shiftKey?20:100))/(e.shiftKey?20:100)));tdrag.s=s;tdrag.art.setAttribute('transform',balloonTransform(tdrag.meta,s));
+  tbox.querySelector('.tb-v').textContent=Math.round(s*100)+'%';const r=tdrag.art.getBoundingClientRect();Object.assign(tbox.style,{left:r.left-4+'px',top:r.top-4+'px',width:r.width+8+'px',height:r.height+8+'px'})});
+tbox.addEventListener('pointerup',()=>{if(!tdrag)return;const {L,s}=tdrag;tdrag=null;tbox.querySelector('.tb-v').textContent='';const b=$('#wballoonsize');b.value=Math.round(s*100);b.dispatchEvent(new Event('input'));saveLetter(L,{scale:s});flash(`말풍선 크기 ${Math.round(s*100)}%`)});
+
 // ---------- 연결 ----------
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);renderCtx();return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);renderCtx();return r}}
