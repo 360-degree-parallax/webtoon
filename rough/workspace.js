@@ -117,18 +117,19 @@ function addLetter(kind,group,pt,o={}){
   moveLetter(L,pos);saveLetter(L,pos);selectLetter(L);focusText();
   flash(`${kind==='balloon'?'말풍선':kind==='caption'?'나레이션':'효과음'}을 넣었어요 · 문구를 입력하고 Ctrl+Enter`);
 }
-// 칸 나누기: 컷 바로 아래에 새 칸(글)을 끼우고, 이후 컷의 편집값·등록 이미지 번호를 한 칸씩 민다
+// 칸 나누기: 컷 바로 아래에 새 칸(글)을 끼우고, 이후 컷의 편집값·등록 이미지를 한 칸씩 민다
 function splitCut(group){
-  const key=pageKey(group),[si,slot]=key.split(':').map(Number),sc=SCENES[si],cuts=sc.cuts,n=+group.dataset.p;
+  const key=pageKey(group),[si,slot]=key.split(':').map(Number),sc=SCENES[si],cuts=sc.cuts;
   const lines=String(cuts[slot]||'').split('\n').map(l=>l.trim()).filter(Boolean);
   const act=lines.find(l=>!/^(@\S+\s*)?["“]/.test(l)&&!/^\[.*\]$/.test(l))||'';
   const base=act.replace(/-[^-\s][^-]{0,10}-/g,'').replace(/^\(이어서\)\s*/,'').trim();
-  cuts.splice(slot+1,0,'(이어서) '+(base||'이어지는 장면'));
-  if(sc.pageEdits.length>slot+1)sc.pageEdits.splice(slot+1,0,null);
-  const e=sc.pageEdits[slot];
-  if(e?.frame){const h=Math.max(80,Math.round(e.frame.h/2));e.frame={...e.frame,h};sc.pageEdits[slot+1]={frame:{...e.frame}}}
-  // 등록 이미지는 컷 순서 번호로 저장돼 있어 뒤 컷을 한 칸씩 민다
-  Object.values(IMG.cut).filter(r=>r.scene===sc.id&&r.idx>n).sort((a,b)=>b.idx-a.idx).forEach(r=>{const o={...r,idx:r.idx+1,id:cutId(sc.id,r.idx+1)};delete IMG.cut[r.id];IMG.cut[o.id]=o;try{idb.del(r.id);idb.put(o)}catch(_){}});
+  // 등록 이미지는 패널 번호로 저장돼 있어 remapCuts가 뒤 컷 이미지를 새 번호로 옮김
+  const len=cuts.length;
+  remapCuts(si,()=>{cuts.splice(slot+1,0,'(이어서) '+(base||'이어지는 장면'));
+    if(sc.pageEdits.length>slot+1)sc.pageEdits.splice(slot+1,0,null);
+    const e=sc.pageEdits[slot];
+    if(e?.frame){const h=Math.max(80,Math.round(e.frame.h/2));e.frame={...e.frame,h};sc.pageEdits[slot+1]={frame:{...e.frame}}}
+    return moveMap(len,x=>x>slot?x+1:x)});
   refreshText(si);
   const g=groupBy(`${si}:${slot+1}`);if(g){selectPageCut(g);g.scrollIntoView({block:'center',behavior:'smooth'})}
   flash('칸을 나눴어요 · 새 칸 글은 씬 화면에서 고칠 수 있어요(Ctrl+Z로 되돌리기)');

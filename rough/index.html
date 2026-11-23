@@ -238,7 +238,8 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 #v-webtoon{background:var(--surface)}
 .edtop{position:sticky;top:104px;z-index:15;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;height:52px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line)}
 .edtop-l{display:flex;align-items:center;gap:10px;min-width:0}.edcrumb{font-size:15px}
-.edsave{font-size:12px;color:var(--t3);white-space:nowrap}.edsave.on{color:var(--t2)}
+.edsave{font-size:12px;color:var(--t3);white-space:nowrap}.edsave.on{color:var(--t2)}.artcheck{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 8px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;font-size:12.5px;color:var(--t2)}.artcheck b{color:var(--warn,#c2410c)}.artcheck .btn{padding:2px 10px;font-size:12px}
+.edsave.fail{color:var(--warn,#c2410c);font-weight:600}
 .edtop-r{display:flex;align-items:center;justify-content:flex-end;gap:6px}
 .xwrap{position:relative}.xmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:60;width:300px;background:var(--bg,#fff);border:1px solid var(--line,#e3e5e8);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px;display:grid;gap:2px}.xmenu[hidden]{display:none}.xmenu button{display:grid;gap:2px;text-align:left;padding:10px 12px;border-radius:8px}.xmenu button:hover,.xmenu button:focus-visible{background:var(--hover,#f2f3f5)}.xmenu b{font-size:14px;color:var(--t1)}.xmenu span{font-size:12px;color:var(--t2);line-height:1.4}
 .edtop .ib{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;font-size:18px;color:var(--t2)}.edtop .ib:hover:not(:disabled){background:var(--hover);color:var(--t1)}.edtop .ib:disabled{opacity:.35}
@@ -923,6 +924,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <div class="edtop-r"><div class="czoom" role="group" aria-label="캔버스 배율"><button class="ib" id="wczout" title="축소 (Ctrl −)" aria-label="캔버스 축소">−</button><button class="czlab" id="wczlab" title="100%로 (Shift+0) · 전체 보기 Shift+1 · 선택한 컷 보기 Shift+2" aria-label="캔버스 배율, 눌러서 100%">100%</button><button class="ib" id="wczin" title="확대 (Ctrl +)" aria-label="캔버스 확대">+</button></div><button class="btn" id="wread" title="모바일 폭으로 읽어 보기 (P)">읽기</button><span class="edsep" aria-hidden="true"></span><button class="ib" id="wundo" title="실행 취소 (Ctrl+Z)" aria-label="실행 취소" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="ib" id="wredo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button><button class="btn" id="wedit" aria-pressed="false" aria-controls="wtools">미리보기</button></div>
 </div>
 <span class="status edst" id="wst"></span>
+<div class="artcheck" id="artcheck" hidden></div>
 <div class="edgrid">
   <aside class="edleft" aria-label="목차">
     <div class="ltabs" role="tablist" aria-label="왼쪽 패널"><button role="tab" id="ltab-layers" aria-selected="true" aria-controls="wtoc">레이어</button><button role="tab" id="ltab-refs" aria-selected="false" aria-controls="wrefs">레퍼런스</button></div>
@@ -1126,7 +1128,7 @@ function reveal(){const g=$(`#preview [data-p="${state.sel}"]`),c=$('#canvas');i
 
 // ---------- actions ----------
 let tmr;
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)}
+function toast(m,ms=1800){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),ms)}
 function download(name,href){const a=document.createElement("a");a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove()}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   if(a==='clear'){CUTS=[''];SCENES[SCUR].pageEdits=[];saveCuts();renderCuts();compute(true);document.querySelector('.cutin')?.focus()}
@@ -1515,7 +1517,7 @@ function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false
 const IMG={char:{},scene:[],cut:{},lib:{},lore:{},world:null,wlib:{}};let target=null,showUnder=true;
 const idb=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('rough-refs',1);r.onupgradeneeded=()=>r.result.createObjectStore('refs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('refs',mode);const st=t.objectStore('refs');const out=fn(st);t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
-  return{all:()=>tx('readonly',st=>st.getAll()).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).catch(()=>{}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
+  return{all:()=>tx('readonly',st=>st.getAll()).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).then(r=>{saveOk();return r}).catch(e=>{saveFail(e,'이미지')}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
 function shrink(file,max=768){return new Promise((res,rej)=>{const url=URL.createObjectURL(file);const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(url);res({src:c.toDataURL('image/jpeg',.85),w:c.width,h:c.height,palette:palette(c)})};im.onerror=rej;im.src=url})}
 // 팔레트: 48px로 줄여 색을 4비트로 묶고 많이 쓰인 순서, 서로 비슷한 색은 건너뜀
 function palette(cv){const c=document.createElement('canvas');c.width=c.height=48;const g=c.getContext('2d');g.drawImage(cv,0,0,48,48);const d=g.getImageData(0,0,48,48).data;const cnt={};
@@ -1593,6 +1595,22 @@ function cutHead(p,i){return `${i+1}. ${p.who?p.who+' · ':''}${p.shot}·${p.ang
 // 컷 이미지: 씬 id + 컷 순서로 저장, 글이 바뀌면 sig로 표시
 const cutId=(sid,i)=>`cut:${sid}:${i}`;
 function cutImg(si,i,p){const r=IMG.cut[cutId(SCENES[si].id,i)];if(!r)return null;return{...r,stale:!!(p&&r.sig!==p.key)}}
+// 컷 이미지는 패널 번호로, 컷 글·편집값은 컷 순번으로 저장돼 있음.
+// 컷을 옮기거나 끼우거나 지우는 작업(mutate)은 {옛 순번: 새 순번(지우면 -1)} 표를 돌려주고,
+// 여기서 등록 이미지를 같은 컷의 새 패널 번호로 옮김. 글이 그대로면 '글이 바뀜'도 안 붙음
+function panelsOf(si){const out=[];RE.analyzeCuts(SCENES[si].cuts,engineChars()).forEach(a=>{const r=RE.rank(a,PATS,1)[0];if(r)RE.layout(a,r.p).forEach(c=>out.push(c))});return out}
+function remapCuts(si,mutate){const sc=SCENES[si];
+  const before=si===SCUR&&state.panels.length?state.panels:panelsOf(si),recs=[],seen={};
+  before.forEach((p,n)=>{const s=cutSlot(p,n),o=(seen[s]=(seen[s]||0)+1)-1,r=IMG.cut[cutId(sc.id,n)];if(r)recs.push({r,s,o,fresh:r.sig===p.key})});
+  const map=mutate();if(!map||!recs.length)return;
+  const after=panelsOf(si),bySlot={};after.forEach((p,n)=>(bySlot[cutSlot(p,n)]??=[]).push(n));
+  const moved=[],used=new Set();let lost=0;
+  for(const x of recs){const ns=map[x.s]??x.s;if(ns<0)continue;const l=bySlot[ns]||[];const t=[l[x.o],...l].find(v=>v!=null&&!used.has(v));
+    if(t==null){lost++;continue}used.add(t);moved.push({...x.r,id:cutId(sc.id,t),idx:t,sig:x.fresh?after[t].key:x.r.sig})}
+  for(const x of recs){delete IMG.cut[x.r.id];idb.del(x.r.id)}
+  for(const o of moved){IMG.cut[o.id]=o;idb.put(o)}
+  if(lost)toast(`이미지 ${lost}장은 이어 붙일 컷이 없어 뺐어요`,3000)}
+const moveMap=(n,f)=>Object.fromEntries([...Array(n).keys()].map(k=>[k,f(k)]));
 function cutCount(si,ps){return ps.filter((p,i)=>cutImg(si,i,p)).length}
 async function attachCut(file,i){if(!file||!file.type.startsWith('image/'))return;const p=state.panels[+i];if(!p)return;const im=await shrink(file,1380);
   const o={id:cutId(SCENES[SCUR].id,+i),kind:'cutimg',scene:SCENES[SCUR].id,idx:+i,sig:p.key,src:im.src,w:im.w,h:im.h};IMG.cut[o.id]=o;await idb.put(o)}
@@ -1860,7 +1878,13 @@ if(!Array.isArray(SCENES)||!SCENES.length){let old=null;try{old=JSON.parse(local
 SCENES.forEach(sc=>{if(!Array.isArray(sc.pageEdits))sc.pageEdits=[]});
 try{SCUR=Math.min(SCENES.length-1,Math.max(0,+localStorage.getItem('rough-scene-cur')||0))}catch(_){}
 let CUTS=SCENES[SCUR].cuts;
-function saveScenes(){SCENES[SCUR].cuts=CUTS;try{localStorage.setItem('rough-scenes',JSON.stringify(SCENES));localStorage.setItem('rough-scene-cur',SCUR)}catch(_){}}
+function saveScenes(){SCENES[SCUR].cuts=CUTS;try{localStorage.setItem('rough-scenes',JSON.stringify(SCENES));localStorage.setItem('rough-scene-cur',SCUR);saveOk();return true}catch(e){saveFail(e,'원고');return false}}
+// 저장 실패: '저장됨' 대신 실패를 계속 보여 주고, 처음 한 번 알림. 다음 저장이 성공하면 풀림
+let SAVE_FAIL=null;
+function saveFail(e,what){const first=!SAVE_FAIL;SAVE_FAIL={at:Date.now(),what};saveFailLabel();
+  if(first)toast(`${what}를 저장하지 못했어요. 브라우저 저장 공간이 꽉 찼거나 막혀 있어요. 지금 편집 중인 내용은 이 탭을 닫으면 사라질 수 있어요.`,6000)}
+function saveOk(){if(!SAVE_FAIL)return;SAVE_FAIL=null;document.querySelectorAll('.edsave').forEach(el=>el.classList.remove('fail'));if(typeof scSaveLabel==='function')scSaveLabel();if(typeof edSaveLabel==='function')edSaveLabel();toast('다시 저장됐어요')}
+function saveFailLabel(){document.querySelectorAll('.edsave').forEach(el=>{el.textContent=`저장 안 됨 · ${SAVE_FAIL.what}`;el.title='브라우저 저장 공간이 부족하거나 막혀 있어요';el.classList.add('fail','on')})}
 function cutEdits(){const edits=SCENES[SCUR].pageEdits;edits.length=CUTS.length;return edits}
 function saveCuts(){saveScenes();renderSceneList()}
 function sceneLabel(sc,i){return `씬 ${i+1} · ${sc.title||'제목 없는 씬'}`}
@@ -1904,18 +1928,20 @@ function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.
   const m=$('#scmeta2');if(m)m.textContent=`대사 ${nd} · 식자 ${nc} · 효과음 ${ns}`}
 const cutChanged=()=>{saveCuts();scSaved();clearTimeout(tmr);tmr=setTimeout(()=>{compute(true);renderSlots();renderSugg();renderParse()},350)};
 let scSavedAt=0;function scSaved(){scSavedAt=Date.now();scSaveLabel()}
-function scSaveLabel(){const el=$('#scsave');if(!el||!scSavedAt)return;const s=Math.round((Date.now()-scSavedAt)/1000);el.textContent=s<5?'저장됨 · 방금':s<60?`저장됨 · ${s}초 전`:`저장됨 · ${Math.round(s/60)}분 전`;el.classList.add('on')}
+function scSaveLabel(){const el=$('#scsave');if(!el)return;if(SAVE_FAIL){saveFailLabel();return}if(!scSavedAt)return;const s=Math.round((Date.now()-scSavedAt)/1000);el.textContent=s<5?'저장됨 · 방금':s<60?`저장됨 · ${s}초 전`:`저장됨 · ${Math.round(s/60)}분 전`;el.classList.add('on')}
 setInterval(scSaveLabel,5000);
 $('#cutlist').addEventListener('input',e=>{const t=e.target.closest('.cutin');if(!t)return;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);cutChanged();mSel=0;showMbox()});
 $('#cutlist').addEventListener('focusin',e=>{const t=e.target.closest('.cutin');if(t)TA=t});
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cut]');if(e.target.closest('.cutin'))showMbox();if(!b)return;const i=+b.closest('li').dataset.i,k=b.dataset.cut;
   const edits=cutEdits();
-  if(k==='del'){CUTS.splice(i,1);edits.splice(i,1)}else{const j=k==='up'?i-1:i+1;if(j<0||j>=CUTS.length)return;[CUTS[i],CUTS[j]]=[CUTS[j],CUTS[i]];[edits[i],edits[j]]=[edits[j],edits[i]]}
+  const n=CUTS.length,j=k==='up'?i-1:i+1;if(k!=='del'&&(j<0||j>=n))return;
+  remapCuts(SCUR,()=>{if(k==='del'){CUTS.splice(i,1);edits.splice(i,1);return moveMap(n,x=>x===i?-1:x>i?x-1:x)}
+    [CUTS[i],CUTS[j]]=[CUTS[j],CUTS[i]];[edits[i],edits[j]]=[edits[j],edits[i]];return moveMap(n,x=>x===i?j:x===j?i:x)});
   renderCuts();cutChanged()});
 $('#cutlist').addEventListener('keydown',e=>{const t=e.target.closest('.cutin');if(!t)return;
   if(!mbox.hidden){if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();mSel=(mSel+(e.key==='ArrowDown'?1:-1)+mList.length)%mList.length;showMbox()}
     else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();pickMention(mSel)}else if(e.key==='Escape'){mbox.hidden=true}return}
-  if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();const i=+t.closest('li').dataset.i;cutEdits().splice(i+1,0,null);CUTS.splice(i+1,0,'');renderCuts();cutChanged();document.querySelectorAll('.cutin')[i+1]?.focus()}});
+  if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();const i=+t.closest('li').dataset.i,n=CUTS.length;remapCuts(SCUR,()=>{cutEdits().splice(i+1,0,null);CUTS.splice(i+1,0,'');return moveMap(n,x=>x>i?x+1:x)});renderCuts();cutChanged();document.querySelectorAll('.cutin')[i+1]?.focus()}});
 $('#cutlist').addEventListener('focusout',()=>setTimeout(()=>{mbox.hidden=true},150));
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]')?.dataset.act;if(!a)return;
   if(a==='addcut'){CUTS.push('');renderCuts();saveCuts();const l=document.querySelectorAll('.cutin');l[l.length-1]?.focus()}
@@ -1937,7 +1963,7 @@ document.querySelector('.scins').addEventListener('click',e=>{const b=e.target.c
   L.addEventListener('dragover',e=>{const li=e.target.closest('li');if(from<0||!li)return;e.preventDefault();L.querySelectorAll('.dropbefore').forEach(x=>x.classList.remove('dropbefore'));li.classList.add('dropbefore')});
   L.addEventListener('dragend',()=>{from=-1;L.querySelectorAll('li').forEach(x=>{x.draggable=false;x.classList.remove('dragging','dropbefore')})});
   L.addEventListener('drop',e=>{const li=e.target.closest('li');if(from<0||!li)return;e.preventDefault();let to=+li.dataset.i;if(to===from)return;
-    const edits=cutEdits();const [c]=CUTS.splice(from,1),[ed]=edits.splice(from,1);if(to>from)to--;CUTS.splice(to,0,c);edits.splice(to,0,ed);from=-1;renderCuts();cutChanged();toast('컷 순서를 바꿨어요')});}
+    const edits=cutEdits(),n=CUTS.length,f=from;if(to>f)to--;remapCuts(SCUR,()=>{const ord=[...Array(n).keys()];ord.splice(f,1);ord.splice(to,0,f);const [c]=CUTS.splice(f,1),[ed]=edits.splice(f,1);CUTS.splice(to,0,c);edits.splice(to,0,ed);return Object.fromEntries(ord.map((o,k)=>[o,k]))});from=-1;renderCuts();cutChanged();toast('컷 순서를 바꿨어요')});}
 renderCuts();renderChars();renderSceneList();
 mbox.addEventListener('mousedown',e=>{const b=e.target.closest('[data-mi]');if(b){e.preventDefault();pickMention(+b.dataset.mi)}});
 
@@ -1952,8 +1978,8 @@ document.addEventListener('click',e=>{const t=e.target;
   if(a==='addscene'){saveScenes();SCENES.push({id:'s'+Date.now(),title:'',cuts:[''],pageEdits:[]});switchScene(SCENES.length-1);$('#sctitle').focus()}
   if(a==='adddemo'){saveScenes();const first=SCENES.length;SCENES.push(...DEFAULT_SCENES.map((d,k)=>({id:'s'+Date.now()+k,title:d.title,cuts:d.cuts.slice(),pageEdits:[]})));switchScene(first);toast('예시 씬 2개를 추가했어요')}
   if(a==='wsave'||a==='wsvg'||a==='wpsd'){closeXMenu();const st=t=>$('#wst').textContent=t;
-    const run=a==='wsave'?saveWebtoon():a==='wsvg'?RoughExport.exportSVG(st):RoughExport.exportPSD(st);
-    Promise.resolve(run).then(()=>{if(VIEW!=='webtoon')toast($('#wst').textContent)}).catch(err=>{console.error(err);if(VIEW!=='webtoon')toast('내보내기 실패: '+(err.message||err));st(a==='wsave'?'소재 또는 이미지를 불러오지 못했어요. 다시 저장해 주세요.':'내보내기 실패: '+(err.message||err))})}
+    confirmArtCheck().then(ok=>{if(!ok)return;const run=a==='wsave'?saveWebtoon():a==='wsvg'?RoughExport.exportSVG(st):RoughExport.exportPSD(st);
+    Promise.resolve(run).then(()=>{if(VIEW!=='webtoon')toast($('#wst').textContent)}).catch(err=>{console.error(err);if(VIEW!=='webtoon')toast('내보내기 실패: '+(err.message||err));st(a==='wsave'?'소재 또는 이미지를 불러오지 못했어요. 다시 저장해 주세요.':'내보내기 실패: '+(err.message||err))})})}
   if(t.closest('#wexport')){const m=$('#wxmenu'),open=m.hidden;m.hidden=!open;$('#wexport').setAttribute('aria-expanded',open);if(open)m.querySelector('button').focus()}
   else if(!t.closest('#wxmenu'))closeXMenu()});
 function closeXMenu(){const m=$('#wxmenu');if(m&&!m.hidden){m.hidden=true;$('#wexport').setAttribute('aria-expanded','false')}}
@@ -1976,6 +2002,24 @@ let pageEditing=true,pageSelection='',pageDrag=null;
 // 그림 편집 모드(피그마 이미지 크롭처럼): 그림을 더블클릭하면 그 컷에서만 Ctrl+휠이 그림 확대로 동작
 let cropKey='';
 const ART_LABEL={img:'',mix:'일부 러프',rough:'러프'};
+// 완성본 점검: 이미지를 한 장이라도 올린 원고에서, 이미지가 없는 컷(러프로 나감)과 이미지 등록 뒤 글이 바뀐 컷을 모음
+function artCheck(){const miss=[],stale=[];let imgs=0;
+  SCENES.forEach((sc,si)=>scenePanels(si).forEach((p,n)=>{const im=cutImg(si,n,p),it={si,n,key:`${si}:${cutSlot(p,n)}`};if(!im)miss.push(it);else{imgs++;if(im.stale)stale.push(it)}}));
+  return{miss,stale,imgs,list:[...stale,...miss].sort((a,b)=>a.si-b.si||a.n-b.n)}}
+let ACHK=0;
+function renderArtCheck(){const el=$('#artcheck');if(!el)return;const c=artCheck();
+  if(WMODE!=='final'||!c.imgs||!c.list.length){el.hidden=true;return}
+  el.hidden=false;el.innerHTML=`<span>완성본 점검</span>${c.miss.length?`<b>이미지 없음 ${c.miss.length}컷</b><span>(러프로 나가요)</span>`:''}${c.stale.length?`<b>글이 바뀜 ${c.stale.length}컷</b><span>(그림이 예전 글 기준)</span>`:''}<button class="btn" data-achk="1">다음 확인 ›</button>`}
+function jumpArtCheck(){const c=artCheck();if(!c.list.length)return;const it=c.list[ACHK++%c.list.length];
+  const g=[...pageReader.querySelectorAll('[data-slot-index]')].find(x=>pageKey(x)===it.key);if(g){selectPageCut(g);g.scrollIntoView({block:'center',behavior:'smooth'})}
+  toast(`씬 ${it.si+1} · ${it.n+1}번째 컷 — ${c.stale.includes(it)?'글이 바뀐 뒤 그림이 그대로예요':'이미지가 없어 러프로 나가요'}`,2600)}
+document.addEventListener('click',e=>{if(e.target.closest('[data-achk]'))jumpArtCheck()});
+// 내보내기 전에 한 번 묻기(이미지를 올린 원고만). 돌려주는 값: true면 그대로 진행
+function confirmArtCheck(){const c=artCheck();if(!c.imgs||!c.list.length)return Promise.resolve(true);
+  return new Promise(res=>{let d=$('#achkdlg');if(!d){d=document.createElement('dialog');d.id='achkdlg';d.className='keydlg';document.body.appendChild(d)}
+    d.innerHTML=`<h3>내보내기 전에 확인해 주세요</h3><p>${c.miss.length?`이미지가 없는 컷 <b>${c.miss.length}개</b>는 러프 그림으로 들어가요.<br>`:''}${c.stale.length?`이미지를 올린 뒤 글이 바뀐 컷 <b>${c.stale.length}개</b>는 예전 그림이 그대로 들어가요.`:''}</p><div class="acts"><button class="btn" data-r="check">먼저 확인하기</button><button class="btn dark" data-r="go">그대로 내보내기</button></div>`;
+    d.onclick=e=>{const r=e.target.closest('[data-r]')?.dataset.r;if(!r)return;d.close();if(r==='go')res(true);else{res(false);if(VIEW!=='webtoon')showView('webtoon');if(WMODE!=='final')$('#wmode [data-m="final"]').click();ACHK=0;setTimeout(jumpArtCheck,150)}};
+    d.oncancel=()=>res(false);d.showModal();d.querySelector('[data-r="go"]').focus()})}
 function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
     const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':art.svg;
@@ -1983,7 +2027,7 @@ function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerH
     return `<section id="ws-${i}" data-page-scene="${i}" style="scroll-margin-top:200px"><div class="scn"><span>${esc(sceneLabel(sc,i))}${lab?' · '+lab:''}</span></div>${body}</section>`});
   $('#reader').innerHTML=parts.join('');
   refreshPageTools();
-  $('#wstat').textContent=`씬 ${SCENES.length}개 · 컷 ${cuts}개${imgd?` · 이미지 ${imgd}컷 등록`:''}`;
+  $('#wstat').textContent=`씬 ${SCENES.length}개 · 컷 ${cuts}개${imgd?` · 이미지 ${imgd}컷 등록`:''}`;renderArtCheck();
   $('#wtoc').innerHTML=SCENES.map((sc,i)=>`<a href="#ws-${i}" data-toc="${i}">${esc(sceneLabel(sc,i))}</a>`).join('');
 }
 $('#wtoc').addEventListener('click',e=>{const a=e.target.closest('[data-toc]');if(!a)return;e.preventDefault();document.getElementById('ws-'+a.dataset.toc)?.scrollIntoView({behavior:'smooth'})});
@@ -2648,7 +2692,7 @@ function edRestore(json){edRestoring=true;const arr=JSON.parse(json);let text=fa
     if(edSnap!==null&&cur!==edSnap){const now=Date.now();if(now-edLast>600||!UNDO.length)UNDO.push(edSnap);if(UNDO.length>100)UNDO.shift();REDO.length=0;edLast=now;edSavedAt=now;edSaveLabel()}
     edSnap=cur;edButtons()}
   return _ss(...a)}}
-function edSaveLabel(){const el=$('#edsave');if(!el)return;if(!edSavedAt){el.textContent='자동 저장';el.classList.remove('on');return}
+function edSaveLabel(){const el=$('#edsave');if(!el)return;if(SAVE_FAIL){saveFailLabel();return}if(!edSavedAt){el.textContent='자동 저장';el.classList.remove('on');return}
   const s=Math.round((Date.now()-edSavedAt)/1000);el.textContent=s<5?'저장됨 · 방금':s<60?`저장됨 · ${s}초 전`:`저장됨 · ${Math.round(s/60)}분 전`;el.classList.add('on')}
 setInterval(edSaveLabel,5000);
 $('#wundo').addEventListener('click',()=>{if(!UNDO.length)return;REDO.push(edState());edRestore(UNDO.pop())});
