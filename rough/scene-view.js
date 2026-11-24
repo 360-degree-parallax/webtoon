@@ -70,7 +70,7 @@ function stats(bs,P){const el=document.querySelector('.scmeta');if(!el)return;le
   const nd=bs.reduce((n,b)=>n+(b.dialogs||[]).filter(d=>d.text).length,0),nc=bs.reduce((n,b)=>n+(b.captions||[]).length,0),ns=bs.reduce((n,b)=>n+(b.sfx||[]).length,0);
   const tall=P.reduce((h,p)=>h+p.h*(W-60)+defaultPageGap(p),0),screens=Math.max(1,Math.round(tall*390/690/740));
   const hl=P.map((p,k)=>p.vng==='P'?k+1:0).filter(Boolean);const cast={};bs.forEach(b=>(b.dialogs||[]).forEach(d=>{if(d.who&&d.text)cast[d.who]=(cast[d.who]||0)+1}));
-  {const q=document.getElementById('scqty');if(q)q.textContent=bs.length?`${bs.length}컷 · 휴대폰 ${screens}화면`:'';}
+  {const q=document.getElementById('scqty');if(q)q.textContent=bs.length?`${bs.length}컷`:'';}
   st.innerHTML=`<div class="ss-row"><span><b>${bs.length}</b>컷</span><span>대사 <b>${nd}</b></span><span>나레이션 <b>${nc}</b></span><span>효과음 <b>${ns}</b></span>${P.length?`<span>세로 약 <b>${Math.round(tall).toLocaleString()}px</b> · 휴대폰 ${screens}화면</span>`:''}${hl.length?`<span class="ss-hl">★ 하이라이트 ${hl.join('·')}컷</span>`:''}${RE.PREFS?`<span class="ss-pref" title="글 {…}로 엔진 값을 같은 방향으로 3번 이상 고친 것을 다음부터 반영해요">내 취향 반영 중 · <button type="button" class="link" onclick="resetPrefs()">초기화</button></span>`:''}</div>${Object.keys(cast).length?`<div class="ss-cast">${Object.entries(cast).map(([n,k])=>`<span>${face(n,' sm')}${esc(n)} · 대사 ${k}</span>`).join('')}</div>`:''}`}
 // ---------- 작가 취향 학습: 글 {…}로 엔진 값을 고친 기록 → 엔진이 다음부터 그쪽으로(엔진 setPrefs) ----------
 // 기록 키 = 씬 id:컷 자리:항목(마지막 값만). 엔진 원래 값(pre)과 글에 적은 값이 같아도 기록(동의도 근거)
