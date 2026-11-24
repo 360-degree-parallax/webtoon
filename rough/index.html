@@ -2336,7 +2336,7 @@ if(!Array.isArray(SCENES)||!SCENES.length){let old=null;try{old=JSON.parse(local
 SCENES.forEach(sc=>{if(!Array.isArray(sc.pageEdits))sc.pageEdits=[]});
 try{SCUR=Math.min(SCENES.length-1,Math.max(0,+localStorage.getItem('rough-scene-cur')||0))}catch(_){}
 let CUTS=SCENES[SCUR].cuts;
-function saveScenes(){SCENES[SCUR].cuts=CUTS;try{localStorage.setItem('rough-scenes',JSON.stringify(SCENES));localStorage.setItem('rough-scene-cur',SCUR);saveOk();if(typeof autoSnapshot==='function')autoSnapshot();return true}catch(e){saveFail(e,'원고');return false}}
+function saveScenes(){SP_FRESH=null;SCENES[SCUR].cuts=CUTS;try{localStorage.setItem('rough-scenes',JSON.stringify(SCENES));localStorage.setItem('rough-scene-cur',SCUR);saveOk();if(typeof autoSnapshot==='function')autoSnapshot();return true}catch(e){saveFail(e,'원고');return false}}
 // 저장 실패: '저장됨' 대신 실패를 계속 보여 주고, 처음 한 번 알림. 다음 저장이 성공하면 풀림
 let SAVE_FAIL=null;
 function saveFail(e,what){const first=!SAVE_FAIL;SAVE_FAIL={at:Date.now(),what};saveFailLabel();
@@ -2505,10 +2505,15 @@ const WMODE='final';  // 편집 화면은 늘 완성본(등록 그림, 없으면
 try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 예시'}catch(_){$('#wtitle').value='제목 없는 작품'}
 $('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
 // 다른 씬의 컷 계산은 글·고른 레퍼런스·고정값이 같으면 다시 돌리지 않음(레이어 패널·씬 경계 색이 컷마다 불러 무거웠음)
-const SP_CACHE=new Map();
+var SP_CACHE=new Map(),SP_FRESH=null;  // SP_FRESH: 이번 작업 안에서 이미 확인한 씬(같은 작업 안에서 수백 번 불려 확인 비용도 컸음)
+function spStale(){SP_FRESH=null}
 function scenePanels(i){if(i===SCUR)return state.panels;const sc=SCENES[i];if(!sc)return [];
+  if(SP_FRESH?.has(i)&&SP_CACHE.has(i))return SP_CACHE.get(i).v;if(!SP_FRESH){SP_FRESH=new Set();queueMicrotask(spStale)}SP_FRESH.add(i);
   const ck=JSON.stringify([sc.cuts,(sc.pageEdits||[]).map(e=>e?.ref||0),locks,engineChars(),REFS.length,PATS.length]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
   const out=_scenePanels(i);SP_CACHE.set(i,{k:ck,v:out});return out}
+// 처음 편집 화면을 열 때 기다리지 않게: 쉬는 틈에 다른 씬 컷 계산을 미리 해 둠
+(function warmScenes(i=0){if(typeof PATS==='undefined'||!PATS.length||typeof SCENES==='undefined')return setTimeout(warmScenes,600,i);if(i>=SCENES.length)return;
+  (window.requestIdleCallback||(f=>setTimeout(f,50)))(()=>{try{scenePanels(i)}catch(_){}warmScenes(i+1)},{timeout:3000})})();
 function _scenePanels(i){const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
   an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=pickRef(c,SCENES[i].pageEdits,out.length);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
 // 씬 끝 색(sc.endTo): 'next'(기본) 다음 씬 첫 컷 배경으로 이어감 · 'white' 흰색으로 · 'hold' 마지막 컷 색 유지. 마지막 씬은 기본이 흰색
@@ -2546,12 +2551,17 @@ function confirmArtCheck(){const c=artCheck();if(!c.imgs||!c.list.length)return 
     d.innerHTML=`<h3>내보내기 전에 확인해 주세요</h3><p>${c.miss.length?`이미지가 없는 컷 <b>${c.miss.length}개</b>는 러프 그림으로 들어가요.<br>`:''}${c.stale.length?`이미지를 올린 뒤 글이 바뀐 컷 <b>${c.stale.length}개</b>는 예전 그림이 그대로 들어가요.`:''}</p><div class="acts"><button class="btn" data-r="check">먼저 확인하기</button><button class="btn dark" data-r="go">그대로 내보내기</button></div>`;
     d.onclick=e=>{const r=e.target.closest('[data-r]')?.dataset.r;if(!r)return;d.close();if(r==='go')res(true);else{res(false);if(VIEW!=='webtoon')showView('webtoon');ACHK=0;setTimeout(jumpArtCheck,150)}};
     d.oncancel=()=>res(false);d.showModal();d.querySelector('[data-r="go"]').focus()})}
-function renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
+function renderWebtoon(){SP_FRESH=null;if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
     const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':art.svg;
     const lab=art&&WMODE==='final'?(art.kind==='mix'?`이미지 ${art.n}/${ps.length}컷 · 나머지 러프`:ART_LABEL[art.kind]):'';
     return `<section id="ws-${i}" data-page-scene="${i}" style="scroll-margin-top:200px"><div class="scn"><span>${esc(sceneLabel(sc,i))}${lab?' · '+lab:''}</span></div>${body}</section>`});
-  $('#reader').innerHTML=parts.join('');
+  // 바뀐 씬만 갈아 끼움(작업 중인 씬은 끌기 미리보기가 남지 않게 늘 새로). 70컷이면 화면 전체를 다시 만드는 데 0.1초 넘게 걸렸음
+  const R=$('#reader'),olds=[...R.children],prev=R._parts,act=pageSelection?+pageSelection.split(':')[0]:-1;
+  if(prev&&prev.length===parts.length&&olds.length===parts.length&&olds.every((el,i)=>el.id==='ws-'+i)){
+    parts.forEach((h,i)=>{if(h===prev[i]&&i!==act)return;const t=document.createElement('template');t.innerHTML=h;olds[i].replaceWith(t.content)})}
+  else R.innerHTML=parts.join('');
+  R._parts=parts;
   refreshPageTools();
   $('#wstat').textContent=`씬 ${SCENES.length}개 · 컷 ${cuts}개${imgd?` · 이미지 ${imgd}컷 등록`:''}`;renderArtCheck();
   $('#wtoc').innerHTML=SCENES.map((sc,i)=>`<a href="#ws-${i}" data-toc="${i}">${esc(sceneLabel(sc,i))}</a>`).join('');

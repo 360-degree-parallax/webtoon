@@ -108,11 +108,14 @@ reader.addEventListener('pointerdown',e=>{if(!inEdit())return;const g=e.target.c
 // 선택이 바뀌면 레이어 패널도 다시
 {const _sc=selectPageCut;selectPageCut=function(...a){const prev=pageSelection,r=_sc(...a);if(pageSelection!==prev){if(window.layerPart?.key!==pageSelection)window.layerPart=null;if(frameShapeKey&&frameShapeKey!==pageSelection)setFrameShape(null);if(inEdit())editTree()}return r}}
 // 캔버스 ↔ 레이어 패널: 여러 개 고른 식자도 표시, 접어 둔 컷의 식자를 고르면 펼치고, 고른 줄이 패널 밖이면 패널을 굴려 보이게
-window.syncTree=function(){const el=$('#wtoc');if(!el||!inEdit())return;const M=window.RoughWS?.MULTI;
+window.syncTree=function syncTree(){const el=$('#wtoc');if(!el||!inEdit())return;const M=window.RoughWS?.MULTI;
   const sl=selectedLetter&&pageSelection+'|'+selectedLetter.dataset.letter;el.querySelectorAll('.tlrow [data-tlayer]').forEach(b=>b.setAttribute('aria-current',b.dataset.tlayer===sl||!!M?.has(b.dataset.tlayer)));
-  const cur=el.querySelector('.tlrow [aria-current="true"],.tlay[aria-current="true"]')||el.querySelector('[data-tcut][aria-current="true"]');if(!cur)return;
+  const cur=el.querySelector('.tlrow [aria-current="true"],.tlay[aria-current="true"]')||el.querySelector('[data-tcut][aria-current="true"]');if(!cur){syncTree.last='';return}
+  // 고른 것이 바뀌었을 때만, 화면을 그린 다음에 위치를 잼(바로 재면 큰 화면을 다시 계산해 느림)
+  const id=cur.dataset.tcut||cur.dataset.tlayer;if(id===syncTree.last)return;syncTree.last=id;
+  requestAnimationFrame(()=>{const cur=el.querySelector(`[data-tlayer="${CSS.escape(id)}"],[data-tcut="${CSS.escape(id)}"]`);if(!cur)return;
   let sc=el.parentElement;while(sc&&!(sc.scrollHeight>sc.clientHeight&&/(auto|scroll)/.test(getComputedStyle(sc).overflowY)))sc=sc.parentElement;if(!sc||sc===document.body||sc===document.documentElement)return;
-  const r=cur.getBoundingClientRect(),c=sc.getBoundingClientRect(),pad=48;if(r.top<c.top+8)sc.scrollTop-=c.top-r.top+pad;else if(r.bottom>c.bottom-8)sc.scrollTop+=r.bottom-c.bottom+pad};
+  const r=cur.getBoundingClientRect(),c=sc.getBoundingClientRect(),pad=48;if(r.top<c.top+8)sc.scrollTop-=c.top-r.top+pad;else if(r.bottom>c.bottom-8)sc.scrollTop+=r.bottom-c.bottom+pad})};
 {const _et=editTree;editTree=function(...a){const r=_et(...a);window.syncTree();return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const prev=selectedLetter,r=_sl(...a);if(selectedLetter)window.layerPart=null;
   if(selectedLetter&&selectedLetter!==prev&&inEdit()&&SHUT.has(pageSelection)){SHUT.delete(pageSelection);editTree();return r}if(selectedLetter!==prev&&inEdit())$('#wtoc').querySelectorAll('[data-tlayer]').forEach(b=>{const p=b.dataset.tlayer.split('|');b.setAttribute('aria-current',!!selectedLetter&&p[0]===pageSelection&&p[1]===selectedLetter.dataset.letter)});if(selectedLetter!==prev)window.syncTree();return r}}
