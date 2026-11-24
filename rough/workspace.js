@@ -228,7 +228,7 @@ function renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
   else if(tool==='select'&&selectedLetter){const art=selectedLetter.querySelector('[data-balloon]'),kind=/^dialog/.test(selectedLetter.dataset.letter)?'말풍선':/^caption/.test(selectedLetter.dataset.letter)?'나레이션':'효과음';
     mid=`<b>${kind}</b><span class="cb-t">${esc((selectedLetter.dataset.letterText||'').replace(/\s+/g,' ').slice(0,24))}</span><button class="cb" data-ctx="ledit">문구 고치기</button>`+
       (art?`<label>형태 <select data-ctx="lstyle">${[...$('#wballoonstyle').options].map(o=>`<option value="${o.value}"${o.selected?' selected':''}>${esc(o.textContent)}</option>`).join('')}</select></label><label>크기 <input type="range" data-ctx="lsize" min="50" max="200" value="${$('#wballoonsize').value}"><output>${$('#wballoonsize').value}%</output></label>`:'')+
-      (/^(dialog|caption)/.test(selectedLetter.dataset.letter)?`<label>글꼴 <select data-ctx="lfont"><option value="">작품 기본</option>${FONTS.map(([v,f])=>`<option value="${v}"${v===(pageSettings()?.letters?.[selectedLetter.dataset.letter]?.font||'')?' selected':''} style="font-family:${f.family.replace(/"/g,"'")};font-weight:${f.weight}">${f.name}</option>`).join('')}</select></label>`:'')+
+      (/^(dialog|caption)/.test(selectedLetter.dataset.letter)?textTools(pageSettings()?.letters?.[selectedLetter.dataset.letter]||{}):'')+
       `<button class="cb" data-ctx="llock">${isLocked(selectedLetter.closest('[data-slot-index]'),selectedLetter.dataset.letter)?'잠금 풀기':'잠그기'}</button>`}
   else if(tool==='select'&&pageSelection){const s=pageSettings(),g=selGroup();
     mid=`<b>${esc(pageCut.selectedOptions[0]?.textContent||'컷')}</b><label>아래 간격 <input type="number" data-ctx="gap" min="0" max="1600" step="4" value="${s?.gap??''}" placeholder="기본" style="width:64px">px</label>
@@ -378,6 +378,28 @@ drawer.innerHTML=`<div class="wsd-tabs" role="tablist">${DTABS.map(([k,n])=>`<bu
 const miniWrap=mk('wsmini');miniWrap.hidden=true;miniWrap.innerHTML='<div class="wsmini-h"><b>미니맵</b><button class="cb" data-mini="close" aria-label="미니맵 닫기">✕</button></div>';V.querySelector('.edgrid').appendChild(miniWrap);
 let DT=LS('rough-ws-drawer-tab','props');
 function mountOff(){const b=drawer.querySelector('.wsd-body');DTABS.forEach(([k])=>{const el=PANELS[k].el;el.dataset.dt=k;b.appendChild(el)});miniWrap.appendChild(navBody);libBody.remove()}
+// ---------- 글자 꾸밈 도구: 글꼴(가 가 가) · 굵게 · 기울임 · 밑줄 · 글자색 ----------
+const TCOLORS=['#161616','#ffffff','#6b7280','#2f5a3a','#2f6db5','#7a4fb0','#b42318','#c2410c','#8a5a2a','#d6336c'];  // DB 컷에서 본 글자색(검정·흰색·회색·초록(GM)·파랑·보라·빨강·주황·갈색·분홍)
+const ICO={b:'<svg viewBox="0 0 24 24"><path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/></svg>',i:'<svg viewBox="0 0 24 24"><path d="M14 5h-4M14 19h-4M14.5 5l-5 14"/></svg>',u:'<svg viewBox="0 0 24 24"><path d="M7 5v6a5 5 0 0 0 10 0V5M5 20h14"/></svg>'};
+function textTools(o){const cur=o.font||PAGE_PRESET,col=o.color||'#161616';
+  return `<span class="tfonts" role="group" aria-label="글꼴">${Object.entries(FONT_PRESETS).map(([v,f])=>`<button type="button" data-tf="${v}" aria-pressed="${v===cur}" title="${f.name} · ${f.note}" style="font-family:${f.family.replace(/"/g,"'")};font-weight:${f.weight}">가</button>`).join('')}</span>`+
+    `<span class="tdeco" role="group" aria-label="글자 꾸밈"><button type="button" data-td="bold" aria-pressed="${!!o.bold}" title="굵게 (Ctrl+B)">${ICO.b}</button><button type="button" data-td="italic" aria-pressed="${!!o.italic}" title="기울임 (Ctrl+I)">${ICO.i}</button><button type="button" data-td="underline" aria-pressed="${!!o.underline}" title="밑줄 (Ctrl+U)">${ICO.u}</button><button type="button" class="tc" data-tcolor title="글자색"><span><b>A</b><i style="background:${col}"></i></span></button></span>`}
+function setLetterStyle(patch){const L=selectedLetter;if(!L)return;const key=pageKey(L.closest('[data-slot-index]')),id=L.dataset.letter;
+  if(isLocked(L.closest('[data-slot-index]'),id)){flash('잠긴 식자예요');return}
+  withKey(key,()=>{const st=pageSettings(true);const o={...st.letters?.[id],...patch};for(const k of Object.keys(patch))if(patch[k]===null||patch[k]===false||patch[k]==='')delete o[k];(st.letters||={})[id]=o});
+  saveScenes();renderWebtoon();const L2=groupBy(key)?.querySelector(`[data-letter="${CSS.escape(id)}"]`);if(L2)selectLetter(L2)}
+const curStyle=()=>selectedLetter?(pageSettings()?.letters?.[selectedLetter.dataset.letter]||{}):{};
+ctx.addEventListener('click',e=>{const f=e.target.closest('[data-tf]');if(f){setLetterStyle({font:f.dataset.tf===PAGE_PRESET?null:f.dataset.tf});flash(`글꼴: ${FONT_PRESETS[f.dataset.tf].name}`);return}
+  const d=e.target.closest('[data-td]');if(d){const k=d.dataset.td;setLetterStyle({[k]:!curStyle()[k]});return}
+  const c=e.target.closest('[data-tcolor]');if(c){openColorPop(c);return}});
+function openColorPop(anchor){document.querySelector('.tcpop')?.remove();const cur=curStyle().color||'#161616',pop=document.createElement('div');pop.className='tcpop';
+  pop.innerHTML=TCOLORS.map(c=>`<button type="button" data-c="${c}" style="background:${c}" aria-pressed="${c===cur}" aria-label="글자색 ${c}"></button>`).join('')+`<label>직접 고르기 <input type="color" value="${cur}"></label>`;
+  const r=anchor.getBoundingClientRect();Object.assign(pop.style,{left:Math.min(r.left,innerWidth-180)+'px',top:(r.bottom+6)+'px'});document.body.appendChild(pop);
+  const done=c=>{setLetterStyle({color:c==='#161616'?null:c});pop.remove()};
+  pop.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b)done(b.dataset.c)});pop.querySelector('input').addEventListener('change',e=>done(e.target.value));
+  setTimeout(()=>document.addEventListener('pointerdown',function off(e){if(!pop.contains(e.target)){pop.remove();document.removeEventListener('pointerdown',off,true)}},true),0)}
+document.addEventListener('keydown',e=>{if(!inEdit()||!selectedLetter||typing(e.target)||!(e.ctrlKey||e.metaKey)||e.altKey||e.shiftKey)return;if(!/^(dialog|caption)/.test(selectedLetter.dataset.letter))return;
+  const k={b:'bold',i:'italic',u:'underline'}[e.key.toLowerCase()];if(!k)return;e.preventDefault();setLetterStyle({[k]:!curStyle()[k]})});
 function drawerTab(k){DT=k;SS('rough-ws-drawer-tab',k);drawer.querySelectorAll('[data-dt]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dt===k));DTABS.forEach(([t])=>PANELS[t].el.hidden=t!==k);onOpen(k)}
 function setDrawer(on,k){drawer.hidden=!on;SS('rough-ws-drawer',!!on);if(on)drawerTab(k||DT);renderCtx()}
 function openOff(id){if(id==='refs'){assetTab('ref');return}if(id==='library'){assetTab('rec');return}if(id==='nav'){miniWrap.hidden=false;RoughStudio.mini.refresh();return}setDrawer(true,id)}
