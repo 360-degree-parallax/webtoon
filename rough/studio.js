@@ -90,9 +90,12 @@ $('#wtoc').addEventListener('click',e=>{
 // 레이어 패널에서 칸·그림 줄을 고른 상태(Delete가 무엇을 지울지 정함). 다른 컷·식자·캔버스를 누르면 풀림
 window.layerPart=null;
 function LP(k,w){return !!window.layerPart&&window.layerPart.key===k&&window.layerPart.what===w&&!selectedLetter}
-reader.addEventListener('pointerdown',()=>{if(window.layerPart){window.layerPart=null;if(inEdit())editTree()}},true);
+// 캔버스에서 컷 그림을 누르면 레이어 패널의 「그림」 줄을 고른 것으로(패널과 캔버스가 같은 것을 가리키게). 식자·간격·빈 곳은 풀림
+reader.addEventListener('pointerdown',e=>{if(!inEdit())return;const g=e.target.closest('[data-slot-index]');
+  const onArt=g&&!e.target.closest('[data-letter],[data-page-gap],[data-fh],[data-th]');const next=onArt?{key:pageKey(g),what:'art'}:null;
+  if(JSON.stringify(next)!==JSON.stringify(window.layerPart)){window.layerPart=next;setTimeout(editTree,0)}},true);
 // 선택이 바뀌면 레이어 패널도 다시
-{const _sc=selectPageCut;selectPageCut=function(...a){const prev=pageSelection,r=_sc(...a);if(pageSelection!==prev){window.layerPart=null;if(inEdit())editTree()}return r}}
+{const _sc=selectPageCut;selectPageCut=function(...a){const prev=pageSelection,r=_sc(...a);if(pageSelection!==prev){if(window.layerPart?.key!==pageSelection)window.layerPart=null;if(inEdit())editTree()}return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const prev=selectedLetter,r=_sl(...a);if(selectedLetter)window.layerPart=null;if(selectedLetter!==prev&&inEdit())$('#wtoc').querySelectorAll('[data-tlayer]').forEach(b=>{const p=b.dataset.tlayer.split('|');b.setAttribute('aria-current',!!selectedLetter&&p[0]===pageSelection&&p[1]===selectedLetter.dataset.letter)});return r}}
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);if(cropKey&&!groups().some(g=>pageKey(g)===cropKey))cropKey='';markCrop();applyHidden();applyZoom();mini.refresh();return r}}
 

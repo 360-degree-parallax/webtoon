@@ -735,7 +735,8 @@ let tdrag=null,tmode=null; // tmode: 'letter' | 'art'
 const letterScale=L=>{const g=L.closest('[data-slot-index]');const s=withKey(pageKey(g),()=>pageSettings()?.letters?.[L.dataset.letter]?.scale);return +s||1};
 function tTarget(){if(!inEdit()||tool!=='select'||cropKey)return null;
   if(selectedLetter){const art=selectedLetter.querySelector('[data-balloon]');return {mode:'letter',el:art||selectedLetter,box:(art||selectedLetter)}}
-  const g=selGroup();if(g&&!isLocked(g,'cut')){const art=g.querySelector('[data-art]');if(art)return {mode:'art',el:art,g,box:{getBoundingClientRect:()=>frameRect(g)}}}
+  const g=selGroup();if(window.layerPart?.what==='frame'&&window.layerPart.key===pageSelection)return null;  // 칸을 고르면 그림 손잡이 대신 칸 테두리 손잡이만
+  if(g&&!isLocked(g,'cut')){const art=g.querySelector('[data-art]');if(art)return {mode:'art',el:art,g,box:{getBoundingClientRect:()=>frameRect(g)}}}
   return null}
 function frameRect(g){const f=JSON.parse(g.dataset.frame),m=g.ownerSVGElement.getScreenCTM(),a=new DOMPoint(f.x,f.y).matrixTransform(m),b=new DOMPoint(f.x+f.w,f.y+f.h).matrixTransform(m);return {left:a.x,top:a.y,width:b.x-a.x,height:b.y-a.y}}
 function setTbox(r,pad){Object.assign(tbox.style,{left:r.left-pad+'px',top:r.top-pad+'px',width:r.width+pad*2+'px',height:r.height+pad*2+'px'})}
