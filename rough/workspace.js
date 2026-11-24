@@ -148,7 +148,7 @@ const MULTI=new Set();const lkey=L=>pageKey(L.closest('[data-slot-index]'))+'|'+
 const resolve=k=>{const [key,lk]=k.split('|');return groupBy(key)?.querySelector(`[data-letter="${CSS.escape(lk)}"]`)||null};
 function toggleMulti(L){if(selectedLetter&&!MULTI.size&&selectedLetter!==L)MULTI.add(lkey(selectedLetter));const k=lkey(L);MULTI.has(k)?MULTI.delete(k):MULTI.add(k);markMulti();renderCtx();renderAlign()}
 function clearMulti(){MULTI.clear();markMulti();renderCtx();renderAlign()}
-function markMulti(){reader.querySelectorAll('.multi-sel').forEach(x=>x.classList.remove('multi-sel'));[...MULTI].map(resolve).forEach(L=>L&&L.classList.add('multi-sel'))}
+function markMulti(){reader.querySelectorAll('.multi-sel').forEach(x=>x.classList.remove('multi-sel'));[...MULTI].map(resolve).forEach(L=>L&&L.classList.add('multi-sel'));window.syncTree?.()}
 function alignLetters(mode){const items=[...MULTI].map(resolve).filter(Boolean);if(items.length<2)return;
   const svg=items[0].ownerSVGElement,list=items.filter(L=>L.ownerSVGElement===svg);if(list.length<items.length)flash('같은 씬 안의 식자끼리만 정렬해요');
   const sc=svg.viewBox.baseVal.width/svg.getBoundingClientRect().width,R=list.map(L=>L.getBoundingClientRect());
