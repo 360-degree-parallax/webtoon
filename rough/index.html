@@ -842,7 +842,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 @media(max-width:640px){.scpaper .cutlist li{padding:10px 4px 10px 0}.scpaper .cutlist li>.cn{margin-left:6px}.scpaper .cutlist li>.lenbar{margin-left:18px}.scpaper .cutlist li[data-gap]::after{left:48px;right:32px}.cutadd{opacity:.6}}
 
 /* 콘티 = 프롬프트 + 그림 넣기 카드 */
-#v-layout .page{grid-template-columns:minmax(0,1fr);max-width:1040px}#v-layout .pv,#v-layout main>section:not(#conti),#v-layout main>h1,#v-layout main>.desc{display:none}
+#v-layout .page{grid-template-columns:minmax(0,1fr);max-width:1040px}#v-layout .pv,#v-layout main>section:not(#conti):not(#artcard),#v-layout main>h1,#v-layout main>.desc{display:none}
 .ct-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:8px 0 22px}.ct-head h2{font-size:26px;margin:0 0 4px}.ct-head p{margin:0;color:var(--t2);font-size:15px}.ct-head p b{color:var(--t1)}.ct-warn{color:#b45309}
 .ccard{border:1px solid var(--line2);border-radius:14px;background:var(--bg);padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.ccard:focus-within{border-color:rgba(45,113,247,.5);box-shadow:0 0 0 3px rgba(45,113,247,.1)}
 .ccard>header{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}.ct-no{flex:none;width:30px;height:30px;border-radius:15px;display:grid;place-items:center;font-size:12.5px;background:var(--surface);color:var(--t2)}
@@ -1013,7 +1013,24 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   #v-write .scmeta{margin:6px 0 14px;padding-bottom:12px}#v-write .ss-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;font-size:13px}#v-write .ss-row>span{flex:none}
   .scins button{padding:0 8px;gap:4px}.scins button b{min-width:20px;padding:0 3px;background:none}
 }
-.ct-top{display:flex;gap:8px;margin:0 0 20px}
+/* 작화 설정 카드(콘티 맨 위, 작품 전체) */
+.artcard{max-width:none;margin:0 0 28px;padding:24px 28px;background:var(--bg);border:1px solid var(--line2);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.art-h{display:flex;align-items:center;gap:10px;margin-bottom:4px}.art-h h2{margin:0;font-size:22px;font-weight:700}.art-h .grow{flex:1}
+.art-scope{font-size:13px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--tb,#191f28);color:#fff}
+.art-st{margin:0;min-height:0;font-size:13px;color:var(--t2)}.art-st:empty{display:none}
+.artcard section{margin-top:20px}.artcard .sh{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}.artcard .sh h3{display:flex;align-items:center;gap:8px;margin:0;font-size:16px;font-weight:700}
+.artcard .sh h3 i{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--surface,#f2f4f6);font-style:normal;font-size:13px;color:var(--t2)}.artcard .sh>span{font-size:13px;color:var(--t2)}
+.artcard #naistyle{width:100%;min-height:76px;box-sizing:border-box;padding:12px 14px;border:1px solid var(--line2);border-radius:12px;font-size:16px;line-height:1.6;font-family:var(--font);background:var(--bg);color:var(--t1);resize:vertical}
+.art-src{font-style:normal;font-size:12.5px;font-weight:500;margin-left:6px;padding:1px 7px;border-radius:999px;border:1px solid var(--line2);color:var(--t2)}.art-src.auto{border-style:dashed}.art-src:empty{display:none}
+.artcard .naichar{grid-template-columns:32px 120px minmax(0,1fr) auto}.artcard .naichar .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;overflow:hidden;color:#fff;font-size:13px;font-weight:700}.artcard .naichar .av img{width:100%;height:100%;object-fit:cover}
+.artcard .naichar b{display:flex;align-items:center;font-size:15px}.artcard .naichar input{border-radius:10px;font-size:15px}.artcard .naichar .link{font-size:13px;color:var(--t2)}
+.ct-hrow{display:flex;align-items:center;gap:12px}.ct-hrow h2{margin:0}.ct-hrow .grow{flex:1}.ct-hrow .link{font-size:13px;color:var(--t2)}
+.ct-hint{margin:6px 0 0;font-size:13px;color:#b45309}
+.artdlg{width:min(760px,94vw)}.artcmp{display:grid;gap:10px;max-height:60vh;overflow:auto;margin:12px 0}
+.artrow{display:grid;grid-template-columns:22px 110px 1fr 1fr;gap:10px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:12px;font-size:13.5px;line-height:1.5}
+.artrow .was{color:var(--t2);text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)}.artrow .now{color:var(--t1)}.artrow input:disabled~*{opacity:.55}
+@media(max-width:640px){.artcard{padding:18px 16px;border-radius:16px}.artcard #naistyle{min-height:120px}.art-h{flex-wrap:wrap}.artcard .naichar{grid-template-columns:32px 1fr auto}.artcard .naichar input{grid-column:1/-1;grid-row:2}
+  .ct-hrow{flex-wrap:wrap}.artrow{grid-template-columns:22px 1fr}.artrow .was,.artrow .now{grid-column:2}}
 </style>
 </head>
 <body>
@@ -1203,13 +1220,12 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   <h1>작화 <small class="h1sub">NovelAI V4.5 Full</small></h1>
   <p class="desc">NovelAI Diffusion V4.5 Full 기준이에요. 컷마다 기본 프롬프트, 캐릭터 프롬프트와 위치, 해상도, img2img 바탕 이미지, 레퍼런스를 칸별로 나눠 줘요.</p>
   <ol class="psteps"><li><b>1</b>화풍·인물 태그 확인</li><li><b>2</b>컷 카드의 칸을 NovelAI 같은 칸에 복사</li><li><b>3</b>바탕 PNG를 img2img로 올려 생성</li><li><b>4</b>생성 이미지를 컷에 등록</li></ol>
-  <section style="margin-top:28px" id="nsec-style">
-    <div class="sh"><h2>화풍 태그</h2><span>모든 컷의 기본 프롬프트 끝에 붙어요 · 영어 태그, 쉼표로 구분</span></div>
+  <section id="nsec-style">
+    <div class="sh"><h3><i>1</i>화풍 태그<em class="art-src" id="artstylesrc"></em></h3><span>모든 컷 프롬프트 끝에 붙어요</span></div>
     <textarea class="pstyle" id="naistyle" rows="2" aria-label="NovelAI 화풍 태그" placeholder="모든 컷의 기본 프롬프트 끝에 붙는 영어 태그, 쉼표로 구분"></textarea>
-    <p class="hint">NovelAI의 Add Quality Tags는 켜 두는 걸 권해요. 여기 태그는 그 위에 더해져요.</p>
-  </section>
+    </section>
   <section id="nsec-chars">
-    <div class="sh"><h2>인물 태그</h2><span>인물 설정의 외형을 태그로 바꿨어요 · 고치면 이 브라우저에 저장</span></div>
+    <div class="sh"><h3><i>2</i>인물 태그</h3><span>인물마다 모든 컷에 붙는 외형</span></div>
     <div class="naichars" id="naichars"></div>
   </section>
   <section id="nsec-refs">
@@ -3423,19 +3439,47 @@ function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai)retu
     const chars=c.chars.slice(0,6).map((k,n)=>{const old=x.o.chars.find(o=>o.name===k.name)||x.o.chars[n]||{};return{name:k.name,prompt:k.prompt,pos:NAI.cellPos(k.cell)||old.pos||NAI.cellPos('C3'),ref:!!IMG.char[k.name]}});
     return{...x,o:{...x.o,base:c.base,chars,ai:true}}})}
 let naiBusy=false;
+// 작화 설정 값의 출처: 자동(외형 규칙)·생성(Claude)·직접(작가가 고침)
+var ARTGEN;try{ARTGEN=JSON.parse(localStorage.getItem('rough-art-gen')||'{}')}catch(_){ARTGEN={}}ARTGEN.chars||={};
+function artSrc(name,v){if(NAITAGS[name]==null)return '자동';if(ARTGEN.chars[name]===v)return '생성';return ''}
+let artBusy=false;
+async function artGen(){if(artBusy)return;const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
+  if(!chars.length&&!worldBrief()?.name){toast('캐릭터나 세계관을 먼저 적어 주세요');return}
+  if(!AIKEY){openKey(artGen);return}
+  const st=t=>{const e=$('#artst');if(e)e.textContent=t};artBusy=true;const btn=document.querySelector('[data-act="artgen"]');if(btn)btn.disabled=true;
+  const payload={world:worldBrief(),style:NAISTYLE===NAI_STYLE_DEF?'':NAISTYLE,chars:chars.map(c=>({name:c.name,gender:c.body==='male'?'male':'female',look:c.look||'',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', ')}))};
+  let mod;try{mod=await import('./claude.js');const r=await mod.genArt(AIKEY,payload,{onStatus:st});st('');artCompare(r,chars)}
+  catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';st(m);if(err?.status===401){setKey('',null);openKey(artGen,m)}}
+  finally{artBusy=false;if(btn)btn.disabled=false}}
+// 바로 덮어쓰지 않고 지금/제안을 나란히: 작가가 직접 고친 값은 기본으로 체크 해제
+function artCompare(r,chars){let d=$('#artdlg');if(!d){d=document.createElement('dialog');d.id='artdlg';d.className='keydlg artdlg';document.body.appendChild(d)}
+  const rows=[{k:'style',name:'화풍 태그',cur:NAISTYLE,next:(r.style||'').trim(),on:NAISTYLE===NAI_STYLE_DEF||ARTGEN.style===NAISTYLE}];
+  for(const x of r.chars||[]){const c=chars.find(c=>c.name===x.name);if(!c)continue;const cur=NAITAGS[c.name]??NAI.lookTags(c.look).join(', ');rows.push({k:'c:'+c.name,name:c.name,cur,next:(x.tags||'').trim(),on:artSrc(c.name,cur)!==''})}
+  d.innerHTML=`<h3>작화 프롬프트 제안</h3><p>체크한 것만 바꿔요. 직접 고친 값은 체크를 풀어 두었어요.</p><div class="artcmp">${rows.map((x,n)=>`<label class="artrow"><input type="checkbox" data-n="${n}"${x.on&&x.next&&x.next!==x.cur?' checked':''}${!x.next||x.next===x.cur?' disabled':''}><b>${esc(x.name)}</b><span class="was">${esc(x.cur||'(비어 있음)')}</span><span class="now">${esc(x.next||'(제안 없음)')}</span></label>`).join('')}</div><div class="btnrow"><button class="btn" data-r="no">취소</button><button class="btn dark" data-r="go">적용</button></div>`;
+  d.onclick=e=>{const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;
+    if(k==='go'){let n=0;d.querySelectorAll('input[data-n]:checked').forEach(i=>{const x=rows[+i.dataset.n];n++;
+        if(x.k==='style'){NAISTYLE=x.next;ARTGEN.style=x.next;try{localStorage.setItem('rough-nai-style',NAISTYLE)}catch(_){}}
+        else{const nm=x.k.slice(2);NAITAGS[nm]=x.next;ARTGEN.chars[nm]=x.next}});
+      saveNaiTags();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}$('#naistyle').value=NAISTYLE;renderNai();toast(n?`작화 프롬프트 ${n}개를 바꿨어요 · 컷 프롬프트 생성을 다시 누르면 컷에도 반영돼요`:'바꾼 것이 없어요',2600)}
+    d.close()};d.showModal()}
 async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}
   if(!AIKEY){openKey(naiRefine);return}const st=t=>$('#naist').textContent=t;naiBusy=true;$('#naibtn').disabled=true;const sid=SCENES[SCUR].id,payload=naiPayload();
   let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,payload,{onStatus:st});
     AIN[sid]={sig:sigOf(payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
-    NAIVIEW='ai';st(`다듬었어요 · ${r.model}`);toast(`Claude로 다듬었어요 · 컷 줄의 '프롬프트'에서 확인`,2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
+    NAIVIEW='ai';st(`컷 프롬프트를 만들었어요 · ${r.model}`);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';st(m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false}}
 $('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;NAIVIEW=b.dataset.v;renderNai()});
 // 전체 복사: 기본 프롬프트와 캐릭터 프롬프트만, 각 줄 끝에 쉼표, 빈 줄로 구분
-const naiCopy=o=>[o.base,...o.chars.map(c=>c.prompt)].map(t=>t.trim().replace(/,\s*$/,'')+',').join('\n\n');
-function naiText(){const L=naiCuts();return L.map(({p,i,o})=>NAI.text(o,i,L.length,cutHead(p,i))).join('\n\n────────\n\n')}
+// 같은 태그가 두 번 들어가면(예: 1girl, 1girl) 한 번만
+const tagDedup=t=>{const seen=new Set();return String(t).split(',').map(x=>x.trim()).filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())).join(', ')};
+const naiCopy=o=>[o.base,...o.chars.map(c=>c.prompt)].map(t=>tagDedup(t)+',').join('\n\n');
+// 저장: 설명 없이 프롬프트만(컷 하나 = 기본 + 인물 프롬프트를 빈 줄로, 컷 사이는 빈 줄 두 개)
+function naiText(){return naiCuts().map(({o})=>naiCopy(o)).join('\n\n\n')+'\n'}
 function renderNai(){if(VIEW==='layout')setTimeout(renderConti);$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
-  $('#naichars').innerHTML=chars.length?chars.map(c=>`<div class="naichar"><b>${esc(c.name)}</b><input data-naitag="${esc(c.name)}" value="${esc(NAITAGS[c.name]??NAI.lookTags(c.look).join(', '))}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="btn" data-act="naireset" data-n="${esc(c.name)}">외형에서 다시</button></div>`).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
+  $('#naichars').innerHTML=chars.length?chars.map(c=>{const v=NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),src=artSrc(c.name,v),im=IMG.char[c.name];
+    return `<div class="naichar"><span class="av" style="${im?'':`background:${avBg(c.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(c.name.slice(0,1))}</span><b>${esc(c.name)}${src?`<em class="art-src${src==='자동'?' auto':''}">${src}</em>`:''}</b><input data-naitag="${esc(c.name)}" value="${esc(v)}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="link" data-act="naireset" data-n="${esc(c.name)}" title="외형 글에서 규칙으로 다시 만들기">외형에서 다시</button></div>`}).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
+  {const e=$('#artstylesrc');if(e){const t=NAISTYLE===NAI_STYLE_DEF?'기본':ARTGEN.style===NAISTYLE?'생성':'';e.textContent=t;e.className='art-src'+(t==='기본'?' auto':'')}}
   const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
   $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="write">씬에서 이미지 등록</button>`;
   const ai=ainFor();$('#naiview').hidden=!ai;document.querySelectorAll('#naiview button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===NAIVIEW));
@@ -3459,9 +3503,9 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const L=naiCuts(),done=cutCount(SCUR,ps),ai=ainFor(),dim=new Set(String(NAISTYLE||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
-  // 맨 위: 작화 설정 · Claude로 다듬기 두 개만(여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로, 프롬프트 txt는 작화 설정 안에)
-  const head=`<div class="ct-tools ct-top"><button class="tpill" data-act="naiset" aria-expanded="false">작화 설정</button><button class="tpill gray" data-act="nairefine">Claude로 다듬기</button></div><div class="ct-head"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2>
-    <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">글이 바뀌어 Claude 프롬프트가 예전 것이에요</span>':' · Claude로 다듬은 프롬프트예요'):''}</p>
+  // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+    <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">글이나 작화 설정이 바뀌어 컷 프롬프트가 예전 것이에요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
     <nav class="ct-nav" aria-label="컷 이동"><div class="ct-dots">${L.map(({i})=>`<button type="button" class="ct-dot${has[i]?' on':''}${i===CT_CUR?' cur':''}" data-ctgo="${i}" title="${i+1}번 컷 · ${has[i]?'그림 있음':'그림 없음'}">${has[i]?'✓':i+1}</button>`).join('')}</div>
@@ -3510,15 +3554,17 @@ function openStale(i){const p=state.panels[i],r=IMG.cut[cutId(SCENES[SCUR].id,i)
   d.showModal()}
 // Claude 실행 확인: 실행·전송을 정하는 자리에서 모델과 보내는 내용을 보여 줌
 function confirmRefine(){let d=$('#refinedlg');if(!d){d=document.createElement('dialog');d.id='refinedlg';d.className='keydlg';document.body.appendChild(d)}
-  d.innerHTML=`<h3>Claude로 다듬기</h3><p>씬 전체를 읽고 연속성·위치·소품을 추론해 태그와 캐릭터 위치를 다시 짜요.</p><ul class="refinel"><li><b>모델</b>Claude Opus 5.5 (내 API 키)</li><li><b>보내는 것</b>이 씬의 컷 글 · 인물 태그 · 화풍 태그</li><li><b>보내지 않는 것</b>이미지 · 다른 씬</li><li><b>API 키</b>${AIKEY?'입력됨':'없음 — 먼저 입력해 주세요'}</li></ul><div class="acts"><button class="btn" data-r="x">닫기</button>${AIKEY?'':'<button class="btn" data-r="key">API 키 입력</button>'}<button class="btn dark" data-r="go"${AIKEY?'':' disabled'}>실행</button></div>`;
+  d.innerHTML=`<h3>컷 프롬프트 생성</h3><p>씬 전체를 읽고 연속성·위치·소품을 추론해 컷마다 태그와 인물 위치를 다시 짜요.</p><ul class="refinel"><li><b>모델</b>Claude Opus 5.5 (내 API 키)</li><li><b>보내는 것</b>이 씬의 컷 글 · 인물 태그 · 화풍 태그</li><li><b>보내지 않는 것</b>이미지 · 다른 씬</li><li><b>API 키</b>${AIKEY?'입력됨':'없음 — 먼저 입력해 주세요'}</li></ul><div class="acts"><button class="btn" data-r="x">닫기</button>${AIKEY?'':'<button class="btn" data-r="key">API 키 입력</button>'}<button class="btn dark" data-r="go"${AIKEY?'':' disabled'}>실행</button></div>`;
   d.onclick=e=>{const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;d.close();if(k==='key')openKey(null);if(k==='go')naiRefine()};d.showModal()}
 // C안: 설정 섹션을 '작화 설정' 서랍으로 옮기고, 위에 상태·도구 막대
 // 작화 설정 서랍(화풍·인물 태그·장면 이미지·Claude 다듬기): 콘티 화면에 붙임. 작화 단계는 콘티에 합침
-{const dr=document.createElement('aside');dr.className='naidrawer';dr.id='naidrawer';dr.hidden=true;dr.setAttribute('aria-label','작화 설정');dr.innerHTML='<div class="sh"><h2>작화 설정</h2><button class="btn sm" data-act="naiset">닫기</button></div><p class="model">모델 · NovelAI Diffusion V4.5 Full</p>';
-  ['#nsec-style','#nsec-chars','#nsec-imgs','#nsec-ai'].forEach(q=>dr.appendChild($(q)));dr.querySelector('#nsec-ai').appendChild($('#naiview'));{const t=document.createElement('section');t.innerHTML='<div class="sh"><h2>프롬프트 내보내기</h2></div><button class="btn" data-act="naidown">모든 컷 프롬프트 txt 저장</button>';dr.appendChild(t)}
-  dr.querySelector('#nsec-style .hint')?.classList.add('small');$('#v-layout').appendChild(dr);
-  document.addEventListener('click',e=>{if(e.target.closest('[data-act="naiset"]')){dr.hidden=!dr.hidden;document.querySelectorAll('[data-act="naiset"][aria-expanded]').forEach(b=>b.setAttribute('aria-expanded',!dr.hidden))}});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!dr.hidden){dr.hidden=true}})}
+// 작화 설정: 콘티 맨 위에 늘 펼쳐 둠(작품 전체에 걸리는 값이라 컷보다 위계가 높음). 화풍 태그 → 인물 태그
+{const card=document.createElement('section');card.className='artcard';card.id='artcard';card.setAttribute('aria-label','작화 설정');
+  card.innerHTML='<div class="art-h"><h2>작화 설정</h2><span class="art-scope">작품 전체</span><span class="grow"></span><button class="tpill" data-act="artgen">작화 프롬프트 생성</button></div><p class="art-st" id="artst" aria-live="polite"></p>';
+  card.appendChild($('#nsec-style'));card.appendChild($('#nsec-chars'));
+  // 쓰지 않는 옛 섹션은 숨겨 두기(다른 코드가 id로 찾음)
+  const hold=document.createElement('div');hold.hidden=true;['#nsec-refs','#nsec-imgs','#nsec-ai'].forEach(q=>{const x=$(q);if(x)hold.appendChild(x)});hold.querySelector('#nsec-ai')?.appendChild($('#naiview'));card.appendChild(hold);
+  $('#conti').before(card)}
 // img2img 바탕: 이 컷의 러프를 NovelAI 해상도로 (밑그림 레퍼런스 사진은 빼고 선만)
 // img2img 바탕: 이 컷의 원본 레퍼런스(그림 영역만, 흑백)를 NovelAI 해상도로. 레퍼런스가 없으면 만들지 않음
 async function naiBase(i){const p=state.panels[i];if(!p)return;if(!p.ref){toast('이 컷은 맞는 레퍼런스가 없어 바탕 PNG를 만들 수 없어요');return}
@@ -3534,6 +3580,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   if(a==='nprompt'){const c=el.closest('.pcard'),b=c.querySelector('.nprompt');b.hidden=!b.hidden;el.setAttribute('aria-expanded',!b.hidden);el.textContent=b.hidden?'프롬프트':'프롬프트 접기';return}
   if(a==='ncopy')copyText(el.closest('.nf').querySelector('pre').textContent);
   else if(a==='ncopyall'){const i=+(el.dataset.i??el.closest('.pcard').querySelector('[data-cutslot]').dataset.cutslot);copyText(naiCopy(naiCuts()[i].o))}
+  else if(a==='artgen')artGen();
   else if(a==='naidown'){download(`${sceneLabel(SCENES[SCUR],SCUR)}-novelai.txt`,URL.createObjectURL(new Blob([naiText()],{type:'text/plain'})));toast('txt로 저장했어요')}
   else if(a==='naimulti'){target=null;$('#filem').click()}
   else if(a==='naibase')naiBase(+el.dataset.i);

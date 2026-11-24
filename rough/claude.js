@@ -132,6 +132,37 @@ export async function refineNai(apiKey, payload, { onStatus } = {}) {
   return { cuts: r.out.cuts, model: r.model, usage: r.usage };
 }
 
+
+// 작화 프롬프트 생성: 세계관·인물 외형 → NovelAI 화풍 태그 + 인물별 외형 태그(모든 컷에 공통으로 붙는 값)
+const SYSTEM_ART = `너는 NovelAI Diffusion V4.5용 태그를 짓는 웹툰 작화 감독이다.
+입력은 작품의 세계관과 등장인물(이름·성별·외형 글·지금 태그)이다. 모든 컷에 공통으로 붙일 두 가지를 만든다.
+
+1) style: 화풍 태그. 영어 태그를 쉼표로, 8~16개.
+- 웹툰 채색 방식, 선 굵기, 명암 처리, 색감, 질감, 시대·장르 분위기를 고른다(예: korean webtoon, soft shading, thin lineart, muted colors).
+- 인물·장소·표정·구도 태그는 넣지 않는다. masterpiece·best quality 같은 품질 태그도 넣지 않는다.
+2) chars: 인물마다 외형 태그. 영어 태그를 쉼표로, 10~20개.
+- 1girl·1boy 같은 인원 태그는 넣지 않는다(컷 프롬프트가 컷마다 붙인다).
+- 머리 색·길이·모양, 눈 색, 나이대 느낌, 체형, 늘 입는 옷과 장신구, 흉터·안경 같은 고정 특징만.
+- 표정·자세·동작·장소·조명은 넣지 않는다(컷마다 바뀌는 값이라 컷 프롬프트에서 정함).
+- 외형 글에 없는 것은 세계관(시대·장르)에 어울리게 정하되, 외형 글과 모순되게 지어내지 않는다.
+- 지금 태그가 있으면 그 내용을 살리면서 빠진 고정 특징을 채우고 다듬는다.
+
+입력에 있는 인물만, 같은 이름으로 돌려준다. 설명 문장 없이 태그만.`;
+const SCHEMA_ART = {
+  type: 'object',
+  properties: {
+    style: { type: 'string' },
+    chars: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, tags: { type: 'string' } }, required: ['name', 'tags'], additionalProperties: false } },
+  },
+  required: ['style', 'chars'],
+  additionalProperties: false,
+};
+// payload: { world:{...}, style, chars:[{name, gender, look, tags}] }
+export async function genArt(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, SYSTEM_ART, SCHEMA_ART, `다음 작품의 화풍 태그와 인물 외형 태그를 만들어줘.\n\n${JSON.stringify(payload, null, 1)}`, s => onStatus?.(s.replace('씬을 읽는', '설정을 읽는')));
+  return { style: r.out.style, chars: r.out.chars, model: r.model };
+}
+
 export function explain(err) {
   if (err instanceof Anthropic.AuthenticationError) return 'API 키가 맞지 않아요';
   if (err instanceof Anthropic.PermissionDeniedError) return '이 키로는 Claude Opus 5.5를 쓸 수 없어요';
