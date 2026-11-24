@@ -228,6 +228,7 @@ function renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
   else if(tool==='select'&&selectedLetter){const art=selectedLetter.querySelector('[data-balloon]'),kind=/^dialog/.test(selectedLetter.dataset.letter)?'말풍선':/^caption/.test(selectedLetter.dataset.letter)?'나레이션':'효과음';
     mid=`<b>${kind}</b><span class="cb-t">${esc((selectedLetter.dataset.letterText||'').replace(/\s+/g,' ').slice(0,24))}</span><button class="cb" data-ctx="ledit">문구 고치기</button>`+
       (art?`<label>형태 <select data-ctx="lstyle">${[...$('#wballoonstyle').options].map(o=>`<option value="${o.value}"${o.selected?' selected':''}>${esc(o.textContent)}</option>`).join('')}</select></label><label>크기 <input type="range" data-ctx="lsize" min="50" max="200" value="${$('#wballoonsize').value}"><output>${$('#wballoonsize').value}%</output></label>`:'')+
+      (/^(dialog|caption)/.test(selectedLetter.dataset.letter)?`<label>글꼴 <select data-ctx="lfont"><option value="">작품 기본</option>${FONTS.map(([v,f])=>`<option value="${v}"${v===(pageSettings()?.letters?.[selectedLetter.dataset.letter]?.font||'')?' selected':''} style="font-family:${f.family.replace(/"/g,"'")};font-weight:${f.weight}">${f.name}</option>`).join('')}</select></label>`:'')+
       `<button class="cb" data-ctx="llock">${isLocked(selectedLetter.closest('[data-slot-index]'),selectedLetter.dataset.letter)?'잠금 풀기':'잠그기'}</button>`}
   else if(tool==='select'&&pageSelection){const s=pageSettings(),g=selGroup();
     mid=`<b>${esc(pageCut.selectedOptions[0]?.textContent||'컷')}</b><label>아래 간격 <input type="number" data-ctx="gap" min="0" max="1600" step="4" value="${s?.gap??''}" placeholder="기본" style="width:64px">px</label>
@@ -237,6 +238,7 @@ function renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
   ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;}
 ctx.addEventListener('change',e=>{const c=e.target.dataset.ctx;
   if(c==='bstyle'){opt.balloon=e.target.value;SS('rough-tool-balloon',opt.balloon)}
+  if(c==='lfont'&&selectedLetter){const L=selectedLetter,key=pageKey(L.closest('[data-slot-index]')),id=L.dataset.letter,v=e.target.value;withKey(key,()=>{const st=pageSettings(true);const o={...st.letters?.[id]};if(v)o.font=v;else delete o.font;(st.letters||={})[id]=o});saveScenes();renderWebtoon();const L2=groupBy(key)?.querySelector(`[data-letter="${CSS.escape(id)}"]`);if(L2)selectLetter(L2);flash(v?`글꼴: ${FONT_PRESETS[v].name}`:'글꼴: 작품 기본')}
   if(c==='lstyle'){const s=$('#wballoonstyle');s.value=e.target.value;s.dispatchEvent(new Event('change'))}
   if(c==='gap'&&pageSelection){const s=pageSettings(true),v=e.target.value;if(v==='')delete s.gap;else s.gap=clamp(Math.round(+v),0,1600);saveScenes();renderWebtoon()}
   if(c==='zoom'){const z=$('#wzoom');z.value=e.target.value;z.dispatchEvent(new Event('change'))}
@@ -288,8 +290,8 @@ histBody.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
 {const _eb=edButtons;edButtons=function(...a){const r=_eb(...a);renderHistory();return r}}
 
 // ---------- 글자 ----------
-const FONTS=[['Pretendard,system-ui,sans-serif','프리텐다드 (기본)'],['"Noto Serif KR","Nanum Myeongjo",AppleMyungjo,Batang,serif','명조'],['"NanumSquareRound","Nanum Gothic","Apple SD Gothic Neo",sans-serif','둥근 고딕'],['"Nanum Pen Script","Gaegu",cursive','손글씨']];
-function renderText(){textBody.innerHTML=`<label class="wsf"><span>글꼴</span><select id="wsfont">${FONTS.map(([v,n])=>`<option value='${v}'${v===PAGE_FONT?' selected':''}>${n}</option>`).join('')}</select></label>
+const FONTS=Object.entries(FONT_PRESETS);  // [id,{name,note,...}]
+function renderText(){textBody.innerHTML=`<label class="wsf"><span>작품 기본 글꼴</span><select id="wsfont"><option value="">자동 (말풍선 모양 따라)</option>${FONTS.map(([v,f])=>`<option value='${v}'${v===PAGE_PRESET?' selected':''}>${f.name} · ${f.note}</option>`).join('')}</select></label>
   <p class="wsn">이 기기에 설치된 글꼴로 보이고, 내보내기 파일에도 같은 글꼴 이름이 들어가요.</p>
   <label class="wsf"><span>범위</span><select id="wsscope"><option value="scene">선택한 씬</option><option value="all">모든 씬</option></select></label>
   <label class="wsf"><span>말풍선 크기</span><input type="range" id="wsbsize" min="50" max="200" value="100"><output id="wsbsizev">100%</output></label>
@@ -299,7 +301,7 @@ function applyAll(edit){const scope=$('#wsscope')?.value||'scene',sc=pageSelecti
   const list=[...reader.querySelectorAll('[data-letter^="dialog-"]')].filter(L=>scope==='all'||L.closest('section').dataset.pageScene===sc);
   let n=0;list.forEach(L=>{const g=L.closest('[data-slot-index]');if(isLocked(g,L.dataset.letter))return;withKey(pageKey(g),()=>saveLetter(L,edit));n++});
   renderWebtoon();flash(`말풍선 ${n}개에 적용했어요`)}
-textBody.addEventListener('change',e=>{if(e.target.id==='wsfont'){PAGE_FONT=e.target.value;try{localStorage.setItem('rough-page-font',PAGE_FONT)}catch(_){}renderWebtoon();flash('글꼴을 바꿨어요')}});
+textBody.addEventListener('change',e=>{if(e.target.id==='wsfont'){PAGE_PRESET=e.target.value;try{localStorage.setItem('rough-page-preset',PAGE_PRESET)}catch(_){}renderWebtoon();flash(PAGE_PRESET?`작품 기본 글꼴: ${FONT_PRESETS[PAGE_PRESET].name}`:'글꼴을 자동으로')}});
 textBody.addEventListener('input',e=>{if(e.target.id==='wsbsize')$('#wsbsizev').textContent=e.target.value+'%'});
 textBody.addEventListener('click',e=>{const a=e.target.closest('[data-text]')?.dataset.text;
   if(a==='size')applyAll({scale:+$('#wsbsize').value/100});

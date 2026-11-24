@@ -8,6 +8,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self' data: blob: https://api.anthropic.com; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>러프 메이커</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/gowun-batang@5.3.0/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/gowun-batang@5.3.0/700.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nanum-pen-script@5.3.0/400.css">
 <style>
 :root{
   --font:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo",system-ui,sans-serif;
@@ -1399,12 +1402,20 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script src="sfx.js"></script>
 <script src="materials.js"></script>
 <script src="image-materials.js"></script>
-<script src="export.js?v=20261123-text-ctm"></script>
+<script src="export.js?v=20261124-fonts"></script>
 <script>
 // UX 시안(docs/ux-brief-plan.md): 기본은 채택안 C(컷 우선). ?ux=A(예전 화면) · B(문구 정리)는 사람 확인이 끝날 때까지 비교용으로 남김
 const UX='C';document.documentElement.dataset.ux=UX;  // 화면 비교안(?ux=A/B/C)은 정리됨. 남은 코드 호환용 상수
 const W=690;
-let PAGE_FONT='Pretendard,system-ui,sans-serif';try{PAGE_FONT=localStorage.getItem('rough-page-font')||PAGE_FONT}catch(_){}const $=s=>document.querySelector(s);const RE=window.RoughEngine;
+// 식자 글꼴 5종: 연출 DB 컷(DN·GM·HC·HN·MD 말풍선 80장)을 보고 고름. 모두 OFL 웹 글꼴(jsDelivr, 쓰는 글자 조각만 받음)
+const FONT_PRESETS={
+  gothic:{name:'기본 고딕',note:'DN·MD 대사',family:'"Pretendard Variable",Pretendard,sans-serif',weight:500,ls:-0.3},
+  narrow:{name:'좁은 고딕',note:'GM·HC 대사',family:'"Pretendard Variable",Pretendard,sans-serif',weight:600,ls:-1.6},
+  batang:{name:'바탕',note:'HN 대사 · 로판 톤',family:'"Gowun Batang","Noto Serif KR",serif',weight:700,ls:-0.4},
+  bold:{name:'굵은 강조',note:'외침 · 효과',family:'"Pretendard Variable",Pretendard,sans-serif',weight:800,ls:-0.6},
+  pen:{name:'손글씨',note:'혼잣말 · 메모',family:'"Nanum Pen Script",cursive',weight:400,ls:0,size:1.4}};
+const fontPreset=id=>FONT_PRESETS[id]||null;
+let PAGE_FONT='Pretendard,system-ui,sans-serif';let PAGE_PRESET='';try{PAGE_PRESET=localStorage.getItem('rough-page-preset')||''}catch(_){}try{PAGE_FONT=localStorage.getItem('rough-page-font')||PAGE_FONT}catch(_){}const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const CUT_BASE='cuts/',FIX_BASE='cuts-fixed/'; // 원본 / 피그마에서 말풍선 정리한 수정본(같은 경로·같은 이름)
 const LEN=[['짧게',.6],['보통',1],['길게',1.5],['아주 길게',2.2]];
@@ -1698,7 +1709,8 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
     [lines.slice(0,midpoint),lines.slice(midpoint)]:[lines[0].slice(0,Math.ceil(lines[0].length/2)),lines[0].slice(Math.ceil(lines[0].length/2))].map(line=>[line]);
   const rows=Math.max(...groups.map(group=>group.length));
   const nominal=(small?16:punch?26:21)*k;
-  const fs=edited?Math.min(nominal,box.h*.5/(rows*1.4+2.6)):nominal,lh=fs*1.4;
+  const FP=fontPreset(edit?.font)||fontPreset(PAGE_PRESET);
+  const fs=(edited?Math.min(nominal,box.h*.5/(rows*1.4+2.6)):nominal)*(FP?.size||1),lh=fs*1.4;
   const tw=Math.max(...groups.flat().map(l=>l.length))*fs*.98,th=rows*lh;
   // bw·bh: 편집 화면 옆 손잡이로 늘린 가로·세로(px). 글자 크기는 그대로, 상자만
   const rx=Math.max(tw/2+fs*1.5,fs*3.2)+(edit?.bw||0)/2;
@@ -1720,11 +1732,12 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
   const body=styled?.body||`<path d="${path}" fill="${LT.paper}" stroke="${LT.ink}" stroke-width="${sw}" stroke-linejoin="round"/><path d="${path}" fill="none" stroke="${LT.ink}" stroke-width="${sw*.5}" opacity=".45" transform="translate(${(.8*k).toFixed(1)} ${(-.6*k).toFixed(1)})"/>`;
   // 꼬리 위에 몸통을 다시 덮어 이음새를 지움
   const cover=!showTail||kind==='thought'?'':styled?.cover||`<path d="${path}" fill="${LT.paper}" stroke="none"/>`;
-  const serif=preset?.[0]==='narration'?` font-family="${esc(PAGE_FONT)}"`:'';
-  const weight=['pressure','torn'].includes(preset?.[0])||punch?800:preset?.[0]==='whisper'?400:500;
+  const serif=FP?` font-family='${FP.family}'`:preset?.[0]==='narration'?` font-family="${esc(PAGE_FONT)}"`:'';
+  const autoW=['pressure','torn'].includes(preset?.[0])||punch?800:preset?.[0]==='whisper'?400:500;
+  const weight=edit?.font&&FP?FP.weight:FP&&autoW===500?FP.weight:autoW;  // 직접 고른 글꼴이 우선, 아니면 모양·강도에 따른 굵기
   const text=groups.map((group,j)=>{
     const x=cx+(linked?(j?.85:-.76)*rx:0),y=cy+(linked?(j?.81:-.73)*ry:0);
-    return group.map((l,n)=>`<text x="${x.toFixed(1)}" y="${(y-group.length*lh/2+lh*(n+.72)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="${weight}" text-anchor="middle" fill="${LT.text}"${serif} letter-spacing="-0.3">${esc(l)}</text>`).join('');
+    return group.map((l,n)=>`<text x="${x.toFixed(1)}" y="${(y-group.length*lh/2+lh*(n+.72)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="${weight}" text-anchor="middle" fill="${LT.text}"${serif} letter-spacing="${FP?FP.ls*k:-0.3}">${esc(l)}</text>`).join('');
   }).join('');
   const scale=edit?.scale||1;
   if(!interactive&&scale===1)return body+tail.svg+cover+text;
@@ -1736,12 +1749,13 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
 function captionSVG(t,p,box,first,edit,n=0){
   const k=box.w/630,edited=typeof edit?.text==='string';
   const wrapped=wrapLetter(t,16,edited),lines=edited?wrapped:wrapped.slice(0,3);
-  const fs=edited?Math.min(19*k,box.h*.48/(lines.length*1.5+1.6)):19*k,lh=fs*1.5;
+  const FP=fontPreset(edit?.font)||fontPreset(PAGE_PRESET);
+  const fs=(edited?Math.min(19*k,box.h*.48/(lines.length*1.5+1.6)):19*k)*(FP?.size||1),lh=fs*1.5;
   const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
   const style=/그날|이후|후|전|밤|아침|저녁|년|일 뒤|며칠|다음 날|그때/.test(t)&&(first||p.role==='설정'||p.role==='전환')?'deco':(p.vng==='R'||p.shot==='효과 배경')?'plain':'box';
   const bw=edit?.bw||0,bh=edit?.bh||0,w=Math.max(tw+fs*.8,tw+fs*2.6+bw),h=Math.max(th+fs*.6,th+fs*1.6+bh),x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06)-n*(h+10*k);  // 두 번째부터는 위로 쌓음
-  const txt=(fill,extra='')=>lines.map((l,n)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+(h-th-fs*1.6)/2+fs*.8+lh*(n+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" text-anchor="middle" fill="${fill}"${extra}>${esc(l)}</text>`).join('');
-  if(edit?.style==='narration')return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#161616" stroke-width="${1.8*k}"/>`+txt('#24201c',` font-family="${esc(PAGE_FONT)}"`);
+  const txt=(fill,extra='')=>lines.map((l,n)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+(h-th-fs*1.6)/2+fs*.8+lh*(n+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="${FP?Math.max(FP.weight,FP.weight===400?400:600):600}" text-anchor="middle" fill="${fill}"${FP?` font-family='${FP.family}' letter-spacing="${FP.ls*k}"`:''}${extra}>${esc(l)}</text>`).join('');
+  if(edit?.style==='narration')return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#161616" stroke-width="${1.8*k}"/>`+txt('#24201c',FP?'':` font-family="${esc(PAGE_FONT)}"`);
   if(style==='plain')return txt('#f7f2e6',` stroke="rgba(20,16,12,.55)" stroke-width="${3*k}" paint-order="stroke"`);
   if(style==='deco'){const leaf=(cx,cy,r)=>`<path d="M${cx} ${cy} q${4*k*r} ${-6*k} ${9*k*r} ${-3*k} q${-3*k*r} ${5*k} ${-9*k*r} ${3*k}z" fill="#2f5a3a"/>`;
     return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#86c99c" stroke="#2f5a3a" stroke-width="${2*k}"/><rect x="${x+4*k}" y="${y+4*k}" width="${w-8*k}" height="${h-8*k}" fill="none" stroke="#2f5a3a" stroke-width="${1*k}" opacity=".6"/>`+

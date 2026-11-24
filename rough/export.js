@@ -157,7 +157,7 @@ function textLayer(name,r,texts,M=[1,0,0,1,0,0]){if(!r)return null;const t0=text
   const fs=num(t0,'font-size',20)*sc,x=M[0]*x0+M[2]*y0+M[4],y=M[1]*x0+M[3]*y0+M[5],lead=(texts.length>1?num(texts[1],'y')-y0:num(t0,'font-size',20)*1.3)*sc;
   const hex=(t0.getAttribute('fill')||'#000000').replace('#',''),rgb={r:parseInt(hex.slice(0,2),16)||0,g:parseInt(hex.slice(2,4),16)||0,b:parseInt(hex.slice(4,6),16)||0};
   const anchor=t0.getAttribute('text-anchor'),just=anchor==='middle'?'center':anchor==='end'?'right':'left',w=+t0.getAttribute('font-weight')||400;
-  const font=(PAGE_FONT||'Pretendard').split(',')[0].replace(/["']/g,'').trim();
+  const font=(t0.getAttribute('font-family')||t0.closest('[font-family]')?.getAttribute('font-family')||PAGE_FONT||'Pretendard').split(',')[0].replace(/["']/g,'').replace(/ Variable$/,'').trim();
   return {name,canvas:r.canvas,left:r.left,top:r.top,text:{text:texts.map(t=>t.textContent).join('\r'),transform:[M[0]/sc,M[1]/sc,M[2]/sc,M[3]/sc,x,y],
     style:{font:{name:font+(w>=600?'-SemiBold':w>=500?'-Medium':'-Regular')},fontSize:fs,leading:lead,autoLeading:false,tracking:Math.round((num(t0,'letter-spacing')*sc/fs)*1000),fillColor:rgb},
     paragraphStyle:{justification:just}}}}
