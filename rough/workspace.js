@@ -291,7 +291,7 @@ histBody.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
 
 // ---------- 글자 ----------
 const FONTS=Object.entries(FONT_PRESETS);  // [id,{name,note,...}]
-function renderText(){textBody.innerHTML=`<label class="wsf"><span>작품 기본 글꼴</span><select id="wsfont"><option value="">자동 (말풍선 모양 따라)</option>${FONTS.map(([v,f])=>`<option value='${v}'${v===PAGE_PRESET?' selected':''}>${f.name} · ${f.note}</option>`).join('')}</select></label>
+function renderText(){textBody.innerHTML=`<label class="wsf"><span>작품 기본 글꼴</span><select id="wsfont">${FONTS.map(([v,f])=>`<option value='${v}'${v===PAGE_PRESET?' selected':''}>${f.name} · ${f.note}</option>`).join('')}</select></label>
   <p class="wsn">이 기기에 설치된 글꼴로 보이고, 내보내기 파일에도 같은 글꼴 이름이 들어가요.</p>
   <label class="wsf"><span>범위</span><select id="wsscope"><option value="scene">선택한 씬</option><option value="all">모든 씬</option></select></label>
   <label class="wsf"><span>말풍선 크기</span><input type="range" id="wsbsize" min="50" max="200" value="100"><output id="wsbsizev">100%</output></label>
@@ -301,7 +301,7 @@ function applyAll(edit){const scope=$('#wsscope')?.value||'scene',sc=pageSelecti
   const list=[...reader.querySelectorAll('[data-letter^="dialog-"]')].filter(L=>scope==='all'||L.closest('section').dataset.pageScene===sc);
   let n=0;list.forEach(L=>{const g=L.closest('[data-slot-index]');if(isLocked(g,L.dataset.letter))return;withKey(pageKey(g),()=>saveLetter(L,edit));n++});
   renderWebtoon();flash(`말풍선 ${n}개에 적용했어요`)}
-textBody.addEventListener('change',e=>{if(e.target.id==='wsfont'){PAGE_PRESET=e.target.value;try{localStorage.setItem('rough-page-preset',PAGE_PRESET)}catch(_){}renderWebtoon();flash(PAGE_PRESET?`작품 기본 글꼴: ${FONT_PRESETS[PAGE_PRESET].name}`:'글꼴을 자동으로')}});
+textBody.addEventListener('change',e=>{if(e.target.id==='wsfont'){PAGE_PRESET=e.target.value;try{localStorage.setItem('rough-page-preset',PAGE_PRESET)}catch(_){}renderWebtoon();flash(`작품 기본 글꼴: ${FONT_PRESETS[PAGE_PRESET].name}`)}});
 textBody.addEventListener('input',e=>{if(e.target.id==='wsbsize')$('#wsbsizev').textContent=e.target.value+'%'});
 textBody.addEventListener('click',e=>{const a=e.target.closest('[data-text]')?.dataset.text;
   if(a==='size')applyAll({scale:+$('#wsbsize').value/100});
