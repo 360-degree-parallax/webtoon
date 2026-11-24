@@ -32,8 +32,9 @@ const suggest=w=>{let best=null,bd=9;for(const v of VOCAB()){const x=lev(w,v);if
 const ICON={shot:'<svg viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5" fill="none" stroke="currentColor"/><circle cx="8" cy="8" r="2.4" fill="none" stroke="currentColor"/></svg>',
   ang:'<svg viewBox="0 0 16 16"><path d="M3 12l5-8 5 8" fill="none" stroke="currentColor"/></svg>'};
 function sideHTML(b,c,g){const D=b.dir||{},o=[],gd=g.edit||{};
-  if(D.hl||c?.vng==='P')o.push(`<span class="svc hlc">★ 하이라이트${D.hl?'':' · 자동'}</span>`);
-  const tag=(f,on)=>on?'':/^내 취향/.test(c?.why?.[f]?.[0]||'')?' · 내 취향':' · 자동';
+  if(D.hl||c?.vng==='P')o.push(`<span class="svc hlc">★ 하이라이트${D.hl?'':'<em class="am">자동</em>'}</span>`);
+  // 엔진이 고른 값은 칩 끝에 옅은 꼬리표(자동·내 취향). 글에 직접 적은 값은 꼬리표 없이 진하게
+  const tag=(f,on)=>on?'':/^내 취향/.test(c?.why?.[f]?.[0]||'')?'<em class="am pref">내 취향</em>':'<em class="am">자동</em>';
   if(c){o.push(`<span class="svc${D.shot?'':' auto'}" title="${esc(c.why.shot[0]||'')}">${ICON.shot}${esc(c.shot)}${tag('shot',D.shot)}</span>`);o.push(`<span class="svc${D.ang?'':' auto'}" title="${esc(c.why.ang[0]||'')}">${ICON.ang}${esc(c.ang)}${tag('ang',D.ang)}</span>`)}
   if(D.h)o.push(`<span class="svc">▮ 길이 ${esc(lenWord(D.h))}</span>`);
   if(D.gap)o.push(`<span class="svc">⇣ ${esc(D.gap)}</span>`);
@@ -44,7 +45,7 @@ function sideHTML(b,c,g){const D=b.dir||{},o=[],gd=g.edit||{};
   if(gd.gap!=null)o.push(`<span class="svc">↕ 간격 ${gd.gap}px</span>`);
   if(gd.endTo)o.push(`<span class="svc">씬 끝 ${{white:'흰색',hold:'유지',next:'이어서'}[gd.endTo]}</span>`);
   const ls=Object.entries(gd.letters||{}).filter(([k,v])=>/^dialog/.test(k)&&v.style),bs=[...new Set(ls.map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean))],auto=ls.length&&ls.every(([,v])=>v.auto);
-  if(bs.length)o.push(`<span class="svc fx${auto?' auto':''}" ${auto?'title="감정·강도로 자동으로 골랐어요. 대사 줄에 {…}나 (메모)를 적으면 그게 우선"':''}>◌ 말풍선 ${esc(bs.join('·'))}${auto?' · 자동':''}</span>`);
+  if(bs.length)o.push(`<span class="svc fx${auto?' auto':''}" ${auto?'title="감정·강도로 자동으로 골랐어요. 대사 줄에 {…}나 (메모)를 적으면 그게 우선"':''}>◌ 말풍선 ${esc(bs.join('·'))}${auto?'<em class="am">자동</em>':''}</span>`);
   for(const w of g.unknown){const s=suggest(w);o.push(`<button type="button" class="svc warn" ${s?`data-fix="${esc(w)}" data-to="${esc(s)}" title="눌러서 고치기"`:'title="연출로 읽지 못했어요"'}>${esc(w)}${s?` → ${esc(s)}?`:' ?'}</button>`)}
   return o.join('')}
 
@@ -69,6 +70,7 @@ function stats(bs,P){const el=document.querySelector('.scmeta');if(!el)return;le
   const nd=bs.reduce((n,b)=>n+(b.dialogs||[]).filter(d=>d.text).length,0),nc=bs.reduce((n,b)=>n+(b.captions||[]).length,0),ns=bs.reduce((n,b)=>n+(b.sfx||[]).length,0);
   const tall=P.reduce((h,p)=>h+p.h*(W-60)+defaultPageGap(p),0),screens=Math.max(1,Math.round(tall*390/690/740));
   const hl=P.map((p,k)=>p.vng==='P'?k+1:0).filter(Boolean);const cast={};bs.forEach(b=>(b.dialogs||[]).forEach(d=>{if(d.who&&d.text)cast[d.who]=(cast[d.who]||0)+1}));
+  {const q=document.getElementById('scqty');if(q)q.textContent=bs.length?`${bs.length}컷 · 휴대폰 ${screens}화면`:'';}
   st.innerHTML=`<div class="ss-row"><span><b>${bs.length}</b>컷</span><span>대사 <b>${nd}</b></span><span>나레이션 <b>${nc}</b></span><span>효과음 <b>${ns}</b></span>${P.length?`<span>세로 약 <b>${Math.round(tall).toLocaleString()}px</b> · 휴대폰 ${screens}화면</span>`:''}${hl.length?`<span class="ss-hl">★ 하이라이트 ${hl.join('·')}컷</span>`:''}${RE.PREFS?`<span class="ss-pref" title="글 {…}로 엔진 값을 같은 방향으로 3번 이상 고친 것을 다음부터 반영해요">내 취향 반영 중 · <button type="button" class="link" onclick="resetPrefs()">초기화</button></span>`:''}</div>${Object.keys(cast).length?`<div class="ss-cast">${Object.entries(cast).map(([n,k])=>`<span>${face(n,' sm')}${esc(n)} · 대사 ${k}</span>`).join('')}</div>`:''}`}
 // ---------- 작가 취향 학습: 글 {…}로 엔진 값을 고친 기록 → 엔진이 다음부터 그쪽으로(엔진 setPrefs) ----------
 // 기록 키 = 씬 id:컷 자리:항목(마지막 값만). 엔진 원래 값(pre)과 글에 적은 값이 같아도 기록(동의도 근거)

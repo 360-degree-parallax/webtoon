@@ -991,6 +991,28 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .sfxtype button[aria-checked=true]{background:var(--tb,#191f28);border-color:transparent;color:#fff}.sfxtype button[aria-checked=true] b{color:#fff}
 .asi img.apv.sfxi{height:52px;object-fit:contain;background:none;border-radius:0}
 .sfxmore{padding:14px 0;text-align:center;font-size:13px;color:var(--t3)}.sfxmore[hidden]{display:none}
+/* 씬 화면 요소 다듬기(포스타입 에디터 기준: 주 버튼 하나, 분량 한 칸, 조용한 꼬리표) */
+.scqty{margin-left:10px;padding-left:10px;border-left:1px solid var(--line2);font-size:13px;color:var(--t2);font-variant-numeric:tabular-nums;white-space:nowrap}.scqty:empty{display:none}
+.sccta{display:inline-flex;align-items:center;gap:6px;border-radius:10px}.sccta span{transition:translate .12s}.sccta:hover span{translate:2px 0}
+.scins{border-radius:12px;padding:4px}.scins button{height:34px;padding:0 11px;border-radius:8px;font-weight:500;color:var(--t1)}
+.scins button b{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 5px;border-radius:6px;background:var(--surface,#f2f4f6);color:var(--t2);font-size:13px;font-weight:600;letter-spacing:.5px;font-family:var(--font)}
+.scins button:hover b{background:var(--bg);color:var(--t1)}
+.svc em.am{font-style:normal;font-weight:400;margin-left:2px;padding-left:6px;border-left:1px solid currentColor;opacity:.75;line-height:1}
+.svc.auto{box-shadow:none;border:1px dashed var(--line2);color:var(--t2)}.svc.hlc em.am{opacity:.8}
+.scenes .scene-delete::before{content:none}.scenes .scene-delete svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.scenes .scene-delete{opacity:0;transition:opacity .12s}.scenes li:hover .scene-delete,.scenes li:focus-within .scene-delete,.scenes li:has([aria-current=true]) .scene-delete{opacity:1}
+@media(hover:none){.scenes .scene-delete{opacity:1}}
+.scdemo{display:block;margin:10px auto 0;font-size:13px;color:var(--t2)}
+.scclear{display:inline-flex;align-items:center;gap:6px;color:var(--t3);text-decoration:none;font-size:13px}.scclear svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.scclear:hover{color:#b42318}
+.ss-row{gap:6px 16px}.ss-row>span{white-space:nowrap}
+@media(max-width:760px){
+  .scqty{display:none}
+  #v-write .scenes{padding:10px 12px}#v-write .scenes .edhead{display:none}
+  #v-write #scenelist{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 8px}#v-write #scenelist li{flex:none}
+  #v-write .scenes>[data-act=addscene]{width:auto!important;display:inline-flex;margin-right:8px}#v-write .scdemo{display:inline;margin:0}
+  #v-write .scmeta{margin:6px 0 14px;padding-bottom:12px}#v-write .ss-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;font-size:13px}#v-write .ss-row>span{flex:none}
+  .scins button{padding:0 8px;gap:4px}.scins button b{min-width:20px;padding:0 3px;background:none}
+}
 </style>
 </head>
 <body>
@@ -1110,31 +1132,31 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
 <div class="view" id="v-write" hidden>
 <div class="sctop">
-  <div class="edtop-l"><b class="edcrumb">씬</b><span class="edsave" id="scsave" aria-live="polite">자동 저장</span></div>
+  <div class="edtop-l"><b class="edcrumb">씬</b><span class="edsave" id="scsave" aria-live="polite">자동 저장</span><span class="scqty" id="scqty" title="이 씬 분량 · 휴대폰 한 화면은 390×740 기준"></span></div>
   <div class="scins" role="toolbar" aria-label="넣기">
     <button type="button" data-ins="caption" title="식자(내레이션) 넣기 · 대괄호"><b>[ ]</b>식자</button>
     <button type="button" data-ins="dialog" title="대사 넣기 · @인물 &quot;(감정)대사&quot;"><b>@</b>대사</button>
-    <button type="button" data-ins="sfx" title="효과음 넣기 · -소리- (--크게--)"><b>-♪-</b>효과음</button>
+    <button type="button" data-ins="sfx" title="효과음 넣기 · -소리- (--크게--)"><b>- -</b>효과음</button>
     <button type="button" data-dirmenu aria-haspopup="true" aria-expanded="false" title="연출 넣기 · {클로즈업} {확대 1.5} {집중선}"><b>{ }</b>연출</button>
     <span class="scsep"></span>
     <button type="button" data-act="addcut" title="컷 추가 (Ctrl+Enter)"><b>+</b>컷</button>
     <button type="button" data-act="prose" title="줄글을 컷으로 나누기"><b>¶</b>줄글</button>
   </div>
-  <div class="edtop-r"><button class="btn dark" data-view="layout">콘티 보기</button></div>
+  <div class="edtop-r"><button class="btn sccta" data-view="layout">콘티로<span aria-hidden="true">→</span></button></div>
 </div>
 <div class="scgrid">
   <aside class="scenes edleft" aria-label="씬 목록">
     <div class="edhead">씬 목록 <span id="scount"></span></div>
     <ol id="scenelist"></ol>
     <button class="btn sm" data-act="addscene" style="width:100%">+ 새 씬</button>
-    <button class="btn sm ghost" data-act="adddemo" style="width:100%;margin-top:6px" title="연출 DB에서 가장 많이 쓰인 두 연출이 잡히는 예시 두 씬을 뒤에 추가해요">예시 씬 추가</button>
+    <button class="link scdemo" data-act="adddemo" title="연출 DB에서 가장 많이 쓰인 두 연출이 잡히는 예시 두 씬을 뒤에 추가해요">예시 씬 추가</button>
   </aside>
   <main class="scpaper">
     <input class="sctitle" id="sctitle" placeholder="씬 제목을 입력하세요" aria-label="씬 제목">
     <div class="scmeta"><span id="count"></span><span id="scmeta2" hidden></span></div>
     <ol class="cutlist" id="cutlist"></ol>
     <button class="scadd" data-act="addcut">+ 컷 추가 <small>Ctrl+Enter</small></button>
-    <div class="scfoot"><button class="link" data-act="clear">이 씬 모두 지우기</button><span class="grow"></span></div>
+    <div class="scfoot"><button class="link scclear" data-act="clear"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>이 씬 모두 지우기</button><span class="grow"></span></div>
     <dialog id="pdlg2" aria-labelledby="pd2t"><h3 id="pd2t">줄글 붙여넣기</h3><p>문장마다 컷으로 나눠 컷 칸에 채워요. 지금 컷은 바뀌어요.</p><textarea id="prosein" style="min-height:220px" placeholder="@에드가는 복도 끝에서 걸어왔다. @준이 돌아보며 &quot;에드가?&quot; 하고 불렀다."></textarea><div class="acts"><button class="btn" data-act="prosecancel">닫기</button><button class="btn dark" data-act="prosego">컷으로 나누기</button></div></dialog>
   </main>
   <aside class="scside" aria-label="씬 정보">
@@ -2256,7 +2278,7 @@ function saveCuts(){saveScenes();renderSceneList()}
 function sceneLabel(sc,i){return `씬 ${i+1} · ${sc.title||'제목 없는 씬'}`}
 function renderSceneList(){
   const canDelete=SCENES.length>1;
-  $('#scenelist').innerHTML=SCENES.map((sc,i)=>`<li><button data-scene="${i}" aria-current="${i===SCUR}"><span class="sn">${i+1}</span><span style="min-width:0"><span class="st">${esc(sc.title||'제목 없는 씬')}</span><br><small>${sc.cuts.filter(c=>c.trim()).length}컷</small></span></button>${canDelete?`<button class="scene-delete" type="button" data-scene-delete="${i}" aria-label="${esc(sceneLabel(sc,i))} 삭제" title="씬 삭제"></button>`:''}</li>`).join('');
+  $('#scenelist').innerHTML=SCENES.map((sc,i)=>`<li><button data-scene="${i}" aria-current="${i===SCUR}"><span class="sn">${i+1}</span><span style="min-width:0"><span class="st">${esc(sc.title||'제목 없는 씬')}</span><br><small>${sc.cuts.filter(c=>c.trim()).length}컷</small></span></button>${canDelete?`<button class="scene-delete" type="button" data-scene-delete="${i}" aria-label="${esc(sceneLabel(sc,i))} 삭제" title="씬 삭제"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>`:''}</li>`).join('');
   $('#scount').textContent=`${SCENES.length}개`;
   document.querySelectorAll('[data-scbar]').forEach(el=>el.innerHTML=`<button class="ib" data-scmove="-1" aria-label="이전 씬"${SCUR?'':' disabled'}>‹</button><select data-scsel aria-label="씬 고르기">${SCENES.map((sc,i)=>`<option value="${i}"${i===SCUR?' selected':''}>${esc(sceneLabel(sc,i))}</option>`).join('')}</select><button class="ib" data-scmove="1" aria-label="다음 씬"${SCUR<SCENES.length-1?'':' disabled'}>›</button><span>${SCENES[SCUR].cuts.filter(c=>c.trim()).length}컷</span>`);
 }
@@ -2324,12 +2346,20 @@ $('#cutlist').addEventListener('focusin',e=>{const t=e.target.closest('.cutin');
 $('#cutlist').addEventListener('focusout',e=>{const t=e.target.closest('.cutin');if(!t)return;const r=splitMixed(t.value);if(!r.n||r.text===t.value)return;
   if(typeof edRecord==='function'){edRecord();edLast=0}  // 나누기 전 글을 따로 한 단계로
   t.value=r.text;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();toast(`대사를 따로 줄로 나눴어요 (${r.n}줄) · 묘사와 대사는 줄을 나눠 써요 · Ctrl+Z로 되돌리기`,2400)});
-$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cut]');if(e.target.closest('.cutin'))showMbox();if(!b)return;const i=+b.closest('li').dataset.i,k=b.dataset.cut;
+$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cut]');if(e.target.closest('.cutin'))showMbox();if(!b)return;cutAct(+b.closest('li').dataset.i,b.dataset.cut)});
+// 컷 위·아래·지우기(버튼과 Ctrl+Shift+↑/↓ 공용, 포스타입 블록 이동과 같은 키)
+function cutAct(i,k){
   const edits=cutEdits();
   const n=CUTS.length,j=k==='up'?i-1:i+1;if(k!=='del'&&(j<0||j>=n))return;
   remapCuts(SCUR,()=>{if(k==='del'){CUTS.splice(i,1);edits.splice(i,1);return moveMap(n,x=>x===i?-1:x>i?x-1:x)}
     [CUTS[i],CUTS[j]]=[CUTS[j],CUTS[i]];[edits[i],edits[j]]=[edits[j],edits[i]];return moveMap(n,x=>x===i?j:x===j?i:x)});
-  renderCuts();cutChanged()});
+  renderCuts();cutChanged();return k==='del'?null:j}
+$('#cutlist').addEventListener('keydown',e=>{const t=e.target.closest('.cutin');if(!t||!(e.ctrlKey||e.metaKey)||!e.shiftKey||(e.key!=='ArrowUp'&&e.key!=='ArrowDown'))return;
+  e.preventDefault();const pos=t.selectionStart,j=cutAct(+t.closest('li').dataset.i,e.key==='ArrowUp'?'up':'down');if(j==null)return;
+  const nt=document.querySelector(`#cutlist li[data-i="${j}"] .cutin`);if(nt){nt.focus();try{nt.setSelectionRange(pos,pos)}catch(_){}}});
+// Ctrl+S: 자동 저장이지만 손버릇대로 눌러도 "저장됨"을 보여 줌
+document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=='s')return;e.preventDefault();
+  try{saveScenes()}catch(_){}const el=VIEW==='webtoon'?$('#edsave'):$('#scsave');if(el){el.textContent='저장됨 · 방금';el.classList.add('on')}toast('저장했어요 · 따로 누르지 않아도 자동으로 저장돼요',1600)});
 $('#cutlist').addEventListener('keydown',e=>{const t=e.target.closest('.cutin');if(!t)return;
   if(!mbox.hidden){if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();mSel=(mSel+(e.key==='ArrowDown'?1:-1)+mList.length)%mList.length;showMbox()}
     else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();pickMention(mSel)}else if(e.key==='Escape'){mbox.hidden=true}return}
