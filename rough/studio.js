@@ -51,7 +51,7 @@ function markCrop(){reader.querySelectorAll('[data-slot-index]').forEach(g=>g.cl
 // 첫 클릭에 화면이 다시 그려져 dblclick 대상이 사라지므로 누름 두 번을 직접 잰다
 {let last=null;reader.addEventListener('pointerdown',e=>{if(!pageEditing||e.button!==0||e.shiftKey)return;const art=e.target.closest('[data-art]');if(!art||e.target.closest('[data-letter],[data-page-gap],[data-fh]')){last=null;return}
   const g=art.closest('[data-slot-index]'),k=pageKey(g),now=performance.now();
-  if(last&&last.k===k&&now-last.t<420&&Math.hypot(e.clientX-last.x,e.clientY-last.y)<6){last=null;if(pageSelection!==k)selectPageCut(g);if(cropKey)setCrop(null);setFrameShape(frameShapeKey===k?null:k);return}
+  if(last&&last.k===k&&now-last.t<420&&Math.hypot(e.clientX-last.x,e.clientY-last.y)<(e.pointerType==='touch'?14:6)){last=null;if(pageSelection!==k)selectPageCut(g);if(cropKey)setCrop(null);setFrameShape(frameShapeKey===k?null:k);return}
   last={k,t:now,x:e.clientX,y:e.clientY}},true)}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&frameShapeKey&&inEdit()){setFrameShape(null)}});
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);markFrameShape();return r}}
@@ -128,6 +128,8 @@ const mini=(()=>{const box=document.createElement('div');box.className='minimap'
   function refresh(){clearTimeout(timer);timer=setTimeout(build,250)}
   function build(){if(!inEdit()||!reader.querySelector('svg')){box.hidden=true;return}
     inner.innerHTML=reader.innerHTML;inner.style.width=BASE+'px';
+    // 편집 손잡이·안내선·고른 표시는 미니맵에 옮기지 않음(예전 상태가 남아 보였음)
+    inner.querySelectorAll('.frame-handles,.phoneguide,.tail-handle,.gap-grip,[data-page-gap]').forEach(x=>x.remove());inner.querySelectorAll('.sel,.multi-sel,.crop').forEach(x=>x.classList.remove('sel','multi-sel','crop'));
     const docked=box.classList.contains('docked'),h=reader.scrollHeight/CZ,maxH=docked?Math.max(200,innerHeight*.45):Math.max(160,innerHeight*.55);k=Math.min((docked?Math.max(60,box.parentElement.clientWidth-4):96)/BASE,maxH/h);
     inner.style.transform=`scale(${k})`;box.style.width=Math.round(BASE*k)+'px';box.style.height=Math.round(h*k)+'px';box.hidden=(!docked&&matchMedia('(max-width:1100px)').matches)||reader.classList.contains('artboards');view()}
   function view(){if(box.hidden)return;const r=reader.getBoundingClientRect(),s=k/CZ;
@@ -159,7 +161,7 @@ rd.addEventListener('click',e=>{if(e.target===rd)closeRead();const b=e.target.cl
 
 // ---------- 단축키 ----------
 const KEYS=[...([['씬 쓰기',[['[그날 밤]','식자(나레이션)'],['@준 "(놀라서)에드가?"','대사 · 괄호 안은 연기'],['-툭-','효과음'],['그 밖의 글','행동·장면 묘사'],['@','인물 목록 열기'],['Ctrl + Enter','아래에 새 컷']]]]),['어디서나',[['?','단축키 보기'],['Esc','닫기 · 선택 해제']]],
-  ['편집 · 캔버스',[[`${MODK} + 휠 / 핀치`,'캔버스 확대·축소'],[`${MODK} + = / −`,'한 단계 확대·축소'],['Shift + 0','100%'],['Shift + 1','전체 보기'],['Shift + 2','선택한 컷 보기'],['Space + 끌기','캔버스 이동(가운데 버튼 끌기도)']]],
+  ['편집 · 캔버스',[[`${MODK} + 휠 / 핀치`,'캔버스 확대·축소'],[`${MODK} + = / −`,'한 단계 확대·축소'],['Shift + 0','100%'],['Shift + 1','전체 보기'],['Shift + 2','선택한 컷 보기'],['Shift + G','휴대폰 한 화면 선 켜기·끄기'],['Space + 끌기','캔버스 이동(가운데 버튼 끌기도)']]],
   ['편집 · 선택',[['[ / ]','이전 · 다음 컷'],['Shift + [ / ]','이전 · 다음 씬'],['그림 더블클릭',`그림 편집: ${MODK} + 휠 확대, 끌어 이동`],['방향키','식자 1px 이동 (Shift 10px)'],['Shift + 클릭 · 빈 곳 끌기','식자 여러 개 고르기'],['Shift + 끌기','가로·세로로만 옮기기'],['끌 때 Ctrl','맞춤선 끄기'],['Alt + 끌기','복제하며 옮기기'],[`${MODK} + C / V / D`,'식자 복사 · 붙여넣기 · 복제'],[`${MODK} + A`,'고른 컷의 식자 전부'],[`${MODK} + ] / [`,'겹침 순서 앞·뒤 (Shift: 맨 앞·맨 뒤)'],['Enter','글자 고치기'],['Tab / Shift + Tab','다음 · 이전 식자'],['위 동그란 손잡이','돌리기 (Shift 15°)'],['레이어 줄 끌기','컷 순서 · 식자 겹침 순서'],['Delete / Backspace','고른 식자·컷 지우기 (Ctrl+Z로 되돌리기)'],['우클릭 · Shift+F10','고른 것에 맞는 메뉴'],['식자 모서리 끌기','크기 (Shift: 5% 단위)'],['컷 그림 모서리 끌기 · Alt+휠','그림 확대 (확대한 그림은 바로 끌어 옮김)'],[`${MODK} + Z`,'실행 취소 (Shift 다시 실행)'],['P','읽기 모드']]]];
 const kd=document.createElement('dialog');kd.className='keysdlg';kd.setAttribute('aria-labelledby','kdt');
 kd.innerHTML=`<h3 id="kdt">도움말</h3>${KEYS.map(([h,rows])=>`<h4>${h}</h4><dl>${rows.map(([k,d])=>`<dt>${k.split(' / ').map(x=>`<kbd>${esc(x)}</kbd>`).join(' / ')}</dt><dd>${esc(d)}</dd>`).join('')}</dl>`).join('')}<form method="dialog"><button class="btn dark">닫기</button></form>`;
@@ -176,6 +178,7 @@ document.addEventListener('keydown',e=>{if(typingIn(e.target))return;
   if(e.shiftKey&&e.code==='Digit0'){e.preventDefault();zoomTo(1);return}
   if(e.shiftKey&&e.code==='Digit1'){e.preventDefault();fitAll();return}
   if(e.shiftKey&&e.code==='Digit2'){e.preventDefault();fitSelected();return}
+  if(e.shiftKey&&e.code==='KeyG'&&!typingIn(e.target)){e.preventDefault();setGuide(!PG);return}
   if(e.code==='BracketLeft'||e.code==='BracketRight'){e.preventDefault();const d=e.code==='BracketRight'?1:-1;e.shiftKey?goScene(d):goCut(d);return}
   if((e.key==='p'||e.key==='P')&&!e.shiftKey){e.preventDefault();openRead();return}
   if(e.key==='Escape'&&cropKey){e.preventDefault();setCrop(null)}},true);
@@ -184,5 +187,31 @@ document.addEventListener('keydown',e=>{if(typingIn(e.target))return;
 {const _sw=switchScene;switchScene=function(i){const r=_sw(i);if(inEdit())document.getElementById('ws-'+i)?.scrollIntoView({behavior:'smooth'});return r}}
 
 applyZoom();
-window.RoughStudio={zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
+// ---------- 터치(태블릿·펜): 두 손가락 벌리기 = 캔버스 확대, 길게 누르기 = 우클릭 메뉴 ----------
+{const T=new Map();let pinch=null,lp=null;
+  const dist=()=>{const [a,b]=[...T.values()];return Math.hypot(a.x-b.x,a.y-b.y)},mid=()=>{const [a,b]=[...T.values()];return [(a.x+b.x)/2,(a.y+b.y)/2]};
+  canvas.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'||!inEdit())return;T.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(T.size===2){clearTimeout(lp?.t);lp=null;pinch={d:dist(),z:CZ};e.preventDefault()}
+    else if(T.size===1){const tgt=e.target,x=e.clientX,y=e.clientY;lp={x,y,t:setTimeout(()=>{lp=null;if(T.size!==1)return;
+      tgt.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:x,clientY:y}));navigator.vibrate?.(15)},550)}}},true);
+  canvas.addEventListener('pointermove',e=>{const p=T.get(e.pointerId);if(!p)return;p.x=e.clientX;p.y=e.clientY;
+    if(lp&&Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>10){clearTimeout(lp.t);lp=null}
+    if(pinch&&T.size===2){const [mx,my]=mid();zoomTo(pinch.z*dist()/pinch.d,mx,my)}},true);
+  const up=e=>{if(!T.delete(e.pointerId))return;if(lp){clearTimeout(lp.t);lp=null}if(T.size<2)pinch=null};
+  canvas.addEventListener('pointerup',up,true);canvas.addEventListener('pointercancel',up,true)}
+// SVG 안쪽 요소는 touch-action을 따르지 않아, 식자·손잡이를 손가락으로 끌면 브라우저가 스크롤로 가져가 끌기가 끊겼음 → 끌 수 있는 것 위에서 시작한 한 손가락 터치는 스크롤 막기
+canvas.addEventListener('touchstart',e=>{if(!inEdit()||e.touches.length!==1)return;
+  if(e.target.closest?.('[data-letter],[data-fh],[data-page-gap] .gap-grip,.gap-grip,.tail-handle,[data-tail-handle],[data-slot-index].crop [data-art]'))e.preventDefault()},{passive:false});
+// ---------- 휴대폰 한 화면 기준선: 웹툰은 폭을 화면 폭에 맞춰 보므로 한 화면 높이 = 원고 폭 × 1.9(390×740 보이는 영역) ----------
+const PHONE=1.9;let PG=false;try{PG=localStorage.getItem('rough-phone-guide')==='1'}catch(_){}
+function drawGuide(){reader.querySelectorAll('.phoneguide').forEach(x=>x.remove());if(!PG||!inEdit()||reader.classList.contains('artboards'))return;
+  const R=reader.getBoundingClientRect(),segs=[...reader.querySelectorAll(':scope>section>svg')].map(v=>{const r=v.getBoundingClientRect();return {top:r.top-R.top,h:r.height,w:r.width}}).filter(x=>x.h>0);if(!segs.length)return;
+  const S=segs[0].w*PHONE,total=segs.reduce((a,x)=>a+x.h,0),box=document.createElement('div');box.className='phoneguide';box.setAttribute('aria-hidden','true');let html='';
+  for(let n=1,y=S;y<total;n++,y+=S){let rem=y,top=null;for(const g of segs){if(rem<=g.h){top=g.top+rem;break}rem-=g.h}if(top==null)break;html+=`<div style="top:${top.toFixed(1)}px"><span>${n}화면</span></div>`}
+  box.innerHTML=html;reader.appendChild(box)}
+function setGuide(on){PG=!!on;try{localStorage.setItem('rough-phone-guide',PG?'1':'0')}catch(_){}drawGuide()}
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);drawGuide();return r}}
+{const _az=applyZoom;applyZoom=function(...a){const r=_az(...a);drawGuide();return r}}
+addEventListener('resize',()=>drawGuide());
+window.RoughStudio={get phoneGuide(){return PG},setGuide,drawGuide,zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
 })();

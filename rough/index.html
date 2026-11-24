@@ -1061,6 +1061,21 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 /* 컷 모퉁이: 기본 = 확대·축소(네모 손잡이), 프레임 모양 모드 = 모퉁이 하나씩(파란 동그라미) */
 .frame-handles circle[data-fh=tl],.frame-handles circle[data-fh=br]{cursor:nwse-resize}.frame-handles circle[data-fh=tr],.frame-handles circle[data-fh=bl]{cursor:nesw-resize}
 .frame-handles.shape circle{fill:#2d71f7;stroke:#fff;cursor:move!important}.frame-handles.shape rect{opacity:.35}
+.reader{position:relative}.minimap .phoneguide{display:none!important}.phoneguide{position:absolute;inset:0;pointer-events:none;z-index:4}
+.phoneguide>div{position:absolute;left:0;right:0;border-top:1.5px dashed rgba(236,64,122,.85)}
+.phoneguide span{position:absolute;right:4px;top:2px;font-size:11px;font-weight:600;color:#fff;background:rgba(236,64,122,.9);padding:1px 6px;border-radius:9px}
+.ctxbar .cb-grp{display:inline-flex;align-items:center;gap:4px;padding:0 6px;margin:0 2px;border-left:1px solid var(--line);border-right:1px solid var(--line)}.ctxbar .cb-grp label{margin-right:4px}
+.coach{position:fixed;z-index:60;max-width:300px;padding:10px 12px;border-radius:10px;background:#1d2433;color:#fff;font-size:12.5px;line-height:1.55;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:8px}
+.coach[hidden]{display:none}.coach b{display:block;font-size:13px;margin-bottom:2px}.coach kbd{background:rgba(255,255,255,.18);border-radius:3px;padding:0 4px;font:inherit}
+.coach .btn{align-self:flex-end;background:#fff;color:#1d2433;border:0}
+.epbtn{display:inline-flex;align-items:center;gap:6px;margin-left:12px;height:32px;padding:0 10px}.epbtn small{color:var(--t3);font-size:11px;font-weight:500}.epbtn small:empty{display:none}.epbtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+/* 터치: 손가락 벌리기는 우리가 캔버스 확대로 처리(브라우저 화면 확대 막음) · 손잡이는 손가락 크기로 */
+#v-webtoon .edcanvas{touch-action:pan-x pan-y}
+@media (pointer:coarse){.tbox .th{width:24px;height:24px;margin:-6px}.tbox [data-th=rot]{width:30px;height:30px;left:calc(50% - 15px);top:-52px}
+  .frame-handles circle,.frame-handles rect{transform-box:fill-box;transform-origin:center;transform:scale(1.8)}.reader .gap-grip{transform-box:fill-box;transform-origin:center;transform:scale(1.4)}
+  .ctxbar .cb,.ctxbar select,.ctxbar input{min-height:36px}}
+.tbox.rotbelow [data-th=rot]{top:calc(100% + 10px);left:calc(50% + 26px)}.tbox.rotbelow [data-th=rot]::after{display:none}
+@media (pointer:coarse){.tbox.rotbelow [data-th=rot]{top:calc(100% + 10px);left:calc(50% + 30px)}}
 </style>
 </head>
 <body>
@@ -1741,9 +1756,10 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
   const fs=(edited?Math.min(nominal,box.h*.5/(rows*1.4+2.6)):nominal)*(FP?.size||1),lh=fs*1.4;
   const tw=Math.max(...groups.flat().map(l=>l.length))*fs*.98,th=rows*lh;
   // bw·bh: 편집 화면 옆 손잡이로 늘린 가로·세로(px). 글자 크기는 그대로, 상자만
-  const rx=Math.max(tw/2+fs*1.5,fs*3.2)+(edit?.bw||0)/2;
+  // 상자를 줄여도 글이 밖으로 넘치지 않게 글 크기 + 여백을 최소로
+  const rx=Math.max(tw/2+fs*.95,Math.max(tw/2+fs*1.5,fs*3.2)+(edit?.bw||0)/2);
   const aspect=preset?.[0]==='narration'?1.32:1.13;
-  const ry=Math.max(th/2+fs*1.3,fs*2.2,preset?rx/aspect:0)+(edit?.bh||0)/2;
+  const ry=Math.max(th/2+fs*.8,Math.max(th/2+fs*1.3,fs*2.2,preset?rx/aspect:0)+(edit?.bh||0)/2);
   const ext=rx*(linked?1.9:preset?.[0]==='radial'?1.55:1);
   const side=d.who&&p.who&&d.who!==p.who?(p.side==='left'?'right':'left'):(p.side||'right');
   const cx=Math.min(Math.max(box.x+box.w*(slot%2?(side==='left'?.7:.3):(side==='left'?.3:.7)),box.x+ext+6),box.x+box.w-ext-6);
@@ -2557,7 +2573,7 @@ function renderWebtoon(){SP_FRESH=null;if(!PATS.length){refreshPageTools();$('#r
     const lab=art&&WMODE==='final'?(art.kind==='mix'?`이미지 ${art.n}/${ps.length}컷 · 나머지 러프`:ART_LABEL[art.kind]):'';
     return `<section id="ws-${i}" data-page-scene="${i}" style="scroll-margin-top:200px"><div class="scn"><span>${esc(sceneLabel(sc,i))}${lab?' · '+lab:''}</span></div>${body}</section>`});
   // 바뀐 씬만 갈아 끼움(작업 중인 씬은 끌기 미리보기가 남지 않게 늘 새로). 70컷이면 화면 전체를 다시 만드는 데 0.1초 넘게 걸렸음
-  const R=$('#reader'),olds=[...R.children],prev=R._parts,act=pageSelection?+pageSelection.split(':')[0]:-1;
+  const R=$('#reader'),olds=[...R.querySelectorAll(':scope>section')],prev=R._parts,act=pageSelection?+pageSelection.split(':')[0]:-1;
   if(prev&&prev.length===parts.length&&olds.length===parts.length&&olds.every((el,i)=>el.id==='ws-'+i)){
     parts.forEach((h,i)=>{if(h===prev[i]&&i!==act)return;const t=document.createElement('template');t.innerHTML=h;olds[i].replaceWith(t.content)})}
   else R.innerHTML=parts.join('');
@@ -2991,7 +3007,16 @@ function showFrame(group,f){const pts=framePts(f),str=pts.map(q=>q.map(v=>v.toFi
 function handlesOf(group){return group.ownerSVGElement.querySelector(`[data-fh-for="${group.dataset.slotIndex}"]`)}
 // 프레임 모양 모드: 컷을 더블클릭하면 켜짐(모퉁이를 하나씩 끌어 사선 칸). 꺼져 있으면 모퉁이 = 컷 확대·축소
 let frameShapeKey=null;
-function setFrameShape(key){frameShapeKey=key||null;markFrameShape();if(key)window.RoughWS?.flash?.('프레임 모양 바꾸기 · 모퉁이를 하나씩 끌어요 · Esc 끝내기')}
+function setFrameShape(key){frameShapeKey=key||null;markFrameShape();window.RoughWS?.renderCtx?.();if(key)window.RoughWS?.flash?.('프레임 모양 바꾸기 · 모퉁이를 하나씩 끌어요 · Esc 끝내기')}
+// 프레임 기울기(°) — 양수 = 오른쪽이 내려감. 모퉁이를 안쪽으로만 옮겨 칸이 위아래 칸을 침범하지 않게
+function frameAngles(g){const f=JSON.parse(g.dataset.frame),q=f.q||[[0,0],[0,0],[0,0],[0,0]],a=v=>Math.round(Math.atan(v/f.w)*180/Math.PI);
+  return {top:q[1][1]>0?a(q[1][1]):q[0][1]>0?-a(q[0][1]):0,bot:q[3][1]<0?a(-q[3][1]):q[2][1]<0?-a(-q[2][1]):0}}
+function setFrameAngles(top,bot){const g=pageReader.querySelector('[data-slot-index].sel');if(!g)return;const f=JSON.parse(g.dataset.frame);
+  const d=x=>Math.min(f.h*.35,Math.abs(Math.tan(x*Math.PI/180)*f.w));const q=[[0,0],[0,0],[0,0],[0,0]];
+  top=Math.max(-30,Math.min(30,Math.round(+top||0)));bot=Math.max(-30,Math.min(30,Math.round(+bot||0)));
+  if(top>0)q[1][1]=Math.round(d(top));else if(top<0)q[0][1]=Math.round(d(top));
+  if(bot>0)q[3][1]=-Math.round(d(bot));else if(bot<0)q[2][1]=-Math.round(d(bot));
+  const set=pageSettings(true);if(!top&&!bot)delete set.quad;else set.quad=q;saveScenes();renderWebtoon();markFrameShape()}
 function markFrameShape(){pageReader.querySelectorAll('.frame-handles').forEach(h=>{const g=h.ownerSVGElement?.querySelector(`[data-slot-index="${h.dataset.fhFor}"]`);h.classList.toggle('shape',!!g&&!!frameShapeKey&&pageKey(g)===frameShapeKey)})}
 function startFrameDrag(group,fh,e){e.preventDefault();e.stopPropagation();selectPageCut(group);selectLetter(null);
   const f0=JSON.parse(group.dataset.frame);
@@ -3747,5 +3772,6 @@ Promise.all([
 <script src="scene-view.js"></script>
 <script src="review.js"></script>
 <script src="image-material-controls.js"></script>
+<script src="episodes.js"></script>
 </body>
 </html>

@@ -120,7 +120,7 @@ document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||document
 
 // ---------- 빈 곳 끌어 사각형 고르기 ----------
 {const canvas=document.querySelector('#v-webtoon .edcanvas');let mq=null;
-  canvas?.addEventListener('pointerdown',e=>{if(!inEdit()||e.button!==0||window.RoughWS.tool!=='select'||!pageEditing)return;
+  canvas?.addEventListener('pointerdown',e=>{if(!inEdit()||e.button!==0||e.pointerType==='touch'||window.RoughWS.tool!=='select'||!pageEditing)return;  // 손가락은 끌면 화면 스크롤
     if(e.target.closest('[data-letter],[data-page-gap],[data-fh],[data-th],[data-tail-handle],input,textarea,button,select,.wtitle'))return;
     // 컷 그림 위에서도 시작(확대한 그림은 끌어 옮기기라 제외 · 그림 편집 중 제외)
     const g=e.target.closest('[data-slot-index]');if(g){const z=withKey(pageKey(g),()=>pageSettings()?.img?.s||1);if(z>1||document.querySelector('.cropping,[data-crop]'))return}

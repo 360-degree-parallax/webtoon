@@ -224,19 +224,49 @@ function onOpen(id){if(id==='assets'){renderAssets();return}if(id==='nav')RoughS
 // ---------- 상황 막대 ----------
 const ctx=document.createElement('div');ctx.className='ctxbar';ctx.setAttribute('role','toolbar');ctx.setAttribute('aria-label','도구 옵션');$('#wst').after(ctx);
 const WS_OPTS=Object.entries(PRESETS).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join('')+'<option value="custom" disabled>내 배치</option>';
+// 글에 맞추기: 고른 말풍선·나레이션(여러 개면 전부)의 늘린 가로·세로(bw·bh)를 없애 글 크기에 맞춤
+function fitLetters(){const ks=MULTI.size?[...MULTI]:selectedLetter?[lkey(selectedLetter)]:[];let n=0;
+  ks.forEach(k=>{const [key,id]=k.split('|');if(!/^(dialog|caption)/.test(id))return;withKey(key,()=>{const o=pageSettings(true).letters?.[id];if(o&&(o.bw||o.bh)){delete o.bw;delete o.bh;n++}})});
+  if(!n){flash('이미 글에 맞춰져 있어요');return}const sel=selectedLetter&&lkey(selectedLetter);saveScenes();renderWebtoon();if(sel){const L=resolve(sel);if(L)selectLetter(L)}markMulti();flash(`${n}개를 글에 맞췄어요 · Ctrl+Z로 되돌리기`)}
+// ---------- 처음 쓰는 사람 안내: 처음 한 번씩만 그 자리 옆에 짧게 ----------
+const COACH_KEY='rough-coach';let coachSeen={};try{coachSeen=JSON.parse(localStorage.getItem(COACH_KEY)||'{}')}catch(_){}
+const coachEl=document.createElement('div');coachEl.className='coach';coachEl.hidden=true;coachEl.setAttribute('role','status');document.body.appendChild(coachEl);
+function coachDone(k){coachSeen[k]=1;try{localStorage.setItem(COACH_KEY,JSON.stringify(coachSeen))}catch(_){}}
+function coach(k,anchor,html){if(coachSeen[k]||!anchor||!anchor.isConnected)return;const r=anchor.getBoundingClientRect();if(!r.width)return;
+  coachEl.innerHTML=`<div>${html}</div><button class="btn sm" data-coach-ok>알겠어요</button>`;coachEl.hidden=false;coachEl.dataset.k=k;
+  // 고른 것의 옆(오른쪽 → 왼쪽)에 띄워 손잡이를 가리지 않게. 자리가 없으면 아래·위
+  const w=coachEl.offsetWidth,h=coachEl.offsetHeight,side=anchor!==rail&&!anchor.closest?.('.ctxbar');let x,y;
+  if(side&&r.right+64+w<innerWidth-12){x=r.right+64;y=Math.min(innerHeight-h-12,Math.max(210,r.top))}
+  else if(side&&r.left-64-w>12){x=r.left-64-w;y=Math.min(innerHeight-h-12,Math.max(210,r.top))}
+  else{x=Math.min(innerWidth-w-12,Math.max(12,r.left+r.width/2-w/2));y=r.bottom+10;if(y+h>innerHeight-12)y=Math.max(12,r.top-h-10)}
+  coachEl.style.left=x+'px';coachEl.style.top=y+'px';coachEl.classList.toggle('up',y<r.top);coachDone(k)}
+coachEl.addEventListener('click',e=>{if(e.target.closest('[data-coach-ok]'))coachEl.hidden=true});
+document.addEventListener('pointerdown',e=>{if(!coachEl.hidden&&!coachEl.contains(e.target))coachEl.hidden=true},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!coachEl.hidden)coachEl.hidden=true});
+addEventListener('scroll',()=>{if(!coachEl.hidden)coachEl.hidden=true},{passive:true});
+function coachReset(){coachSeen={};try{localStorage.removeItem(COACH_KEY)}catch(_){}flash('안내를 다시 보여 드릴게요');coachSoon()}
+function coachSoon(){setTimeout(()=>{if(!inEdit()||!coachEl.hidden)return;
+  if(!coachSeen.start)coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 왼쪽 도구로 말풍선·나레이션·효과음 넣기 · <kbd>?</kbd> 단축키 모음');
+  else if(selectedLetter)coach('letter',selectedLetter,'<b>식자 고르기</b> 더블클릭이나 Enter로 글 고치기 · 모서리로 크기 · 파란 회전 손잡이(↻)로 돌리기 · Shift+클릭으로 여러 개');
+  else if(pageSelection&&reader.querySelector('[data-slot-index].sel'))coach('cut',ctx.querySelector('[data-ctx=fshape]')||reader.querySelector('[data-slot-index].sel'),'<b>컷 고르기</b> 모퉁이를 끌면 컷 크기 · 컷을 더블클릭하거나 「프레임 모양」을 누르면 사선 칸 · 그림 확대·이동은 「그림 편집」');
+  else coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 왼쪽 도구로 말풍선·나레이션·효과음 넣기 · <kbd>?</kbd> 단축키 모음')},350)}
+{const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);coachSoon();return r}}
+{const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);if(selectedLetter)coachSoon();return r}}
+const FPRESETS=[['네모',0,0],['위 사선',-8,0],['아래 사선',0,8],['평행 사선',-8,-8],['쐐기',-8,8]];
+function shapeTools(g){const a=frameAngles(g);return `<span class="cb-grp" role="group" aria-label="프레임 기울기"><label>위 <input type="number" data-ctx="fatop" min="-30" max="30" step="1" value="${a.top}" style="width:52px">°</label><label>아래 <input type="number" data-ctx="fabot" min="-30" max="30" step="1" value="${a.bot}" style="width:52px">°</label>${FPRESETS.map(([n,t,b])=>`<button class="cb${a.top===t&&a.bot===b?' on':''}" data-fpre="${t},${b}">${n}</button>`).join('')}</span>`}
 function renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
-  if(MULTI.size>1&&tool==='select')mid=`<b>식자 ${MULTI.size}개</b>${[['left','왼쪽'],['hcenter','가로 가운데'],['right','오른쪽'],['top','위'],['vcenter','세로 가운데'],['bottom','아래'],['vdist','세로 간격'],['hdist','가로 간격']].map(([k,n])=>`<button class="cb" data-align="${k}">${n}</button>`).join('')}`;
+  if(MULTI.size>1&&tool==='select')mid=`<b>식자 ${MULTI.size}개</b><button class="cb" data-ctx="lfit">글에 맞추기</button>${[['left','왼쪽'],['hcenter','가로 가운데'],['right','오른쪽'],['top','위'],['vcenter','세로 가운데'],['bottom','아래'],['vdist','세로 간격'],['hdist','가로 간격']].map(([k,n])=>`<button class="cb" data-align="${k}">${n}</button>`).join('')}`;
   else if(tool==='balloon')mid=`<label>형태 <select data-ctx="bstyle">${BSTYLES.map(([k,n])=>`<option value="${k}"${k===opt.balloon?' selected':''}>${esc(n)}</option>`).join('')}</select></label>`;
   else if(tool==='sfx')mid=`<label>문구 <input data-ctx="sfxword" value="${esc(opt.sfx)}" maxlength="10" size="6"></label>${['쾅','두근','툭','쿵','휘청','쨍그랑','덜컹','찰칵'].map(w=>`<button class="cb${w===opt.sfx?' on':''}" data-sfxw="${w}">${w}</button>`).join('')}`;
   else if(tool==='select'&&selectedLetter){const art=selectedLetter.querySelector('[data-balloon]'),kind=/^dialog/.test(selectedLetter.dataset.letter)?'말풍선':/^caption/.test(selectedLetter.dataset.letter)?'나레이션':'효과음';
-    mid=`<b>${kind}</b><span class="cb-t">${esc((selectedLetter.dataset.letterText||'').replace(/\s+/g,' ').slice(0,24))}</span><button class="cb" data-ctx="ledit">문구 고치기</button>`+
+    mid=`<b>${kind}</b><span class="cb-t">${esc((selectedLetter.dataset.letterText||'').replace(/\s+/g,' ').slice(0,24))}</span><button class="cb" data-ctx="ledit">문구 고치기</button>`+(/^(dialog|caption)/.test(selectedLetter.dataset.letter)?'<button class="cb" data-ctx="lfit" title="늘리거나 줄인 상자를 글 크기에 딱 맞게">글에 맞추기</button>':'')+
       (art?`<label>형태 <select data-ctx="lstyle">${[...$('#wballoonstyle').options].map(o=>`<option value="${o.value}"${o.selected?' selected':''}>${esc(o.textContent)}</option>`).join('')}</select></label><label>크기 <input type="range" data-ctx="lsize" min="50" max="200" value="${$('#wballoonsize').value}"><output>${$('#wballoonsize').value}%</output></label>`:'')+
       (/^(dialog|caption)/.test(selectedLetter.dataset.letter)?textTools(pageSettings()?.letters?.[selectedLetter.dataset.letter]||{}):'')+
       `<button class="cb" data-ctx="llock">${isLocked(selectedLetter.closest('[data-slot-index]'),selectedLetter.dataset.letter)?'잠금 풀기':'잠그기'}</button>`}
   else if(tool==='select'&&pageSelection){const s=pageSettings(),g=selGroup();
     mid=`<b>${esc(pageCut.selectedOptions[0]?.textContent||'컷')}</b><label>아래 간격 <input type="number" data-ctx="gap" min="0" max="1600" step="4" value="${s?.gap??''}" placeholder="기본" style="width:64px">px</label>
       <label>그림 확대 <input type="range" data-ctx="zoom" min="100" max="500" step="5" value="${$('#wzoom').value}"><output>${$('#wzoom').value}%</output></label>
-      <button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
+      <button class="cb${frameShapeKey===pageSelection?' on':''}" data-ctx="fshape" aria-pressed="${frameShapeKey===pageSelection}" title="모퉁이를 하나씩 끌어 사선 칸 (컷 더블클릭과 같음)">프레임 모양</button>${frameShapeKey===pageSelection&&g?shapeTools(g):''}<button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
   else mid=`<span class="cb-hint">${esc(t.hint)}</span>`;
   ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;}
 ctx.addEventListener('change',e=>{const c=e.target.dataset.ctx;
@@ -245,6 +275,7 @@ ctx.addEventListener('change',e=>{const c=e.target.dataset.ctx;
   if(c==='lstyle'){const s=$('#wballoonstyle');s.value=e.target.value;s.dispatchEvent(new Event('change'))}
   if(c==='gap'&&pageSelection){const s=pageSettings(true),v=e.target.value;if(v==='')delete s.gap;else s.gap=clamp(Math.round(+v),0,1600);saveScenes();renderWebtoon()}
   if(c==='zoom'){const z=$('#wzoom');z.value=e.target.value;z.dispatchEvent(new Event('change'))}
+  if(c==='fatop'||c==='fabot'){setFrameAngles(ctx.querySelector('[data-ctx=fatop]').value,ctx.querySelector('[data-ctx=fabot]').value);renderCtx()}
 });
 ctx.addEventListener('input',e=>{const c=e.target.dataset.ctx;
   if(c==='sfxword'){opt.sfx=e.target.value.replace(/[-\s]/g,'')||'쾅';SS('rough-tool-sfx',opt.sfx)}
@@ -252,13 +283,16 @@ ctx.addEventListener('input',e=>{const c=e.target.dataset.ctx;
   if(c==='zoom'){const z=$('#wzoom');z.value=e.target.value;z.dispatchEvent(new Event('input'));e.target.nextElementSibling.textContent=e.target.value+'%'}});
 ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.align){alignLetters(b.dataset.align);return}
+  if(b.dataset.fpre){const [t,bt]=b.dataset.fpre.split(',');setFrameAngles(t,bt);renderCtx();return}
   if(b.dataset.sfxw){opt.sfx=b.dataset.sfxw;SS('rough-tool-sfx',opt.sfx);renderCtx();return}
   if(b.dataset.ab){setAB(b.dataset.ab==='1');return}
   const c=b.dataset.ctx;
   if(c==='ledit')focusText();
+  if(c==='lfit')fitLetters();
   if(c==='llock'&&selectedLetter){const g=selectedLetter.closest('[data-slot-index]');toggleLock(pageKey(g),selectedLetter.dataset.letter)}
   if(c==='clock'&&pageSelection)toggleLock(pageSelection,'cut');
   if(c==='crop'){const g=selGroup();if(g)RoughStudio.setCrop(g)}
+  if(c==='fshape'&&pageSelection){setFrameShape(frameShapeKey===pageSelection?null:pageSelection)}
   if(c==='frame')$('#wframereset').click();
   if(c==='ref')$('#wrefchange').click();
   if(c==='wsreset')applyPreset(LAYOUT.preset&&PRESETS[LAYOUT.preset]?LAYOUT.preset:'edit')});
@@ -715,10 +749,10 @@ function gapMenu(gap){const si=gap.closest('section').dataset.pageScene,key=`${s
     {label:'배경 세부(중간색·씬 끝 색)…',run:()=>{selectPageCut(g);setDrawer(true,'props')}},SEP,{label:'여기에 새 컷…',run:()=>askCut(key,true,gap)}]}
 // 보기 메뉴(위 막대): 화면 배치 설정을 한곳에 — 상황 막대에는 선택한 것만
 function viewMenu(){return [{label:'미니맵',check:!miniWrap.hidden,run:()=>{miniWrap.hidden=!miniWrap.hidden;SS('rough-ws-mini',!miniWrap.hidden);if(!miniWrap.hidden)RoughStudio.mini.refresh();renderCtx()}},
-  {label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},SEP,
+  {label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},{label:'휴대폰 한 화면 선',key:'Shift+G',check:RoughStudio.phoneGuide,run:()=>RoughStudio.setGuide(!RoughStudio.phoneGuide)},SEP,
   {label:'씬 세로로 이어 보기',check:!AB,run:()=>setAB(false)},{label:'씬 나란히(대지)',check:AB,run:()=>setAB(true)},SEP,
   {label:'작업 공간',sub:()=>Object.entries(PRESETS).map(([k,p])=>({label:p.name,check:LAYOUT.preset===k,run:()=>applyPreset(k)}))},
-  {label:'배치 초기화',run:()=>applyPreset(LAYOUT.preset&&PRESETS[LAYOUT.preset]?LAYOUT.preset:'edit')},SEP,
+  {label:'처음 안내 다시 보기',run:()=>coachReset()},{label:'배치 초기화',run:()=>applyPreset(LAYOUT.preset&&PRESETS[LAYOUT.preset]?LAYOUT.preset:'edit')},SEP,
   {label:'전체 보기',key:'Shift+1',run:()=>RoughStudio.fitAll()},{label:'100%',key:'Shift+0',run:()=>RoughStudio.zoomTo(1)}]}
 {const vb=document.createElement('button');vb.className='btn';vb.id='wviewmenu';vb.setAttribute('aria-haspopup','menu');vb.title='미니맵 · 씬 배치 · 작업 공간';vb.textContent='보기';
   const z=V.querySelector('.edtop-r .czoom');z?z.after(vb):V.querySelector('.edtop-r')?.prepend(vb);
@@ -750,7 +784,9 @@ function tTarget(){if(!inEdit()||tool!=='select'||cropKey)return null;
 function frameRect(g){const f=JSON.parse(g.dataset.frame),m=g.ownerSVGElement.getScreenCTM(),a=new DOMPoint(f.x,f.y).matrixTransform(m),b=new DOMPoint(f.x+f.w,f.y+f.h).matrixTransform(m);return {left:a.x,top:a.y,width:b.x-a.x,height:b.y-a.y}}
 function setTbox(r,pad){Object.assign(tbox.style,{left:r.left-pad+'px',top:r.top-pad+'px',width:r.width+pad*2+'px',height:r.height+pad*2+'px'})}
 function placeTbox(){const t=tTarget();if(!t){tbox.hidden=true;return}const r=t.box.getBoundingClientRect();if(!r.width){tbox.hidden=true;return}
-  tbox.hidden=false;tbox.classList.toggle('art',t.mode==='art');tbox.classList.toggle('rotok',t.mode==='letter');tbox.classList.toggle('sides',t.mode==='letter'&&/^(dialog|caption)/.test(selectedLetter?.dataset.letter||''));setTbox(r,t.mode==='art'?-30:4)}
+  tbox.hidden=false;tbox.classList.toggle('art',t.mode==='art');tbox.classList.toggle('rotok',t.mode==='letter');tbox.classList.toggle('sides',t.mode==='letter'&&/^(dialog|caption)/.test(selectedLetter?.dataset.letter||''));setTbox(r,t.mode==='art'?-30:4);
+  // 회전 손잡이가 컷 위쪽 테두리·간격 손잡이나 위 고정 막대에 겹치면 상자 아래로
+  let below=false;if(t.mode==='letter'){const g=selectedLetter.closest('[data-slot-index]'),fr=g&&frameRect(g);below=r.top-56<(fr?fr.top+6:0)||r.top-56<200}tbox.classList.toggle('rotbelow',below)}
 (function loop(){if(!tdrag)placeTbox();requestAnimationFrame(loop)})();
 tbox.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-th]'),t=tTarget();if(!h||!t)return;e.preventDefault();e.stopPropagation();
   if(h.dataset.th==='rot'&&t.mode==='letter'){const L=selectedLetter,g=L.closest('[data-slot-index]');if(isLocked(g,L.dataset.letter)){flash('잠긴 식자예요');return}
@@ -848,5 +884,5 @@ propsBody.querySelector('#wballoonsize').addEventListener('input',()=>{const r=c
 renderDocks();renderCtx();renderAlign();syncHelp();
 Object.keys(PANELS).forEach(k=>{if(!LAYOUT.panels[k].collapsed&&LAYOUT.panels[k].dock!=='X')onOpen(k)});mountOff();assetTab(PRESETS[LAYOUT.preset]?.tab||'rec');
 reader.classList.toggle('artboards',AB);if(AB)RoughStudio.applyZoom();
-window.RoughWS={get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI,lkey,resolve,toggleMulti,clearMulti,markMulti,renderCtx,renderAlign,withKey,groupBy,openInlineText,typing,refreshText,flash};
+window.RoughWS={cmOpen,get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI,lkey,resolve,toggleMulti,clearMulti,markMulti,renderCtx,renderAlign,withKey,groupBy,openInlineText,typing,refreshText,flash};
 })();
