@@ -1031,6 +1031,9 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .artrow .was{color:var(--t2);text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)}.artrow .now{color:var(--t1)}.artrow input:disabled~*{opacity:.55}
 @media(max-width:640px){.artcard{padding:18px 16px;border-radius:16px}.artcard #naistyle{min-height:120px}.art-h{flex-wrap:wrap}.artcard .naichar{grid-template-columns:32px 1fr auto}.artcard .naichar input{grid-column:1/-1;grid-row:2}
   .ct-hrow{flex-wrap:wrap}.artrow{grid-template-columns:22px 1fr}.artrow .was,.artrow .now{grid-column:2}}
+.tbox .th.side{width:10px;height:10px;border-radius:50%;display:none}.tbox.sides .th.side{display:block}
+.tbox [data-th=n]{left:calc(50% - 6px);top:-7px;cursor:ns-resize}.tbox [data-th=s]{left:calc(50% - 6px);bottom:-7px;cursor:ns-resize}.tbox [data-th=e]{right:-7px;top:calc(50% - 6px);cursor:ew-resize}.tbox [data-th=w]{left:-7px;top:calc(50% - 6px);cursor:ew-resize}
+.ltedit{position:fixed;z-index:70;box-sizing:border-box;padding:6px 8px;border:2px solid #2d71f7;border-radius:8px;background:rgba(255,255,255,.97);color:#161616;font-family:var(--font);font-weight:600;text-align:center;line-height:1.4;resize:none;outline:none;box-shadow:0 6px 20px rgba(0,0,0,.18)}
 </style>
 </head>
 <body>
@@ -1697,9 +1700,10 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
   const nominal=(small?16:punch?26:21)*k;
   const fs=edited?Math.min(nominal,box.h*.5/(rows*1.4+2.6)):nominal,lh=fs*1.4;
   const tw=Math.max(...groups.flat().map(l=>l.length))*fs*.98,th=rows*lh;
-  const rx=Math.max(tw/2+fs*1.5,fs*3.2);
+  // bw·bh: 편집 화면 옆 손잡이로 늘린 가로·세로(px). 글자 크기는 그대로, 상자만
+  const rx=Math.max(tw/2+fs*1.5,fs*3.2)+(edit?.bw||0)/2;
   const aspect=preset?.[0]==='narration'?1.32:1.13;
-  const ry=Math.max(th/2+fs*1.3,fs*2.2,preset?rx/aspect:0);
+  const ry=Math.max(th/2+fs*1.3,fs*2.2,preset?rx/aspect:0)+(edit?.bh||0)/2;
   const ext=rx*(linked?1.9:preset?.[0]==='radial'?1.55:1);
   const side=d.who&&p.who&&d.who!==p.who?(p.side==='left'?'right':'left'):(p.side||'right');
   const cx=Math.min(Math.max(box.x+box.w*(slot%2?(side==='left'?.7:.3):(side==='left'?.3:.7)),box.x+ext+6),box.x+box.w-ext-6);
@@ -1735,8 +1739,8 @@ function captionSVG(t,p,box,first,edit,n=0){
   const fs=edited?Math.min(19*k,box.h*.48/(lines.length*1.5+1.6)):19*k,lh=fs*1.5;
   const tw=Math.max(...lines.map(l=>l.length))*fs,th=lines.length*lh;
   const style=/그날|이후|후|전|밤|아침|저녁|년|일 뒤|며칠|다음 날|그때/.test(t)&&(first||p.role==='설정'||p.role==='전환')?'deco':(p.vng==='R'||p.shot==='효과 배경')?'plain':'box';
-  const w=tw+fs*2.6,h=th+fs*1.6,x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06)-n*(h+10*k);  // 두 번째부터는 위로 쌓음
-  const txt=(fill,extra='')=>lines.map((l,n)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+fs*.8+lh*(n+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" text-anchor="middle" fill="${fill}"${extra}>${esc(l)}</text>`).join('');
+  const bw=edit?.bw||0,bh=edit?.bh||0,w=Math.max(tw+fs*.8,tw+fs*2.6+bw),h=Math.max(th+fs*.6,th+fs*1.6+bh),x=box.x+(box.w-w)/2,y=box.y+box.h-h-Math.max(16,box.h*.06)-n*(h+10*k);  // 두 번째부터는 위로 쌓음
+  const txt=(fill,extra='')=>lines.map((l,n)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+(h-th-fs*1.6)/2+fs*.8+lh*(n+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" text-anchor="middle" fill="${fill}"${extra}>${esc(l)}</text>`).join('');
   if(edit?.style==='narration')return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#161616" stroke-width="${1.8*k}"/>`+txt('#24201c',` font-family="${esc(PAGE_FONT)}"`);
   if(style==='plain')return txt('#f7f2e6',` stroke="rgba(20,16,12,.55)" stroke-width="${3*k}" paint-order="stroke"`);
   if(style==='deco'){const leaf=(cx,cy,r)=>`<path d="M${cx} ${cy} q${4*k*r} ${-6*k} ${9*k*r} ${-3*k} q${-3*k*r} ${5*k} ${-9*k*r} ${3*k}z" fill="#2f5a3a"/>`;

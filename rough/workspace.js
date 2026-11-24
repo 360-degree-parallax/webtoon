@@ -704,7 +704,7 @@ document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||!(e.key=
   const el=selectedLetter||selGroup();if(!el)return;const r=el.getBoundingClientRect();el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:r.left+Math.min(40,r.width/2),clientY:r.top+Math.min(40,r.height/2)}))});
 
 // ---------- 변형 손잡이: 식자는 누르면 바로 끌어 옮기고(기존) 모서리로 크기, 컷 그림은 바로 끌고 모서리로 확대 ----------
-const tbox=mk('tbox');tbox.hidden=true;tbox.innerHTML=['nw','ne','se','sw'].map(c=>`<i class="th" data-th="${c}" title="끌어서 크기 (Shift: 5% 단위)"></i>`).join('')+'<output class="tb-v"></output>';document.body.appendChild(tbox);
+const tbox=mk('tbox');tbox.hidden=true;tbox.innerHTML=['nw','ne','se','sw'].map(c=>`<i class="th" data-th="${c}" title="모서리: 끌어서 전체 크기 (Shift: 5% 단위)"></i>`).join('')+['n','e','s','w'].map(c=>`<i class="th side" data-th="${c}" title="끌어서 상자 ${c==='n'||c==='s'?'세로':'가로'}만 늘리기 · 글자 크기는 그대로"></i>`).join('')+'<output class="tb-v"></output>';document.body.appendChild(tbox);
 let tdrag=null,tmode=null; // tmode: 'letter' | 'art'
 const letterScale=L=>{const g=L.closest('[data-slot-index]');const s=withKey(pageKey(g),()=>pageSettings()?.letters?.[L.dataset.letter]?.scale);return +s||1};
 function tTarget(){if(!inEdit()||tool!=='select'||cropKey)return null;
@@ -714,9 +714,13 @@ function tTarget(){if(!inEdit()||tool!=='select'||cropKey)return null;
 function frameRect(g){const f=JSON.parse(g.dataset.frame),m=g.ownerSVGElement.getScreenCTM(),a=new DOMPoint(f.x,f.y).matrixTransform(m),b=new DOMPoint(f.x+f.w,f.y+f.h).matrixTransform(m);return {left:a.x,top:a.y,width:b.x-a.x,height:b.y-a.y}}
 function setTbox(r,pad){Object.assign(tbox.style,{left:r.left-pad+'px',top:r.top-pad+'px',width:r.width+pad*2+'px',height:r.height+pad*2+'px'})}
 function placeTbox(){const t=tTarget();if(!t){tbox.hidden=true;return}const r=t.box.getBoundingClientRect();if(!r.width){tbox.hidden=true;return}
-  tbox.hidden=false;tbox.classList.toggle('art',t.mode==='art');setTbox(r,t.mode==='art'?-30:4)}
+  tbox.hidden=false;tbox.classList.toggle('art',t.mode==='art');tbox.classList.toggle('sides',t.mode==='letter'&&/^(dialog|caption)/.test(selectedLetter?.dataset.letter||''));setTbox(r,t.mode==='art'?-30:4)}
 (function loop(){if(!tdrag)placeTbox();requestAnimationFrame(loop)})();
 tbox.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-th]'),t=tTarget();if(!h||!t)return;e.preventDefault();e.stopPropagation();
+  if(/^[nesw]$/.test(h.dataset.th)&&t.mode==='letter'){const L=selectedLetter,g=L.closest('[data-slot-index]');if(isLocked(g,L.dataset.letter)){flash('잠긴 식자예요');return}
+    const key=pageKey(g),cur=withKey(key,()=>letterPosition(L)),k=L.ownerSVGElement.getScreenCTM().a||1;
+    tdrag={mode:'side',dir:h.dataset.th,id:L.dataset.letter,key,cap:/^caption/.test(L.dataset.letter),x0:e.clientX,y0:e.clientY,k,bw0:cur.bw||0,bh0:cur.bh||0,px0:cur.x||0,py0:cur.y||0};
+    h.setPointerCapture(e.pointerId);return}
   const r=t.box.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,d0=Math.hypot(e.clientX-cx,e.clientY-cy)||1;
   if(t.mode==='letter'){const L=selectedLetter;if(isLocked(L.closest('[data-slot-index]'),L.dataset.letter)){flash('잠긴 식자예요');return}
     const art=L.querySelector('[data-balloon]');let wrap=null;
@@ -724,14 +728,46 @@ tbox.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-th]'),t=
     tdrag={mode:'letter',L,art,wrap,meta:art?JSON.parse(art.dataset.balloon):null,cx,cy,d0,s0:art?(Number($('#wballoonsize').value)/100||1):letterScale(L)}}
   else{const z=(pageSettings()?.img)||{s:1,dx:0,dy:0};tdrag={mode:'art',g:t.g,cx,cy,d0,s0:z.s||1,z}}
   tdrag.s=tdrag.s0;h.setPointerCapture(e.pointerId)});
-tbox.addEventListener('pointermove',e=>{if(!tdrag)return;const d=Math.hypot(e.clientX-tdrag.cx,e.clientY-tdrag.cy),q=e.shiftKey?20:100;let s=Math.round(tdrag.s0*d/tdrag.d0*q)/q;
+tbox.addEventListener('pointermove',e=>{if(!tdrag)return;
+  if(tdrag.mode==='side'){const t=tdrag,dx=(e.clientX-t.x0)/t.k,dy=(e.clientY-t.y0)/t.k;let bw=t.bw0,bh=t.bh0,px=t.px0,py=t.py0;
+    // 끄는 쪽 변만 움직이게: 상자는 가운데 기준으로 커지니 위치를 반만큼 옮김(나레이션은 아래 기준)
+    if(t.dir==='e'){bw=t.bw0+dx;px=t.px0+dx/2}if(t.dir==='w'){bw=t.bw0-dx;px=t.px0+dx/2}
+    if(t.dir==='s'){bh=t.bh0+dy;py=t.py0+(t.cap?dy:dy/2)}if(t.dir==='n'){bh=t.bh0-dy;py=t.py0+(t.cap?0:dy/2)}
+    bw=Math.round(Math.max(-40,Math.min(600,bw)));bh=Math.round(Math.max(-30,Math.min(600,bh)));
+    withKey(t.key,()=>{const st=pageSettings(true);(st.letters||={})[t.id]={...st.letters?.[t.id],bw,bh,x:Math.round(px),y:Math.round(py)}});
+    tbox.querySelector('.tb-v').textContent=t.dir==='e'||t.dir==='w'?`가로 ${bw>=0?'+':''}${bw}`:`세로 ${bh>=0?'+':''}${bh}`;
+    if(!t.raf)t.raf=requestAnimationFrame(()=>{t.raf=0;renderWebtoon();const g=groupBy(t.key),L=g?.querySelector(`[data-letter="${CSS.escape(t.id)}"]`);if(L){selectLetter(L);setTbox((L.querySelector('[data-balloon]')||L).getBoundingClientRect(),4)}});return}const d=Math.hypot(e.clientX-tdrag.cx,e.clientY-tdrag.cy),q=e.shiftKey?20:100;let s=Math.round(tdrag.s0*d/tdrag.d0*q)/q;
   if(tdrag.mode==='letter'){s=Math.max(.5,Math.min(tdrag.art?2:3,s));tdrag.s=s;if(tdrag.art)tdrag.art.setAttribute('transform',balloonTransform(tdrag.meta,s));else tdrag.wrap.style.transform=`scale(${s})`;
     const el=tdrag.art||tdrag.L;setTbox(el.getBoundingClientRect(),4)}
   else{s=Math.max(1,Math.min(5,s));tdrag.s=s;setZoom(tdrag.g,{...tdrag.z,s})}
   tbox.querySelector('.tb-v').textContent=Math.round(s*100)+'%'});
 tbox.addEventListener('pointerup',()=>{if(!tdrag)return;const t=tdrag;tdrag=null;tbox.querySelector('.tb-v').textContent='';
+  if(t.mode==='side'){cancelAnimationFrame(t.raf);saveScenes();renderWebtoon();const g=groupBy(t.key),L=g?.querySelector(`[data-letter="${CSS.escape(t.id)}"]`);if(L)selectLetter(L);flash('상자 크기를 바꿨어요 · 모서리는 전체 크기');return}
   if(t.mode==='letter'){if(t.art){const b=$('#wballoonsize');b.value=Math.round(t.s*100);b.dispatchEvent(new Event('input'))}else{saveLetter(t.L,{scale:t.s});renderWebtoon()}flash(`크기 ${Math.round(t.s*100)}%`)}
   else{saveZoom(t.g);flash(`그림 확대 ${Math.round(t.s*100)}% · 그림을 끌어 위치를 옮겨요`)}});
+
+// ---------- 말풍선·나레이션 더블클릭: 그 자리에서 바로 글자 고치기 ----------
+// Enter 줄바꿈 · Ctrl+Enter 또는 바깥 클릭으로 저장 · Esc 취소
+let ltEdit=null;
+function openInlineText(L){closeInlineText(true);const g=L.closest('[data-slot-index]');if(!g)return;if(isLocked(g,L.dataset.letter)){flash('잠긴 식자예요');return}
+  const key=pageKey(g),id=L.dataset.letter,el=L.querySelector('[data-balloon]')||L,r=el.getBoundingClientRect();
+  const t0=L.querySelector('text'),k=L.ownerSVGElement.getScreenCTM().a||1,fs=Math.max(13,Math.min(28,(+t0?.getAttribute('font-size')||20)*k));
+  const ta=document.createElement('textarea');ta.className='ltedit';ta.value=(L.dataset.letterText||'').replace(/&#10;/g,'\n');ta.setAttribute('aria-label','문구 고치기');
+  const w=Math.max(r.width,160),h=Math.max(r.height,fs*2.6);Object.assign(ta.style,{left:(r.left+r.width/2-w/2)+'px',top:(r.top+r.height/2-h/2)+'px',width:w+'px',height:h+'px',fontSize:fs+'px'});
+  const lines=Math.max(1,ta.value.split('\n').length,Math.ceil(ta.value.length*fs*.95/(w-16)));ta.style.paddingTop=Math.max(6,(h-lines*fs*1.4)/2)+'px';
+  document.body.appendChild(ta);ta.focus();ta.select();ltEdit={ta,key,id};
+  ta.addEventListener('keydown',e=>{if(e.isComposing)return;if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeInlineText(false)}else if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();closeInlineText(true)}});
+  ta.addEventListener('blur',()=>setTimeout(()=>{if(ltEdit?.ta===ta)closeInlineText(true)},0))}
+function closeInlineText(save){const s=ltEdit;if(!s)return;ltEdit=null;const v=s.ta.value.replace(/\s+$/,'');s.ta.remove();
+  if(!save)return;const g=groupBy(s.key),L=g?.querySelector(`[data-letter="${CSS.escape(s.id)}"]`);if(!L||!v.trim()||v===(L.dataset.letterText||''))return;
+  withKey(s.key,()=>saveLetter(L,{text:v}));renderWebtoon();const L2=groupBy(s.key)?.querySelector(`[data-letter="${CSS.escape(s.id)}"]`);if(L2)selectLetter(L2);flash('문구를 고쳤어요 · Ctrl+Z로 되돌리기')}
+// 더블클릭 판별: 누를 때 대상이 식자(놓을 때는 끌기 겹 DIV가 대상이 됨). 같은 식자를 0.4초 안에 두 번 누르면 놓을 때 편집 열기
+{let last={id:null,t:0},pending=null;
+  const idOf=L=>pageKey(L.closest('[data-slot-index]'))+'|'+L.dataset.letter;
+  reader.addEventListener('pointerdown',e=>{if(!pageEditing||e.button!==0||ltEdit)return;const L=e.target.closest('[data-letter^="dialog"],[data-letter^="caption"]');if(!L){last={id:null,t:0};return}
+    const id=idOf(L),now=Date.now();if(last.id===id&&now-last.t<400){pending=id;last={id:null,t:0}}else last={id,t:now}},true);
+  document.addEventListener('pointerup',()=>{if(!pending)return;const [key,lid]=pending.split('|');pending=null;
+    setTimeout(()=>{const L=groupBy(key)?.querySelector(`[data-letter="${CSS.escape(lid)}"]`);if(L)openInlineText(L)},30)},true)}
 // 고른 컷의 그림 위에서 Alt+휠로도 확대·축소
 reader.addEventListener('wheel',e=>{if(!e.altKey||!inEdit())return;const g=e.target.closest('[data-slot-index]');if(!g||pageKey(g)!==pageSelection||isLocked(g,'cut'))return;e.preventDefault();
   const z=(pageSettings()?.img)||{s:1,dx:0,dy:0},s=Math.max(1,Math.min(5,(z.s||1)*(e.deltaY<0?1.1:1/1.1)));setZoom(g,{...z,s});clearTimeout(reader._zt);reader._zt=setTimeout(()=>saveZoom(g),250)},{passive:false});
