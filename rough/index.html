@@ -1050,6 +1050,13 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .tcpop .none{background:linear-gradient(135deg,#fff 45%,#d33 45% 55%,#fff 55%)!important}.tcpop label{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t2)}.tcpop input{width:32px;height:24px;padding:0;border:0;background:none}
 /* 레이어 패널 칸·그림 고른 줄: 식자 줄과 같은 회색 + 왼쪽 막대 */
 #v-webtoon .edtree .tlay[aria-current=true]{box-shadow:inset 3px 0 0 var(--tb,#191f28);font-weight:600}
+/* 맞춤선 · 사각 고르기 · 회전 손잡이 · 레이어 끌기 */
+.snapln{position:fixed;z-index:36;pointer-events:none;background:#e5389b}.snapln.v{width:1px}.snapln.h{height:1px}
+.marquee{position:fixed;z-index:36;pointer-events:none;border:1px solid #2d71f7;background:rgba(45,113,247,.08)}
+.tbox [data-th=rot]{left:calc(50% - 7px);top:-34px;width:14px;height:14px;border-radius:50%;cursor:grab;display:none}.tbox.sides [data-th=rot],.tbox.rotok [data-th=rot]{display:block}
+.tbox [data-th=rot]::after{content:'';position:absolute;left:5px;top:12px;width:1.5px;height:16px;background:#2d71f7}
+#wtoc .drop-before{box-shadow:inset 0 2px 0 #2d71f7}#wtoc .drop-after{box-shadow:inset 0 -2px 0 #2d71f7}#wtoc [draggable=true]{cursor:grab}
+.ctxbar,#wtoc,#v-webtoon .edtop{user-select:none;-webkit-user-select:none}
 </style>
 </head>
 <body>
@@ -1806,7 +1813,7 @@ function soundEffectSVG(text,box,side,index,position){
 }
 // 내보내기 때만 켬: 식자마다 그룹으로 감싸 레이어로 나눌 수 있게
 let LAYER_TAGS=false;
-function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key||p.act);let o='';
+function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key||p.act);const parts=[];
   const add=(key,label,source,draw)=>{
     const pos=positions?.[key],text=pos?.text??source;
     const move=Number.isFinite(pos?.x)&&Number.isFinite(pos?.y)?` transform="translate(${pos.x} ${pos.y})"`:'';
@@ -1815,7 +1822,12 @@ function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key
     let svg=draw(text,pos);
     // 나레이션·효과음 크기(scale): 제 자리 가운데를 기준으로 키움. 말풍선은 balloonTransform이 따로 처리
     const lsc=+pos?.scale||1;if(!/^dialog/.test(key)&&lsc!==1)svg=`<g class="lsc" style="transform-box:fill-box;transform-origin:center;transform:scale(${lsc})">${svg}</g>`;
-    o+=LAYER_TAGS?`<g data-layer="${label}" data-text="${attrText}"${move}>${svg}</g>`:move||access?`<g${move}${access}>${svg}</g>`:svg;
+    // 회전(rot, 도): 제 자리 가운데 기준
+    const rot=+pos?.rot||0;if(rot)svg=`<g class="lrot" style="transform-box:fill-box;transform-origin:center;transform:rotate(${rot}deg)">${svg}</g>`;
+    // 겹침 순서(z): 값이 있으면 그 순서, 없으면 그린 순서
+    const z=Number.isFinite(pos?.z)?pos.z:parts.length;
+    let o='';o+=LAYER_TAGS?`<g data-layer="${label}" data-text="${attrText}"${move}>${svg}</g>`:move||access?`<g${move}${access}>${svg}</g>`:svg;
+    parts.push({z,o});
   };
   (p.sfx||[]).forEach((text,n)=>add('effect-'+n,'효과음',text,(value,pos)=>soundEffectSVG(value,box,p.side,n,pos)));
   extras.forEach((item,n)=>add('material-'+item.id,'효과음',item.text,(value,pos)=>soundEffectSVG(value,box,p.side,n+(p.sfx?.length||0),pos)));
@@ -1825,7 +1837,7 @@ function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key
   ds.forEach((d,n)=>{
     add('dialog-'+n,'말풍선',d.text,(value,pos)=>balloonSVG({...d,text:value},p,box,n,R,pos,interactive));
   });
-  return o;
+  return parts.map((x,i)=>({...x,i})).sort((a,b)=>a.z-b.z||a.i-b.i).map(x=>x.o).join('');
 }
 function cutSlot(p,i){const slot=/^#(\d+):/.exec(p.key||'');return slot?Number(slot[1]):i}
 function defaultPageGap(p){return Math.round(p.gap*(W-60)*.45)+24}
@@ -2853,7 +2865,7 @@ pageReader.addEventListener('pointerdown',e=>{
   }
   letter.focus({preventScroll:true});
   const svg=letter.ownerSVGElement;
-  pageDrag={letter,svg,id:e.pointerId,start:pagePoint(svg,e),initial:letterPosition(letter)};
+  pageDrag={letter,svg,id:e.pointerId,start:pagePoint(svg,e),initial:letterPosition(letter),...(window.RoughDrag?.begin(letter,e)||{})};
   pageReader.setPointerCapture(e.pointerId);
 });
 pageReader.addEventListener('pointermove',e=>{
@@ -2873,8 +2885,13 @@ pageReader.addEventListener('pointermove',e=>{
   if(pageDrag?.id!==e.pointerId)return;
   const {svg,letter,start,initial}=pageDrag;
   const point=pagePoint(svg,e);
-  pageDrag.position={x:Math.round(initial.x+point.x-start.x),y:Math.round(initial.y+point.y-start.y)};
+  let dx=point.x-start.x,dy=point.y-start.y;
+  if(!pageDrag.moved&&Math.hypot(e.clientX-(pageDrag.cx??e.clientX),e.clientY-(pageDrag.cy??e.clientY))<3)return;  // 3px 안은 클릭
+  pageDrag.moved=true;
+  if(window.RoughDrag)[dx,dy]=window.RoughDrag.adjust(pageDrag,dx,dy,e);  // Shift: 가로·세로 고정, 맞춤선 붙기
+  pageDrag.position={x:Math.round(initial.x+dx),y:Math.round(initial.y+dy)};
   moveLetter(letter,pageDrag.position);
+  (pageDrag.multi||[]).forEach(m=>moveLetter(m.letter,{x:Math.round(m.initial.x+dx),y:Math.round(m.initial.y+dy)}));
 });
 pageReader.addEventListener('pointerup',e=>{
   if(materialDrag?.id===e.pointerId){finishMaterialLine(e);return}
@@ -2893,8 +2910,9 @@ pageReader.addEventListener('pointerup',e=>{
     return;
   }
   if(pageDrag?.id!==e.pointerId)return;
-  if(pageDrag.position)saveLetter(pageDrag.letter,pageDrag.position);
-  pageDrag=null;
+  const pd=pageDrag;pageDrag=null;
+  if(window.RoughDrag){window.RoughDrag.end(pd);return}
+  if(pd.position)saveLetter(pd.letter,pd.position);
 });
 pageReader.addEventListener('lostpointercapture',e=>{
   if(materialDrag?.id===e.pointerId){materialDrag=null;return}
@@ -2911,7 +2929,8 @@ pageReader.addEventListener('lostpointercapture',e=>{
     return;
   }
   if(pageDrag?.id!==e.pointerId)return;
-  moveLetter(pageDrag.letter,pageDrag.initial);
+  if(pageDrag.ended)return;
+  moveLetter(pageDrag.letter,pageDrag.initial);(pageDrag.multi||[]).forEach(m=>moveLetter(m.letter,m.initial));window.RoughDrag?.hideGuides();
   pageDrag=null;
 });
 pageReader.addEventListener('keydown',e=>{
@@ -3695,6 +3714,7 @@ Promise.all([
 <script src="refs.js"></script>
 <script src="dict.js"></script>
 <script src="workspace.js"></script>
+<script src="edit-plus.js"></script>
 <script src="scene-view.js"></script>
 <script src="review.js"></script>
 <script src="image-material-controls.js"></script>
