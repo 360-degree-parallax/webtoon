@@ -224,6 +224,9 @@ function onOpen(id){if(id==='assets'){renderAssets();return}if(id==='nav')RoughS
 // ---------- 상황 막대 ----------
 const ctx=document.createElement('div');ctx.className='ctxbar';ctx.setAttribute('role','toolbar');ctx.setAttribute('aria-label','도구 옵션');$('#wst').after(ctx);
 const WS_OPTS=Object.entries(PRESETS).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join('')+'<option value="custom" disabled>내 배치</option>';
+// 빈 컷: 그림·테두리를 없애 배경 위에 글만 남김(다시 누르면 원래대로)
+function toggleBlank(key){const g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}let on=false;withKey(key,()=>{const st=pageSettings(true);on=!st.blank;if(on)st.blank=true;else delete st.blank});
+  saveScenes();renderWebtoon();const ng=groupBy(key);if(ng)selectPageCut(ng);renderCtx();flash(on?'빈 컷으로 바꿨어요 · 그림·테두리 없이 글만 나가요':'그림·테두리를 다시 보여요')}
 // 컷 간격 일괄: 고른 컷의 아래 간격을 씬 전체·모든 씬에, 또는 기본(자동)으로
 function setGaps(scope,v){const sc=pageSelection?.split(':')[0];let n=0;
   reader.querySelectorAll(':scope>section').forEach(sec=>{if(scope==='scene'&&sec.dataset.pageScene!==sc)return;
@@ -295,7 +298,7 @@ function _renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
   else if(tool==='select'&&pageSelection){const s=pageSettings(),g=selGroup();
     mid=`<b>${esc(pageCut.selectedOptions[0]?.textContent||'컷')}</b><label>아래 간격 <input type="number" data-ctx="gap" min="0" max="1600" step="4" value="${s?.gap??''}" placeholder="기본" style="width:64px">px</label><button class="cb" data-ctx="gapall" aria-haspopup="menu" title="이 간격을 씬의 모든 컷에">간격 일괄 ▾</button>
       <label>그림 확대 <input type="range" data-ctx="zoom" min="100" max="500" step="5" value="${($('#wzoom')?.value??100)}"><output>${($('#wzoom')?.value??100)}%</output></label>
-      <button class="cb${frameShapeKey===pageSelection?' on':''}" data-ctx="fshape" aria-pressed="${frameShapeKey===pageSelection}" title="모퉁이를 하나씩 끌어 사선 칸 (컷 더블클릭과 같음)">프레임 모양</button>${frameShapeKey===pageSelection&&g?shapeTools(g):''}<button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
+      <button class="cb${frameShapeKey===pageSelection?' on':''}" data-ctx="fshape" aria-pressed="${frameShapeKey===pageSelection}" title="모퉁이를 하나씩 끌어 사선 칸 (컷 더블클릭과 같음)">프레임 모양</button>${frameShapeKey===pageSelection&&g?shapeTools(g):''}<button class="cb${s?.blank?' on':''}" data-ctx="blank" aria-pressed="${!!s?.blank}" title="그림·테두리 없이 글만 남는 컷(쉼·나레이션 컷)">빈 컷</button><button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
   else mid=`<span class="cb-hint">${esc(t.hint)}</span>`;
   ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;}
 ctx.addEventListener('change',e=>{const c=e.target.dataset.ctx;
@@ -320,6 +323,7 @@ ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return
   const c=b.dataset.ctx;
   if(c==='ledit')focusText();
   if(c==='lfit')fitLetters();
+  if(c==='blank'&&pageSelection)toggleBlank(pageSelection);
   if(c==='gapall'){const r=b.getBoundingClientRect();cmOpen(gapAllMenu(),r.left,r.bottom+4)}
   if(c==='lstyleall'){const r=b.getBoundingClientRect();cmOpen(styleMenu(),r.left,r.bottom+4)}
   if(c==='llock'&&selectedLetter){const g=selectedLetter.closest('[data-slot-index]');toggleLock(pageKey(g),selectedLetter.dataset.letter)}
@@ -773,7 +777,7 @@ function cutMenu(g,pt){const key=pageKey(g),[si,slot]=key.split(':').map(Number)
     si===SCUR&&{label:'컷 그림 등록·교체…',run:()=>{target={kind:'cut',key:String(g.dataset.p)};$('#filem').click()}},SEP,
     {label:'위에 새 컷…',run:()=>askCut(key,false)},{label:'아래에 새 컷…',run:()=>askCut(key,true)},{label:'컷 복제',run:()=>insertCut(key,true,true)},
     {label:'위로 옮기기',disabled:slot===0,run:()=>moveCutBy(key,-1)},{label:'아래로 옮기기',disabled:slot>=len-1,run:()=>moveCutBy(key,1)},SEP,
-    {label:'아래 전환 질감',sub:bgSub(g)},{label:'프레임 처음대로',disabled:locked,run:()=>{selectPageCut(g);$('#wframereset').click()}},
+    {label:'아래 전환 질감',sub:bgSub(g)},{label:withKey(key,()=>pageSettings()?.blank)?'빈 컷 해제 (그림·테두리 다시)':'빈 컷으로 (그림·테두리 없이 글만)',disabled:locked,run:()=>toggleBlank(key)},{label:'프레임 처음대로',disabled:locked,run:()=>{selectPageCut(g);$('#wframereset').click()}},
     {label:'여기부터 시퀀스로 저장…',run:()=>{selectPageCut(g);$('#wtplsave').click()}},{label:locked?'컷 잠금 풀기':'컷 잠그기',run:()=>toggleLock(key,'cut')},SEP,
     {label:'컷 지우기',key:'Del',danger:1,disabled:locked||len<=1,run:()=>deleteCut(key)}]}
 function gapMenu(gap){const si=gap.closest('section').dataset.pageScene,key=`${si}:${gap.dataset.slot}`,g=groupBy(key);if(!g)return null;

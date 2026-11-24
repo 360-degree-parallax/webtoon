@@ -1090,6 +1090,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .cmpcols{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);min-height:0}.cmpcol{overflow:auto;background:var(--bg);padding:10px 14px}
 .cmpcol h4{position:sticky;top:-10px;margin:-10px -14px 8px;padding:8px 14px;background:var(--bg);font-size:13px;z-index:1;border-bottom:1px solid var(--line)}.cmpcol svg{width:100%;height:auto;display:block}.cmpcol .scn{font-size:12px;color:var(--t3);margin:10px 0 4px}
 .snapnow{display:flex;gap:8px;margin:8px 0 12px}.snapnow input{flex:1;min-width:0}.histl li .btn+.btn{margin-left:4px}
+.minimap [data-blank-guide]{display:none}.reader [data-slot-index].sel rect[data-blank-guide]{stroke:#2d71f7}.reader [data-slot-index].sel text[data-blank-guide]{fill:#2d71f7}
 </style>
 </head>
 <body>
@@ -1949,12 +1950,14 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
   let prev=null,handles='',tightGaps='';
   panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=RoughGrammar.merge(edits?.[slot],p);const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
     // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
-    if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const u=im?null:underlay(p);
+    if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const blank=!!edit?.blank;const u=im||blank?null:underlay(p);
     // 코드로 그린 러프 그림은 쓰지 않음: 등록 이미지 → 원본 컷 레퍼런스(그림 영역만 잘라) → 빈 칸에 샷·앵글 표시
     let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:'';
     if(u){const c=u.crop&&u.w?u.crop:null;const vb=c?`${(c[0]*u.w).toFixed(0)} ${(c[1]*u.h).toFixed(0)} ${((c[2]-c[0])*u.w).toFixed(0)} ${((c[3]-c[1])*u.h).toFixed(0)}`:null;
       art=c?`<svg x="${bx}" y="${y}" width="${bw}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${u.src}" width="${u.w}" height="${u.h}" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/></svg>`:`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`}
-    else if(!im)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;
+    else if(!im&&!blank)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;
+    // 빈 컷: 그림·테두리 없이 배경 위에 글만(나레이션·대사만 있는 쉼 컷). 편집 화면에서만 점선 자리 표시
+    if(blank)art=interactive?`<rect x="${bx+1}" y="${y+1}" width="${bw-2}" height="${h-2}" fill="none" stroke="#9aa3b2" stroke-width="1.5" stroke-dasharray="6 6" data-blank-guide=""/><text x="${bx+bw-10}" y="${y+22}" font-size="13" font-weight="600" text-anchor="end" fill="#9aa3b2" data-blank-guide="">빈 컷</text>`:'';
     // (지금은 자동 칸이 늘 네모라 u.quad가 비어 있음 — 아래 편집 꼭짓점만 칸 모양을 바꿈)
     const box=[[bx,y],[bx+bw,y],[bx+bw,y+h],[bx,y+h]];
     let pts=u&&u.quad&&u.crop?u.quad.map(([qx,qy])=>[bx+(qx-u.crop[0])/(u.crop[2]-u.crop[0])*bw,y+(qy-u.crop[1])/(u.crop[3]-u.crop[1])*h]):null;
@@ -1962,13 +1965,13 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     if(Array.isArray(edit?.quad)&&edit.quad.length===4)pts=box.map(([cx,cy],k)=>[cx+edit.quad[k][0],cy+edit.quad[k][1]]);
     const fp=pts||(interactive?box:null),poly=fp?fp.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' '):null;
     const fdata=interactive?` data-frame='${JSON.stringify({x:bx,y,w:bw,h,q:(pts||box).map((q,k)=>[Math.round(q[0]-box[k][0]),Math.round(q[1]-box[k][1])])})}'${prev?` data-prev="${prev[0]}:${prev[1]}"`:''}`:'';
-    const c=!clean&&!im&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame?`stroke="#222" stroke-width="3"`:'stroke="none"';
+    const c=!clean&&!im&&!blank&&p.who&&charRef(p.who);const stroke=on?`stroke="#2d71f7" stroke-width="6"`:B.frame&&!blank?`stroke="#222" stroke-width="3"`:'stroke="none"';
     const bounds={x:bx,y,w:bw,h};
     const base=defaultPageGap(p),size=edit?.gap??base;
     const maskId=`${pre}${i}-art-mask`,mask=RoughImageMaterials.maskSVG(edit?.artMask,maskId,bounds);
     const overlay=clean?{defs:'',art:''}:RoughImageMaterials.overlaysSVG(edit?.overlays,IMG.overlay,`${pre}${i}`,bounds,size,W);
     defs+=mask+overlay.defs;
-    const frameFill=mask?'fill="none" pointer-events="all"':'fill="#fff"';
+    const frameFill=mask||blank?'fill="none" pointer-events="all"':'fill="#fff"';
     o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g data-cut-art="" clip-path="url(#${pre}${i})"${mask?` mask="url(#${maskId})"`: ''}><g data-art=""${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>${overlay.art}`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
@@ -2567,7 +2570,7 @@ let cropKey='';
 const ART_LABEL={img:'',mix:'일부 러프',rough:'러프'};
 // 완성본 점검: 이미지를 한 장이라도 올린 원고에서, 이미지가 없는 컷(러프로 나감)과 이미지 등록 뒤 글이 바뀐 컷을 모음
 function artCheck(){const miss=[],stale=[];let imgs=0;
-  SCENES.forEach((sc,si)=>scenePanels(si).forEach((p,n)=>{const im=cutImg(si,n,p),it={si,n,key:`${si}:${cutSlot(p,n)}`};if(!im)miss.push(it);else{imgs++;if(im.stale)stale.push(it)}}));
+  SCENES.forEach((sc,si)=>scenePanels(si).forEach((p,n)=>{const im=cutImg(si,n,p),it={si,n,key:`${si}:${cutSlot(p,n)}`};if(SCENES[si].pageEdits?.[cutSlot(p,n)]?.blank)return;if(!im)miss.push(it);else{imgs++;if(im.stale)stale.push(it)}}));
   return{miss,stale,imgs,list:[...stale,...miss].sort((a,b)=>a.si-b.si||a.n-b.n)}}
 let ACHK=0;
 function renderArtCheck(){const el=$('#artcheck');if(!el)return;const c=artCheck();
