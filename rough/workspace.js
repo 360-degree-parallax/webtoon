@@ -383,7 +383,7 @@ const TCOLORS=['#161616','#ffffff','#6b7280','#2f5a3a','#2f6db5','#7a4fb0','#b42
 const ICO={b:'<svg viewBox="0 0 24 24"><path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/></svg>',i:'<svg viewBox="0 0 24 24"><path d="M14 5h-4M14 19h-4M14.5 5l-5 14"/></svg>',u:'<svg viewBox="0 0 24 24"><path d="M7 5v6a5 5 0 0 0 10 0V5M5 20h14"/></svg>'};
 function textTools(o){const cur=o.font||PAGE_PRESET,col=o.color||'#161616';
   return `<span class="tfonts" role="group" aria-label="글꼴">${Object.entries(FONT_PRESETS).map(([v,f])=>`<button type="button" data-tf="${v}" aria-pressed="${v===cur}" title="${f.name} · ${f.note}" style="font-family:${f.family.replace(/"/g,"'")};font-weight:${f.weight}">가</button>`).join('')}</span>`+
-    `<span class="tdeco" role="group" aria-label="글자 꾸밈"><button type="button" data-td="bold" aria-pressed="${!!o.bold}" title="굵게 (Ctrl+B)">${ICO.b}</button><button type="button" data-td="italic" aria-pressed="${!!o.italic}" title="기울임 (Ctrl+I)">${ICO.i}</button><button type="button" data-td="underline" aria-pressed="${!!o.underline}" title="밑줄 (Ctrl+U)">${ICO.u}</button><button type="button" class="tc" data-tcolor title="글자색"><span><b>A</b><i style="background:${col}"></i></span></button></span>`}
+    `<span class="tdeco" role="group" aria-label="글자 꾸밈"><button type="button" data-td="bold" aria-pressed="${!!o.bold}" title="굵게 (Ctrl+B)">${ICO.b}</button><button type="button" data-td="italic" aria-pressed="${!!o.italic}" title="기울임 (Ctrl+I)">${ICO.i}</button><button type="button" data-td="underline" aria-pressed="${!!o.underline}" title="밑줄 (Ctrl+U)">${ICO.u}</button><button type="button" class="tc" data-tcolor="color" title="글자색"><span><b>A</b><i style="background:${col}"></i></span></button><button type="button" class="tc to" data-tcolor="outline" title="글자 테두리색"><span><b>A</b><i style="background:${o.outline==='none'?'transparent;border:1px dashed var(--t3)':o.outline||(/^caption/.test(selectedLetter.dataset.letter)?'#ffffff;border:1px solid var(--line2)':'transparent;border:1px dashed var(--t3)')}"></i></span></button></span>`}
 function setLetterStyle(patch){const L=selectedLetter;if(!L)return;const key=pageKey(L.closest('[data-slot-index]')),id=L.dataset.letter;
   if(isLocked(L.closest('[data-slot-index]'),id)){flash('잠긴 식자예요');return}
   withKey(key,()=>{const st=pageSettings(true);const o={...st.letters?.[id],...patch};for(const k of Object.keys(patch))if(patch[k]===null||patch[k]===false||patch[k]==='')delete o[k];(st.letters||={})[id]=o});
@@ -391,11 +391,13 @@ function setLetterStyle(patch){const L=selectedLetter;if(!L)return;const key=pag
 const curStyle=()=>selectedLetter?(pageSettings()?.letters?.[selectedLetter.dataset.letter]||{}):{};
 ctx.addEventListener('click',e=>{const f=e.target.closest('[data-tf]');if(f){setLetterStyle({font:f.dataset.tf===PAGE_PRESET?null:f.dataset.tf});flash(`글꼴: ${FONT_PRESETS[f.dataset.tf].name}`);return}
   const d=e.target.closest('[data-td]');if(d){const k=d.dataset.td;setLetterStyle({[k]:!curStyle()[k]});return}
-  const c=e.target.closest('[data-tcolor]');if(c){openColorPop(c);return}});
-function openColorPop(anchor){document.querySelector('.tcpop')?.remove();const cur=curStyle().color||'#161616',pop=document.createElement('div');pop.className='tcpop';
-  pop.innerHTML=TCOLORS.map(c=>`<button type="button" data-c="${c}" style="background:${c}" aria-pressed="${c===cur}" aria-label="글자색 ${c}"></button>`).join('')+`<label>직접 고르기 <input type="color" value="${cur}"></label>`;
-  const r=anchor.getBoundingClientRect();Object.assign(pop.style,{left:Math.min(r.left,innerWidth-180)+'px',top:(r.bottom+6)+'px'});document.body.appendChild(pop);
-  const done=c=>{setLetterStyle({color:c==='#161616'?null:c});pop.remove()};
+  const c=e.target.closest('[data-tcolor]');if(c){openColorPop(c,c.dataset.tcolor);return}});
+// 색 고르기 창: field = 'color'(글자색) | 'outline'(테두리색 · 「없음」 있음)
+function openColorPop(anchor,field='color'){document.querySelector('.tcpop')?.remove();const out=field==='outline',cur=curStyle()[field]||(out?'':'#161616'),pop=document.createElement('div');pop.className='tcpop';
+  pop.innerHTML=(out?`<button type="button" class="none" data-c="none" aria-pressed="${cur==='none'}" aria-label="테두리 없음" title="테두리 없음"></button>`:'')+TCOLORS.slice(0,out?9:10).map(c=>`<button type="button" data-c="${c}" style="background:${c}" aria-pressed="${c===cur}" aria-label="${out?'테두리':'글자'}색 ${c}"></button>`).join('')+
+    `<label>직접 고르기 <input type="color" value="${/^#/.test(cur)?cur:'#ffffff'}"></label>`+(out?'<label style="color:var(--t3)">비우면 나레이션은 자동(글자와 반대 톤), 말풍선은 없음</label>':'');
+  const r=anchor.getBoundingClientRect();Object.assign(pop.style,{left:Math.min(r.left,innerWidth-190)+'px',top:(r.bottom+6)+'px'});document.body.appendChild(pop);
+  const done=c=>{setLetterStyle({[field]:!out&&c==='#161616'?null:c});pop.remove();flash(out?(c==='none'?'글자 테두리를 없앴어요':'글자 테두리색을 바꿨어요'):'글자색을 바꿨어요')};
   pop.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b)done(b.dataset.c)});pop.querySelector('input').addEventListener('change',e=>done(e.target.value));
   setTimeout(()=>document.addEventListener('pointerdown',function off(e){if(!pop.contains(e.target)){pop.remove();document.removeEventListener('pointerdown',off,true)}},true),0)}
 document.addEventListener('keydown',e=>{if(!inEdit()||!selectedLetter||typing(e.target)||!(e.ctrlKey||e.metaKey)||e.altKey||e.shiftKey)return;if(!/^(dialog|caption)/.test(selectedLetter.dataset.letter))return;

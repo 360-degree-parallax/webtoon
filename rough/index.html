@@ -1044,10 +1044,10 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .ctxbar .tdeco{display:inline-flex;gap:2px}.ctxbar .tdeco button{width:30px;height:28px;padding:0;border:0;border-radius:7px;display:grid;place-items:center;background:none;color:var(--t1)}
 .ctxbar .tdeco button:hover{background:var(--hover)}.ctxbar .tdeco button[aria-pressed=true]{background:var(--tb50,#e5e8eb)}
 .ctxbar .tdeco svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ctxbar .tdeco .tc i{display:block;width:16px;height:3px;border-radius:2px;margin-top:1px}.ctxbar .tdeco .tc b{font-size:15px;line-height:1;font-weight:700}
+.ctxbar .tdeco .to b{color:#fff;-webkit-text-stroke:1.6px var(--t1);paint-order:stroke}.ctxbar .tdeco .tc i{display:block;width:16px;height:3px;border-radius:2px;margin-top:1px}.ctxbar .tdeco .tc b{font-size:15px;line-height:1;font-weight:700}
 .tcpop{position:fixed;z-index:80;display:grid;grid-template-columns:repeat(5,24px);gap:6px;padding:10px;background:var(--bg);border:1px solid var(--line2);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14)}
 .tcpop button{width:24px;height:24px;border-radius:50%;border:1px solid rgba(0,0,0,.15);padding:0}.tcpop button[aria-pressed=true]{outline:2px solid #2d71f7;outline-offset:2px}
-.tcpop label{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t2)}.tcpop input{width:32px;height:24px;padding:0;border:0;background:none}
+.tcpop .none{background:linear-gradient(135deg,#fff 45%,#d33 45% 55%,#fff 55%)!important}.tcpop label{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t2)}.tcpop input{width:32px;height:24px;padding:0;border:0;background:none}
 </style>
 </head>
 <body>
@@ -1424,8 +1424,10 @@ const FONT_PRESETS={
   batang:{name:'바탕',note:'HN 대사 · 기본',family:'"Gowun Batang","Noto Serif KR",serif',weight:400,bold:700,ls:-0.4},
   pen:{name:'손글씨',note:'혼잣말 · 메모',family:'"Nanum Pen Script",cursive',weight:400,bold:400,ls:0,size:1.4}};
 // 글자 꾸밈(말풍선·나레이션 공통): 색 · 굵게 · 기울임 · 밑줄 → <text> 속성
-const textDeco=(edit,FP,baseW)=>{const w=edit?.bold?(FP?.bold||800):edit?.bold===false?(FP?.weight||400):baseW;
-  return ` font-weight="${w}"${edit?.italic?' font-style="italic"':''}${edit?.underline?' text-decoration="underline"':''}`};
+// 글자 테두리: outline이 색이면 그 색, 'none'이면 없음, 비어 있으면 def(나레이션은 자동 대비색, 말풍선은 없음)
+const textDeco=(edit,FP,baseW,k=1,def='')=>{const w=edit?.bold?(FP?.bold||800):edit?.bold===false?(FP?.weight||400):baseW;
+  const o=edit?.outline==='none'?'':/^#[0-9a-f]{6}$/i.test(edit?.outline||'')?edit.outline:def;
+  return ` font-weight="${w}"${edit?.italic?' font-style="italic"':''}${edit?.underline?' text-decoration="underline"':''}${o?` stroke="${o}" stroke-width="${(3.2*k).toFixed(1)}" stroke-linejoin="round" paint-order="stroke"`:''}`};
 const fontPreset=id=>FONT_PRESETS[id]||null;
 let PAGE_FONT='Pretendard,system-ui,sans-serif';let PAGE_PRESET='batang';try{const v=localStorage.getItem('rough-page-preset');if(v&&FONT_PRESETS[v])PAGE_PRESET=v}catch(_){}/* 모든 글씨 기본은 바탕 */try{PAGE_FONT=localStorage.getItem('rough-page-font')||PAGE_FONT}catch(_){}const $=s=>document.querySelector(s);const RE=window.RoughEngine;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1750,7 +1752,7 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
   const weight=edit?.font&&FP?FP.weight:FP&&autoW===500?FP.weight:autoW;  // 직접 고른 글꼴이 우선, 아니면 모양·강도에 따른 굵기
   const text=groups.map((group,j)=>{
     const x=cx+(linked?(j?.85:-.76)*rx:0),y=cy+(linked?(j?.81:-.73)*ry:0);
-    return group.map((l,n)=>`<text x="${x.toFixed(1)}" y="${(y-group.length*lh/2+lh*(n+.72)).toFixed(1)}" font-size="${fs.toFixed(1)}"${textDeco(edit,FP,weight)} text-anchor="middle" fill="${/^#[0-9a-f]{6}$/i.test(edit?.color||'')?edit.color:LT.text}"${serif} letter-spacing="${FP?FP.ls*k:-0.3}">${esc(l)}</text>`).join('');
+    return group.map((l,n)=>`<text x="${x.toFixed(1)}" y="${(y-group.length*lh/2+lh*(n+.72)).toFixed(1)}" font-size="${fs.toFixed(1)}"${textDeco(edit,FP,weight,k)} text-anchor="middle" fill="${/^#[0-9a-f]{6}$/i.test(edit?.color||'')?edit.color:LT.text}"${serif} letter-spacing="${FP?FP.ls*k:-0.3}">${esc(l)}</text>`).join('');
   }).join('');
   const scale=edit?.scale||1;
   if(!interactive&&scale===1)return body+tail.svg+cover+text;
@@ -1771,11 +1773,11 @@ function captionSVG(t,p,box,first,edit,n=0){
   const color=/^#[0-9a-f]{6}$/i.test(edit?.color||'')?edit.color:'#161616';
   const lum=parseInt(color.slice(1,3),16)*.299+parseInt(color.slice(3,5),16)*.587+parseInt(color.slice(5,7),16)*.114,halo=lum<140?'#ffffff':'#161616';
   const fam=FP?` font-family='${FP.family}' letter-spacing="${FP.ls*k}"`:` font-family="${esc(PAGE_FONT)}"`;
-  const txt=extra=>lines.map((l,i)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+(h-th-fs*1.6)/2+fs*.8+lh*(i+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}"${textDeco(edit,FP,FP?FP.weight:600)} text-anchor="middle" fill="${color}"${fam}${extra}>${esc(l)}</text>`).join('');
+  const txt=def=>lines.map((l,i)=>`<text x="${(x+w/2).toFixed(1)}" y="${(y+(h-th-fs*1.6)/2+fs*.8+lh*(i+.75)).toFixed(1)}" font-size="${fs.toFixed(1)}"${textDeco(edit,FP,FP?FP.weight:600,k,def)} text-anchor="middle" fill="${color}"${fam}>${esc(l)}</text>`).join('');
   // 고르기·옮기기용 투명 상자(손잡이가 잡을 자리)
   const hit=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="transparent"/>`;
   if(edit?.style==='narration')return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#161616" stroke-width="${1.8*k}"/>`+txt('');
-  return hit+txt(` stroke="${halo}" stroke-width="${(3.2*k).toFixed(1)}" stroke-linejoin="round" paint-order="stroke"`)}
+  return hit+txt(halo)}
 function soundEffectSVG(text,box,side,index,position){
   const variant=position?.materialVariant||'A';
   const art=window.RoughMaterials.image(window.RoughMaterials.find(text),variant)||window.RoughSoundEffects?.match(text);
