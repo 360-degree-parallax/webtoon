@@ -2504,7 +2504,12 @@ document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switc
 const WMODE='final';  // 편집 화면은 늘 완성본(등록 그림, 없으면 레퍼런스). 완성본/러프 전환은 뺌
 try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 예시'}catch(_){$('#wtitle').value='제목 없는 작품'}
 $('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
-function scenePanels(i){if(i===SCUR)return state.panels;const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
+// 다른 씬의 컷 계산은 글·고른 레퍼런스·고정값이 같으면 다시 돌리지 않음(레이어 패널·씬 경계 색이 컷마다 불러 무거웠음)
+const SP_CACHE=new Map();
+function scenePanels(i){if(i===SCUR)return state.panels;const sc=SCENES[i];if(!sc)return [];
+  const ck=JSON.stringify([sc.cuts,(sc.pageEdits||[]).map(e=>e?.ref||0),locks,engineChars(),REFS.length,PATS.length]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
+  const out=_scenePanels(i);SP_CACHE.set(i,{k:ck,v:out});return out}
+function _scenePanels(i){const an=RE.analyzeCuts(SCENES[i].cuts,engineChars());const out=[];
   an.forEach((a,ci)=>{const r=RE.rank(a,PATS,1)[0];if(!r)return;RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=pickRef(c,SCENES[i].pageEdits,out.length);out.push(c)})});out.forEach((c,k)=>c.side=k%2?'left':'right');return out}
 // 씬 끝 색(sc.endTo): 'next'(기본) 다음 씬 첫 컷 배경으로 이어감 · 'white' 흰색으로 · 'hold' 마지막 컷 색 유지. 마지막 씬은 기본이 흰색
 function sceneEndColor(i,ps){const sc=SCENES[i],mode=sc.endTo||ps.map(p=>RoughGrammar.fromText(p)?.endTo).filter(Boolean).at(-1)||'next';

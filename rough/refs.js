@@ -93,7 +93,7 @@ pageReader.addEventListener('drop',e=>{const id=e.dataTransfer.getData('applicat
   selectPageCut(g);apply(id,pageKey(g))});
 
 // 선택한 컷이 바뀌면 패널 갱신, 속성 패널에도 '레퍼런스 바꾸기' 줄
-{const _sc=selectPageCut;selectPageCut=function(...a){const prev=pageSelection,r=_sc(...a);if(prev!==pageSelection){if(!panel.hidden)render();refRow()}return r}}
+{const _sc=selectPageCut;selectPageCut=function(...a){const prev=pageSelection,r=_sc(...a);if(prev!==pageSelection){if(!panel.hidden)requestAnimationFrame(()=>setTimeout(render,0));refRow()}return r}}
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);refRow();return r}}
 const row=document.createElement('div');row.className='prop refrow';row.innerHTML='<span>레퍼런스</span><span class="refrow-v"><b id="wrefid">—</b><button class="btn sm" id="wrefchange">바꾸기</button></span>';
 $('#wsec-cut .insp-h').after(row);

@@ -595,8 +595,10 @@ reader.addEventListener('drop',e=>{reader.querySelectorAll('.gap-drop').forEach(
   if(g0&&['bg','color','bgimg','pack','seq'].includes(k)){e.preventDefault();e.stopPropagation();applyAsset(k,v,g0)}},true);
 // 고른 대상에 따라 탭 바꾸기(사용자가 탭을 직접 고르기 전까지)
 function autoTab(){renderTarget();if(!ASSET.auto)return;const want=selectedLetter&&/^(dialog|caption)/.test(selectedLetter.dataset.letter)?'balloon':selectedLetter?'sfx':'rec';if(want!==ASSET.tab)assetTab(want);else if(want==='rec')renderAssets()}
-{const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);autoTab();return r}}
-{const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);autoTab();return r}}
+// 고르기는 바로 보이게, 에셋 패널은 화면을 한 번 그린 뒤에(한 번 클릭에 여러 번 불려도 한 번만)
+let atPend=false;function autoTabSoon(){if(atPend)return;atPend=true;requestAnimationFrame(()=>setTimeout(()=>{atPend=false;autoTab()},0))}
+{const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);autoTabSoon();return r}}
+{const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);autoTabSoon();return r}}
 if(LS('rough-ws-drawer',false))setTimeout(()=>setDrawer(true),0);if(LS('rough-ws-mini',false))miniWrap.hidden=false;
 
 // ---------- Delete·Backspace로 지우기 ----------
