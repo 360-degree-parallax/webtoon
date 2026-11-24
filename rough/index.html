@@ -1013,6 +1013,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   #v-write .scmeta{margin:6px 0 14px;padding-bottom:12px}#v-write .ss-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;font-size:13px}#v-write .ss-row>span{flex:none}
   .scins button{padding:0 8px;gap:4px}.scins button b{min-width:20px;padding:0 3px;background:none}
 }
+.ct-top{display:flex;gap:8px;margin:0 0 20px}
 </style>
 </head>
 <body>
@@ -3458,10 +3459,11 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const L=naiCuts(),done=cutCount(SCUR,ps),ai=ainFor(),dim=new Set(String(NAISTYLE||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
-  const head=`<div class="ct-head"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2>
+  // 맨 위: 작화 설정 · Claude로 다듬기 두 개만(여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로, 프롬프트 txt는 작화 설정 안에)
+  const head=`<div class="ct-tools ct-top"><button class="tpill" data-act="naiset" aria-expanded="false">작화 설정</button><button class="tpill gray" data-act="nairefine">Claude로 다듬기</button></div><div class="ct-head"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2>
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">글이 바뀌어 Claude 프롬프트가 예전 것이에요</span>':' · Claude로 다듬은 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
-    <div class="ct-tools"><button class="tpill" data-act="naimulti" title="파일 이름 순으로 빈 컷부터 채워요">그림 여러 장 넣기</button><button class="tpill" data-act="nairefine">Claude로 다듬기</button><button class="tpill gray" data-act="naiset" aria-expanded="false">작화 설정</button><button class="tpill gray" data-act="naidown">프롬프트 txt</button></div></div>
+</div>
     <nav class="ct-nav" aria-label="컷 이동"><div class="ct-dots">${L.map(({i})=>`<button type="button" class="ct-dot${has[i]?' on':''}${i===CT_CUR?' cur':''}" data-ctgo="${i}" title="${i+1}번 컷 · ${has[i]?'그림 있음':'그림 없음'}">${has[i]?'✓':i+1}</button>`).join('')}</div>
       <label class="ct-filter"><span>빈 컷만</span><input type="checkbox" role="switch" data-ctempty${CT_EMPTY?' checked':''}><i aria-hidden="true"></i></label>
       <span class="ct-keys" title="J·K 다음·이전 컷 · C 지금 컷 프롬프트 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기"><span><kbd>J</kbd><kbd>K</kbd>이동</span><span><kbd>C</kbd>복사</span><span><kbd>Ctrl</kbd><kbd>V</kbd>붙여 넣기</span></span></nav>`;
