@@ -12,7 +12,7 @@ const CZ_MIN=.1,CZ_MAX=4,BASE=720;
 let CZ=1;try{CZ=clamp(+localStorage.getItem('rough-canvas-zoom')||1,CZ_MIN,CZ_MAX)}catch(_){}
 function applyZoom(){if(reader.classList.contains('artboards')){reader.style.width='max-content';reader.style.setProperty('--abw',Math.round(BASE*CZ)+'px')}else reader.style.width=Math.round(BASE*CZ)+'px';reader.style.maxWidth='none';
   $('#wczlab').textContent=Math.round(CZ*100)+'%';try{localStorage.setItem('rough-canvas-zoom',CZ)}catch(_){}
-  mini.view()}
+  requestAnimationFrame(()=>mini.view())}  // 위치 재기는 그린 다음(바로 재면 레이아웃을 한 번 더 계산)
 // 화면의 (cx,cy) 지점이 확대 뒤에도 같은 자리에 있게
 function zoomTo(z,cx,cy){z=clamp(z,CZ_MIN,CZ_MAX);if(Math.abs(z-CZ)<1e-4)return;
   const r=reader.getBoundingClientRect();if(cx==null){const c=canvas.getBoundingClientRect();cx=c.left+c.width/2;cy=Math.max(STICKY,innerHeight/2)}
@@ -129,7 +129,7 @@ const mini=(()=>{const box=document.createElement('div');box.className='minimap'
   function build(){if(!inEdit()||!reader.querySelector('svg')){box.hidden=true;return}
     inner.innerHTML=reader.innerHTML;inner.style.width=BASE+'px';
     // 편집 손잡이·안내선·고른 표시는 미니맵에 옮기지 않음(예전 상태가 남아 보였음)
-    inner.querySelectorAll('.frame-handles,.phoneguide,.tail-handle,.gap-grip,[data-page-gap]').forEach(x=>x.remove());inner.querySelectorAll('.sel,.multi-sel,.crop').forEach(x=>x.classList.remove('sel','multi-sel','crop'));
+    inner.querySelectorAll('.frame-handles,.phoneguide,.readorder,.tail-handle,.gap-grip,[data-page-gap]').forEach(x=>x.remove());inner.querySelectorAll('.sel,.multi-sel,.crop').forEach(x=>x.classList.remove('sel','multi-sel','crop'));
     const docked=box.classList.contains('docked'),h=reader.scrollHeight/CZ,maxH=docked?Math.max(200,innerHeight*.45):Math.max(160,innerHeight*.55);k=Math.min((docked?Math.max(60,box.parentElement.clientWidth-4):96)/BASE,maxH/h);
     inner.style.transform=`scale(${k})`;box.style.width=Math.round(BASE*k)+'px';box.style.height=Math.round(h*k)+'px';box.hidden=(!docked&&matchMedia('(max-width:1100px)').matches)||reader.classList.contains('artboards');view()}
   function view(){if(box.hidden)return;const r=reader.getBoundingClientRect(),s=k/CZ;
@@ -213,5 +213,26 @@ function setGuide(on){PG=!!on;try{localStorage.setItem('rough-phone-guide',PG?'1
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);drawGuide();return r}}
 {const _az=applyZoom;applyZoom=function(...a){const r=_az(...a);drawGuide();return r}}
 addEventListener('resize',()=>drawGuide());
-window.RoughStudio={get phoneGuide(){return PG},setGuide,drawGuide,zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
+// ---------- 말풍선 읽는 순서(대사만 · 나레이션은 기본 자리가 컷 아래라 빼고): 글에 쓴 순서대로 번호, 화면 위치(위→아래, 같은 높이면 왼→오)로 읽히는 순서와 다르면 빨간 표시 ----------
+let RO=false;try{RO=localStorage.getItem('rough-read-order')==='1'}catch(_){}
+function readOrder(g){const Ls=[...g.querySelectorAll('[data-letter^="dialog-"]')];if(Ls.length<2)return [];
+  const si=+g.closest('section').dataset.pageScene,slot=+g.dataset.slotIndex,txt=(SCENES[si]?.cuts?.[slot]||'');
+  const items=Ls.map(L=>{const b=(L.querySelector('[data-balloon] > path, [data-balloon] path')||L.querySelector('[data-balloon]')||L).getBoundingClientRect(),t=(L.dataset.letterText||'').trim(),at=t?txt.indexOf(t.split('\n')[0].slice(0,12)):-1;
+    return {L,b,id:L.dataset.letter,at}});
+  // 글 순서: 문구가 글에 나오는 자리, 못 찾으면 나레이션 먼저·번호순
+  const key=x=>x.at>=0?x.at:(x.id.startsWith('caption')?-1:1e6)+(parseInt(x.id.split('-')[1])||0);
+  const want=[...items].sort((a,b)=>key(a)-key(b));
+  const seen=[...items].sort((a,b)=>{const dy=(a.b.top+a.b.height/2)-(b.b.top+b.b.height/2),h=Math.min(a.b.height,b.b.height)*.35;return Math.abs(dy)<h?(a.b.left-b.b.left):dy});
+  return want.map((x,i)=>({...x,n:i+1,pos:seen.indexOf(x)+1}))}
+function drawOrder(){reader.querySelectorAll('.readorder').forEach(x=>x.remove());if(!RO||!inEdit()||reader.classList.contains('artboards'))return 0;
+  const R=reader.getBoundingClientRect(),box=document.createElement('div');box.className='readorder';box.setAttribute('aria-hidden','true');let bad=0,html='';
+  reader.querySelectorAll(':scope>section [data-slot-index]').forEach(g=>{readOrder(g).forEach(x=>{const ok=x.n===x.pos;if(!ok)bad++;
+    html+=`<span class="${ok?'':'bad'}" style="left:${(x.b.left-R.left-6).toFixed(1)}px;top:${(x.b.top-R.top-6).toFixed(1)}px" title="${ok?`${x.n}번째로 읽혀요`:`글에선 ${x.n}번째인데 위치상 ${x.pos}번째로 읽혀요`}">${x.n}${ok?'':` <small>→${x.pos}</small>`}</span>`})});
+  box.innerHTML=html;reader.appendChild(box);return bad}
+function setOrder(on){RO=!!on;try{localStorage.setItem('rough-read-order',RO?'1':'0')}catch(_){}const bad=drawOrder();
+  if(RO)window.RoughWS?.flash?.(bad?`읽는 순서가 글과 다른 말풍선 ${bad}개 · 빨간 번호를 확인해요`:'모든 말풍선이 글 순서대로 읽혀요')}
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);drawOrder();return r}}
+{const _az=applyZoom;applyZoom=function(...a){const r=_az(...a);drawOrder();return r}}
+addEventListener('resize',()=>drawOrder());
+window.RoughStudio={get readOrder(){return RO},setOrder,drawOrder,get phoneGuide(){return PG},setGuide,drawGuide,zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
 })();

@@ -12,7 +12,7 @@ const flash=t=>window.RoughWS?.flash?.(t);
 const newId=()=>'e'+Date.now().toString(36);
 const freshScenes=()=>JSON.stringify([{id:'s'+Date.now(),title:'씬 1',cuts:[''],pageEdits:[]}]);
 
-function stash(){if(typeof saveScenes==='function')saveScenes();KEYS.forEach(k=>ls.set(slot(meta.cur,k),ls.get(k)))}
+function stash(){if(typeof saveScenes==='function')saveScenes();try{const t=thumbOf(cur());if(t&&t.length<400000)cur().thumb=t;else delete cur().thumb;save()}catch(_){}KEYS.forEach(k=>ls.set(slot(meta.cur,k),ls.get(k)))}
 function unstash(id){KEYS.forEach(k=>{const v=ls.get(slot(id,k));ls.set(k,v);ls.set(slot(id,k),null)})}
 function go(id){if(id===meta.cur)return;stash();unstash(id);meta.cur=id;save();location.reload()}
 
@@ -42,12 +42,22 @@ function move(d){const i=meta.list.indexOf(cur()),j=i+d;if(j<0||j>=meta.list.len
 
 const btn=document.createElement('button');btn.className='btn epbtn';btn.id='epbtn';btn.setAttribute('aria-haspopup','menu');btn.title='회차 바꾸기 · 새 회차 · 복제';
 const bar=document.getElementById('gscbar');bar?.parentNode.insertBefore(btn,bar);
-function paint(){btn.innerHTML=`<b>${esc(cur().title)}</b><small>${meta.list.length>1?`${meta.list.indexOf(cur())+1}/${meta.list.length}`:''}</small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`}
-function menu(){const SEP={sep:1};return [...meta.list.map(e=>({label:e.title,check:e.id===meta.cur,run:()=>go(e.id)})),SEP,
+function paint(){const t=thumbOf(cur());btn.innerHTML=`${t?`<img class="epth" src="${esc(t)}" alt="">`:''}<b>${esc(cur().title)}</b><small>${meta.list.length>1?`${meta.list.indexOf(cur())+1}/${meta.list.length}`:''}</small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`}
+// 회차 썸네일: 표지로 정한 컷 → 첫 컷의 넣은 그림 → (지금 회차만) 첫 컷 레퍼런스
+function scenesOf(e){if(e.id===meta.cur)return typeof SCENES!=='undefined'?SCENES:[];try{return JSON.parse(ls.get(slot(e.id,'rough-scenes'))||'[]')}catch(_){return []}}
+function thumbOf(e){const scs=scenesOf(e),im=(sid,i)=>typeof IMG!=='undefined'&&typeof cutId==='function'?IMG.cut[cutId(sid,i)]?.src:null;
+  if(e.cover){const v=im(e.cover.scene,e.cover.idx);if(v)return v}
+  for(const sc of scs){const n=(sc.cuts||[]).length;for(let i=0;i<n;i++){const v=im(sc.id,i);if(v)return v}}
+  if(e.id===meta.cur&&typeof scenePanels==='function'){try{const p=scenePanels(0)[0],r=p?.ref;if(r)return r.fixed?r.src:(r.thumb||(typeof cutThumb==='function'&&cutThumb(r.source_cut))||r.src)}catch(_){}}
+  return e.thumb||''}
+function countOf(e){const scs=scenesOf(e);return `씬 ${scs.length} · ${scs.reduce((a,s)=>a+(s.cuts||[]).filter(c=>String(c).trim()).length,0)}컷`}
+function setCover(){const k=typeof pageSelection==='string'&&pageSelection;if(!k){flash('표지로 쓸 컷을 먼저 골라요');return}const [si,slot]=k.split(':').map(Number);
+  cur().cover={scene:SCENES[si].id,idx:slot};save();paint();flash(`씬 ${si+1} · ${slot+1}컷을 「${cur().title}」 표지로 정했어요`)}
+function menu(){const SEP={sep:1};return [...meta.list.map(e=>({label:e.title,note:countOf(e),thumb:thumbOf(e),check:e.id===meta.cur,run:()=>go(e.id)})),SEP,
   {label:'새 회차 (빈 원고)',run:add},{label:'이 회차 복제해 새 회차',run:dup},SEP,
-  {label:'이름 바꾸기',run:rename},{label:'앞으로',disabled:meta.list.indexOf(cur())===0,run:()=>move(-1)},{label:'뒤로',disabled:meta.list.indexOf(cur())===meta.list.length-1,run:()=>move(1)},
+  {label:'고른 컷을 이 회차 표지로',disabled:!(typeof pageSelection==='string'&&pageSelection),run:setCover},  {label:'이름 바꾸기',run:rename},{label:'앞으로',disabled:meta.list.indexOf(cur())===0,run:()=>move(-1)},{label:'뒤로',disabled:meta.list.indexOf(cur())===meta.list.length-1,run:()=>move(1)},
   {label:'이 회차 지우기',disabled:meta.list.length<2,run:remove},SEP,{label:'인물·세계관·작화 설정·글꼴은 모든 회차가 같이 써요',disabled:true}]}
 btn.addEventListener('click',e=>{e.stopPropagation();const r=btn.getBoundingClientRect();window.RoughWS?.cmOpen?.(menu(),r.left,r.bottom+4)});
-paint();
+paint();setTimeout(paint,1500);setTimeout(paint,4000);  // 그림 저장소를 늦게 읽어 오므로 다시
 window.RoughEpisodes={get list(){return meta.list.slice()},get cur(){return cur()},go,add,dup,rename,remove};
 })();

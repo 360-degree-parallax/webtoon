@@ -224,6 +224,34 @@ function onOpen(id){if(id==='assets'){renderAssets();return}if(id==='nav')RoughS
 // ---------- 상황 막대 ----------
 const ctx=document.createElement('div');ctx.className='ctxbar';ctx.setAttribute('role','toolbar');ctx.setAttribute('aria-label','도구 옵션');$('#wst').after(ctx);
 const WS_OPTS=Object.entries(PRESETS).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join('')+'<option value="custom" disabled>내 배치</option>';
+// 컷 간격 일괄: 고른 컷의 아래 간격을 씬 전체·모든 씬에, 또는 기본(자동)으로
+function setGaps(scope,v){const sc=pageSelection?.split(':')[0];let n=0;
+  reader.querySelectorAll(':scope>section').forEach(sec=>{if(scope==='scene'&&sec.dataset.pageScene!==sc)return;
+    sec.querySelectorAll('[data-slot-index]').forEach(g=>{if(isLocked(g,'cut'))return;const k=pageKey(g);withKey(k,()=>{const st=pageSettings(v!=null);if(!st)return;if(v==null)delete st.gap;else st.gap=v;n++})})});
+  saveScenes();renderWebtoon();flash(v==null?`${n}컷 간격을 기본(자동)으로 되돌렸어요`:`${n}컷 아래 간격을 ${v}px로 맞췄어요 · Ctrl+Z로 되돌리기`)}
+function gapAllMenu(){const raw=ctx.querySelector('[data-ctx=gap]')?.value,v=raw===''||raw==null?null:Math.max(0,Math.min(1600,Math.round(+raw)));
+  const lab=v==null?'기본(자동)':`${v}px`;
+  return [{label:`이 씬 모든 컷을 ${lab}로`,run:()=>setGaps('scene',v)},{label:`모든 씬 모든 컷을 ${lab}로`,run:()=>setGaps('all',v)},{sep:1},
+    {label:'이 씬 간격 기본(자동)으로',run:()=>setGaps('scene',null)},{label:'모든 씬 간격 기본(자동)으로',run:()=>setGaps('all',null)}]}
+// 스타일 한 번에 적용: 고른 식자의 모양·글꼴·꾸밈·색·크기를 다른 식자에(위치·글·늘린 상자는 그대로)
+const STYLE_KEYS=['style','font','bold','italic','underline','color','outline','scale'];
+function styleTargets(scope){const src=selectedLetter;if(!src)return [];const kind=src.dataset.letter.replace(/-\d+$/,''),sk=lkey(src),who=src.dataset.who||'',sc=src.closest('section').dataset.pageScene;
+  const same=L=>L.dataset.letter.replace(/-\d+$/,'')===kind;
+  let list=[...reader.querySelectorAll(':scope>section [data-letter]')].filter(L=>lkey(L)!==sk);
+  if(scope==='multi')list=list.filter(L=>MULTI.has(lkey(L)));
+  else if(scope==='who')list=list.filter(L=>same(L)&&who&&L.dataset.who===who);
+  else if(scope==='scene')list=list.filter(L=>same(L)&&L.closest('section').dataset.pageScene===sc);
+  else list=list.filter(same);
+  return list.filter(L=>!isLocked(L.closest('[data-slot-index]'),L.dataset.letter))}
+function applyStyle(scope){const src=selectedLetter;if(!src)return;const sk=lkey(src),[key,id]=sk.split('|');const from=withKey(key,()=>pageSettings()?.letters?.[id])||{};
+  const list=styleTargets(scope);if(!list.length){flash('적용할 식자가 없어요');return}
+  list.forEach(L=>{const [k2,id2]=lkey(L).split('|');withKey(k2,()=>{const st=pageSettings(true);const o={...st.letters?.[id2]};STYLE_KEYS.forEach(f=>{if(from[f]!==undefined)o[f]=from[f];else delete o[f]});(st.letters||={})[id2]=o})});
+  saveScenes();renderWebtoon();const L=resolve(sk);if(L)selectLetter(L);flash(`${list.length}개에 같은 스타일을 적용했어요 · Ctrl+Z로 되돌리기`)}
+function styleMenu(){const src=selectedLetter,who=src?.dataset.who,kind=/^dialog/.test(src?.dataset.letter||'')?'말풍선':'나레이션',n=s=>styleTargets(s).length;
+  return [MULTI.size>1?{label:`고른 식자 전부 (${n('multi')})`,run:()=>applyStyle('multi')}:null,
+    who?{label:`「${who}」 대사 전부 (${n('who')})`,run:()=>applyStyle('who')}:null,
+    {label:`이 씬 ${kind} 전부 (${n('scene')})`,run:()=>applyStyle('scene')},{label:`모든 씬 ${kind} 전부 (${n('all')})`,run:()=>applyStyle('all')},
+    {sep:1},{label:'모양·글꼴·굵게·기울임·밑줄·색·테두리·크기를 맞춰요 (위치·문구는 그대로)',disabled:true}].filter(Boolean)}
 // 글에 맞추기: 고른 말풍선·나레이션(여러 개면 전부)의 늘린 가로·세로(bw·bh)를 없애 글 크기에 맞춤
 function fitLetters(){const ks=MULTI.size?[...MULTI]:selectedLetter?[lkey(selectedLetter)]:[];let n=0;
   ks.forEach(k=>{const [key,id]=k.split('|');if(!/^(dialog|caption)/.test(id))return;withKey(key,()=>{const o=pageSettings(true).letters?.[id];if(o&&(o.bw||o.bh)){delete o.bw;delete o.bh;n++}})});
@@ -254,18 +282,19 @@ function coachSoon(){setTimeout(()=>{if(!inEdit()||!coachEl.hidden)return;
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);if(selectedLetter)coachSoon();return r}}
 const FPRESETS=[['네모',0,0],['위 사선',-8,0],['아래 사선',0,8],['평행 사선',-8,-8],['쐐기',-8,8]];
 function shapeTools(g){const a=frameAngles(g);return `<span class="cb-grp" role="group" aria-label="프레임 기울기"><label>위 <input type="number" data-ctx="fatop" min="-30" max="30" step="1" value="${a.top}" style="width:52px">°</label><label>아래 <input type="number" data-ctx="fabot" min="-30" max="30" step="1" value="${a.bot}" style="width:52px">°</label>${FPRESETS.map(([n,t,b])=>`<button class="cb${a.top===t&&a.bot===b?' on':''}" data-fpre="${t},${b}">${n}</button>`).join('')}</span>`}
-function renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
+function renderCtx(){try{_renderCtx()}catch(e){console.warn('상황 막대',e)}}  // 처음 불러올 때 아직 없는 칸이 있어도 편집기 전체가 멈추지 않게
+function _renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
   if(MULTI.size>1&&tool==='select')mid=`<b>식자 ${MULTI.size}개</b><button class="cb" data-ctx="lfit">글에 맞추기</button>${[['left','왼쪽'],['hcenter','가로 가운데'],['right','오른쪽'],['top','위'],['vcenter','세로 가운데'],['bottom','아래'],['vdist','세로 간격'],['hdist','가로 간격']].map(([k,n])=>`<button class="cb" data-align="${k}">${n}</button>`).join('')}`;
   else if(tool==='balloon')mid=`<label>형태 <select data-ctx="bstyle">${BSTYLES.map(([k,n])=>`<option value="${k}"${k===opt.balloon?' selected':''}>${esc(n)}</option>`).join('')}</select></label>`;
   else if(tool==='sfx')mid=`<label>문구 <input data-ctx="sfxword" value="${esc(opt.sfx)}" maxlength="10" size="6"></label>${['쾅','두근','툭','쿵','휘청','쨍그랑','덜컹','찰칵'].map(w=>`<button class="cb${w===opt.sfx?' on':''}" data-sfxw="${w}">${w}</button>`).join('')}`;
   else if(tool==='select'&&selectedLetter){const art=selectedLetter.querySelector('[data-balloon]'),kind=/^dialog/.test(selectedLetter.dataset.letter)?'말풍선':/^caption/.test(selectedLetter.dataset.letter)?'나레이션':'효과음';
-    mid=`<b>${kind}</b><span class="cb-t">${esc((selectedLetter.dataset.letterText||'').replace(/\s+/g,' ').slice(0,24))}</span><button class="cb" data-ctx="ledit">문구 고치기</button>`+(/^(dialog|caption)/.test(selectedLetter.dataset.letter)?'<button class="cb" data-ctx="lfit" title="늘리거나 줄인 상자를 글 크기에 딱 맞게">글에 맞추기</button>':'')+
-      (art?`<label>형태 <select data-ctx="lstyle">${[...$('#wballoonstyle').options].map(o=>`<option value="${o.value}"${o.selected?' selected':''}>${esc(o.textContent)}</option>`).join('')}</select></label><label>크기 <input type="range" data-ctx="lsize" min="50" max="200" value="${$('#wballoonsize').value}"><output>${$('#wballoonsize').value}%</output></label>`:'')+
+    mid=`<b>${kind}</b><span class="cb-t">${esc((selectedLetter.dataset.letterText||'').replace(/\s+/g,' ').slice(0,24))}</span><button class="cb" data-ctx="ledit">문구 고치기</button>`+(/^(dialog|caption)/.test(selectedLetter.dataset.letter)?'<button class="cb" data-ctx="lstyleall" aria-haspopup="menu" title="이 식자의 모양·글꼴·색을 다른 식자에도">스타일 적용 ▾</button>':'')+(/^(dialog|caption)/.test(selectedLetter.dataset.letter)?'<button class="cb" data-ctx="lfit" title="늘리거나 줄인 상자를 글 크기에 딱 맞게">글에 맞추기</button>':'')+
+      (art?`<label>형태 <select data-ctx="lstyle">${[...($('#wballoonstyle')?.options||[])].map(o=>`<option value="${o.value}"${o.selected?' selected':''}>${esc(o.textContent)}</option>`).join('')}</select></label><label>크기 <input type="range" data-ctx="lsize" min="50" max="200" value="${($('#wballoonsize')?.value??100)}"><output>${($('#wballoonsize')?.value??100)}%</output></label>`:'')+
       (/^(dialog|caption)/.test(selectedLetter.dataset.letter)?textTools(pageSettings()?.letters?.[selectedLetter.dataset.letter]||{}):'')+
       `<button class="cb" data-ctx="llock">${isLocked(selectedLetter.closest('[data-slot-index]'),selectedLetter.dataset.letter)?'잠금 풀기':'잠그기'}</button>`}
   else if(tool==='select'&&pageSelection){const s=pageSettings(),g=selGroup();
-    mid=`<b>${esc(pageCut.selectedOptions[0]?.textContent||'컷')}</b><label>아래 간격 <input type="number" data-ctx="gap" min="0" max="1600" step="4" value="${s?.gap??''}" placeholder="기본" style="width:64px">px</label>
-      <label>그림 확대 <input type="range" data-ctx="zoom" min="100" max="500" step="5" value="${$('#wzoom').value}"><output>${$('#wzoom').value}%</output></label>
+    mid=`<b>${esc(pageCut.selectedOptions[0]?.textContent||'컷')}</b><label>아래 간격 <input type="number" data-ctx="gap" min="0" max="1600" step="4" value="${s?.gap??''}" placeholder="기본" style="width:64px">px</label><button class="cb" data-ctx="gapall" aria-haspopup="menu" title="이 간격을 씬의 모든 컷에">간격 일괄 ▾</button>
+      <label>그림 확대 <input type="range" data-ctx="zoom" min="100" max="500" step="5" value="${($('#wzoom')?.value??100)}"><output>${($('#wzoom')?.value??100)}%</output></label>
       <button class="cb${frameShapeKey===pageSelection?' on':''}" data-ctx="fshape" aria-pressed="${frameShapeKey===pageSelection}" title="모퉁이를 하나씩 끌어 사선 칸 (컷 더블클릭과 같음)">프레임 모양</button>${frameShapeKey===pageSelection&&g?shapeTools(g):''}<button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
   else mid=`<span class="cb-hint">${esc(t.hint)}</span>`;
   ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;}
@@ -281,6 +310,8 @@ ctx.addEventListener('input',e=>{const c=e.target.dataset.ctx;
   if(c==='sfxword'){opt.sfx=e.target.value.replace(/[-\s]/g,'')||'쾅';SS('rough-tool-sfx',opt.sfx)}
   if(c==='lsize'){const s=$('#wballoonsize');s.value=e.target.value;s.dispatchEvent(new Event('input'));e.target.nextElementSibling.textContent=e.target.value+'%'}
   if(c==='zoom'){const z=$('#wzoom');z.value=e.target.value;z.dispatchEvent(new Event('input'));e.target.nextElementSibling.textContent=e.target.value+'%'}});
+// 입력칸에 쓰다 메뉴 버튼을 누르면 입력칸의 change(다시 그리기)가 먼저 일어나 버튼이 바뀌어 클릭이 사라졌음 → 메뉴 버튼은 누를 때 포커스를 옮기지 않음
+ctx.addEventListener('mousedown',e=>{if(e.target.closest('[data-ctx=gapall],[data-ctx=lstyleall]'))e.preventDefault()});
 ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.align){alignLetters(b.dataset.align);return}
   if(b.dataset.fpre){const [t,bt]=b.dataset.fpre.split(',');setFrameAngles(t,bt);renderCtx();return}
@@ -289,6 +320,8 @@ ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return
   const c=b.dataset.ctx;
   if(c==='ledit')focusText();
   if(c==='lfit')fitLetters();
+  if(c==='gapall'){const r=b.getBoundingClientRect();cmOpen(gapAllMenu(),r.left,r.bottom+4)}
+  if(c==='lstyleall'){const r=b.getBoundingClientRect();cmOpen(styleMenu(),r.left,r.bottom+4)}
   if(c==='llock'&&selectedLetter){const g=selectedLetter.closest('[data-slot-index]');toggleLock(pageKey(g),selectedLetter.dataset.letter)}
   if(c==='clock'&&pageSelection)toggleLock(pageSelection,'cut');
   if(c==='crop'){const g=selGroup();if(g)RoughStudio.setCrop(g)}
@@ -684,7 +717,7 @@ const cm=mk('cmenu');cm.setAttribute('role','menu');cm.hidden=true;document.body
 const SEP={sep:1};
 function cmBuild(items){const box=mk('cmenu-box');box.setAttribute('role','menu');
   box.innerHTML=items.filter(Boolean).map((it,i)=>it.sep?'<div class="cm-sep" role="separator"></div>':
-    `<button role="menuitem" data-ci="${i}"${it.disabled?' disabled':''}${it.sub?' aria-haspopup="true"':''}${it.danger?' class="danger"':''}><span class="cm-l">${it.check!==undefined?`<i class="cm-c">${it.check?'✓':''}</i>`:''}${esc(it.label)}</span>${it.key?`<kbd>${esc(it.key)}</kbd>`:''}${it.sub?'<i class="cm-a">▸</i>':''}</button>`).join('');
+    `<button role="menuitem" data-ci="${i}"${it.disabled?' disabled':''}${it.sub?' aria-haspopup="true"':''}${it.danger?' class="danger"':''}><span class="cm-l">${it.check!==undefined?`<i class="cm-c">${it.check?'✓':''}</i>`:''}${it.thumb!==undefined?(it.thumb?`<img class="cm-th" src="${esc(it.thumb)}" alt="">`:'<span class="cm-th"></span>'):''}${esc(it.label)}${it.note?`<small class="cm-n">${esc(it.note)}</small>`:''}</span>${it.key?`<kbd>${esc(it.key)}</kbd>`:''}${it.sub?'<i class="cm-a">▸</i>':''}</button>`).join('');
   box._items=items.filter(Boolean);return box}
 function cmOpen(items,x,y,level=0){cmStack.slice(level).forEach(b=>b.remove());cmStack=cmStack.slice(0,level);
   const box=cmBuild(items);cm.appendChild(box);cm.hidden=false;cmStack.push(box);
@@ -749,7 +782,7 @@ function gapMenu(gap){const si=gap.closest('section').dataset.pageScene,key=`${s
     {label:'배경 세부(중간색·씬 끝 색)…',run:()=>{selectPageCut(g);setDrawer(true,'props')}},SEP,{label:'여기에 새 컷…',run:()=>askCut(key,true,gap)}]}
 // 보기 메뉴(위 막대): 화면 배치 설정을 한곳에 — 상황 막대에는 선택한 것만
 function viewMenu(){return [{label:'미니맵',check:!miniWrap.hidden,run:()=>{miniWrap.hidden=!miniWrap.hidden;SS('rough-ws-mini',!miniWrap.hidden);if(!miniWrap.hidden)RoughStudio.mini.refresh();renderCtx()}},
-  {label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},{label:'휴대폰 한 화면 선',key:'Shift+G',check:RoughStudio.phoneGuide,run:()=>RoughStudio.setGuide(!RoughStudio.phoneGuide)},SEP,
+  {label:'속성 서랍',check:!drawer.hidden,run:()=>setDrawer(drawer.hidden)},{label:'휴대폰 한 화면 선',key:'Shift+G',check:RoughStudio.phoneGuide,run:()=>RoughStudio.setGuide(!RoughStudio.phoneGuide)},{label:'이전 버전 · 비교',run:()=>window.RoughVersions?.openHistory()},{label:'말풍선 읽는 순서',check:RoughStudio.readOrder,run:()=>RoughStudio.setOrder(!RoughStudio.readOrder)},SEP,
   {label:'씬 세로로 이어 보기',check:!AB,run:()=>setAB(false)},{label:'씬 나란히(대지)',check:AB,run:()=>setAB(true)},SEP,
   {label:'작업 공간',sub:()=>Object.entries(PRESETS).map(([k,p])=>({label:p.name,check:LAYOUT.preset===k,run:()=>applyPreset(k)}))},
   {label:'처음 안내 다시 보기',run:()=>coachReset()},{label:'배치 초기화',run:()=>applyPreset(LAYOUT.preset&&PRESETS[LAYOUT.preset]?LAYOUT.preset:'edit')},SEP,

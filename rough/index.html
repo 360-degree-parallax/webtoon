@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive, noimageindex">
 <meta name="googlebot" content="noindex, nofollow, noarchive, noimageindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self' data: blob: https://api.anthropic.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self' data: blob: https://api.anthropic.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>러프 메이커</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/gowun-batang@5.3.0/400.css">
@@ -1076,6 +1076,20 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
   .ctxbar .cb,.ctxbar select,.ctxbar input{min-height:36px}}
 .tbox.rotbelow [data-th=rot]{top:calc(100% + 10px);left:calc(50% + 26px)}.tbox.rotbelow [data-th=rot]::after{display:none}
 @media (pointer:coarse){.tbox.rotbelow [data-th=rot]{top:calc(100% + 10px);left:calc(50% + 30px)}}
+.minimap .readorder{display:none!important}.readorder{position:absolute;inset:0;pointer-events:none;z-index:5}
+.readorder span{position:absolute;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#2d71f7;color:#fff;font:700 12px/20px var(--font);text-align:center;box-shadow:0 0 0 2px #fff;pointer-events:auto;cursor:help}
+.readorder span.bad{background:#e5484d}.readorder small{font-size:10px;font-weight:600;opacity:.9}
+.cmenu-box .cm-th{width:34px;height:34px;border-radius:5px;object-fit:cover;background:var(--bg2,#eef0f3);flex:none;margin-right:8px;display:inline-block;vertical-align:middle}
+.cmenu-box .cm-n{display:block;font-size:11px;color:var(--t3);font-weight:400;margin-top:1px}.cmenu-box .cm-l:has(.cm-th){display:inline-grid;grid-template-columns:auto auto 1fr;align-items:center;column-gap:0}
+.cmenu-box .cm-l:has(.cm-th) .cm-n{grid-column:3}.epbtn .epth{width:22px;height:22px;border-radius:4px;object-fit:cover}
+.cmpdlg{width:min(1200px,96vw);height:92vh;max-height:none;padding:0;border:0;border-radius:12px;display:none;flex-direction:column}.cmpdlg[open]{display:flex}
+.cmpdlg header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}.cmpdlg header h3{margin:0;font-size:16px}.cmpdlg header .hint{flex:1;color:var(--t3);font-size:13px}
+.cmpdiff{padding:10px 18px;border-bottom:1px solid var(--line);max-height:22vh;overflow:auto;font-size:13px}.cmpdiff ul{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:4px}
+.cmpdiff li{display:flex;gap:8px;align-items:baseline}.cmpdiff li span{color:var(--t2)}.cmpdiff s{color:#c4473a}.cmpdiff i{font-style:normal;font-size:11px;font-weight:700;padding:1px 6px;border-radius:8px;background:#eef1f6;color:#3b4252}
+.cmpdiff .k-추가{background:#e3f5e8;color:#1f7a3a}.cmpdiff .k-삭제{background:#fde8e6;color:#b42318}.cmpdiff .k-수정{background:#fff3d6;color:#8a5a00}
+.cmpcols{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);min-height:0}.cmpcol{overflow:auto;background:var(--bg);padding:10px 14px}
+.cmpcol h4{position:sticky;top:-10px;margin:-10px -14px 8px;padding:8px 14px;background:var(--bg);font-size:13px;z-index:1;border-bottom:1px solid var(--line)}.cmpcol svg{width:100%;height:auto;display:block}.cmpcol .scn{font-size:12px;color:var(--t3);margin:10px 0 4px}
+.snapnow{display:flex;gap:8px;margin:8px 0 12px}.snapnow input{flex:1;min-width:0}.histl li .btn+.btn{margin-left:4px}
 </style>
 </head>
 <body>
@@ -1441,7 +1455,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 <script src="sfx.js"></script>
 <script src="materials.js"></script>
 <script src="image-materials.js"></script>
-<script src="export.js?v=20261124-fonts"></script>
+<script src="export.js?v=20261124-embed"></script>
 <script>
 // UX 시안(docs/ux-brief-plan.md): 기본은 채택안 C(컷 우선). ?ux=A(예전 화면) · B(문구 정리)는 사람 확인이 끝날 때까지 비교용으로 남김
 const UX='C';document.documentElement.dataset.ux=UX;  // 화면 비교안(?ux=A/B/C)은 정리됨. 남은 코드 호환용 상수
@@ -1833,12 +1847,13 @@ function soundEffectSVG(text,box,side,index,position){
 }
 // 내보내기 때만 켬: 식자마다 그룹으로 감싸 레이어로 나눌 수 있게
 let LAYER_TAGS=false;
-function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key||p.act);const parts=[];
+function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key||p.act);const parts=[];let addWho='';
   const add=(key,label,source,draw)=>{
     const pos=positions?.[key],text=pos?.text??source;
     const move=Number.isFinite(pos?.x)&&Number.isFinite(pos?.y)?` transform="translate(${pos.x} ${pos.y})"`:'';
     const attrText=esc(text).replace(/\n/g,'&#10;');
-    const access=interactive?` data-letter="${key}" data-letter-text="${attrText}" tabindex="0" aria-label="${label} ${attrText}"`:'';
+    const who=key.startsWith('dialog-')?addWho:'';
+    const access=interactive?` data-letter="${key}" data-letter-text="${attrText}"${who?` data-who="${esc(who)}"`:''} tabindex="0" aria-label="${label} ${attrText}"`:'';
     let svg=draw(text,pos);
     // 나레이션·효과음 크기(scale): 제 자리 가운데를 기준으로 키움. 말풍선은 balloonTransform이 따로 처리
     const lsc=+pos?.scale||1;if(!/^dialog/.test(key)&&lsc!==1)svg=`<g class="lsc" style="transform-box:fill-box;transform-origin:center;transform:scale(${lsc})">${svg}</g>`;
@@ -1855,7 +1870,7 @@ function letterSVG(p,box,idx,positions,interactive,extras=[]){const R=rngL(p.key
   (p.captions||(p.caption?[p.caption]:[])).forEach((c,n)=>add(n?'caption-'+n:'caption','나레이션',c,(value,pos)=>captionSVG(value,p,box,idx===0&&!n,pos,n)));
   const ds=(p.dialogs||[]).filter(d=>d.text);if(!ds.length&&p.said)ds.push({who:p.who,text:p.said});
   ds.forEach((d,n)=>{
-    add('dialog-'+n,'말풍선',d.text,(value,pos)=>balloonSVG({...d,text:value},p,box,n,R,pos,interactive));
+    addWho=d.who||'';add('dialog-'+n,'말풍선',d.text,(value,pos)=>balloonSVG({...d,text:value},p,box,n,R,pos,interactive));
   });
   return parts.map((x,i)=>({...x,i})).sort((a,b)=>a.z-b.z||a.i-b.i).map(x=>x.o).join('');
 }
@@ -2525,7 +2540,8 @@ var SP_CACHE=new Map(),SP_FRESH=null;  // SP_FRESH: 이번 작업 안에서 이�
 function spStale(){SP_FRESH=null}
 function scenePanels(i){if(i===SCUR)return state.panels;const sc=SCENES[i];if(!sc)return [];
   if(SP_FRESH?.has(i)&&SP_CACHE.has(i))return SP_CACHE.get(i).v;if(!SP_FRESH){SP_FRESH=new Set();queueMicrotask(spStale)}SP_FRESH.add(i);
-  const ck=JSON.stringify([sc.cuts,(sc.pageEdits||[]).map(e=>e?.ref||0),locks,engineChars(),REFS.length,PATS.length]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
+  const refs=Array.from(sc.pageEdits||[],e=>e?.ref||0);while(refs.length&&!refs.at(-1))refs.pop();  // 빈 칸이 늘기만 해도 다시 계산하던 것 막기
+  const ck=JSON.stringify([sc.cuts,refs,locks,engineChars(),REFS.length,PATS.length]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
   const out=_scenePanels(i);SP_CACHE.set(i,{k:ck,v:out});return out}
 // 처음 편집 화면을 열 때 기다리지 않게: 쉬는 틈에 다른 씬 컷 계산을 미리 해 둠
 (function warmScenes(i=0){if(typeof PATS==='undefined'||!PATS.length||typeof SCENES==='undefined')return setTimeout(warmScenes,600,i);if(i>=SCENES.length)return;
@@ -2567,6 +2583,15 @@ function confirmArtCheck(){const c=artCheck();if(!c.imgs||!c.list.length)return 
     d.innerHTML=`<h3>내보내기 전에 확인해 주세요</h3><p>${c.miss.length?`이미지가 없는 컷 <b>${c.miss.length}개</b>는 러프 그림으로 들어가요.<br>`:''}${c.stale.length?`이미지를 올린 뒤 글이 바뀐 컷 <b>${c.stale.length}개</b>는 예전 그림이 그대로 들어가요.`:''}</p><div class="acts"><button class="btn" data-r="check">먼저 확인하기</button><button class="btn dark" data-r="go">그대로 내보내기</button></div>`;
     d.onclick=e=>{const r=e.target.closest('[data-r]')?.dataset.r;if(!r)return;d.close();if(r==='go')res(true);else{res(false);if(VIEW!=='webtoon')showView('webtoon');ACHK=0;setTimeout(jumpArtCheck,150)}};
     d.oncancel=()=>res(false);d.showModal();d.querySelector('[data-r="go"]').focus()})}
+// 씬 안에서도 바뀐 부분만: 새 씬을 만들어 두고 SVG 바로 아래 요소(컷 묶음·배경·간격)를 하나씩 견줘 다른 것만 바꿔 끼움.
+// 그대로인 컷은 그림을 다시 읽지 않아 빠름. 구조(요소 수·종류)가 다르면 씬 통째로
+function patchSection(os,html){const t=document.createElement('template');t.innerHTML=html;const ns=t.content.firstElementChild;if(!ns){os.replaceWith(t.content);return}
+  const oc=[...os.children],nc=[...ns.children];if(oc.length!==nc.length||oc.some((c,k)=>c.tagName!==nc[k].tagName)){os.replaceWith(ns);return}
+  for(const a of ns.attributes)if(os.getAttribute(a.name)!==a.value)os.setAttribute(a.name,a.value);
+  oc.forEach((o,k)=>{const n=nc[k];if(o.tagName.toLowerCase()!=='svg'){if(o.outerHTML!==n.outerHTML)o.replaceWith(n);return}
+    const ok=[...o.children],nk=[...n.children];if(ok.length!==nk.length||ok.some((c,j)=>c.tagName!==nk[j].tagName)){o.replaceWith(n);return}
+    for(const a of [...o.attributes])if(!n.hasAttribute(a.name))o.removeAttribute(a.name);for(const a of n.attributes)if(o.getAttribute(a.name)!==a.value)o.setAttribute(a.name,a.value);
+    ok.forEach((x,j)=>{if(x.outerHTML!==nk[j].outerHTML)x.replaceWith(nk[j])})})}
 function renderWebtoon(){SP_FRESH=null;if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
     const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':art.svg;
@@ -2575,7 +2600,7 @@ function renderWebtoon(){SP_FRESH=null;if(!PATS.length){refreshPageTools();$('#r
   // 바뀐 씬만 갈아 끼움(작업 중인 씬은 끌기 미리보기가 남지 않게 늘 새로). 70컷이면 화면 전체를 다시 만드는 데 0.1초 넘게 걸렸음
   const R=$('#reader'),olds=[...R.querySelectorAll(':scope>section')],prev=R._parts,act=pageSelection?+pageSelection.split(':')[0]:-1;
   if(prev&&prev.length===parts.length&&olds.length===parts.length&&olds.every((el,i)=>el.id==='ws-'+i)){
-    parts.forEach((h,i)=>{if(h===prev[i]&&i!==act)return;const t=document.createElement('template');t.innerHTML=h;olds[i].replaceWith(t.content)})}
+    parts.forEach((h,i)=>{if(h===prev[i]&&i!==act)return;patchSection(olds[i],h)})}
   else R.innerHTML=parts.join('');
   R._parts=parts;
   refreshPageTools();
@@ -3143,18 +3168,48 @@ async function loadProject(file){let d;try{d=JSON.parse(await file.text())}catch
   for(const r of await idb.all())if(!String(r.id).startsWith('snap:'))await idb.del(r.id);
   for(const r of d.images||[])if(r&&r.id)await idb.put(r);
   toast('불러왔어요. 화면을 다시 열어요');setTimeout(()=>location.reload(),600)}
-// 이전 버전: 원고(씬·편집값)를 10분에 한 번 IndexedDB에 남김(최근 30개). 이미지는 그대로 두고 원고만 되돌림
+// 이전 버전: 원고(씬·편집값)를 10분에 한 번 IndexedDB에 남김(회차마다 최근 30개). 이미지는 그대로 두고 원고만 되돌림
+// 비교: 고른 버전과 지금을 나란히 그리고, 글이 바뀐 컷을 목록으로
 let snapAt=0;
-function autoSnapshot(){const now=Date.now();if(now-snapAt<600000)return;snapAt=now;
-  const o={id:'snap:'+now,kind:'snap',at:now,title:$('#wtitle')?.value||'',scenes:JSON.stringify(SCENES)};idb.put(o).then(async()=>{const snaps=(await idb.all()).filter(r=>r.kind==='snap').sort((a,b)=>b.at-a.at);for(const r of snaps.slice(30))idb.del(r.id)})}
-async function openHistory(){const snaps=(await idb.all()).filter(r=>r.kind==='snap').sort((a,b)=>b.at-a.at);
-  let d=$('#histdlg');if(!d){d=document.createElement('dialog');d.id='histdlg';d.className='keydlg';document.body.appendChild(d)}
-  const sum=j=>{try{const a=JSON.parse(j);return `씬 ${a.length}개 · 컷 ${a.reduce((n,sc)=>n+sc.cuts.filter(c=>c.trim()).length,0)}개`}catch(_){return''}};
-  d.innerHTML=`<h3>이전 버전</h3><p class="hint">원고(씬·컷 글·편집값)를 10분에 한 번 이 브라우저에 남겨요. 되돌리기 전에 지금 상태도 한 번 남겨 둬요. 컷 이미지는 바뀌지 않아요.</p>${snaps.length?`<ul class="histl">${snaps.map(r=>`<li><span>${new Date(r.at).toLocaleString()}<small>${esc(sum(r.scenes))}</small></span><button class="btn" data-snap="${r.id}">이 버전으로</button></li>`).join('')}</ul>`:'<p class="empty">아직 남은 기록이 없어요. 편집하면 10분마다 생겨요.</p>'}<div class="acts"><button class="btn" data-r="x">닫기</button></div>`;
-  d.onclick=async e=>{if(e.target.closest('[data-r]')){d.close();return}const b=e.target.closest('[data-snap]');if(!b)return;const r=snaps.find(x=>x.id===b.dataset.snap);if(!r)return;
-    if(!confirm(`${new Date(r.at).toLocaleString()} 원고로 되돌릴까요?`))return;snapAt=0;autoSnapshot();
-    const arr=JSON.parse(r.scenes);SCENES.splice(0,SCENES.length,...arr);SCUR=Math.min(SCUR,SCENES.length-1);CUTS=SCENES[SCUR].cuts;saveScenes();renderSceneList();renderCuts();compute(true);if(VIEW==='webtoon')renderWebtoon();d.close();toast('이전 버전으로 되돌렸어요')};
+const epId=()=>window.RoughEpisodes?.cur?.id||'';
+function autoSnapshot(force,label){const now=Date.now();if(!force&&now-snapAt<600000)return Promise.resolve();snapAt=now;
+  const o={id:'snap:'+now,kind:'snap',at:now,ep:epId(),label:label||'',title:$('#wtitle')?.value||'',scenes:JSON.stringify(SCENES)};
+  return idb.put(o).then(async()=>{const snaps=(await idb.all()).filter(r=>r.kind==='snap'&&(r.ep||'')===o.ep).sort((a,b)=>b.at-a.at);for(const r of snaps.slice(30))idb.del(r.id)})}
+const snapSum=j=>{try{const a=JSON.parse(j);return `씬 ${a.length}개 · 컷 ${a.reduce((n,sc)=>n+sc.cuts.filter(c=>c.trim()).length,0)}개`}catch(_){return''}};
+// 다른 원고를 잠깐 그려 보기: 지금 원고를 건드리지 않게 씬 목록을 바꿔 끼웠다가 되돌림
+function renderScenesOf(arr){const keep=SCENES.slice(),keepCur=SCUR,keepCache=new Map(SP_CACHE);const out=[];
+  try{SCENES.splice(0,SCENES.length,...arr);SCUR=-1;SP_CACHE.clear();SP_FRESH=null;
+    arr.forEach((sc,i)=>{const ps=scenePanels(i);out.push(ps.length?sceneArt(i,ps,`v${i}_${Math.random().toString(36).slice(2,6)}_`,false).svg:'<p class="empty">컷 없음</p>')})}
+  finally{SCENES.splice(0,SCENES.length,...keep);SCUR=keepCur;SP_CACHE.clear();keepCache.forEach((v,k)=>SP_CACHE.set(k,v));SP_FRESH=null}
+  return out}
+function diffScenes(oldArr,newArr){const rows=[],n=Math.max(oldArr.length,newArr.length);
+  for(let i=0;i<n;i++){const A=oldArr[i]?.cuts||[],B=newArr[i]?.cuts||[],m=Math.max(A.length,B.length);
+    for(let k=0;k<m;k++){const x=String(A[k]??'').trim(),y=String(B[k]??'').trim();if(x!==y)rows.push({i,k,kind:!x?'추가':!y?'삭제':'수정',x,y})}
+    const ea=JSON.stringify(oldArr[i]?.pageEdits||[]),eb=JSON.stringify(newArr[i]?.pageEdits||[]);if(ea!==eb&&!rows.some(r=>r.i===i))rows.push({i,k:-1,kind:'편집',x:'',y:''})}
+  return rows}
+async function openCompare(r){let d=$('#cmpdlg');if(!d){d=document.createElement('dialog');d.id='cmpdlg';d.className='cmpdlg';document.body.appendChild(d)}
+  const old=JSON.parse(r.scenes),A=renderScenesOf(old),B=SCENES.map((sc,i)=>{const ps=scenePanels(i);return ps.length?sceneArt(i,ps,`c${i}_`,false).svg:'<p class="empty">컷 없음</p>'});
+  const rows=diffScenes(old,SCENES),cut=s=>esc(s.replace(/\s+/g,' ').slice(0,60));
+  d.innerHTML=`<header><h3>버전 비교</h3><span class="hint">${new Date(r.at).toLocaleString()}${r.label?' · '+esc(r.label):''} ↔ 지금</span><button class="btn" data-cmp="restore">이 버전으로 되돌리기</button><button class="btn" data-cmp="x">닫기</button></header>
+    <div class="cmpdiff">${rows.length?`<b>바뀐 곳 ${rows.length}</b><ul>${rows.slice(0,60).map(x=>`<li><i class="k-${x.kind}">${x.kind}</i>씬 ${x.i+1}${x.k>=0?` · ${x.k+1}컷`:' · 배치·식자'}${x.k>=0?`<span><s>${cut(x.x)}</s> → ${cut(x.y)}</span>`:''}</li>`).join('')}</ul>`:'<b>글은 같아요</b> · 배치·식자만 달라졌을 수 있어요'}</div>
+    <div class="cmpcols"><div class="cmpcol" data-side="a"><h4>그때</h4>${A.map((svg,i)=>`<section><div class="scn">${esc(sceneLabel(old[i],i))}</div>${svg}</section>`).join('')}</div>
+    <div class="cmpcol" data-side="b"><h4>지금</h4>${B.map((svg,i)=>`<section><div class="scn">${esc(sceneLabel(SCENES[i],i))}</div>${svg}</section>`).join('')}</div></div>`;
+  const [ca,cb]=d.querySelectorAll('.cmpcol');let lock=false;const sync=(x,y)=>x.addEventListener('scroll',()=>{if(lock)return;lock=true;y.scrollTop=x.scrollTop/(x.scrollHeight-x.clientHeight||1)*(y.scrollHeight-y.clientHeight);requestAnimationFrame(()=>lock=false)});sync(ca,cb);sync(cb,ca);
+  d.onclick=e=>{const b=e.target.closest('[data-cmp]');if(!b)return;if(b.dataset.cmp==='x'){d.close();return}if(b.dataset.cmp==='restore'){d.close();restoreSnap(r)}};
   d.showModal()}
+async function restoreSnap(r){if(!confirm(`${new Date(r.at).toLocaleString()} 원고로 되돌릴까요? 지금 상태는 기록에 남겨 둬요.`))return;await autoSnapshot(true,'되돌리기 전');
+  const arr=JSON.parse(r.scenes);SCENES.splice(0,SCENES.length,...arr);SCUR=Math.min(SCUR,SCENES.length-1);CUTS=SCENES[SCUR].cuts;saveScenes();renderSceneList();renderCuts();compute(true);if(VIEW==='webtoon')renderWebtoon();$('#histdlg')?.close();toast('이전 버전으로 되돌렸어요')}
+async function openHistory(){const ep=epId(),snaps=(await idb.all()).filter(r=>r.kind==='snap'&&(!r.ep||r.ep===ep)).sort((a,b)=>b.at-a.at);
+  let d=$('#histdlg');if(!d){d=document.createElement('dialog');d.id='histdlg';d.className='keydlg';document.body.appendChild(d)}
+  d.innerHTML=`<h3>이전 버전${window.RoughEpisodes?` · ${esc(RoughEpisodes.cur.title)}`:''}</h3><p class="hint">원고(씬·컷 글·편집값)를 10분에 한 번 이 브라우저에 남겨요(회차마다 최근 30개). 「비교」로 지금과 나란히 보고, 되돌리기 전에 지금 상태도 남겨 둬요. 컷 이미지는 바뀌지 않아요.</p>
+    <div class="snapnow"><input id="snaplabel" placeholder="이름 (예: 1차 수정 전)" maxlength="30"><button class="btn" data-snapnow>지금 버전 남기기</button></div>
+    ${snaps.length?`<ul class="histl">${snaps.map(r=>`<li><span>${new Date(r.at).toLocaleString()}${r.label?` · <b>${esc(r.label)}</b>`:''}<small>${esc(snapSum(r.scenes))}</small></span><button class="btn" data-cmpsnap="${r.id}">비교</button><button class="btn" data-snap="${r.id}">이 버전으로</button></li>`).join('')}</ul>`:'<p class="empty">아직 남은 기록이 없어요. 편집하면 10분마다 생겨요.</p>'}<div class="acts"><button class="btn" data-r="x">닫기</button></div>`;
+  d.onclick=async e=>{if(e.target.closest('[data-r]')){d.close();return}
+    if(e.target.closest('[data-snapnow]')){await autoSnapshot(true,$('#snaplabel').value.trim());toast('지금 버전을 남겼어요');openHistory();return}
+    const c=e.target.closest('[data-cmpsnap]');if(c){const r=snaps.find(x=>x.id===c.dataset.cmpsnap);if(r)openCompare(r);return}
+    const b=e.target.closest('[data-snap]');if(!b)return;const r=snaps.find(x=>x.id===b.dataset.snap);if(r)restoreSnap(r)};
+  if(!d.open)d.showModal()}
+window.RoughVersions={openHistory,openCompare,snapshot:autoSnapshot};
 
 // ---------- 대사 교정(#19): 모든 씬의 대사·나레이션·효과음 줄을 한 화면에서 고치고, 찾아 바꾸기 ----------
 // 줄 끝의 연출 지시 {…}는 post에 남겨 고쳐도 그대로

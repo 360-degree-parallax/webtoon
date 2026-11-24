@@ -45,10 +45,28 @@ async function embedAll(root){
     const data=await embed(src,gray);im.removeAttribute('filter');im.removeAttributeNS('http://www.w3.org/1999/xlink','href');im.setAttribute('href',data)}))}
 
 // 씬 하나를 레이어 표시가 붙은 SVG DOM으로
-async function sceneModel(i){const ps=scenePanels(i);if(!ps.length)return null;
+// ---------- 글꼴 넣기: SVG를 <img>로 그리면 페이지 글꼴을 못 써 바탕·손글씨가 기본 글꼴로 바뀜 → 쓰인 글자가 든 글꼴 조각만 파일 안에 넣음 ----------
+const FONT_CSS=()=>[...document.querySelectorAll('link[rel=stylesheet][href*="cdn.jsdelivr.net"]')].map(l=>l.href);
+let FACES=null;const FONTDATA=new Map();
+async function faces(){if(FACES)return FACES;const out=[];
+  for(const href of FONT_CSS()){try{const css=await (await fetch(href)).text();
+    for(const m of css.matchAll(/@font-face\s*{([^}]*)}/g)){const b=m[1],g=k=>(b.match(new RegExp(k+'\\s*:\\s*([^;]+)'))||[])[1]?.trim();
+      const fam=(g('font-family')||'').replace(/["']/g,'').trim(),url=(b.match(/url\(([^)]+?\.woff2)\)/)||[])[1];if(!fam||!url)continue;
+      const w=(g('font-weight')||'400').split(/\s+/).map(Number),ur=(g('unicode-range')||'U+0-10FFFF').split(',').map(r=>{const [a,z]=r.trim().replace(/^U\+/i,'').split('-');return [parseInt(a,16),parseInt(z||a,16)]});
+      out.push({fam,w0:w[0],w1:w[1]??w[0],style:g('font-style')||'normal',ur,urText:g('unicode-range')||'',url:new URL(url.replace(/["']/g,''),href).href})}}catch(_){}}
+  return FACES=out}
+async function dataURL(url){if(!FONTDATA.has(url))FONTDATA.set(url,fetch(url).then(r=>r.blob()).then(toDataURL).catch(()=>null));return FONTDATA.get(url)}
+async function fontStyle(root){const texts=[...root.querySelectorAll('text')];if(!texts.length)return '';
+  const fams=new Set(),weights=new Set([400]),cps=new Set();const famOf=e=>(e.closest('[font-family]')?.getAttribute('font-family')||PAGE_FONT||'').split(',').map(x=>x.replace(/["']/g,'').trim());
+  texts.forEach(t=>{famOf(t).forEach(f=>fams.add(f));weights.add(+(t.getAttribute('font-weight')||t.closest('[font-weight]')?.getAttribute('font-weight')||400));for(const ch of t.textContent)cps.add(ch.codePointAt(0))});
+  const list=(await faces()).filter(f=>fams.has(f.fam)&&[...weights].some(w=>w>=f.w0-50&&w<=f.w1+50)&&[...cps].some(c=>f.ur.some(([a,z])=>c>=a&&c<=z)));
+  const rules=await Promise.all(list.map(async f=>{const d=await dataURL(f.url);return d?`@font-face{font-family:"${f.fam}";font-style:${f.style};font-weight:${f.w0===f.w1?f.w0:f.w0+' '+f.w1};src:url(${d}) format("woff2");unicode-range:${f.urText||'U+0-10FFFF'}}`:''}));
+  return rules.filter(Boolean).join('')}
+async function sceneModel(i,opt={}){const ps=scenePanels(i);if(!ps.length)return null;
   LAYER_TAGS=true;let art;try{art=sceneArt(i,ps,`x${i}_`,false)}finally{LAYER_TAGS=false}
   const root=new DOMParser().parseFromString(art.svg,'image/svg+xml').documentElement;
   flattenNested(root,`x${i}_`);await embedAll(root);
+  if(opt.fonts){const css=await fontStyle(root);if(css){let d=root.querySelector(':scope > defs');if(!d){d=root.ownerDocument.createElementNS(NS,'defs');root.insertBefore(d,root.firstChild)}const st=root.ownerDocument.createElementNS(NS,'style');st.textContent=css;d.insertBefore(st,d.firstChild)}}
   const H=+root.getAttribute('height');
   const cuts=[...root.querySelectorAll(':scope > g[data-p]')].map((g,k)=>{const kids=[...g.children];
     const frame=kids.find(e=>e.matches('polygon,rect'));
@@ -59,7 +77,7 @@ async function sceneModel(i){const ps=scenePanels(i);if(!ps.length)return null;
   return {i,title:sceneLabel(SCENES[i],i),root,W:+root.getAttribute('width'),H,
     bgs:[...root.querySelectorAll(':scope > [data-bg-panel],:scope > [data-scene-end]')],defs:root.querySelector(':scope > defs'),cuts}}
 
-async function models(st){if(typeof loadPageMaterials==='function')await loadPageMaterials();const out=[];for(let i=0;i<SCENES.length;i++){st&&st(`씬 ${i+1}/${SCENES.length} 준비 중`);const m=await sceneModel(i);if(m)out.push(m)}return out}
+async function models(st,opt={}){if(typeof loadPageMaterials==='function')await loadPageMaterials();const out=[];for(let i=0;i<SCENES.length;i++){st&&st(`씬 ${i+1}/${SCENES.length} 준비 중`);const m=await sceneModel(i,opt);if(m)out.push(m)}return out}
 
 // ---------- SVG (피그마) ----------
 // 피그마는 id를 레이어 이름으로 씀. 씬 = 그룹, 컷 = 그룹, 그 안에 칸·그림·식자 레이어
@@ -158,8 +176,11 @@ function textLayer(name,r,texts,M=[1,0,0,1,0,0]){if(!r)return null;const t0=text
   const hex=(t0.getAttribute('fill')||'#000000').replace('#',''),rgb={r:parseInt(hex.slice(0,2),16)||0,g:parseInt(hex.slice(2,4),16)||0,b:parseInt(hex.slice(4,6),16)||0};
   const anchor=t0.getAttribute('text-anchor'),just=anchor==='middle'?'center':anchor==='end'?'right':'left',w=+t0.getAttribute('font-weight')||400;
   const font=(t0.getAttribute('font-family')||t0.closest('[font-family]')?.getAttribute('font-family')||PAGE_FONT||'Pretendard').split(',')[0].replace(/["']/g,'').replace(/ Variable$/,'').trim();
+  // 글자 테두리(stroke)도 텍스트 레이어 설정으로(클립스튜디오가 글자를 다시 그려도 테두리 유지)
+  const sk=t0.getAttribute('stroke'),sh=(sk||'').replace('#',''),stroke=/^[0-9a-f]{6}$/i.test(sh)?{strokeFlag:true,strokeColor:{r:parseInt(sh.slice(0,2),16),g:parseInt(sh.slice(2,4),16),b:parseInt(sh.slice(4,6),16)},outlineWidth:(num(t0,'stroke-width',3)*sc)/2}:{};
+  const PS={'Gowun Batang':['GowunBatang-Regular','GowunBatang-Bold'],'Nanum Pen Script':['NanumPen','NanumPen'],'Pretendard':['Pretendard-Regular','Pretendard-Bold'],'Pretendard Variable':['Pretendard-Regular','Pretendard-Bold']}[font];
   return {name,canvas:r.canvas,left:r.left,top:r.top,text:{text:texts.map(t=>t.textContent).join('\r'),transform:[M[0]/sc,M[1]/sc,M[2]/sc,M[3]/sc,x,y],
-    style:{font:{name:font+(w>=600?'-SemiBold':w>=500?'-Medium':'-Regular')},fontSize:fs,leading:lead,autoLeading:false,tracking:Math.round((num(t0,'letter-spacing')*sc/fs)*1000),fillColor:rgb},
+    style:{...stroke,fauxItalic:t0.getAttribute('font-style')==='italic',underline:/underline/.test(t0.getAttribute('text-decoration')||''),font:{name:PS?PS[w>=600?1:0]:font+(w>=600?'-SemiBold':w>=500?'-Medium':'-Regular')},fontSize:fs,leading:lead,autoLeading:false,tracking:Math.round((num(t0,'letter-spacing')*sc/fs)*1000),fillColor:rgb},
     paragraphStyle:{justification:just}}}}
 
 function scriptText(ms,title){const L=[`${title}`,'',`클립스튜디오에서 텍스트 도구로 다시 입력할 때 쓰는 대사 목록이에요. PSD의 말풍선·나레이션 글자는 텍스트 레이어로 들어 있어요(앱에 따라 그림으로 열릴 수 있어요). 효과음은 그림이에요.`,''];
@@ -190,14 +211,14 @@ const titleBase=()=>safe($('#wtitle').value)||'webtoon';
 async function exportSVG(st){st('SVG 만드는 중');const r=await buildSVG(st);if(!r){st('저장할 컷이 없어요');return}
   download(`${titleBase()}-figma.svg`,URL.createObjectURL(new Blob([r.svg],{type:'image/svg+xml'})));
   st(`SVG로 저장했어요 · 씬 ${r.count}개 · 피그마 캔버스에 끌어다 놓으면 레이어로 열려요`)}
-async function exportPSD(st){st('PSD 모듈 불러오는 중');const ag=await loadAgPsd();const ms=await models(st);if(!ms.length){st('저장할 컷이 없어요');return}
+async function exportPSD(st){st('PSD 모듈 불러오는 중');const ag=await loadAgPsd();const ms=await models(st,{fonts:true});if(!ms.length){st('저장할 컷이 없어요');return}
   const files=[];for(const m of ms){st(`PSD 만드는 중 · ${m.title}`);files.push({name:`${pad(m.i+1)}_${safe(m.title)}.psd`,data:await scenePSD(m,ag)})}
   files.push({name:'대사 목록.txt',data:'﻿'+scriptText(ms,$('#wtitle').value||'제목 없음')});
   download(`${titleBase()}-clipstudio.zip`,URL.createObjectURL(await zip(files)));
   st(`PSD ${ms.length}장을 ZIP으로 저장했어요 · 클립스튜디오에서 파일 › 열기로 PSD를 열어요`)}
 
 // PNG 저장도 그림을 파일 안에 넣은 SVG로 그려야 원본 컷 레퍼런스가 빠지지 않음
-async function inlineSceneSVG(i){const m=await sceneModel(i);return m&&{svg:new XMLSerializer().serializeToString(m.root)}}
+async function inlineSceneSVG(i){const m=await sceneModel(i,{fonts:true});return m&&{svg:new XMLSerializer().serializeToString(m.root)}}
 
 window.RoughExport={exportSVG,exportPSD,buildSVG,inlineSceneSVG,_zip:zip,_models:models};
 })();
