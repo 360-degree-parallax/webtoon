@@ -1057,6 +1057,9 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .tbox [data-th=rot]::after{content:'';position:absolute;left:5px;top:12px;width:1.5px;height:16px;background:#2d71f7}
 #wtoc .drop-before{box-shadow:inset 0 2px 0 #2d71f7}#wtoc .drop-after{box-shadow:inset 0 -2px 0 #2d71f7}#wtoc [draggable=true]{cursor:grab}
 .ctxbar,#wtoc,#v-webtoon .edtop{user-select:none;-webkit-user-select:none}
+/* 컷 모퉁이: 기본 = 확대·축소(네모 손잡이), 프레임 모양 모드 = 모퉁이 하나씩(파란 동그라미) */
+.frame-handles circle[data-fh=tl],.frame-handles circle[data-fh=br]{cursor:nwse-resize}.frame-handles circle[data-fh=tr],.frame-handles circle[data-fh=bl]{cursor:nesw-resize}
+.frame-handles.shape circle{fill:#2d71f7;stroke:#fff;cursor:move!important}.frame-handles.shape rect{opacity:.35}
 </style>
 </head>
 <body>
@@ -1962,7 +1965,7 @@ function zoomTf(z,bx,y,bw,h){if(!z||!(z.s>1))return'';const cx=bx+bw/2,cy=y+h/2;
 function frameHandles(pts,slot,i){const E=[['t',0,1],['r',1,2],['b',2,3],['l',3,0]];
   return `<g class="frame-handles" data-fh-for="${slot}" data-p="${i}">`+E.map(([k,a,b])=>{const x=(pts[a][0]+pts[b][0])/2,y=(pts[a][1]+pts[b][1])/2,hz=k==='t'||k==='b';
     return `<rect data-fh="${k}" x="${(x-(hz?22:7)).toFixed(1)}" y="${(y-(hz?7:22)).toFixed(1)}" width="${hz?44:14}" height="${hz?14:44}" rx="7"><title>${hz?'위아래로 끌어 높이':'좌우로 끌어 폭'} 조절</title></rect>`}).join('')+
-    ['tl','tr','br','bl'].map((k,n)=>`<circle data-fh="${k}" cx="${pts[n][0].toFixed(1)}" cy="${pts[n][1].toFixed(1)}" r="10"><title>끌어서 칸 모양(사선) 바꾸기</title></circle>`).join('')+`</g>`}
+    ['tl','tr','br','bl'].map((k,n)=>`<circle data-fh="${k}" cx="${pts[n][0].toFixed(1)}" cy="${pts[n][1].toFixed(1)}" r="10"><title>끌어서 컷 확대·축소 · 더블클릭하면 모퉁이를 하나씩(프레임 모양)</title></circle>`).join('')+`</g>`}
 function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false,{rough:true});$('#preview').innerHTML=state.svg}
 
 
@@ -2970,25 +2973,35 @@ function showFrame(group,f){const pts=framePts(f),str=pts.map(q=>q.map(v=>v.toFi
   group.querySelector('.page-frame')?.setAttribute('points',str);group.querySelector('clipPath polygon')?.setAttribute('points',str);
   const old=handlesOf(group);if(old){const sh=old.getAttribute('transform');old.outerHTML=frameHandles(pts,group.dataset.slotIndex,group.dataset.p);const nw=handlesOf(group);nw.classList.add('sel');if(sh)nw.setAttribute('transform',sh)}}
 function handlesOf(group){return group.ownerSVGElement.querySelector(`[data-fh-for="${group.dataset.slotIndex}"]`)}
+// 프레임 모양 모드: 컷을 더블클릭하면 켜짐(모퉁이를 하나씩 끌어 사선 칸). 꺼져 있으면 모퉁이 = 컷 확대·축소
+let frameShapeKey=null;
+function setFrameShape(key){frameShapeKey=key||null;markFrameShape();if(key)window.RoughWS?.flash?.('프레임 모양 바꾸기 · 모퉁이를 하나씩 끌어요 · Esc 끝내기')}
+function markFrameShape(){pageReader.querySelectorAll('.frame-handles').forEach(h=>{const g=h.ownerSVGElement?.querySelector(`[data-slot-index="${h.dataset.fhFor}"]`);h.classList.toggle('shape',!!g&&!!frameShapeKey&&pageKey(g)===frameShapeKey)})}
 function startFrameDrag(group,fh,e){e.preventDefault();e.stopPropagation();selectPageCut(group);selectLetter(null);
   const f0=JSON.parse(group.dataset.frame);
-  frameDrag={group,k:fh.dataset.fh,f0,f:structuredClone(f0),id:e.pointerId,start:pagePoint(group.ownerSVGElement,e),moved:false};
+  frameDrag={group,k:fh.dataset.fh,f0,f:structuredClone(f0),id:e.pointerId,start:pagePoint(group.ownerSVGElement,e),moved:false,shape:frameShapeKey===pageKey(group)};
   pageReader.setPointerCapture(e.pointerId)}
 function moveFrame(e){const d=frameDrag,pt=pagePoint(d.group.ownerSVGElement,e),dx=pt.x-d.start.x,dy=pt.y-d.start.y,f0=d.f0,f=structuredClone(f0),MINW=80,MINH=60;
   if(d.k==='l'){f.x=Math.max(0,Math.min(f0.x+f0.w-MINW,f0.x+dx));f.w=f0.x+f0.w-f.x}
   else if(d.k==='r')f.w=Math.max(MINW,Math.min(W-f0.x,f0.w+dx));
   else if(d.k==='b')f.h=Math.max(MINH,f0.h+dy);
   else if(d.k==='t'){const lim=d.group.dataset.prev?-Number(d.group.dataset.prev.split(':')[1]):-f0.h;const ddy=Math.max(lim,Math.min(f0.h-MINH,dy));f.y=f0.y+ddy;f.h=f0.h-ddy}
+  else if(!d.shape){// 모퉁이: 컷 전체를 비율대로 확대·축소(맞은편 모퉁이 고정)
+    const r=d.k.includes('r'),b=d.k.includes('b'),sx=(f0.w+(r?dx:-dx))/f0.w,sy=(f0.h+(b?dy:-dy))/f0.h;
+    let sc=Math.max(MINW/f0.w,MINH/f0.h,(sx+sy)/2);if(r)sc=Math.min(sc,(W-f0.x)/f0.w);else sc=Math.min(sc,(f0.x+f0.w)/f0.w);
+    if(!b&&d.group.dataset.prev){const lim=-Number(d.group.dataset.prev.split(':')[1]);sc=Math.min(sc,(f0.h-lim)/f0.h)}
+    f.w=Math.round(f0.w*sc);f.h=Math.round(f0.h*sc);if(!r)f.x=f0.x+f0.w-f.w;if(!b)f.y=f0.y+f0.h-f.h;
+    f.q=f0.q.map(q=>q.map(v=>Math.round(v*sc)))}
   else{const n=['tl','tr','br','bl'].indexOf(d.k),c=[[f0.x,f0.y],[f0.x+f0.w,f0.y],[f0.x+f0.w,f0.y+f0.h],[f0.x,f0.y+f0.h]][n];
     const ax=Math.max(0,Math.min(W,c[0]+f0.q[n][0]+dx)),ay=c[1]+f0.q[n][1]+dy;f.q[n]=[Math.round(ax-c[0]),Math.round(ay-c[1])]}
   d.f=f;d.moved=Math.abs(dx)+Math.abs(dy)>1;showFrame(d.group,f)}
 function saveFrame(){const d=frameDrag;frameDrag=null;if(!d.moved)return;const {f,f0,k,group}=d;
   const key=pageKey(group),scene=group.closest('section').dataset.pageScene,set=pageSettings(true,key);
   set.frame={x:Math.round(f.x),w:Math.round(f.w),h:Math.round(f.h)};
-  if(k.length===2||Array.isArray(set.quad))set.quad=f.q.map(q=>q.map(Math.round));
-  // 윗변을 끌면 바로 위 칸과의 간격을 그만큼 줄이거나 늘려 아랫변은 그대로
-  if(k==='t'&&group.dataset.prev){const [ps,size]=group.dataset.prev.split(':').map(Number);pageSettings(true,scene+':'+ps).gap=clampGap(size+(f.y-f0.y))}
-  saveScenes();renderWebtoon()}
+  if((k.length===2&&d.shape)||Array.isArray(set.quad))set.quad=f.q.map(q=>q.map(Math.round));
+  // 윗변(또는 위쪽 모퉁이로 확대)을 끌면 바로 위 칸과의 간격을 그만큼 줄이거나 늘려 아랫변은 그대로
+  if((k==='t'||(!d.shape&&(k==='tl'||k==='tr')))&&group.dataset.prev){const [ps,size]=group.dataset.prev.split(':').map(Number);pageSettings(true,scene+':'+ps).gap=clampGap(size+(f.y-f0.y))}
+  saveScenes();renderWebtoon();markFrameShape()}
 // ---------- 칸 안 그림 확대·이동 ----------
 let artDrag=null,zoomTimer=0;const ZMAX=5;
 function zoomOf(group){const z=pageSettings(false,pageKey(group))?.img;return {s:1,dx:0,dy:0,...z}}
@@ -3015,10 +3028,10 @@ zoomTip.innerHTML=`<kbd>${MODK}</kbd> + 휠로 이미지를 확대하거나 축�
 let tipQuiet=false;
 function hideTip(){zoomTip.hidden=true}
 pageReader.addEventListener('pointermove',e=>{
-  const art=e.pointerType==='mouse'&&pageEditing&&!tipQuiet&&!(artDrag||frameDrag||pageDrag||gapDrag||tailDrag)&&e.target.closest('[data-slot-index].sel [data-art]');
+  const art=e.pointerType==='mouse'&&pageEditing&&!tipQuiet&&!(artDrag||frameDrag||pageDrag||gapDrag||tailDrag)&&!e.target.closest('[data-letter]')&&e.target.closest('[data-slot-index].sel [data-art]');
   if(!art){hideTip();return}
-  const crop=cropKey===pageKey(art.closest('[data-slot-index]')),tipMode=crop?'crop':'enter';
-  if(zoomTip.dataset.mode!==tipMode){zoomTip.dataset.mode=tipMode;zoomTip.innerHTML=crop?`<kbd>${MODK}</kbd> + 휠로 확대·축소 · 끌어서 이동 · <kbd>Esc</kbd> 끝내기`:'더블클릭하면 그림을 확대하거나 옮길 수 있어요'}
+  const gk=pageKey(art.closest('[data-slot-index]')),crop=cropKey===gk,shape=frameShapeKey===gk,tipMode=crop?'crop':shape?'shape':'enter';
+  if(zoomTip.dataset.mode!==tipMode){zoomTip.dataset.mode=tipMode;zoomTip.innerHTML=crop?`<kbd>${MODK}</kbd> + 휠로 확대·축소 · 끌어서 이동 · <kbd>Esc</kbd> 끝내기`:shape?'모퉁이를 하나씩 끌어 프레임 모양을 바꿔요 · <kbd>Esc</kbd> 끝내기':'더블클릭하면 프레임 모양을 바꿀 수 있어요'}
   zoomTip.hidden=false;
   const x=Math.min(e.clientX+10,innerWidth-zoomTip.offsetWidth-8),y=Math.min(e.clientY+24,innerHeight-zoomTip.offsetHeight-8);
   zoomTip.style.transform=`translate(${x}px,${y}px)`});

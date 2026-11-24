@@ -47,8 +47,14 @@ canvas.addEventListener('pointerup',endPan);canvas.addEventListener('pointercanc
 function setCrop(group){const key=group?pageKey(group):'';if(key===cropKey)return;cropKey=key;markCrop();zoomTip.dataset.mode='';
   if(key)$('#wst').textContent=`그림 편집 · ${MODK} + 휠로 확대·축소, 끌어서 이동, Esc로 끝내기`;else if(/^그림 편집/.test($('#wst').textContent))$('#wst').textContent=''}
 function markCrop(){reader.querySelectorAll('[data-slot-index]').forEach(g=>g.classList.toggle('crop',!!cropKey&&pageKey(g)===cropKey))}
-reader.addEventListener('dblclick',e=>{if(!pageEditing)return;const art=e.target.closest('[data-art]');if(!art||e.target.closest('[data-letter],[data-page-gap],[data-fh]'))return;
-  const g=art.closest('[data-slot-index]');if(pageSelection!==pageKey(g))selectPageCut(g);setCrop(g)});
+// 컷 더블클릭: 프레임 모양 모드 켜고 끄기(그림 편집은 상황 막대 「그림 편집」 · 레이어 「그림」 더블클릭)
+// 첫 클릭에 화면이 다시 그려져 dblclick 대상이 사라지므로 누름 두 번을 직접 잰다
+{let last=null;reader.addEventListener('pointerdown',e=>{if(!pageEditing||e.button!==0||e.shiftKey)return;const art=e.target.closest('[data-art]');if(!art||e.target.closest('[data-letter],[data-page-gap],[data-fh]')){last=null;return}
+  const g=art.closest('[data-slot-index]'),k=pageKey(g),now=performance.now();
+  if(last&&last.k===k&&now-last.t<420&&Math.hypot(e.clientX-last.x,e.clientY-last.y)<6){last=null;if(pageSelection!==k)selectPageCut(g);if(cropKey)setCrop(null);setFrameShape(frameShapeKey===k?null:k);return}
+  last={k,t:now,x:e.clientX,y:e.clientY}},true)}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&frameShapeKey&&inEdit()){setFrameShape(null)}});
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);markFrameShape();return r}}
 reader.addEventListener('pointerdown',e=>{if(!cropKey)return;const g=e.target.closest('[data-slot-index]');if(!g||pageKey(g)!==cropKey||e.target.closest('[data-letter]'))setCrop(null)},true);
 
 // ---------- 컷 이동 ----------
@@ -95,12 +101,12 @@ $('#wtoc').addEventListener('click',e=>{
 // 레이어 패널에서 칸·그림 줄을 고른 상태(Delete가 무엇을 지울지 정함). 다른 컷·식자·캔버스를 누르면 풀림
 window.layerPart=null;
 function LP(k,w){return !!window.layerPart&&window.layerPart.key===k&&window.layerPart.what===w&&!selectedLetter}
-// 캔버스에서 컷 그림을 누르면 레이어 패널의 「그림」 줄을 고른 것으로(패널과 캔버스가 같은 것을 가리키게). 식자·간격·빈 곳은 풀림
+// 캔버스에서 컷을 누르면 레이어 패널의 「칸」 줄(컷 자체)을 고른 것으로 — 모퉁이는 컷 확대·축소. 그림 확대는 「그림」 줄(패널과 캔버스가 같은 것을 가리키게). 식자·간격·빈 곳은 풀림
 reader.addEventListener('pointerdown',e=>{if(!inEdit())return;const g=e.target.closest('[data-slot-index]');
-  const onArt=g&&!e.target.closest('[data-letter],[data-page-gap],[data-fh],[data-th]');const next=onArt?{key:pageKey(g),what:'art'}:null;
+  const onArt=g&&!e.target.closest('[data-letter],[data-page-gap],[data-fh],[data-th]');const next=onArt?{key:pageKey(g),what:'frame'}:null;
   if(JSON.stringify(next)!==JSON.stringify(window.layerPart)){window.layerPart=next;setTimeout(editTree,0)}},true);
 // 선택이 바뀌면 레이어 패널도 다시
-{const _sc=selectPageCut;selectPageCut=function(...a){const prev=pageSelection,r=_sc(...a);if(pageSelection!==prev){if(window.layerPart?.key!==pageSelection)window.layerPart=null;if(inEdit())editTree()}return r}}
+{const _sc=selectPageCut;selectPageCut=function(...a){const prev=pageSelection,r=_sc(...a);if(pageSelection!==prev){if(window.layerPart?.key!==pageSelection)window.layerPart=null;if(frameShapeKey&&frameShapeKey!==pageSelection)setFrameShape(null);if(inEdit())editTree()}return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const prev=selectedLetter,r=_sl(...a);if(selectedLetter)window.layerPart=null;if(selectedLetter!==prev&&inEdit())$('#wtoc').querySelectorAll('[data-tlayer]').forEach(b=>{const p=b.dataset.tlayer.split('|');b.setAttribute('aria-current',!!selectedLetter&&p[0]===pageSelection&&p[1]===selectedLetter.dataset.letter)});return r}}
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);if(cropKey&&!groups().some(g=>pageKey(g)===cropKey))cropKey='';markCrop();applyHidden();applyZoom();mini.refresh();return r}}
 

@@ -73,6 +73,8 @@ document.addEventListener('pointerdown',e=>{if(!fly.hidden&&!fly.contains(e.targ
 reader.addEventListener('pointerdown',e=>{
   if(!inEdit()||!pageEditing||e.button!==0)return;
   const letter=e.target.closest('[data-letter]'),group=e.target.closest('[data-slot-index]');
+  // 넣기 도구(말풍선·나레이션·효과음)를 든 채 이미 있는 식자를 누르면 하나 더 넣지 않고 그 식자를 골라 고치기
+  if(letter&&(tool==='balloon'||tool==='caption'||tool==='sfx')&&!e.altKey)setTool('select');
   if(tool==='select'){
     // Shift+클릭=고르기에 더하기(놓을 때 판단), Shift+끌기=가로·세로 고정 → 여기서는 기억만
     window._shiftPick=e.shiftKey&&letter?{L:letter,prev:selectedLetter}:null;if(e.shiftKey)e.preventDefault();  // 브라우저 글자 선택 막기
@@ -735,7 +737,7 @@ document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||!(e.key=
   const el=selectedLetter||selGroup();if(!el)return;const r=el.getBoundingClientRect();el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:r.left+Math.min(40,r.width/2),clientY:r.top+Math.min(40,r.height/2)}))});
 
 // ---------- 변형 손잡이: 식자는 누르면 바로 끌어 옮기고(기존) 모서리로 크기, 컷 그림은 바로 끌고 모서리로 확대 ----------
-const tbox=mk('tbox');tbox.hidden=true;tbox.innerHTML=['nw','ne','se','sw'].map(c=>`<i class="th" data-th="${c}" title="모서리: 끌어서 전체 크기 (Shift: 5% 단위)"></i>`).join('')+'<i class="th" data-th="rot" title="끌어서 돌리기 (Shift: 15° 단위)"></i>'+['n','e','s','w'].map(c=>`<i class="th side" data-th="${c}" title="끌어서 상자 ${c==='n'||c==='s'?'세로':'가로'}만 늘리기 · 글자 크기는 그대로"></i>`).join('')+'<output class="tb-v"></output>';document.body.appendChild(tbox);
+const tbox=mk('tbox');tbox.hidden=true;tbox.innerHTML=['nw','ne','se','sw'].map(c=>`<i class="th" data-th="${c}" title="모서리: 끌어서 전체 크기 (Shift: 5% 단위)"></i>`).join('')+'<i class="th" data-th="rot" title="끌어서 돌리기 (Shift: 15° 단위)"></i>'+'<output class="tb-v"></output>';document.body.appendChild(tbox);
 let tdrag=null,tmode=null; // tmode: 'letter' | 'art'
 const letterScale=L=>{const g=L.closest('[data-slot-index]');const s=withKey(pageKey(g),()=>pageSettings()?.letters?.[L.dataset.letter]?.scale);return +s||1};
 function tTarget(){if(!inEdit()||tool!=='select'||cropKey)return null;
