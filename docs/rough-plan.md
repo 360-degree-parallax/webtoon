@@ -962,3 +962,11 @@ main에 모두 합쳐진 원격 브랜치 8개 — 지울 대상. 이 작업 환
 | claude/tabs-3d | 184bd90aa5fa |
 
 남겨 둔 미병합 브랜치 19개(확인 필요): asset-metadata-v1, builtin-visual-assets-v1, claude/ext-dataset, claude/figure-wip, codex/* 14개, rough/reveal-storyboard, rough/revert-reveal-storyboard.
+
+## 115. 유사품에 주의하세요(YP) 1~10화 수집(2026-11-25)
+
+- 기존 파이프라인 그대로: 화별 손 판정(notes·scenes·annx, tools/pipeline/notes/yp1~10) → hpipe·check_pre·hc_taxo → hc_cuts로 컷 이미지.
+- 컷 수: 1화 115 · 2화 96 · 3화 89 · 4화 162 · 5화 137 · 6화 126 · 7화 168 · 8화 129 · 9화 133 · 10화 124 = 1,279컷(장면 50, 5컷 리듬 180묶음).
+- 원본 긴 스트립·시트는 저장소 밖(개인 작업 폴더)에만 둠. 저장소에는 컷 이미지·썸네일·판정만.
+- DB 시트용 가져오기 파일: `P=yp python3 hmulti.py 1 … 10` → yp1_…_10_imp.xlsx. 시트에 붙인 뒤 `tools/sync_db.py`로 db.json·patterns·nai-stats를 다시 만들면 콘티 엔진·작화 태그에도 반영됨(아직 시트 반영 전).
+- 컷 메타(인물 수·시선·말풍선 위치·원근선)도 YP 컷까지 다시 뽑아 index에 합침.
