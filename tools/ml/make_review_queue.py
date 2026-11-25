@@ -8,12 +8,12 @@
 항목마다 앞뒤 컷·다른 DB 값·상세 설명을, meta.examples에 라벨마다 대표 컷 3개를 넣어 판정 화면에서 보여 줌
 필요: tools/ml/cache/img-clip.npz, img-dino.npz, text-e5base.npz (embed_image.py·embed_text.py)
 """
-import sys, json, csv, pathlib, datetime, numpy as np
+import sys, json, csv, pathlib, datetime, collections, numpy as np
 from sklearn.linear_model import LogisticRegression
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); import weights as WT  # 사람이 확인한 라벨: 학습 가중치↑, 큐에서는 뺌
 ROOT = pathlib.Path(__file__).resolve().parents[2]; C = ROOT / 'tools' / 'ml' / 'cache'
 A = sys.argv[1:]
-N = {k: int(A[A.index('--' + k) + 1]) if '--' + k in A else v for k, v in (('shot', 300), ('emo', 150), ('role', 150))}
+N = {k: int(A[A.index('--' + k) + 1]) if '--' + k in A else v for k, v in (('shot', 300), ('emo', 150), ('role', 150), ('angle', 0))}
 def load(n): z = np.load(C / n); return dict(zip(z['ids'], z['X']))
 M = {k: load(f) for k, f in (('clip', 'img-clip.npz'), ('dino', 'img-dino.npz'), ('text', 'text-e5base.npz'))}
 d = json.loads((ROOT / 'rough' / 'db' / 'db.json').read_text()); t = d['컷표']; c = t['columns']; I = c.index
@@ -28,7 +28,7 @@ if (ROOT / 'rough' / 'db' / 'cut-meta.json').exists():
     sys.path.insert(0, str(ROOT / 'tools' / 'meta')); _argv = sys.argv; sys.argv = sys.argv[:1]; import eval_meta as EMT; sys.argv = _argv
     META = {i: EMT.Xm[k] * .35 for k, i in enumerate(EMT.ids)}; M['meta'] = META
 CM = json.loads((ROOT / 'rough' / 'db' / 'cut-meta.json').read_text())['cuts'] if META else {}
-TASKS = [('shot', '샷', ['clip', 'dino', 'text'] + (['meta'] if META else [])), ('emo', '감정', ['clip', 'text']), ('role', '역할', ['clip', 'dino', 'text'])]
+TASKS = [('angle', '앵글', ['clip', 'dino', 'text'] + (['meta'] if META else [])), ('shot', '샷', ['clip', 'dino', 'text'] + (['meta'] if META else [])), ('emo', '감정', ['clip', 'text']), ('role', '역할', ['clip', 'dino', 'text'])]
 KEEP = '--keep' in A
 oldq = json.loads((ROOT / 'rough' / 'db' / 'review-queue.json').read_text()) if KEEP and (ROOT / 'rough' / 'db' / 'review-queue.json').exists() else {'items': []}
 old_ids = {x['id'] for x in oldq['items']}
@@ -56,6 +56,7 @@ for key, col, feats in TASKS:
     ids = sorted(i for i in M['clip'] if all(i in M[f] for f in feats) and i in row)
     X = np.hstack([np.stack([M[f][i] for i in ids]) for f in feats]); y = np.array([str(row[i][I(col)]) for i in ids])
     work = np.array([i[:2] for i in ids]); classes = sorted(set(y)); P = np.zeros((len(ids), len(classes))); sw = WT.sample_weights(ids, col, y)
+    if key == 'angle': cnt = collections.Counter(y); sw = sw * np.array([len(y) / (len(cnt) * cnt[c]) for c in y]) ** .5
     done = {x['cut'] for x in WT.load()['labels'] if x['field'] == col}
     for w in sorted(set(work)):
         tr, te = work != w, work == w
