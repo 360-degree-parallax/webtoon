@@ -695,6 +695,8 @@ const hueOf=n=>{let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))%360;
 const avBg=n=>`hsl(${hueOf(n)} 32% 52%)`;
 function charTags(c){return (NAITAGS[c.name]??window.RoughNAI.lookTags(c.look).join(', ')).split(',').map(t=>t.trim()).filter(Boolean)}
 function charStat(name){const bs=RE.parseCuts(CUTS,engineChars());return{cuts:bs.filter(b=>b.who===name||(b.act||'').includes(name)).length,lines:bs.reduce((a,b)=>a+(b.dialogs||[]).filter(d=>d.who===name).length,0)}}
+// 외형 칸 예시: NovelAI 태그 형태(성별에 맞춰)
+const tagEx=c=>c.body==='male'?'예: 1boy, black hair, short hair, slicked back hair, green eyes, tall, tailcoat, white bowtie':'예: 1girl, brown hair, long hair, ponytail, brown eyes, maid, apron, white headdress';
 function charCard(c,i){const n=c.name.trim(),im=n&&IMG.char[n],st=n?charStat(n):{cuts:0,lines:0};
   return `<article class="cedit" data-ci="${i}" data-old="${esc(n)}">
     <div class="ce-side"><div class="drop ce-img${im?' has':''}" data-cimg tabindex="0" role="button" aria-label="${esc(n||'캐릭터')} 대표 이미지" style="${im?'':`background:${avBg(n||'?')}`}">${im?`<img src="${im.src}" alt=""><button class="x" data-cimgdel aria-label="이미지 지우기">×</button>`:`<span class="ini">${esc((n||'?').slice(0,1))}</span><small>+ 대표 이미지</small>`}</div>
@@ -702,14 +704,14 @@ function charCard(c,i){const n=c.name.trim(),im=n&&IMG.char[n],st=n?charStat(n):
     <div class="ce-f">
       <div class="ce-top"><input class="ce-name" data-ck="name" value="${esc(c.name)}" maxlength="20" placeholder="이름" aria-label="이름" spellcheck="false"><div class="seg3">${[['female','여자'],['male','남자']].map(([v,l])=>`<button type="button" data-cbody="${v}" aria-pressed="${c.body===v}">${l}</button>`).join('')}</div><span class="cbadge" data-badge></span></div>
       <label class="cf"><span>다른 호칭 <small>쉼표로 구분 · 줄글에서 같은 인물로 찾아요</small></span><input data-ck="aliases" value="${esc(c.aliases||'')}" placeholder="예: 도련님, 에드" spellcheck="false"></label>
-      <label class="cf"><span>외형 <small data-cnt>${(c.look||'').length}/1000</small></span><textarea data-ck="look" rows="4" maxlength="1000" placeholder="머리 모양·색, 눈, 체격, 옷차림, 특징">${esc(c.look||'')}</textarea></label>
-      <label class="cf"><span>NovelAI 태그 <small>비우면 외형에서 자동으로 만들어요</small></span><input data-ck="tags" value="${esc(NAITAGS[n]??'')}" placeholder="${esc(window.RoughNAI.lookTags(c.look).join(', ')||'blonde hair, short hair, green eyes')}" spellcheck="false"></label>
+      <label class="cf"><span>외형 <small>NovelAI 태그 · 쉼표로 구분 · 비우면 특징 글에서 자동으로 만들어요</small></span><textarea class="ce-tags" data-ck="tags" rows="3" placeholder="${esc(tagEx(c))}" spellcheck="false">${esc(NAITAGS[n]??'')}</textarea></label>
+      <label class="cf cf-big"><span>특징 <small data-cnt>${(c.look||'').length}/1000</small></span><textarea data-ck="look" rows="9" maxlength="1000" placeholder="성격, 말투, 버릇, 관계, 태그로 다 못 담는 외형 특징(흉터·분위기·체격) 등을 자유롭게">${esc(c.look||'')}</textarea></label>
       <div class="ce-foot"><span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span><span class="grow"></span><button type="button" class="btn" data-act="librevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="libsave">보관함에 저장</button><button type="button" class="btn" data-act="chdel">작품에서 빼기</button></div>
     </div></article>`}
 function updateCard(i){const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`),c=CHARS[i];if(!el||!c)return;const st=libState(c);
   const bd=el.querySelector('[data-badge]');bd.textContent=st==='same'?'보관함과 같음':st==='diff'?'보관함과 다름':'';bd.className='cbadge'+(st==='diff'?' diff':'');bd.hidden=!st;
   const sv=el.querySelector('[data-act=libsave]');sv.textContent=st?'보관함 갱신':'보관함에 저장';sv.disabled=st==='same';el.querySelector('[data-act=librevert]').hidden=st!=='diff';
-  el.querySelector('[data-cnt]').textContent=`${(c.look||'').length}/1000`;el.querySelector('[data-ck=tags]').placeholder=window.RoughNAI.lookTags(c.look).join(', ')||'blonde hair, short hair, green eyes';
+  el.querySelector('[data-cnt]').textContent=`${(c.look||'').length}/1000`;el.querySelector('[data-ck=tags]').placeholder=tagEx(c);
   const n=c.name.trim();if(!IMG.char[n]){const d=el.querySelector('[data-cimg]');d.style.background=avBg(n||'?');const ini=d.querySelector('.ini');if(ini)ini.textContent=(n||'?').slice(0,1)}}
 function updateCastStat(){const k=CHARS.filter(c=>libState(c)==='same').length,d=CHARS.filter(c=>libState(c)==='diff').length;$('#castst').textContent=`${CHARS.length}명 · 보관함 저장 ${k}${d?` · 보관함과 다름 ${d}`:''}`}
 function renderChars(){
@@ -791,7 +793,7 @@ $('#chars').addEventListener('click',e=>{const i=cardOf(e);if(i<0)return;const c
 $('#chars').addEventListener('keydown',e=>{if(e.target.matches('[data-cimg]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.target.click()}});
 for(const ev of ['dragover','dragleave','drop'])$('#chars').addEventListener(ev,e=>{const d=e.target.closest('[data-cimg]');if(!d)return;e.preventDefault();d.classList.toggle('over',ev==='dragover');
   if(ev==='drop'){const i=cardOf(e),n=i>=0&&CHARS[i].name.trim();const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!n){toast('이름을 먼저 정해 주세요');return}if(f)attach(f,{kind:'char',key:n})}});
-const focusCard=i=>setTimeout(()=>{const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.querySelector(CHARS[i].name.trim()?'[data-ck=look]':'[data-ck=name]').focus({preventScroll:true})}},30);
+const focusCard=i=>setTimeout(()=>{const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.querySelector(CHARS[i].name.trim()?'[data-ck=tags]':'[data-ck=name]').focus({preventScroll:true})}},30);
 function addCharFromSugg(name){CHARS.push({name,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderSugg();renderCastSum?.();renderParse?.();toast(`설정집에 「${name}」을 추가했어요 · 외형은 설정집에서 채워 주세요`)}
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('.newchar [data-sug]');if(b){e.preventDefault();addCharFromSugg(b.dataset.sug)}});
 $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();compute(false);renderSlots();showView('chars');focusCard(CHARS.length-1)});

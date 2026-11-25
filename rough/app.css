@@ -466,6 +466,8 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .cf{display:grid;gap:6px}.cf .seg3{justify-self:start}.cf>span{font-size:13px;font-weight:700}.cf>span small{font-weight:500;color:var(--t3);margin-left:6px}
 .cf input,.cf textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px}
 .cf textarea{line-height:1.6;resize:vertical;min-height:96px}
+.cf textarea.ce-tags{min-height:72px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+.cf-big textarea{min-height:220px}
 .sugg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:13px;color:var(--t2)}
 .sugg button{height:30px;padding:0 10px;border:1px dashed var(--line2);border-radius:15px;font-size:13px;font-weight:600;color:var(--t1)}
 /* top tabs */
