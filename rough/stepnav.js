@@ -4,7 +4,7 @@
 // - 점을 누르면 그 단계로 바로, 마우스를 올리면 상태 요약
 // - Alt+Shift+← / → 로 이동, 화면마다 보던 스크롤 위치 기억
 (function(){
-const STEPS=[['chars','캐릭터'],['world','세계관'],['plan','구성'],['write','씬'],['layout','콘티'],['webtoon','편집']];
+const STEPS=[['setbook','설정집'],['plan','구성'],['write','씬'],['layout','콘티'],['webtoon','편집']];  // 설정집 = 캐릭터 + 세계관
 const $=s=>document.querySelector(s);
 const nav=document.createElement('nav');nav.className='stepnav';nav.setAttribute('aria-label','작업 단계 이동');document.body.appendChild(nav);document.body.classList.add('has-stepnav');
 
@@ -12,6 +12,7 @@ function compo(){try{const m=JSON.parse(localStorage.getItem('rough-composition-
 const cutsOf=sc=>(sc.cuts||[]).filter(c=>String(c).trim()).length;
 // 단계별 상태: [다 했는지, 짧은 요약]
 function status(id){try{
+  if(id==='setbook'){const n=(typeof CHARS!=='undefined'?CHARS:[]).filter(c=>c.name?.trim()).length,w=typeof WORLD!=='undefined'?WORLD:null;return [n>0||!!w?.name,[n?`인물 ${n}명`:'인물 없음',w?.name?`「${w.name}」`:'세계관 없음'].join(' · ')]}
   if(id==='chars'){const n=(typeof CHARS!=='undefined'?CHARS:[]).filter(c=>c.name?.trim()).length;return [n>0,n?`인물 ${n}명`:'인물 없음']}
   if(id==='world'){const w=typeof WORLD!=='undefined'?WORLD:null;return [!!w?.name,w?.name?`「${w.name}」`:'세계관 없음']}
   if(id==='plan'){const d=compo();const n=d?.scenes?.length||d?.plan?.scenes?.length||0;return [!!d,d?(n?`구성안 ${n}씬`:'구성안 있음'):'구성안 없음']}
@@ -20,7 +21,7 @@ function status(id){try{
   if(id==='webtoon'){const s=typeof SCENES!=='undefined'?SCENES:[];const ed=s.reduce((n,sc)=>n+(sc.pageEdits||[]).filter(e=>e&&Object.keys(e).length).length,0);
     const im=typeof IMG!=='undefined'?Object.keys(IMG.cut||{}).length:0;return [ed>0||im>0,im?`그림 ${im}컷 · 손본 컷 ${ed}개`:ed?`손본 컷 ${ed}개`:'아직 손대지 않음']}
 }catch(_){}return [false,'']}
-const cur=()=>{const v=typeof VIEW!=='undefined'?VIEW:'';return STEPS.findIndex(s=>s[0]===v)};
+const cur=()=>{let v=typeof VIEW!=='undefined'?VIEW:'';if(v==='chars'||v==='world')v='setbook';return STEPS.findIndex(s=>s[0]===v)};
 
 function paint(){const i=cur();if(i<0){nav.hidden=true;return}nav.hidden=false;
   const P=STEPS[i-1],N=STEPS[i+1];
@@ -38,7 +39,7 @@ addEventListener('resize',()=>requestAnimationFrame(place));
 
 // 화면별 스크롤 위치 기억(편집 화면은 자체 위치 처리가 있어 제외)
 const POS={};
-function go(id){const i=cur();if(i>=0&&STEPS[i][0]!=='webtoon')POS[STEPS[i][0]]=scrollY;showView(id)}
+function go(id){const i=cur();if(i>=0&&STEPS[i][0]!=='webtoon')POS[typeof VIEW!=='undefined'?VIEW:STEPS[i][0]]=scrollY;showView(id)}
 nav.addEventListener('click',e=>{if(e.target.closest('[data-sn-x="export"]')){e.stopPropagation();const x=$('#wexport');x?.scrollIntoView?.({block:'nearest'});x?.click();return}const b=e.target.closest('[data-sn]');if(!b)return;go(b.dataset.sn)});
 document.addEventListener('keydown',e=>{if(!e.altKey||!e.shiftKey||e.ctrlKey||e.metaKey||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;
   if(document.querySelector('dialog[open]'))return;const i=cur();if(i<0)return;const j=i+(e.key==='ArrowRight'?1:-1);if(j<0||j>=STEPS.length)return;e.preventDefault();go(STEPS[j][0])});
