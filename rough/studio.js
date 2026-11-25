@@ -1,4 +1,4 @@
-// 연출(편집) 화면 보강: 캔버스 확대·이동, 그림 편집 모드, 레이어 패널, 미니맵, 읽기 모드, 단축키
+// 연출(편집) 화면 보강: 캔버스 확대·이동, 그림 편집 모드, 레이어 패널, 읽기 모드, 단축키
 // 클립스튜디오(내비게이터·레이어 팔레트)와 피그마(줌·손 도구·레이어·Present)를 참고
 (function(){
 const canvas=document.querySelector('.edcanvas'),reader=pageReader;
@@ -11,8 +11,7 @@ const STICKY=200;
 const CZ_MIN=.1,CZ_MAX=4,BASE=720;
 let CZ=1;try{CZ=clamp(+localStorage.getItem('rough-canvas-zoom')||1,CZ_MIN,CZ_MAX)}catch(_){}
 function applyZoom(){if(reader.classList.contains('artboards')){reader.style.width='max-content';reader.style.setProperty('--abw',Math.round(BASE*CZ)+'px')}else reader.style.width=Math.round(BASE*CZ)+'px';reader.style.maxWidth='none';
-  $('#wczlab').textContent=Math.round(CZ*100)+'%';try{localStorage.setItem('rough-canvas-zoom',CZ)}catch(_){}
-  requestAnimationFrame(()=>mini.view())}  // 위치 재기는 그린 다음(바로 재면 레이아웃을 한 번 더 계산)
+  $('#wczlab').textContent=Math.round(CZ*100)+'%';try{localStorage.setItem('rough-canvas-zoom',CZ)}catch(_){}}
 // 화면의 (cx,cy) 지점이 확대 뒤에도 같은 자리에 있게
 function zoomTo(z,cx,cy){z=clamp(z,CZ_MIN,CZ_MAX);if(Math.abs(z-CZ)<1e-4)return;
   const r=reader.getBoundingClientRect();if(cx==null){const c=canvas.getBoundingClientRect();cx=c.left+c.width/2;cy=Math.max(STICKY,innerHeight/2)}
@@ -74,7 +73,7 @@ const eye=(on,key,label)=>`<button class="teye${on?'':' off'}" data-teye="${esc(
 editTree=function(){const el=$('#wtoc');if(!el)return;const by={};
   groups().forEach(g=>{const sc=+g.closest('section').dataset.pageScene;(by[sc]||=[]).push(g)});
   const curLetter=selectedLetter?.dataset.letter;
-  el.innerHTML=SCENES.map((sc,i)=>{const ps=scenePanels(i),gs=by[i]||[];
+  const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i),gs=by[i]||[];
     return `<a class="tsc" href="#ws-${i}" data-toc="${i}">${esc(sceneLabel(sc,i))}<small>${gs.length}컷</small></a>`+gs.map(g=>{const k=pageKey(g),n=+g.dataset.p,p=ps[n]||{};
       const has=!!cutImg(i,n,p),open=OPEN.has(k)||(k===pageSelection&&!SHUT.has(k));
       const rows=open?[`<button class="tlay" data-tlayer="${esc(k)}|frame" aria-current="${LP(k,'frame')}" title="Delete: 컷 지우기"><span class="ti">${ICON.칸}</span>칸</button>`,
@@ -82,7 +81,12 @@ editTree=function(){const el=$('#wtoc');if(!el)return;const by={};
         ...extraRows(k,i,+g.dataset.slotIndex),
         ...[...g.querySelectorAll('[data-letter]')].map(L=>{const lk=L.dataset.letter,kind=kindOf(lk),hk=k+'|'+lk,txt=(L.dataset.letterText||'').replace(/\s+/g,' ');
           return `<div class="tlrow"><button class="tlay" data-tlayer="${esc(hk)}" title="더블클릭: 문구 고치기 · Delete: 지우기" aria-current="${k===pageSelection&&lk===curLetter}"><span class="ti">${ICON[kind]}</span><span class="tt">${esc(txt||kind)}</span></button>${eye(!HIDE.has(hk),hk,kind)}</div>`})].join(''):'';
-      return `<div class="tcutrow"><button class="texp" data-texp="${esc(k)}" aria-expanded="${open}" aria-label="${n+1}컷 레이어 ${open?'접기':'펼치기'}">▸</button><button class="tcut" data-tcut="${esc(k)}" aria-current="${k===pageSelection}"><i class="${has?'on':''}" title="${has?'이미지 등록됨':'러프'}"></i>${n+1}컷<small>${esc(p.shot||'')}</small></button></div>${open?`<div class="tlayers">${rows}</div>`:''}`}).join('')}).join('')};
+      return `<div class="tcutrow"><button class="texp" data-texp="${esc(k)}" aria-expanded="${open}" aria-label="${n+1}컷 레이어 ${open?'접기':'펼치기'}">▸</button><button class="tcut" data-tcut="${esc(k)}" aria-current="${k===pageSelection}"><i class="${has?'on':''}" title="${has?'이미지 등록됨':'러프'}"></i>${n+1}컷<small>${esc(p.shot||'')}</small></button></div>${open?`<div class="tlayers">${rows}</div>`:''}`}).join('')});
+  // 바뀐 씬만 갈아 끼움(70컷이면 패널 전체를 다시 만드는 데 10~20ms, 썸네일·잠금 단추도 다시 달아야 했음)
+  const olds=[...el.querySelectorAll(':scope>.tsw')],prev=el._tparts;
+  if(prev&&prev.length===parts.length&&olds.length===parts.length){parts.forEach((h,i)=>{if(h!==prev[i])olds[i].innerHTML=h})}
+  else el.innerHTML=parts.map((h,i)=>`<div class="tsw" data-tsw="${i}">${h}</div>`).join('');
+  el._tparts=parts};
 // 칸에 붙는 에셋(배경 · 효과선 · 이미지 소재)도 레이어 줄로 — 누르면 고르고 Delete로 지움
 function extraRows(k,si,slot){const e=SCENES[si]?.pageEdits?.[slot]||{},rows=[];const row=(what,icon,label,sub,title)=>`<button class="tlay" data-tlayer="${esc(k)}|${what}" aria-current="${LP(k,what)}" title="${title}"><span class="ti">${icon}</span>${label}${sub?`<small>${esc(sub)}</small>`:''}</button>`;
   const bg=[e.transition?'전환 질감':'',/^#/.test(e.background||'')?'배경색':'',e.bgImage?'배경 이미지':''].filter(Boolean);
@@ -98,7 +102,7 @@ function reveal(get){const go=smooth=>{const el=get();if(!el)return;const r=el.g
   requestAnimationFrame(()=>go(true));setTimeout(()=>go(false),450)}
 $('#wtoc').addEventListener('click',e=>{
   const x=e.target.closest('[data-texp]');if(x){const k=x.dataset.texp;if(x.getAttribute('aria-expanded')==='true'){OPEN.delete(k);SHUT.add(k)}else{OPEN.add(k);SHUT.delete(k)}editTree();return}
-  const v=e.target.closest('[data-teye]');if(v){const k=v.dataset.teye;HIDE.has(k)?HIDE.delete(k):HIDE.add(k);applyHidden();editTree();mini.refresh();return}
+  const v=e.target.closest('[data-teye]');if(v){const k=v.dataset.teye;HIDE.has(k)?HIDE.delete(k):HIDE.add(k);applyHidden();editTree();return}
   const l=e.target.closest('[data-tlayer]');if(l){const [scene,slot,what]=l.dataset.tlayer.split('|').flatMap((s,i)=>i?[s]:s.split(':'));const key=scene+':'+slot;
     const g=groups().find(x=>pageKey(x)===key);if(!g)return;if(pageSelection!==key)selectPageCut(g);
     if(what==='frame'||what==='art'||what==='bg'||/^(line|ov):/.test(what)){selectLetter(null);window.layerPart={key,what};reveal(()=>groups().find(x=>pageKey(x)===key))}
@@ -127,33 +131,12 @@ window.syncTree=function syncTree(){const el=$('#wtoc');if(!el||!inEdit())return
 {const _et=editTree;editTree=function(...a){const r=_et(...a);window.syncTree();return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const prev=selectedLetter,r=_sl(...a);if(selectedLetter)window.layerPart=null;
   if(selectedLetter&&selectedLetter!==prev&&inEdit()&&SHUT.has(pageSelection)){SHUT.delete(pageSelection);editTree();return r}if(selectedLetter!==prev&&inEdit())$('#wtoc').querySelectorAll('[data-tlayer]').forEach(b=>{const p=b.dataset.tlayer.split('|');b.setAttribute('aria-current',!!selectedLetter&&p[0]===pageSelection&&p[1]===selectedLetter.dataset.letter)});if(selectedLetter!==prev)window.syncTree();return r}}
-{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);if(cropKey&&!groups().some(g=>pageKey(g)===cropKey))cropKey='';markCrop();applyHidden();applyZoom();mini.refresh();return r}}
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);if(cropKey&&!groups().some(g=>pageKey(g)===cropKey))cropKey='';markCrop();applyHidden();applyZoom();return r}}
 
-// ---------- 미니맵(클립스튜디오 내비게이터) ----------
-const mini=(()=>{const box=document.createElement('div');box.className='minimap';box.hidden=true;box.setAttribute('aria-label','미니맵: 눌러서 이동');
-  box.innerHTML='<div class="mm-in"></div><div class="mm-view"></div>';document.body.appendChild(box);
-  const inner=box.querySelector('.mm-in'),vp=box.querySelector('.mm-view');let k=.12,timer=0,drag=false;
-  function refresh(){clearTimeout(timer);timer=setTimeout(build,250)}
-  function build(){if(!inEdit()||!reader.querySelector('svg')){box.hidden=true;return}
-    inner.innerHTML=reader.innerHTML;inner.style.width=BASE+'px';
-    // 편집 손잡이·안내선·고른 표시는 미니맵에 옮기지 않음(예전 상태가 남아 보였음)
-    inner.querySelectorAll('.frame-handles,.phoneguide,.readorder,.tail-handle,.gap-grip,[data-page-gap]').forEach(x=>x.remove());inner.querySelectorAll('.sel,.multi-sel,.crop').forEach(x=>x.classList.remove('sel','multi-sel','crop'));
-    const docked=box.classList.contains('docked'),h=reader.scrollHeight/CZ,maxH=docked?Math.max(200,innerHeight*.45):Math.max(160,innerHeight*.55);k=Math.min((docked?Math.max(60,box.parentElement.clientWidth-4):96)/BASE,maxH/h);
-    inner.style.transform=`scale(${k})`;box.style.width=Math.round(BASE*k)+'px';box.style.height=Math.round(h*k)+'px';box.hidden=(!docked&&matchMedia('(max-width:1100px)').matches)||reader.classList.contains('artboards');view()}
-  function view(){if(box.hidden)return;const r=reader.getBoundingClientRect(),s=k/CZ;
-    const top=(STICKY-r.top)*s,h=(innerHeight-STICKY)*s,left=(canvas.getBoundingClientRect().left-r.left)*s,w=canvas.clientWidth*s;
-    vp.style.transform=`translate(${Math.max(0,left)}px,${Math.max(0,top)}px)`;vp.style.width=Math.min(BASE*k,w)+'px';vp.style.height=Math.max(8,h)+'px'}
-  function jump(e){const b=box.getBoundingClientRect(),r=reader.getBoundingClientRect(),y=(e.clientY-b.top)/k*CZ;
-    scrollTo(0,r.top+scrollY+y-(innerHeight+STICKY)/2)}
-  box.addEventListener('pointerdown',e=>{drag=true;box.setPointerCapture(e.pointerId);jump(e)});
-  box.addEventListener('pointermove',e=>{if(drag)jump(e)});box.addEventListener('pointerup',()=>drag=false);
-  addEventListener('scroll',()=>requestAnimationFrame(view),{passive:true});canvas.addEventListener('scroll',view,{passive:true});addEventListener('resize',refresh);
-  reader.addEventListener('pointerup',refresh);
-  return {refresh,view,hide:()=>box.hidden=true,box}})();
-{const _sv=showView;showView=function(v){const r=_sv(v);if(v!=='webtoon'){mini.hide();closeRead();setCrop(null)}return r}}
-document.body.classList.add('has-minimap');
+// 미니맵은 없앰(화면 전체 복제가 편집마다 ~90ms) — 예전 호출 자리용 빈 객체
+const mini={refresh(){},view(){},hide(){},box:null};
+{const _sv=showView;showView=function(v){const r=_sv(v);if(v!=='webtoon'){closeRead();setCrop(null)}return r}}
 const preview=()=>$('#v-webtoon').classList.contains('preview');
-new MutationObserver(()=>mini.box.classList.toggle('wide',preview())).observe($('#v-webtoon'),{attributes:true,attributeFilter:['class']});
 
 // ---------- 읽기 모드(피그마 Present · 클립스튜디오 웹툰 미리보기) ----------
 const rd=document.createElement('div');rd.className='readmode';rd.hidden=true;rd.setAttribute('role','dialog');rd.setAttribute('aria-modal','true');rd.setAttribute('aria-label','읽기 모드');

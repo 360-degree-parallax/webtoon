@@ -3,7 +3,7 @@
   const variants=['A','B','C','D'];
   const clean=value=>String(value??'').normalize('NFKC').replace(/\s+/g,'');
   let indexRequest,installed=null,cacheVersion=0;
-  const artCache=new Map(),byWord=new Map(),byId=new Map();
+  let artVer=0;const artCache=new Map(),byWord=new Map(),byId=new Map();
   const text=new TextDecoder();
   function error(){return new Error('이 효과음 ZIP을 읽을 수 없어요.')}
   const read=(file,start,end)=>file.slice(start,end).arrayBuffer().then(buf=>new DataView(buf));
@@ -116,7 +116,7 @@
         const blob=await entry.source(path),header=await read(blob,0,24);
         if(header.byteLength!==24||header.getUint32(0)!==0x89504e47)throw error();
         return {width:header.getUint32(16),height:header.getUint32(20),src:await dataURL(new Blob([blob],{type:'image/png'}))};
-      })().then(art=>{record.art=art;return art}).catch(err=>{if(version===cacheVersion)artCache.delete(key);throw err});
+      })().then(art=>{record.art=art;artVer++;return art}).catch(err=>{if(version===cacheVersion)artCache.delete(key);throw err});
       artCache.set(key,record);
     }
     return artCache.get(key).pending;
@@ -153,5 +153,5 @@
     }
     return '<path fill="'+color+'" opacity="'+(effect.kind==='focus'?'.72':'.48')+'" d="'+segments.join(' ')+'"/>';
   }
-  root.RoughMaterials={variants,ready,install,find,entry:id=>byId.get(id),load,image,lineEffect};
+  root.RoughMaterials={get artVer(){return artVer},variants,ready,install,find,entry:id=>byId.get(id),load,image,lineEffect};
 })(typeof window==='object'?window:globalThis);

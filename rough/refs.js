@@ -36,7 +36,8 @@ const opts=(vals,cur,all)=>`<option value="">${all}</option>`+vals.map(v=>`<opti
 const uniq=(k,order)=>{const s=[...new Set(Object.values(REF_PICK).map(r=>r[k]).filter(Boolean))];return order?s.sort((a,b)=>(order.indexOf(a)+1||99)-(order.indexOf(b)+1||99)):s.sort()};
 function curRef(){const p=selPanel();return p?.ref||null}
 
-function render(){if(panel.hidden)return;if(!Object.keys(REF_PICK).length){panel.innerHTML='<p class="empty">레퍼런스를 불러오는 중이에요</p>';return}
+function render(){if(panel.hidden||!panel.isConnected||panel.closest('[hidden]'))return;  // 안 보이는 자리(에셋의 다른 탭 등)면 그리지 않음 — 보일 때 showTab이 다시 그림
+  if(!Object.keys(REF_PICK).length){panel.innerHTML='<p class="empty">레퍼런스를 불러오는 중이에요</p>';return}
   const works=[...new Set(Object.values(REF_PICK).map(codeOf))].sort();const names=Object.fromEntries(Object.values(REF_PICK).map(r=>[codeOf(r),r.work]));
   const list=results(),p=selPanel(),cur=curRef(),pickedRef=REF_PICK[picked];
   const edit=pageSelection&&pageSettings()?.ref;

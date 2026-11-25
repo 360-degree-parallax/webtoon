@@ -48,7 +48,8 @@ function render(full=true){const L=selectedLetter,k=kindOf(L);if(!L&&partNow()&&
     h+=sec('꼬리',`<label class="lc-tg"><input type="checkbox" data-c="tail" ${o.showTail===false?'':'checked'}>표시</label><button class="lc-btn" data-c="tailreset"${o.tail?'':' disabled'}>방향 처음대로</button>${linkable?`<label class="lc-tg"><input type="checkbox" data-c="linked" ${o.linked?'checked':''}>두 칸 연결</label>`:''}`)}
   h+=sec('배치',`<span class="lc-seg"><button data-c="align" data-v="left" title="컷 왼쪽">←</button><button data-c="align" data-v="center" title="컷 가운데">↔</button><button data-c="align" data-v="right" title="컷 오른쪽">→</button></span><span class="lc-rot">회전 <b data-c="rotv">${Math.round(o.rot||0)}°</b></span><button class="lc-btn" data-c="rot0"${o.rot?'':' disabled'}>없애기</button>`);
   if(k==='dialog')h+=`<p class="lc-foot">다른 형태로 바꾸려면 아래 말풍선 에셋을 눌러요</p>`;
-  card.innerHTML=h;applyFloat();card.dataset.kind=k;card.classList.toggle('locked',WS.isLocked(L.closest('[data-slot-index]'),id));
+  // 같은 내용이면 카드를 통째로 바꾸지 않음(포커스·스크롤 유지, 클릭마다 DOM 교체 비용 없앰)
+  if(h!==render.lastH){card.innerHTML=h;render.lastH=h}applyFloat();card.dataset.kind=k;card.classList.toggle('locked',WS.isLocked(L.closest('[data-slot-index]'),id));
   suggestSplit(text,k);requestAnimationFrame(fit);}
 function paintParts(L,k,o){card.querySelectorAll('[data-c=style]').forEach(b=>b.setAttribute('aria-pressed',(o.style||'auto')===b.dataset.v));
   card.querySelectorAll('[data-c=font]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(o.font||PAGE_PRESET)));
@@ -111,7 +112,7 @@ function renderPart(){const lp=partNow();if(!lp){card.hidden=true;return}const [
       sec('위치',`<button class="lc-btn" data-p="replace">${kd==='speed'?'방향 다시 긋기':'중심 다시 찍기'}</button>`);
     h=`<header class="lc-h"><b>${kd==='speed'?'속도선':'집중선'}</b><span class="lc-cut">${slot+1}컷 · 효과선</span><span class="grow"></span><button class="lc-ib" data-p="del" title="지우기 (Delete)">🗑</button><button class="lc-ib" data-p="close" title="선택 풀기 (Esc)">×</button></header>`+h}
   else if(lp.what==='bg'){kind='bg';const pres=(typeof PAGE_BACKGROUNDS!=='undefined'?PAGE_BACKGROUNDS:[]).map((p,i)=>p?[i,p.name]:null).filter(Boolean);
-    const thumb=i=>document.querySelector(`#wbgpresets [data-bg-preset="${i}"] svg`)?.outerHTML||'';
+    const thumb=i=>window.bgThumbSVG?.(i)||'';
     const imgs=typeof IMG!=='undefined'?Object.values(IMG.bg||{}).sort((a,b)=>(a.at||0)-(b.at||0)):[];
     h=`<header class="lc-h"><b>배경</b><span class="lc-cut">${slot+1}컷 · 아래 전환</span><span class="grow"></span><button class="lc-ib" data-p="del" title="배경 모두 지우기 (Delete)">🗑</button><button class="lc-ib" data-p="close" title="선택 풀기 (Esc)">×</button></header>`+
       sec('배경색',`<button class="lc-dot" data-p="bgcolor"><i style="background:${/^#/.test(e.background||'')?e.background:'#ffffff'}"></i>${/^#/.test(e.background||'')?esc(e.background):'기본(흰색)'}</button>${e.background?'<button class="lc-btn" data-p="bgcolor0">없애기</button>':''}`)+
@@ -121,7 +122,7 @@ function renderPart(){const lp=partNow();if(!lp){card.hidden=true;return}const [
   else{kind='ov';const n=+lp.what.slice(3),o=e.overlays?.[n]||{};
     h=`<header class="lc-h"><b>이미지 소재 ${n+1}</b><span class="lc-cut">${slot+1}컷</span><span class="grow"></span><button class="lc-ib" data-p="del" title="빼기 (Delete)">🗑</button><button class="lc-ib" data-p="close" title="선택 풀기 (Esc)">×</button></header>`+
       sec('자세히',`<button class="lc-btn" data-p="ovmore">속성 서랍에서 크기·위치·투명도</button>`)}
-  card.innerHTML=h;card.dataset.kind=kind;card.classList.remove('locked');applyFloat?.()}
+  if(h!==render.lastH){card.innerHTML=h;render.lastH=h}card.dataset.kind=kind;card.classList.remove('locked');applyFloat?.()}
 card.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b||b.tagName==='INPUT')return;const lp=partNow();if(!lp)return;const c=b.dataset.p,v=b.dataset.v;
   if(c==='close'){if(typeof clearAllSelection==='function')clearAllSelection();card.hidden=true;return}
   if(c==='del'){WS.deletePart?.(lp.key,lp.what);card.hidden=true;return}

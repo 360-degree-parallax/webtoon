@@ -12,9 +12,18 @@ const flash=t=>window.RoughWS?.flash?.(t);
 const newId=()=>'e'+Date.now().toString(36);
 const freshScenes=()=>JSON.stringify([{id:'s'+Date.now(),title:'씬 1',cuts:[''],pageEdits:[]}]);
 
-function stash(){if(typeof saveScenes==='function')saveScenes();try{const t=thumbOf(cur());if(t&&t.length<400000)cur().thumb=t;else delete cur().thumb;save()}catch(_){}KEYS.forEach(k=>ls.set(slot(meta.cur,k),ls.get(k)))}
-function unstash(id){KEYS.forEach(k=>{const v=ls.get(slot(id,k));ls.set(k,v);ls.set(slot(id,k),null)})}
-function go(id){if(id===meta.cur)return;stash();unstash(id);meta.cur=id;save();location.reload()}
+// 기본 저장 공간이 차면 보관 칸은 IndexedDB(doc:<칸>)로 — 꺼낼 때 둘 다 봄
+const DB=()=>typeof idb!=='undefined'?idb:null;
+async function slotGet(k){const v=ls.get(k);if(v!=null)return v;const d=await DB()?.getDoc('doc:'+k);return d?.json??null}
+async function slotSet(k,v){if(v==null){ls.set(k,null);await DB()?.putDoc({id:'doc:'+k,kind:'doc',json:null});return}if(ls.set(k,v)){await DB()?.putDoc({id:'doc:'+k,kind:'doc',json:null});return}await DB()?.putDoc({id:'doc:'+k,kind:'doc',at:Date.now(),json:v})}
+async function stash(){if(typeof flushScenes==='function'){saveScenes();flushScenes()}else if(typeof saveScenes==='function')saveScenes();
+  try{const t=thumbOf(cur());if(t&&t.length<400000)cur().thumb=t;else delete cur().thumb;save()}catch(_){}
+  window.ROUGH_NOSAVE=true;  // 꺼내 바꾸는 동안·새로 고칠 때 예전 원고가 다시 써지지 않게
+  for(const k of KEYS){const v=k==='rough-scenes'&&typeof SCENES!=='undefined'?JSON.stringify(SCENES):ls.get(k);await slotSet(slot(meta.cur,k),v)}}
+async function unstash(id){for(const k of KEYS){const v=await slotGet(slot(id,k));
+    if(!ls.set(k,v)&&k==='rough-scenes'){try{localStorage.removeItem(k)}catch(_){}await DB()?.putDoc({id:'doc:rough-scenes',kind:'doc',ep:id,at:Date.now(),cur:0,json:v})}
+    await slotSet(slot(id,k),null)}}
+async function go(id){if(id===meta.cur)return;await stash();await unstash(id);meta.cur=id;save();location.reload()}
 
 // 그림까지 복제: 컷 그림은 씬 id로 저장되므로 새 씬 id로 옮겨 씀
 async function cloneScenes(json){const list=JSON.parse(json||'[]'),map={};const t=Date.now();
@@ -25,19 +34,19 @@ async function cloneScenes(json){const list=JSON.parse(json||'[]'),map={};const 
   return JSON.stringify(list)}
 
 function nextTitle(){const ns=meta.list.map(e=>parseInt(e.title)).filter(n=>!isNaN(n));return (ns.length?Math.max(...ns)+1:meta.list.length+1)+'화'}
-function add(){const id=newId(),title=nextTitle();stash();meta.list.push({id,title});
+async function add(){const id=newId(),title=nextTitle();await stash();meta.list.push({id,title});
   KEYS.forEach(k=>ls.set(k,null));ls.set('rough-scenes',freshScenes());meta.cur=id;save();location.reload()}
-async function dup(){const id=newId(),title=cur().title+' 사본';stash();
-  const json=await cloneScenes(ls.get(slot(meta.cur,'rough-scenes')));
+async function dup(){const id=newId(),title=cur().title+' 사본';await stash();
+  const json=await cloneScenes(await slotGet(slot(meta.cur,'rough-scenes')));
   meta.list.splice(meta.list.indexOf(cur())+1,0,{id,title});
-  ls.set('rough-scenes',json);ls.set('rough-scene-cur','0');ls.set('rough-composition-v1',ls.get(slot(meta.cur,'rough-composition-v1')));
+  ls.set('rough-scenes',json);ls.set('rough-scene-cur','0');ls.set('rough-composition-v1',await slotGet(slot(meta.cur,'rough-composition-v1')));
   meta.cur=id;save();location.reload()}
 function rename(){const e=cur(),t=prompt('회차 이름',e.title);if(t==null)return;const v=t.trim().slice(0,30);if(!v)return;e.title=v;save();paint();flash(`회차 이름을 「${v}」(으)로 바꿨어요`)}
 function remove(){if(meta.list.length<2){flash('회차가 하나뿐이라 지울 수 없어요');return}const e=cur();
   if(!confirm(`「${e.title}」 회차를 지울까요? 씬·컷·넣은 그림이 모두 지워지고 되돌릴 수 없어요.`))return;
   try{const scs=JSON.parse(ls.get('rough-scenes')||'[]').map(s=>s.id);if(typeof IMG!=='undefined')Object.values(IMG.cut).filter(r=>scs.includes(r.scene)).forEach(r=>{delete IMG.cut[r.id];idb.del(r.id)})}catch(_){}
   const i=meta.list.indexOf(e);meta.list.splice(i,1);const next=meta.list[Math.max(0,i-1)];
-  unstash(next.id);meta.cur=next.id;save();setTimeout(()=>location.reload(),150)}
+  unstash(next.id).then(()=>{meta.cur=next.id;save();setTimeout(()=>location.reload(),150)})}
 function move(d){const i=meta.list.indexOf(cur()),j=i+d;if(j<0||j>=meta.list.length)return;[meta.list[i],meta.list[j]]=[meta.list[j],meta.list[i]];save();paint()}
 
 const btn=document.createElement('button');btn.className='btn epbtn';btn.id='epbtn';btn.setAttribute('aria-haspopup','menu');btn.title='회차 바꾸기 · 새 회차 · 복제';
