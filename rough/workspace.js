@@ -420,9 +420,12 @@ function useMat(kind,v,group,pt,target){
   if(kind==='balloon'){if(!group){opt.balloon=v;SS('rough-tool-balloon',v);setTool('balloon');return}
     const L=target?.closest?.('[data-letter^="dialog-"]');if(L){withKey(pageKey(group),()=>saveLetter(L,{style:v}));renderWebtoon();flash('말풍선 형태를 바꿨어요');return}
     addLetter('balloon',group,pt,{style:v});return}
-  if(kind==='sfx'){if(!group){opt.sfx=v;SS('rough-tool-sfx',v);setTool('sfx');return}addLetter('sfx',group,pt,{text:v});return}
+  if(kind==='sfx'){const L=selSfx();if(L&&!target?.closest?.('[data-slot-index]:not(.sel)')){swapSfx(L,v,null);return}if(!group){opt.sfx=v;SS('rough-tool-sfx',v);setTool('sfx');return}addLetter('sfx',group,pt,{text:v});return}
   if(kind==='bg'){if(group)selectPageCut(group);if(!pageSelection){flash('배경을 넣을 컷을 먼저 고르세요');return}$(`#wbgpresets [data-bg-preset="${v}"]`)?.click();flash('배경 전환을 넣었어요');return}
-  if(kind==='line'){if(group)selectPageCut(group);setTool(v)}}
+  if(kind==='line'){if(group)selectPageCut(group);const st=pageSelection&&pageSettings(),ls=st?.materialLines,ks=ls?Object.keys(ls):[];
+    // 컷에 다른 종류 효과선이 하나 있으면 새로 그리지 않고 종류만 바꿈
+    if(ks.length===1&&ks[0]!==v){const e={...ls[ks[0]],kind:v};delete ls[ks[0]];ls[v]=e;saveScenes();renderWebtoon();flash(`효과선을 ${v==='speed'?'속도선':'집중선'}으로 바꿨어요 · Ctrl+Z로 되돌리기`);return}
+    setTool(v)}}
 libBody.addEventListener('click',e=>{const b=e.target.closest('[data-mat]');if(b)useMat(b.dataset.mat,b.dataset.v)});
 libBody.addEventListener('dragstart',e=>{const b=e.target.closest('[data-mat]');if(!b)return;e.dataTransfer.setData('application/x-rough-mat',JSON.stringify({k:b.dataset.mat,v:b.dataset.v}));e.dataTransfer.effectAllowed='copy'});
 let over=null;const mark=g=>{if(over===g)return;over?.classList.remove('drop-target');over=g;g?.classList.add('drop-target')};
@@ -645,6 +648,16 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
 // 적용: 클릭은 고른 대상에, 끌어 놓기는 놓은 자리에
 function cutCenter(g){try{const f=JSON.parse(g.dataset.frame);return {x:f.x+f.w/2,y:f.y+f.h*.35}}catch(_){return {x:345,y:200}}}
 // 소재 효과음을 고른 타입(A~D)으로 넣기
+// 고른 효과음이 있으면 새로 넣지 않고 그 자리에서 바꿈(위치·크기·회전 그대로). 글에서 온 효과음(-쾅-)은 컷 글의 그 낱말을, 소재 효과음은 소재 목록을 바꿈
+function selSfx(){const L=selectedLetter;return L&&/^(effect-|material-)/.test(L.dataset.letter)?L:null}
+function swapSfx(L,word,variant){const g=L.closest('[data-slot-index]'),key=pageKey(g),id=L.dataset.letter,old=(L.dataset.letterText||'').trim();
+  if(isLocked(g,id)){flash('잠긴 효과음이에요');return false}
+  if(id.startsWith('material-')){const set=pageSettings(true,key),it=(set.materialSounds||[]).find(x=>'material-'+x.id===id);if(!it)return false;it.text=word}
+  else{const n=+id.split('-')[1],[si,slot]=key.split(':').map(Number),sc=SCENES[si];let k=-1,done=false;
+    sc.cuts[slot]=String(sc.cuts[slot]||'').replace(/(-{1,3})([^\-\n]+?)(-{1,3})/g,(m,a,w,b)=>{k++;if(!done&&k===n&&w.trim()===old){done=true;return a+word+b}return m});
+    if(!done){flash('이 효과음은 글에서 바꿀 수 없어요');return false}if(si===SCUR)CUTS=sc.cuts}
+  withKey(key,()=>{const st=pageSettings(true);const o={...st.letters?.[id]};if(variant&&variant!=='A')o.materialVariant=variant;else delete o.materialVariant;(st.letters||={})[id]=o});
+  saveScenes();refreshText(+key.split(':')[0]);const L2=groupBy(key)?.querySelector(`[data-letter="${CSS.escape(id)}"]`);if(L2)selectLetter(L2);flash(`효과음을 「${word}」(으)로 바꿨어요 · Ctrl+Z로 되돌리기`);return true}
 async function addPack(id,g){const entry=materialCatalog.entry(id),key=pageKey(g);if(!entry)return;
   try{await materialCatalog.load(entry,SFX_TYPE)}catch(_){flash('효과음 이미지를 불러오지 못했어요');return}
   const set=pageSettings(true,key),mid=crypto.randomUUID();(set.materialSounds||=[]).push({id:mid,text:entry.word});
@@ -654,12 +667,13 @@ async function addPack(id,g){const entry=materialCatalog.entry(id),key=pageKey(g
 function applyAsset(k,v,g,pt,target){const label=asBody.querySelector(`[data-mat="${k}"][data-v="${CSS.escape(String(v))}"]`)?.dataset.label||String(v);
   g=g||(pageSelection?selGroup():null);
   if(k==='balloon'||k==='sfx'||k==='line'){if(k==='balloon'&&!g&&selectedLetter){const sg=selectedLetter.closest('[data-slot-index]');useMat('balloon',v,sg,cutCenter(sg),selectedLetter)}else useMat(k,v,g,pt||(g?cutCenter(g):null),target||(k==='balloon'?selectedLetter:null));remember(k,v,label);return}
+  if(!g&&k==='pack'&&selSfx())g=selSfx().closest('[data-slot-index]');
   if(!g){flash('먼저 컷을 고르거나, 캔버스의 컷으로 끌어다 놓아요');return}
   if(g&&pageKey(g)!==pageSelection)selectPageCut(g);
   if(k==='bg'){const e=pageSettings(true);if(+v)e.transition=+v;else delete e.transition;saveScenes();renderWebtoon();flash('전환 질감을 넣었어요')}
   else if(k==='color'){pageSettings(true).background=v;saveScenes();renderWebtoon();flash('배경색을 바꿨어요')}
   else if(k==='bgimg'){const e=pageSettings(true);e.bgImage=v;saveScenes();renderWebtoon();flash('배경 이미지를 넣었어요')}
-  else if(k==='pack'){addPack(v,g);remember(k,v,label);return}
+  else if(k==='pack'){const L=selSfx(),entry=materialCatalog.entry(v);if(L&&entry){materialCatalog.load(entry,SFX_TYPE).then(()=>swapSfx(L,entry.word,SFX_TYPE)).catch(()=>flash('효과음 이미지를 불러오지 못했어요'))}else addPack(v,g);remember(k,v,label);return}
   else if(k==='seq'){$('#wtplsel').value=v;$('#wtplapply').click()}
   remember(k,v,label);if(typeof refreshBackgroundTools==='function'&&pageSelection)refreshBackgroundTools()}
 assetBody.addEventListener('click',e=>{const t=e.target;
