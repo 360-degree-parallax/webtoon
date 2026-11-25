@@ -712,8 +712,12 @@ function updateCastStat(){const k=CHARS.filter(c=>libState(c)==='same').length,d
 function renderChars(){
   $('#chars').innerHTML=CHARS.map(charCard).join('')+`<button class="ccadd" data-act="addchar">+ 새 캐릭터</button>`;
   CHARS.forEach((_,i)=>updateCard(i));updateCastStat();renderSugg();renderCastSum();if(!$('#v-chars').hidden)renderLib()}
-function renderSugg(){const have=new Set(CHARS.map(c=>c.name.trim()));
-  const found=[...new Set(RE.parseCuts(CUTS,engineChars()).map(b=>b.who))].filter(n=>n&&!have.has(n)&&!NOTP.test(n));
+// 설정집에 없는 인물: 말하는 사람 + 글 속 @이름(조사 뗌). 다른 호칭으로 등록된 이름은 같은 인물로 침
+const JOSA_RE=/(이|가|은|는|을|를|의|에게|께|와|과|도|만|랑|이랑|한테|에게서|이가|님)$/;
+function knownNames(){const s=new Set();engineChars().forEach(c=>{s.add(c.name);c.aliases.forEach(a=>s.add(a))});return s}
+function mentionNames(text){return [...String(text||'').matchAll(/@([가-힣A-Za-z0-9_]{1,12})/g)].map(m=>{let n=m[1];const k=knownNames();if(k.has(n))return n;const b=n.replace(JOSA_RE,'');return b&&k.has(b)?b:(b.length>=1?b:n)})}
+function unknownNames(texts){const k=knownNames();return [...new Set([...RE.parseCuts(texts,engineChars()).map(b=>b.who),...texts.flatMap(t=>mentionNames(t))])].filter(n=>n&&!k.has(n)&&!NOTP.test(n))}
+function renderSugg(){const found=unknownNames(CUTS);
   $('#sugg').innerHTML=found.length?`글에서 찾은 인물 ${found.map(n=>`<button data-sug="${esc(n)}">+ ${esc(n)}</button>`).join('')}`:''}
 function renderCastSum(){const el=$('#castsum');if(!el)return;const cs=CHARS.filter(c=>c.name.trim());
   el.innerHTML=cs.length?cs.map(c=>{const n=c.name.trim(),im=IMG.char[n],st=charStat(n);return `<div class="castbox${st.cuts?'':' off'}" title="${esc(c.look||n)}"><span class="av" style="${im?'':`background:${avBg(n)}`}">${im?`<img src="${im.src}" alt="">`:esc(n.slice(0,1))}</span><span class="cb"><b>${esc(n)}</b><small>${st.cuts?`${st.cuts}컷 · 대사 ${st.lines}`:'이 씬에 없음'}</small></span></div>`}).join(''):'<p class="insp-note">아직 인물이 없어요</p>'}
@@ -785,6 +789,8 @@ $('#chars').addEventListener('keydown',e=>{if(e.target.matches('[data-cimg]')&&(
 for(const ev of ['dragover','dragleave','drop'])$('#chars').addEventListener(ev,e=>{const d=e.target.closest('[data-cimg]');if(!d)return;e.preventDefault();d.classList.toggle('over',ev==='dragover');
   if(ev==='drop'){const i=cardOf(e),n=i>=0&&CHARS[i].name.trim();const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!n){toast('이름을 먼저 정해 주세요');return}if(f)attach(f,{kind:'char',key:n})}});
 const focusCard=i=>setTimeout(()=>{const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.querySelector(CHARS[i].name.trim()?'[data-ck=look]':'[data-ck=name]').focus({preventScroll:true})}},30);
+function addCharFromSugg(name){CHARS.push({name,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderSugg();renderCastSum?.();renderParse?.();toast(`설정집에 「${name}」을 추가했어요 · 외형은 설정집에서 채워 주세요`)}
+$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('.newchar [data-sug]');if(b){e.preventDefault();addCharFromSugg(b.dataset.sug)}});
 $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();compute(false);renderSlots();showView('chars');focusCard(CHARS.length-1)});
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a||a.closest('#chars .cedit'))return;const k=a.dataset.act;
   if(k==='addchar'){CHARS.push({name:'',aliases:'',body:'female',look:''});saveChars();renderChars();focusCard(CHARS.length-1)}
@@ -918,10 +924,10 @@ function caretXY(ta,pos){const cs=getComputedStyle(ta),d=document.createElement(
   const r=ta.getBoundingClientRect(),x=r.left+sp.offsetLeft,y=r.top+sp.offsetTop-ta.scrollTop+parseFloat(cs.lineHeight||20);d.remove();return [x,y]}
 let TA=null;
 function mentionQuery(){const ta=TA;if(!ta)return null;if(ta.selectionStart!==ta.selectionEnd)return null;const pos=ta.selectionStart;const m=ta.value.slice(0,pos).match(/(^|[^가-힣A-Za-z0-9_])@([가-힣A-Za-z0-9_]*)$/);return m?{q:m[2],start:pos-m[2].length-1,pos}:null}
-function showMbox(){const mq=mentionQuery();const all=CHARS.map(c=>c.name.trim()).filter(Boolean);
-  mList=mq?all.filter(n=>n.startsWith(mq.q)&&n!==mq.q):[];if(!mList.length){mbox.hidden=true;return}
+function showMbox(){const mq=mentionQuery();const cs=CHARS.filter(c=>c.name.trim());
+  mList=mq?cs.filter(c=>{const n=c.name.trim();if(n===mq.q)return false;return n.startsWith(mq.q)||String(c.aliases||'').split(/[,·]/).some(a=>a.trim()&&a.trim().startsWith(mq.q)&&mq.q)}).map(c=>c.name.trim()):[];if(!mList.length){mbox.hidden=true;return}
   mStart=mq.start;mSel=Math.min(mSel,mList.length-1);
-  mbox.innerHTML=mList.map((n,i)=>`<button role="option" data-mi="${i}" aria-checked="${i===mSel}">@${esc(n)}<small>${esc(CHARS.find(c=>c.name.trim()===n)?.body==='male'?'남자':'여자')}</small></button>`).join('');
+  mbox.innerHTML=mList.map((n,i)=>{const c=CHARS.find(c=>c.name.trim()===n)||{},im=IMG.char[n];return `<button role="option" data-mi="${i}" aria-checked="${i===mSel}" class="mopt"><i class="av" style="${im?'':`background:${avBg(n)}`}">${im?`<img src="${im.src}" alt="">`:esc(n.slice(0,1))}</i><span><b>@${esc(n)}</b><small>${esc([c.body==='male'?'남자':'여자',c.aliases?`다른 호칭 ${c.aliases}`:'',(c.look||'').slice(0,24)].filter(Boolean).join(' · '))}</small></span></button>`}).join('');
   mbox.hidden=false;const [x,y]=caretXY(TA,mq.pos);mbox.style.left=Math.min(innerWidth-mbox.offsetWidth-8,x+scrollX)+'px';mbox.style.top=(y+scrollY+4)+'px'}
 function pickMention(i){const ta=TA;const name=mList[i];if(!name)return;const pos=ta.selectionStart;
   ta.value=ta.value.slice(0,mStart)+'@'+name+ta.value.slice(pos);const c=mStart+name.length+1;ta.setSelectionRange(c,c);ta.focus();mbox.hidden=true;ta.dispatchEvent(new Event('input',{bubbles:true}))}
@@ -1022,6 +1028,7 @@ function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.
       const st=g.edit?.letters&&Object.entries(g.edit.letters).filter(([key,v])=>v.style&&/^dialog/.test(key)).map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean);
 }
     if(typeof loreHits==='function')loreHits(CUTS[i]).forEach(e=>out.push(`<span>◆ ${esc(e.name)}</span>`));
+    {const un=unknownNames([CUTS[i]]);if(un.length)out.push(`<span class="newchar"><small>설정집에 없음</small>${un.map(n=>`<button type="button" data-sug="${esc(n)}" title="설정집 캐릭터에 「${esc(n)}」 추가">+ ${esc(n)}</button>`).join('')}</span>`)}
     // 효과음 추천: 효과음이 없는 컷에만, 눌러서 바로 넣기(sfx-rec.js)
     if(window.RoughSfxRec&&!(b.sfx||[]).length){const emo=(state.panels||[]).find(p=>String(p.key||'').startsWith('#'+i+':'))?.emo;
       const rs=RoughSfxRec.recommend(CUTS[i],emo,3);if(rs.length)out.push(`<span class="sfxrec"><small>효과음</small>${rs.map(r=>`<button type="button" data-sfxadd="${esc(r.word)}" data-i="${i}" title="${esc(r.why)} 때문에 추천 · ${esc(r.cat)}">+ ${esc(r.word)}</button>`).join('')}</span>`)}
