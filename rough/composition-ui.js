@@ -60,9 +60,9 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     const mini=!!P.mini,ci=settings.namedItem('cutCount');ci.min=mini?3:10;ci.max=mini?8:200;
     root.querySelectorAll('[data-not-mini]').forEach(e=>e.hidden=mini);root.querySelectorAll('[data-mini-only]').forEach(e=>e.hidden=!mini);
     root.querySelectorAll('[data-mini-cuts]').forEach(b=>b.setAttribute('aria-pressed',String(mini&&Number(b.dataset.miniCuts)===P.cuts)));
-    const seg=(cls,label,n)=>n?'<div class="'+cls+'" style="flex:'+n+'" title="'+label+' 약 '+n+'컷">'+label+'<small>'+n+'</small></div>':'';
+    const seg=(cls,label,n)=>n?'<div class="'+cls+'" style="flex:'+n+'" title="'+label+' 약 '+n+'컷"><b>'+label+'</b><small>'+n+'컷</small></div>':'';
     if(mini){est.innerHTML='씬 <b>1개</b> · 한 컷에 대사 <b>1~2개</b><br>마지막 컷에 반전·웃음 포인트';
-      const cls={기:'s-k1',승:'s-k2',전:'s-k3',결:'s-k4',여운:'s-k1'};shape.innerHTML=P.beats.map((b,i)=>'<div class="'+cls[b]+'" style="flex:1" title="'+(i+1)+'컷 · '+b+'">'+(i+1)+'<small>'+b+'</small></div>').join('');return}
+      const cls={기:'s-k1',승:'s-k2',전:'s-k3',결:'s-k4',여운:'s-k1'};shape.innerHTML=P.beats.map((b,i)=>'<div class="'+cls[b]+'" style="flex:1" title="'+(i+1)+'컷 · '+b+'"><b>'+(i+1)+'컷</b><small>'+b+'</small></div>').join('');return}
     est.innerHTML='씬 <b>'+(P.fixed?P.scenes:'약 '+P.scenes)+'개</b>'+(P.fixed?'':' (자동)')+' · 씬당 약 <b>'+P.perScene+'컷</b><br>휴대폰 약 <b>'+P.phone+'화면</b> · 말풍선 약 <b>'+P.balloons+'개</b>';
     shape.innerHTML=seg('s-open','오프닝',P.open)+seg('s-dev','전개',P.dev)+seg('s-rise','고조',P.rise)+seg('s-hook','엔딩 훅',P.hook)}
   function config(){
