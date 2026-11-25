@@ -32,7 +32,7 @@ function render(full=true){const L=selectedLetter,k=kindOf(L);if(!L||!k||!docume
   const FP=Object.entries(FONT_PRESETS),fcur=o.font||PAGE_PRESET;
   const sec=(t,body,cls='')=>`<div class="lc-row ${cls}"><span class="lc-l">${t}</span><div class="lc-v">${body}</div></div>`;
   let h=`<header class="lc-h"><b>${KNAME[k]}</b><span class="lc-cut">${slot+1}컷</span>${k==='dialog'?`<button class="lc-who" data-c="who" aria-haspopup="menu" title="말하는 인물 바꾸기">${who?'@'+esc(who):'화자 없음'} ▾</button>`:k==='caption'?`<button class="lc-who" data-c="who" aria-haspopup="menu" title="종류 바꾸기">나레이션 ▾</button>`:''}<span class="grow"></span>
-    <button class="lc-ib" data-c="more" aria-haspopup="menu" title="더 보기">⋯</button><button class="lc-ib" data-c="close" title="선택 풀기 (Esc)">×</button></header>`;
+    ${FLOAT?'<button class="lc-ib" data-c="dock" title="오른쪽 패널에 다시 붙이기">⇲</button>':''}<button class="lc-ib" data-c="more" aria-haspopup="menu" title="더 보기">⋯</button><button class="lc-ib" data-c="close" title="선택 풀기 (Esc)">×</button></header>`;
   h+=`<div class="lc-text"><textarea data-c="text" rows="${k==='sfx'?1:2}" spellcheck="false" aria-label="${KNAME[k]} 문구" placeholder="${k==='dialog'?'대사를 입력하세요':k==='caption'?'나레이션':'효과음'}">${esc(text)}</textarea>
     <div class="lc-tm"><span data-c="info">${textInfo(text)}</span>${over?'<button class="lc-link" data-c="orig">작성 문구로</button>':''}<span data-c="split"></span></div></div>`;
   if(k!=='sfx')h+=sec('글자',`<span class="lc-seg">${FP.map(([v,f])=>`<button data-c="font" data-v="${v}" aria-pressed="${v===fcur}" title="${esc(f.name)}" style="font-family:${f.family.replace(/"/g,"'")}">가</button>`).join('')}</span>
@@ -47,7 +47,7 @@ function render(full=true){const L=selectedLetter,k=kindOf(L);if(!L||!k||!docume
     h+=sec('꼬리',`<label class="lc-tg"><input type="checkbox" data-c="tail" ${o.showTail===false?'':'checked'}>표시</label><button class="lc-btn" data-c="tailreset"${o.tail?'':' disabled'}>방향 처음대로</button>${linkable?`<label class="lc-tg"><input type="checkbox" data-c="linked" ${o.linked?'checked':''}>두 칸 연결</label>`:''}`)}
   h+=sec('배치',`<span class="lc-seg"><button data-c="align" data-v="left" title="컷 왼쪽">←</button><button data-c="align" data-v="center" title="컷 가운데">↔</button><button data-c="align" data-v="right" title="컷 오른쪽">→</button></span><span class="lc-rot">회전 <b data-c="rotv">${Math.round(o.rot||0)}°</b></span><button class="lc-btn" data-c="rot0"${o.rot?'':' disabled'}>없애기</button>`);
   if(k==='dialog')h+=`<p class="lc-foot">다른 형태로 바꾸려면 아래 말풍선 에셋을 눌러요</p>`;
-  card.innerHTML=h;card.dataset.kind=k;card.classList.toggle('locked',WS.isLocked(L.closest('[data-slot-index]'),id));
+  card.innerHTML=h;applyFloat();card.dataset.kind=k;card.classList.toggle('locked',WS.isLocked(L.closest('[data-slot-index]'),id));
   suggestSplit(text,k);requestAnimationFrame(fit);}
 function paintParts(L,k,o){card.querySelectorAll('[data-c=style]').forEach(b=>b.setAttribute('aria-pressed',(o.style||'auto')===b.dataset.v));
   card.querySelectorAll('[data-c=font]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(o.font||PAGE_PRESET)));
@@ -138,5 +138,20 @@ function focus(o={}){if(card.hidden)render(true);const t=card.querySelector('[da
   try{WS.openPanel?.('assets')}catch(_){}
   t.focus({preventScroll:true});
   if(o.select||true)t.select();return true}
+// ---------- 카드 옮기기: 머리줄을 끌면 떼어져 화면 아무 데나 둘 수 있음(자리 기억) · ⇲ 또는 머리줄 더블클릭으로 다시 붙이기 ----------
+const POSK='rough-card-float';let FLOAT=null;try{FLOAT=JSON.parse(localStorage.getItem(POSK)||'null')}catch(_){}
+function saveFloat(){try{FLOAT?localStorage.setItem(POSK,JSON.stringify(FLOAT)):localStorage.removeItem(POSK)}catch(_){}}
+function clampPos(x,y,w,h){return [Math.max(8,Math.min(innerWidth-w-8,x)),Math.max(110,Math.min(innerHeight-60,y))]}
+function applyFloat(){card.classList.toggle('float',!!FLOAT);if(FLOAT){const [x,y]=clampPos(FLOAT.x,FLOAT.y,card.offsetWidth||280,card.offsetHeight||300);Object.assign(card.style,{left:x+'px',top:y+'px',width:(FLOAT.w||280)+'px'})}else{card.style.left=card.style.top=card.style.width=''}}
+card.addEventListener('pointerdown',e=>{const h=e.target.closest('.lc-h');if(!h||e.target.closest('button')||e.button!==0)return;e.preventDefault();
+  const r=card.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top,w=r.width;let moved=false;
+  const mv=ev=>{if(!moved&&Math.hypot(ev.clientX-e.clientX,ev.clientY-e.clientY)<4)return;if(!moved){moved=true;FLOAT={x:r.left,y:r.top,w};applyFloat();card.classList.add('dragging');if(!card.querySelector('[data-c=dock]'))render(true)}
+    const [x,y]=clampPos(ev.clientX-ox,ev.clientY-oy,w,card.offsetHeight);FLOAT.x=x;FLOAT.y=y;card.style.left=x+'px';card.style.top=y+'px'};
+  const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);card.classList.remove('dragging');if(moved){saveFloat();WS.flash('편집 카드를 옮겼어요 · ⇲나 머리줄 더블클릭으로 다시 붙여요')}};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up)});
+function dock(){FLOAT=null;saveFloat();applyFloat();render(true);WS.flash('편집 카드를 오른쪽 패널에 다시 붙였어요')}
+card.addEventListener('dblclick',e=>{if(e.target.closest('.lc-h')&&!e.target.closest('button')&&FLOAT)dock()});
+card.addEventListener('click',e=>{if(e.target.closest('[data-c=dock]')){e.stopPropagation();dock()}},true);
+addEventListener('resize',()=>{if(FLOAT)applyFloat()});
 window.RoughCard={render,focus,get el(){return card}};
 })();
