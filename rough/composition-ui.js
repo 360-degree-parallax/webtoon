@@ -36,9 +36,10 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     const row=current().form;
     for(const name of Object.keys(row))if(settings.namedItem(name))settings.namedItem(name).value=row[name];
     for(const btn of toolbar.querySelectorAll('button[data-kind]'))btn.setAttribute('aria-pressed',String(btn.dataset.kind===mode));
-    for(const section of form.querySelectorAll('[data-plan-mode]'))section.hidden=section.dataset.planMode!==mode;
+    for(const section of root.querySelectorAll('[data-plan-mode]'))section.hidden=section.dataset.planMode!==mode;
     for(const part of form.querySelectorAll('[data-plan-length]'))part.hidden=part.dataset.planLength!==row.lengthMode;
     root.querySelector('#plan-amount-label').textContent=mode==='webtoon'?'씬 수':'섹션 수';
+    for(const group of root.querySelectorAll('[data-chips]'))for(const b of group.querySelectorAll('[data-v]'))b.setAttribute('aria-pressed',String(settings.namedItem(group.dataset.chips)?.value===b.dataset.v));
     root.querySelector('#plan-manual').hidden=row.placement!=='manual'||!Number(row.uiCount);
   }
   function config(){
@@ -68,33 +69,45 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
       '<button type="button" class="btn" data-do="download">HTML 저장</button>'+
       '<button type="button" class="btn" data-do="regen-code"'+(card.locked?' disabled':'')+'>HTML만 다시 생성</button></div></div>';
   }
+  // 카드: 번호 · 제목(바로 고침) · 컷 수 · 잠금/다시 생성 → 역할·감정 변화·마지막 컷 3칸 → 컷 초안 목록(처음 4컷, 더 보기)
+  const OPEN=new Set();
   function cardHTML(card){
-    const web=mode==='webtoon',badge=web?card.cutCount+'컷':card.withHTML?'HTML UI':'';
-    const story=web?field('turn','감정 변화',card.turn)+field('ending','마지막 컷',card.ending)+
-      '<details><summary>컷별 초안 '+card.cutCount+'개</summary><div class="plan-cuts">'+card.cuts.map((cut,i)=>field('cut-'+i,(i+1)+'컷',cut,true)).join('')+'</div></details>'
-      :field('copy','카피',card.copy,true)+field('cta','CTA',card.cta)+(card.withHTML?htmlFields(card):'');
-    return '<article class="plan-card" data-card="'+card.n+'"><header><span>'+card.n+(web?'번 씬':'번 섹션')+(badge?' · '+badge:'')+'</span>'+
-      '<div><button type="button" class="btn" data-do="lock" aria-pressed="'+card.locked+'">'+(card.locked?'잠금 해제':'잠그기')+'</button> '+
-      '<button type="button" class="btn" data-do="regen"'+(card.locked?' disabled':'')+'>이 카드 다시 생성</button></div></header>'+
-      '<div class="plan-fields">'+field('title','제목',card.title)+field('purpose',web?'장면의 역할':'설득 목적',card.purpose)+story+'</div></article>';
+    const web=mode==='webtoon';
+    const head='<div class="pc-h"><span class="pc-n">'+card.n+'</span><input class="pc-title" data-field="title" value="'+localText(card.title)+'" aria-label="'+card.n+'번 제목">'+
+      (web?'<span class="pc-cnt">'+card.cutCount+'컷</span>':card.withHTML?'<span class="pc-cnt">HTML UI</span>':'')+
+      '<div class="pc-act"><button type="button" class="btn" data-do="lock" aria-pressed="'+card.locked+'" title="잠그면 다시 생성해도 이 카드는 그대로">'+(card.locked?'잠김':'잠그기')+'</button>'+
+      '<button type="button" class="btn" data-do="regen"'+(card.locked?' disabled':'')+'>다시 생성</button></div></div>';
+    const meta=(label,name,value)=>'<label><span>'+label+'</span><input data-field="'+name+'" value="'+localText(value)+'"></label>';
+    if(!web)return '<article class="plan-card'+(card.locked?' locked':'')+'" data-card="'+card.n+'" id="pc-'+card.n+'">'+head+
+      '<div class="plan-fields">'+field('purpose','설득 목적',card.purpose)+field('copy','카피',card.copy,true)+field('cta','CTA',card.cta)+(card.withHTML?htmlFields(card):'')+'</div></article>';
+    const open=OPEN.has(card.id),cuts=card.cuts||[],show=open?cuts:cuts.slice(0,4);
+    return '<article class="plan-card'+(card.locked?' locked':'')+'" data-card="'+card.n+'" id="pc-'+card.n+'">'+head+
+      '<div class="pc-meta">'+meta('장면의 역할','purpose',card.purpose)+meta('감정 변화','turn',card.turn)+meta('마지막 컷','ending',card.ending)+'</div>'+
+      '<ol class="pc-cuts">'+show.map((cut,i)=>'<li><textarea rows="1" data-field="cut-'+i+'" aria-label="'+(i+1)+'컷">'+localText(cut)+'</textarea></li>').join('')+'</ol>'+
+      (cuts.length>4?'<button type="button" class="pc-more" data-do="more">'+(open?'접기':'컷 '+(cuts.length-4)+'개 더 보기')+'</button>':'')+'</article>';
   }
   function render(){
     const draft=current().draft;
     output.innerHTML='';
     if(!draft){writeWarning();return}
-    const units=mode==='webtoon'?'씬':'섹션';
-    const volume=mode==='webtoon'?' · '+draft.cards.reduce((sum,card)=>sum+card.cutCount,0)+'컷':' · HTML UI '+draft.cards.filter(card=>card.withHTML).length+'개';
-    output.innerHTML='<div class="sh"><h2>구성안</h2><span>'+draft.cards.length+units+volume+'</span></div>'+
-      '<p class="plan-summary">'+localText(draft.summary)+'</p>'+
-      (mode==='webtoon'?'<div class="toolbar plan-send"><button type="button" class="btn dark" data-do="send">씬으로 보내기 →</button></div>':'')+
-      draft.cards.map(cardHTML).join('');
+    const web=mode==='webtoon',units=web?'씬':'섹션',total=draft.cards.reduce((sum,card)=>sum+(card.cutCount||0),0),locked=draft.cards.filter(c=>c.locked).length;
+    const stat=web?'<span><b>'+draft.cards.length+'</b>씬</span><span><b>'+total+'</b>컷</span>'+(locked?'<span>잠금 <b>'+locked+'</b></span>':''):
+      '<span><b>'+draft.cards.length+'</b>섹션</span><span>HTML UI <b>'+draft.cards.filter(card=>card.withHTML).length+'</b></span>';
+    output.innerHTML='<div class="po-h"><h2>'+(web?'이번 화 구성':'구성안')+'</h2><span class="grow"></span></div><div class="po-stat">'+stat+'</div>'+
+      '<p class="po-sum">'+localText(draft.summary)+'</p>'+
+      (web&&total?'<div class="po-flow" aria-hidden="true">'+draft.cards.map(c=>'<i class="'+(c.locked?'lk':'')+'" style="flex:'+(c.cutCount||1)+'" title="'+c.n+'. '+localText(c.title)+' · '+c.cutCount+'컷"></i>').join('')+'</div>':'')+
+      '<nav class="po-nav" aria-label="'+units+' 바로가기">'+draft.cards.map(c=>'<a href="#pc-'+c.n+'" data-jump="'+c.n+'"><b>'+c.n+'</b>'+localText(c.title||(c.n+'번'))+(web?' <small>'+c.cutCount+'컷</small>':'')+'</a>').join('')+'</nav>'+
+      draft.cards.map(cardHTML).join('')+
+      (web?'<div class="po-send"><button type="button" class="btn" data-do="send">씬으로 보내기 →</button></div>':'');
     for(const article of output.querySelectorAll('[data-card]')){
       const card=draft.cards.find(row=>row.n===Number(article.dataset.card));
       if(card.withHTML)updateFrame(article,card);
       applyLock(article,card);
     }
-    writeWarning();
+    fitAreas();writeWarning();
   }
+  // 컷 초안 칸 높이를 글에 맞춤(field-sizing을 못 쓰는 브라우저)
+  function fitAreas(){for(const t of output.querySelectorAll('.pc-cuts textarea')){t.style.height='auto';t.style.height=t.scrollHeight+'px'}}
   function updateFrame(article,card){
     const iframe=article.querySelector('iframe');
     iframe.setAttribute('sandbox',current().draft.behavior==='interactive'?'allow-scripts':'');
@@ -103,7 +116,7 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
   function applyLock(article,card){
     for(const el of article.querySelectorAll('[data-field], [data-do="regen"], [data-do="regen-code"]'))el.disabled=busy||card.locked;
     const lock=article.querySelector('[data-do="lock"]');
-    lock.setAttribute('aria-pressed',String(card.locked));lock.textContent=card.locked?'잠금 해제':'잠그기';
+    lock.setAttribute('aria-pressed',String(card.locked));lock.textContent=card.locked?'잠김':'잠그기';article.classList.toggle('locked',card.locked);
   }
   function setBusy(value){
     busy=value;
@@ -142,10 +155,13 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     if(busy||!modeKnown(next)||next===mode)return;
     takeSettings();mode=next;configure();render();updateStatus('');persist();
   });
+  root.addEventListener('click',event=>{const b=event.target.closest('[data-chips] [data-v]');if(!b||busy)return;const name=b.closest('[data-chips]').dataset.chips,el=settings.namedItem(name);if(!el)return;el.value=b.dataset.v;takeSettings();configure();persist()});
   form.addEventListener('input',()=>{takeSettings();persist();writeWarning()});
   form.addEventListener('change',()=>{takeSettings();configure();persist()});
   form.addEventListener('submit',event=>{event.preventDefault();generate()});
+  output.addEventListener('click',event=>{const a=event.target.closest('[data-jump]');if(!a)return;event.preventDefault();document.getElementById('pc-'+a.dataset.jump)?.scrollIntoView({behavior:'smooth',block:'start'})});
   output.addEventListener('input',event=>{
+    if(event.target.matches('.pc-cuts textarea')){event.target.style.height='auto';event.target.style.height=event.target.scrollHeight+'px'}
     const name=event.target.dataset.field;
     const card=current().draft?.cards.find(row=>row.n===Number(event.target.closest('[data-card]')?.dataset.card));
     if(!name||!card||card.locked||busy)return;
@@ -158,6 +174,7 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     if(!doWhat||busy)return;
     const draft=current().draft;
     if(doWhat==='send'){addScenes(draft.cards);return}
+    if(doWhat==='more'){const art=event.target.closest('[data-card]'),c=draft.cards.find(r=>r.n===Number(art.dataset.card));OPEN.has(c.id)?OPEN.delete(c.id):OPEN.add(c.id);render();document.getElementById('pc-'+c.n)?.scrollIntoView({block:'nearest'});return}
     const article=event.target.closest('[data-card]');
     const card=draft?.cards.find(row=>row.n===Number(article?.dataset.card));
     if(!card)return;

@@ -1091,6 +1091,66 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 .cmpcol h4{position:sticky;top:-10px;margin:-10px -14px 8px;padding:8px 14px;background:var(--bg);font-size:13px;z-index:1;border-bottom:1px solid var(--line)}.cmpcol svg{width:100%;height:auto;display:block}.cmpcol .scn{font-size:12px;color:var(--t3);margin:10px 0 4px}
 .snapnow{display:flex;gap:8px;margin:8px 0 12px}.snapnow input{flex:1;min-width:0}.histl li .btn+.btn{margin-left:4px}
 .minimap [data-blank-guide]{display:none}.reader [data-slot-index].sel rect[data-blank-guide]{stroke:#2d71f7}.reader [data-slot-index].sel text[data-blank-guide]{fill:#2d71f7}
+/* ---------- 구성안: 콘티와 같은 카드 결(회색 바탕 · 흰 둥근 카드 · 번호 단계 · 칩 선택) ---------- */
+#v-plan{background:var(--surface2,#f2f4f6);min-height:calc(100vh - 104px)}:root[data-theme=dark] #v-plan{background:#101013}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) #v-plan{background:#101013}}
+#v-plan .plan-wrap{max-width:880px;padding-top:32px;padding-bottom:120px}
+#v-plan .pcard{background:var(--bg);border:1px solid var(--line2);border-radius:20px;padding:24px 28px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+#v-plan .ph{display:flex;align-items:center;gap:10px}#v-plan .ph h2{margin:0;font-size:22px;font-weight:700}#v-plan .ph .grow{flex:1}
+#v-plan .pscope{font-size:13px;font-weight:600;padding:3px 9px;border-radius:999px;background:#191f28;color:#fff}
+#v-plan .pmode button{min-height:34px;padding:0 12px;font-size:13.5px}
+#v-plan .pgo{background:#191f28;color:#fff;border-color:#191f28;min-height:40px;padding:0 18px;font-weight:700}#v-plan .pgo:disabled{opacity:.5}
+#v-plan .pst{margin:8px 0 0;font-size:13px;color:var(--t2)}#v-plan .pst:empty{display:none}
+#v-plan .pkey{margin:6px 0 0;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--t2)}#v-plan .pkey.ok{display:none}
+#v-plan .pform section{margin-top:22px}
+#v-plan .psh{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}#v-plan .psh h3{display:flex;align-items:center;gap:8px;margin:0;font-size:16px;font-weight:700}
+#v-plan .psh h3 i{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--surface,#f2f4f6);font-style:normal;font-size:13px;color:var(--t2)}#v-plan .psh>span{font-size:13px;color:var(--t2)}
+#v-plan .pbig{width:100%;box-sizing:border-box;padding:14px 16px;font-size:16px;line-height:1.65;border:1px solid var(--line2);border-radius:14px;resize:vertical}
+#v-plan .pvol{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#v-plan .pnum{display:flex;align-items:center;gap:8px;padding:0 6px 0 14px;height:42px;border:1px solid var(--line2);border-radius:12px;font-size:14px;color:var(--t2)}
+#v-plan .pnum input{width:64px;border:0;height:38px;font-size:16px;font-weight:700;text-align:right;background:transparent;padding:0 6px}#v-plan .pnum input:focus{outline:none}#v-plan .pnum:focus-within{border-color:#191f28}
+#v-plan .pline{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:12px;margin-top:10px;font-size:14px}#v-plan .pline>span{color:var(--t2)}
+#v-plan .pline input{height:42px;font-size:15px;border-radius:12px}
+#v-plan .chips{display:flex;flex-wrap:wrap;gap:6px}
+#v-plan .chips button{min-height:36px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;background:var(--bg);font-size:14px;color:var(--t1);cursor:pointer}
+#v-plan .chips button[aria-pressed=true]{background:#191f28;border-color:#191f28;color:#fff;font-weight:600}
+#v-plan .pmore{margin-top:22px;border:0;background:none;padding:0}#v-plan .pmore summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--t1)}#v-plan .pmore summary small{font-weight:400;color:var(--t3);margin-left:6px}
+#v-plan .pmore>*+*{margin-top:12px}#v-plan .pmore label{display:grid;gap:6px;font-size:13px;color:var(--t2)}
+/* 결과 */
+#v-plan #plan-output{margin-top:36px}
+#v-plan .po-h{display:flex;align-items:center;gap:12px}#v-plan .po-h h2{margin:0;font-size:24px;font-weight:700}#v-plan .po-h .grow{flex:1}
+#v-plan .po-stat{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 0;font-size:14px;color:var(--t2)}#v-plan .po-stat b{color:var(--t1)}
+#v-plan .po-sum{margin:14px 0 0;font-size:15px;line-height:1.7;color:var(--t1);white-space:pre-wrap}
+#v-plan .po-flow{display:flex;gap:4px;margin:20px 0 6px;height:10px;border-radius:999px;overflow:hidden;background:var(--line)}
+#v-plan .po-flow i{display:block;background:#191f28;opacity:.85}#v-plan .po-flow i:nth-child(2n){opacity:.55}#v-plan .po-flow i.lk{background:#8b95a1}
+#v-plan .po-nav{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+#v-plan .po-nav a{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 6px;border-radius:999px;background:var(--bg);border:1px solid var(--line2);font-size:13.5px;color:var(--t1);text-decoration:none}
+#v-plan .po-nav a b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--surface,#f2f4f6);font-size:12px}#v-plan .po-nav a small{color:var(--t3)}
+#v-plan .plan-card{margin:16px 0 0;padding:22px 26px;border-radius:20px;border:1px solid var(--line2);background:var(--bg);box-shadow:0 1px 2px rgba(0,0,0,.03);scroll-margin-top:120px}
+#v-plan .plan-card.locked{background:var(--surface,#f7f8fa)}
+#v-plan .pc-h{display:flex;align-items:center;gap:12px}#v-plan .pc-n{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#191f28;color:#fff;font-size:14px;font-weight:700}
+#v-plan .pc-title{flex:1;min-width:0;border:0;border-bottom:1.5px solid transparent;border-radius:0;padding:4px 0;font-size:20px;font-weight:700;background:transparent;color:var(--t1)}
+#v-plan .pc-title:hover:not(:disabled),#v-plan .pc-title:focus{border-bottom-color:var(--line2);outline:none}
+#v-plan .pc-cnt{font-size:13px;font-weight:600;color:var(--t2);padding:3px 9px;border-radius:999px;border:1px solid var(--line2);white-space:nowrap}
+#v-plan .pc-act{display:flex;gap:4px}#v-plan .pc-act .btn{min-height:32px;padding:0 10px;font-size:13px;border-radius:10px}
+#v-plan .pc-act [data-do=lock][aria-pressed=true]{background:#191f28;color:#fff;border-color:#191f28}
+#v-plan .pc-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+#v-plan .pc-meta label{display:grid;gap:4px;padding:10px 12px;border-radius:12px;background:var(--surface,#f7f8fa);font-size:12px;color:var(--t3)}
+#v-plan .pc-meta input{border:0;background:transparent;padding:0;height:auto;font-size:14.5px;color:var(--t1);font-weight:500}#v-plan .pc-meta input:focus{outline:none}
+#v-plan .pc-meta label:focus-within{box-shadow:0 0 0 1.5px #191f28 inset}
+#v-plan .pc-cuts{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:2px;counter-reset:pc}
+#v-plan .pc-cuts li{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;padding:6px 0;border-top:1px solid var(--line)}
+#v-plan .pc-cuts li::before{counter-increment:pc;content:counter(pc);font-size:12px;font-weight:700;color:var(--t3);padding-top:9px;text-align:center}
+#v-plan .pc-cuts textarea{border:0;border-radius:8px;padding:7px 8px;font-size:14.5px;line-height:1.6;background:transparent;resize:none;overflow:hidden;min-height:0;field-sizing:content}
+#v-plan .pc-cuts textarea:hover:not(:disabled),#v-plan .pc-cuts textarea:focus{background:var(--surface,#f7f8fa);outline:none}
+#v-plan .pc-more{margin-top:8px;font-size:13px;color:var(--t2);background:none;border:0;cursor:pointer;padding:4px 0}
+#v-plan .po-send{position:sticky;bottom:16px;display:flex;justify-content:flex-end;margin-top:24px;pointer-events:none}
+#v-plan .po-send .btn{pointer-events:auto;min-height:48px;padding:0 22px;font-size:15px;font-weight:700;background:#191f28;color:#fff;border-color:#191f28;box-shadow:0 6px 20px rgba(0,0,0,.18);border-radius:14px}
+#v-plan #plan-fixed-warning{margin:12px 0 0;font-size:13px;color:#b45309}
+#v-plan .plan-card .plan-fields{display:grid;gap:10px;margin-top:12px}
+@media(max-width:640px){#v-plan .pcard,#v-plan .plan-card{padding:18px 16px;border-radius:16px}#v-plan .pc-meta{grid-template-columns:1fr}#v-plan .pline{grid-template-columns:1fr;gap:6px}#v-plan .ph{flex-wrap:wrap}}
+#v-plan .pkey .keyst{height:auto;padding:0;background:none}
+#v-plan .plan-card.locked .pc-meta label{background:var(--bg)}#v-plan .plan-card.locked .pc-title{color:var(--t2)}
 </style>
 </head>
 <body>
@@ -1161,47 +1221,46 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 
 <div class="view" id="v-plan" hidden>
   <main class="wrap plan-wrap">
-    <h1>구성안 만들기</h1>
-    <p class="desc">기획이나 프롬프트를 붙여넣고 원하는 분량에 맞춰 구성안을 만들어요.</p>
-    <div class="toolbar plan-toolbar">
-      <div class="seg3" id="plan-mode" role="group" aria-label="결과물 유형">
-        <button type="button" data-kind="webtoon" aria-pressed="true">웹툰</button><button type="button" data-kind="marketing" aria-pressed="false">마케팅</button>
-      </div>
-      <span class="grow"></span><span class="keyst" data-keyst></span><button class="btn" data-act="aikeyopen" data-keybtn>API 키 입력</button>
-    </div>
-    <form id="plan-form" novalidate>
-      <label>기획·프롬프트<textarea name="prompt" rows="7" placeholder="작품 기획, 이야기, 상품 설명, 기존 카피 등을 붙여넣으세요"></textarea></label>
-      <div class="plan-grid plan-length">
-        <label>분량 방식<select name="lengthMode"><option value="exact">정확히 지정</option><option value="range">범위 지정</option></select></label>
-        <label data-plan-length="exact"><span id="plan-amount-label">씬 수</span><input type="number" name="count" min="1" value="6"></label>
-        <label data-plan-length="range" hidden>최소 개수<input type="number" name="min" min="1" value="5"></label>
-        <label data-plan-length="range" hidden>최대 개수<input type="number" name="max" min="1" value="7"></label>
-      </div>
-      <details class="plan-details">
-        <summary>세부 설정</summary>
-        <div class="plan-fields">
-          <label>원문 반영<select name="source"><option value="keep">원문 순서 유지</option><option value="reorder" selected>흐름에 맞게 재구성</option><option value="fill">빈 부분 보완</option></select></label>
-          <div class="plan-grid">
-            <label>꼭 넣을 내용<textarea name="mustInclude" rows="3" placeholder="들어가야 할 장면이나 메시지"></textarea></label>
-            <label>그대로 쓸 문구<textarea name="fixed" rows="3" placeholder="각 문구를 한 줄씩 입력"></textarea></label>
-          </div>
-          <label>추가 조건<textarea name="notes" rows="2" placeholder="톤, 금지 표현, 수정 가능 범위"></textarea></label>
-          <div class="plan-grid" data-plan-mode="webtoon">
-            <label>전체 컷 수<input type="number" name="cutCount" min="1" placeholder="비워두면 Claude가 배분"></label>
-            <label>대사 밀도<select name="density"><option value="low">적게</option><option value="normal" selected>보통</option><option value="high">많게</option></select></label>
-            <label>이번 화에서 보여줄 변화<input name="change" placeholder="예: 낯선 인물에서 믿고 싶은 인물로"></label>
-            <label>마지막 컷의 역할<select name="ending"><option value="aftertaste">여운</option><option value="hook">다음 화 궁금증</option><option value="twist">반전 공개</option><option value="relationship">관계 변화</option></select></label>
-          </div>
-          <div class="plan-grid" data-plan-mode="marketing" hidden>
-            <label>독자의 현재 상태<select name="audience"><option value="first">처음 접함</option><option value="interested">관심은 있음</option><option value="comparing">비교 중</option></select></label>
-            <label>HTML UI 개수<input type="number" name="uiCount" min="0" value="2"></label>
-            <label>HTML 배치<select name="placement"><option value="auto">Claude가 추천</option><option value="manual">위치 직접 지정</option></select></label>
-            <label id="plan-manual" hidden>HTML을 넣을 섹션 번호<input name="positions" placeholder="예: 3, 6"></label>
-            <label>HTML 동작 범위<select name="behavior"><option value="static">정적 표시</option><option value="interactive">클릭·선택 가능</option></select></label>
-          </div>
+    <form id="plan-form" class="pcard pform" novalidate>
+      <div class="ph"><h2>구성안</h2><span class="pscope" data-plan-mode="webtoon">이 회차</span><span class="pscope" data-plan-mode="marketing" hidden>마케팅</span><span class="grow"></span>
+        <div class="seg3 pmode" id="plan-mode" role="group" aria-label="결과물 유형"><button type="button" data-kind="webtoon" aria-pressed="true">웹툰</button><button type="button" data-kind="marketing" aria-pressed="false">마케팅</button></div>
+        <button type="submit" class="btn pgo">구성안 생성</button></div>
+      <p class="pst" id="plan-status" role="status"></p>
+      <p class="pkey"><span class="keyst" data-keyst></span><button type="button" class="link" data-act="aikeyopen" data-keybtn>API 키 입력</button></p>
+      <section><div class="psh"><h3><i>1</i>기획</h3><span>작품 기획·줄거리·이번 화 메모를 붙여넣어요</span></div>
+        <textarea name="prompt" rows="6" class="pbig" placeholder="예: 몰락한 귀족가의 하녀 준이 정체를 숨긴 남자 에드가를 만나는 이야기. 1화는 첫 만남과 의심."></textarea></section>
+      <section><div class="psh"><h3><i>2</i>분량</h3><span id="plan-volume-hint">씬 수와 전체 컷 수</span></div>
+        <div class="pvol">
+          <div class="seg3" data-chips="lengthMode" role="group" aria-label="분량 방식"><button type="button" data-v="exact">정확히</button><button type="button" data-v="range">범위</button></div>
+          <label data-plan-length="exact" class="pnum"><span id="plan-amount-label">씬 수</span><input type="number" name="count" min="1" value="6"></label>
+          <label data-plan-length="range" class="pnum" hidden><span>최소</span><input type="number" name="min" min="1" value="5"></label>
+          <label data-plan-length="range" class="pnum" hidden><span>최대</span><input type="number" name="max" min="1" value="7"></label>
+          <label class="pnum" data-plan-mode="webtoon"><span>전체 컷</span><input type="number" name="cutCount" min="1" placeholder="자동"></label>
+          <select name="lengthMode" hidden><option value="exact">정확히 지정</option><option value="range">범위 지정</option></select>
+        </div></section>
+      <section data-plan-mode="webtoon"><div class="psh"><h3><i>3</i>이번 화 방향</h3><span>비워 두면 기획에서 알아서 잡아요</span></div>
+        <label class="pline"><span>보여줄 변화</span><input name="change" placeholder="예: 낯선 인물에서 믿고 싶은 인물로"></label>
+        <div class="pline"><span>마지막 컷</span><div class="chips" data-chips="ending"><button type="button" data-v="aftertaste">여운</button><button type="button" data-v="hook">다음 화 궁금증</button><button type="button" data-v="twist">반전 공개</button><button type="button" data-v="relationship">관계 변화</button></div>
+          <select name="ending" hidden><option value="aftertaste">여운</option><option value="hook">다음 화 궁금증</option><option value="twist">반전 공개</option><option value="relationship">관계 변화</option></select></div>
+        <div class="pline"><span>대사 양</span><div class="chips" data-chips="density"><button type="button" data-v="low">적게</button><button type="button" data-v="normal">보통</button><button type="button" data-v="high">많게</button></div>
+          <select name="density" hidden><option value="low">적게</option><option value="normal" selected>보통</option><option value="high">많게</option></select></div></section>
+      <section data-plan-mode="marketing" hidden><div class="psh"><h3><i>3</i>설득 흐름</h3></div>
+        <div class="plan-grid">
+          <label>독자의 현재 상태<select name="audience"><option value="first">처음 접함</option><option value="interested">관심은 있음</option><option value="comparing">비교 중</option></select></label>
+          <label>HTML UI 개수<input type="number" name="uiCount" min="0" value="2"></label>
+          <label>HTML 배치<select name="placement"><option value="auto">Claude가 추천</option><option value="manual">위치 직접 지정</option></select></label>
+          <label id="plan-manual" hidden>HTML을 넣을 섹션 번호<input name="positions" placeholder="예: 3, 6"></label>
+          <label>HTML 동작 범위<select name="behavior"><option value="static">정적 표시</option><option value="interactive">클릭·선택 가능</option></select></label>
+        </div></section>
+      <details class="pmore"><summary>더 자세히 <small>원문 반영 · 꼭 넣을 내용 · 그대로 쓸 문구 · 추가 조건</small></summary>
+        <div class="pline"><span>원문 반영</span><div class="chips" data-chips="source"><button type="button" data-v="keep">순서 그대로</button><button type="button" data-v="reorder">흐름에 맞게 재구성</button><button type="button" data-v="fill">빈 곳 보완</button></div>
+          <select name="source" hidden><option value="keep">원문 순서 유지</option><option value="reorder" selected>흐름에 맞게 재구성</option><option value="fill">빈 부분 보완</option></select></div>
+        <div class="plan-grid">
+          <label>꼭 넣을 내용<textarea name="mustInclude" rows="3" placeholder="들어가야 할 장면이나 메시지"></textarea></label>
+          <label>그대로 쓸 문구<textarea name="fixed" rows="3" placeholder="한 줄에 하나씩 · 철자까지 그대로 들어가요"></textarea></label>
         </div>
+        <label>추가 조건<textarea name="notes" rows="2" placeholder="톤, 금지 표현, 수정 가능 범위"></textarea></label>
       </details>
-      <div class="toolbar"><button type="submit" class="btn dark big">구성안 생성</button><span id="plan-status" role="status"></span></div>
     </form>
     <p id="plan-fixed-warning" role="status"></p>
     <section id="plan-output" aria-label="생성한 구성안"></section>
@@ -2072,7 +2131,7 @@ try{AIKEY=localStorage.getItem('rough-ai-key')||sessionStorage.getItem('rough-ai
 // API 키 보안 입력창: Claude 키 형식만 받고, 저장 전에 Anthropic에 확인
 const maskKey=k=>k?`${k.slice(0,7)}…${k.slice(-4)}`:'';
 function setKey(k,keep){AIKEY=k;try{localStorage.removeItem('rough-ai-key');sessionStorage.removeItem('rough-ai-key');if(k)(keep==='session'?sessionStorage:localStorage).setItem('rough-ai-key',k)}catch(_){}renderKey()}
-function renderKey(){const on=!!AIKEY;document.querySelectorAll('[data-keyst]').forEach(e=>{e.textContent=on?maskKey(AIKEY):'API 키 없음';e.classList.toggle('on',on)});document.querySelectorAll('[data-keybtn]').forEach(e=>e.textContent=on?'키 변경':'API 키 입력');$('#keydel').hidden=!on}
+function renderKey(){const on=!!AIKEY;document.querySelectorAll('.pkey').forEach(e=>e.classList.toggle('ok',on));document.querySelectorAll('[data-keyst]').forEach(e=>{e.textContent=on?maskKey(AIKEY):'API 키 없음';e.classList.toggle('on',on)});document.querySelectorAll('[data-keybtn]').forEach(e=>e.textContent=on?'키 변경':'API 키 입력');$('#keydel').hidden=!on}
 let keyThen=null;
 function openKey(then=null,msg=''){keyThen=then;const i=$('#kin');i.value='';i.type='password';i.removeAttribute('aria-invalid');document.querySelector('[data-act=keyshow]').textContent='보기';$('#kerr').textContent=msg;$('#keyok').disabled=false;$('#keyok').textContent='확인하고 저장';
   let keep='local';try{if(sessionStorage.getItem('rough-ai-key'))keep='session'}catch(_){}document.querySelector(`#keyform [name=keep][value=${keep}]`).checked=true;$('#keydlg').showModal();setTimeout(()=>i.focus(),30)}
