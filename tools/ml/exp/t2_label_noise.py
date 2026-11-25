@@ -7,12 +7,12 @@
 import sys, csv, pathlib, collections as C, numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); from common import *
 d, row, I = db()
-ids, X = matrix(['img-clip', 'img-dino', 'text-e5base'])
+ids, X = matrix(['img-clip', 'img-dino', 'text-e5base'], pca=128)
 work = np.array([i[:2] for i in ids])
 out = []; summary = {}
 for field in ('샷', '앵글', '역할', '감정'):
     y = np.array([str(row[i][I(field)]) for i in ids])
-    classes, P = lowo_proba(X, y, work)
+    classes, P = lowo_proba(X, y, work, C=0.05)
     li = np.array([classes.index(v) for v in y]); pl = P[np.arange(len(y)), li]
     t = np.array([P[li == j, j].mean() if (li == j).any() else 1 for j in range(len(classes))])
     flag = []

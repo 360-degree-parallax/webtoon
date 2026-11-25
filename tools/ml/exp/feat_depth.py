@@ -30,7 +30,7 @@ for k in range(0, len(rows), B):
         im = Image.open(ROOT / 'rough/cuts' / r['file']).convert('RGB'); w, h = im.size; s = 252 / max(w, h)
         ims.append(im.resize((max(14, round(w * s)), max(14, round(h * s)))))
     for r, im in zip(batch, ims):
-        inp = proc(images=im, return_tensors='pt', size={'height': 336, 'width': 336})
+        inp = proc(images=im, return_tensors='pt', size={'height': 252, 'width': 252})
         with torch.no_grad(): d = model(**inp).predicted_depth[0].numpy()
         ids.append(r['cut_id']); X.append(feat(d))
     if k % 400 == 0: print(k, len(rows), f'{time.time() - t0:.0f}s', flush=True)
