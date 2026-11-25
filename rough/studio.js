@@ -69,7 +69,7 @@ function goScene(d){const gs=groups();const cur=selGroup();const sc=cur?+cur.clo
 // ---------- 레이어 패널(목차 확장) ----------
 const OPEN=new Set(),SHUT=new Set(),HIDE=new Set();
 const kindOf=k=>/^dialog/.test(k)?'말풍선':/^caption/.test(k)?'나레이션':/^(effect|material)/.test(k)?'효과음':'식자';
-const ICON={칸:'▢',그림:'▨',말풍선:'◯',나레이션:'▭',효과음:'✶',식자:'T'};
+const ICON={칸:'▢',그림:'▨',말풍선:'◯',나레이션:'▭',효과음:'✶',식자:'T',효과선:'✳',이미지:'▣',배경:'◐'};
 const eye=(on,key,label)=>`<button class="teye${on?'':' off'}" data-teye="${esc(key)}" aria-pressed="${!on}" aria-label="${esc(label)} ${on?'숨기기':'보이기'}" title="편집 화면에서만 숨겨요(내보내기에는 들어가요)">${on?'<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>':'<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1"/></svg>'}</button>`;
 editTree=function(){const el=$('#wtoc');if(!el)return;const by={};
   groups().forEach(g=>{const sc=+g.closest('section').dataset.pageScene;(by[sc]||=[]).push(g)});
@@ -79,9 +79,17 @@ editTree=function(){const el=$('#wtoc');if(!el)return;const by={};
       const has=!!cutImg(i,n,p),open=OPEN.has(k)||(k===pageSelection&&!SHUT.has(k));
       const rows=open?[`<button class="tlay" data-tlayer="${esc(k)}|frame" aria-current="${LP(k,'frame')}" title="Delete: 컷 지우기"><span class="ti">${ICON.칸}</span>칸</button>`,
         `<button class="tlay" data-tlayer="${esc(k)}|art" aria-current="${LP(k,'art')}" title="더블클릭: 그림 편집 · Delete: 넣은 그림만 빼기"><span class="ti">${ICON.그림}</span>그림<small>${has?'이미지':'레퍼런스'}</small></button>`,
+        ...extraRows(k,i,+g.dataset.slotIndex),
         ...[...g.querySelectorAll('[data-letter]')].map(L=>{const lk=L.dataset.letter,kind=kindOf(lk),hk=k+'|'+lk,txt=(L.dataset.letterText||'').replace(/\s+/g,' ');
           return `<div class="tlrow"><button class="tlay" data-tlayer="${esc(hk)}" title="더블클릭: 문구 고치기 · Delete: 지우기" aria-current="${k===pageSelection&&lk===curLetter}"><span class="ti">${ICON[kind]}</span><span class="tt">${esc(txt||kind)}</span></button>${eye(!HIDE.has(hk),hk,kind)}</div>`})].join(''):'';
       return `<div class="tcutrow"><button class="texp" data-texp="${esc(k)}" aria-expanded="${open}" aria-label="${n+1}컷 레이어 ${open?'접기':'펼치기'}">▸</button><button class="tcut" data-tcut="${esc(k)}" aria-current="${k===pageSelection}"><i class="${has?'on':''}" title="${has?'이미지 등록됨':'러프'}"></i>${n+1}컷<small>${esc(p.shot||'')}</small></button></div>${open?`<div class="tlayers">${rows}</div>`:''}`}).join('')}).join('')};
+// 칸에 붙는 에셋(배경 · 효과선 · 이미지 소재)도 레이어 줄로 — 누르면 고르고 Delete로 지움
+function extraRows(k,si,slot){const e=SCENES[si]?.pageEdits?.[slot]||{},rows=[];const row=(what,icon,label,sub,title)=>`<button class="tlay" data-tlayer="${esc(k)}|${what}" aria-current="${LP(k,what)}" title="${title}"><span class="ti">${icon}</span>${label}${sub?`<small>${esc(sub)}</small>`:''}</button>`;
+  const bg=[e.transition?'전환 질감':'',/^#/.test(e.background||'')?'배경색':'',e.bgImage?'배경 이미지':''].filter(Boolean);
+  if(bg.length)rows.push(row('bg',ICON.배경,'배경',bg.join(' · '),'Delete: 이 컷 배경(전환·색·이미지) 지우기'));
+  Object.keys(e.materialLines||{}).forEach(kd=>rows.push(row('line:'+kd,ICON.효과선,kd==='speed'?'속도선':'집중선','효과선','Delete: 효과선 지우기 · 색은 상황 막대')));
+  (e.overlays||[]).forEach((o,n)=>rows.push(row('ov:'+n,ICON.이미지,'이미지 소재 '+(n+1),IMG.overlay?.[o.id]?.name||'','Delete: 이미지 소재 빼기')));
+  return rows}
 function applyHidden(){reader.querySelectorAll('[data-letter]').forEach(L=>{const g=L.closest('[data-slot-index]');L.style.visibility=HIDE.has(pageKey(g)+'|'+L.dataset.letter)?'hidden':''})}
 // 레이어 패널에서 고른 것을 화면 가운데로: 다른 스크롤(컷 고르기)이 끝난 뒤 한 번 더 맞춤. 위쪽 고정 막대 높이를 빼고 가운데
 function reveal(get){const go=smooth=>{const el=get();if(!el)return;const r=el.getBoundingClientRect(),top=STICKY,mid=top+(innerHeight-top)/2;
@@ -93,7 +101,7 @@ $('#wtoc').addEventListener('click',e=>{
   const v=e.target.closest('[data-teye]');if(v){const k=v.dataset.teye;HIDE.has(k)?HIDE.delete(k):HIDE.add(k);applyHidden();editTree();mini.refresh();return}
   const l=e.target.closest('[data-tlayer]');if(l){const [scene,slot,what]=l.dataset.tlayer.split('|').flatMap((s,i)=>i?[s]:s.split(':'));const key=scene+':'+slot;
     const g=groups().find(x=>pageKey(x)===key);if(!g)return;if(pageSelection!==key)selectPageCut(g);
-    if(what==='frame'||what==='art'){selectLetter(null);window.layerPart={key,what};reveal(()=>groups().find(x=>pageKey(x)===key))}
+    if(what==='frame'||what==='art'||what==='bg'||/^(line|ov):/.test(what)){selectLetter(null);window.layerPart={key,what};reveal(()=>groups().find(x=>pageKey(x)===key))}
     else{window.layerPart=null;const L=g.querySelector(`[data-letter="${CSS.escape(what)}"]`);if(L){selectLetter(L);reveal(()=>groups().find(x=>pageKey(x)===key)?.querySelector(`[data-letter="${CSS.escape(what)}"]`));L.focus({preventScroll:true});if(e.detail===2)window.focusLetterText?.()}}
     if(what==='art'&&e.detail===2)setCrop(g);  // 클릭마다 패널을 다시 그려 dblclick이 안 오는 경우가 있어 detail로 판별
     editTree()}});

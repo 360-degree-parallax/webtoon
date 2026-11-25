@@ -763,7 +763,15 @@ document.addEventListener('keydown',e=>{if(!inEdit()||(e.key!=='Delete'&&e.key!=
   if(MULTI.size>1){e.preventDefault();deleteLetterEls([...MULTI].map(k=>{const [key,lk]=k.split('|');return groupBy(key)?.querySelector(`[data-letter="${CSS.escape(lk)}"]`)}).filter(Boolean));return}
   if(selectedLetter){e.preventDefault();deleteLetterEls([selectedLetter]);return}
   const lp=window.layerPart;if(pageSelection&&lp&&lp.key===pageSelection&&lp.what==='art'){e.preventDefault();deleteArt(pageSelection);return}
+  if(pageSelection&&lp&&lp.key===pageSelection&&(lp.what==='bg'||/^(line|ov):/.test(lp.what))){e.preventDefault();deletePart(pageSelection,lp.what);return}
   if(pageSelection){e.preventDefault();deleteCut(pageSelection)}});
+// 레이어 패널의 배경·효과선·이미지 소재 줄을 고르고 Delete: 그것만 지움(Ctrl+Z로 되돌림)
+function deletePart(key,what){const g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}let msg='';
+  withKey(key,()=>{const st=pageSettings();if(!st)return;
+    if(what==='bg'){delete st.transition;delete st.transMid;delete st.transStop;delete st.background;delete st.bgImage;delete st.bgImageOp;msg='이 컷 배경을 지웠어요'}
+    else if(what.startsWith('line:')){const kd=what.slice(5);if(st.materialLines){delete st.materialLines[kd];if(!Object.keys(st.materialLines).length)delete st.materialLines}msg=(kd==='speed'?'속도선':'집중선')+'을 지웠어요'}
+    else if(what.startsWith('ov:')){const n=+what.slice(3);st.overlays?.splice(n,1);if(st.overlays&&!st.overlays.length)delete st.overlays;msg='이미지 소재를 뺐어요'}});
+  window.layerPart={key,what:'frame'};saveScenes();renderWebtoon();const ng=groupBy(key);if(ng)selectPageCut(ng);editTree();flash(msg+' · Ctrl+Z로 되돌리기')}
 // 레이어 패널의 '그림' 줄을 고르고 Delete: 컷은 두고 넣은 그림만 뺌(Ctrl+Z로 되돌림). 레퍼런스만 있으면 지울 것이 없음
 function deleteArt(key){const [si,slot]=key.split(':').map(Number),g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}
   const id=cutId(SCENES[si].id,slot);if(!IMG.cut[id]){flash('이 컷은 레퍼런스만 보여 줘서 뺄 그림이 없어요 · 컷을 지우려면 \'칸\'을 고르고 Delete');return}
@@ -870,7 +878,7 @@ let tdrag=null,tmode=null; // tmode: 'letter' | 'art'
 const letterScale=L=>{const g=L.closest('[data-slot-index]');const s=withKey(pageKey(g),()=>pageSettings()?.letters?.[L.dataset.letter]?.scale);return +s||1};
 function tTarget(){if(!inEdit()||tool!=='select'||cropKey)return null;
   if(selectedLetter){const art=selectedLetter.querySelector('[data-balloon]');return {mode:'letter',el:art||selectedLetter,box:(art||selectedLetter)}}
-  const g=selGroup();if(window.layerPart?.what==='frame'&&window.layerPart.key===pageSelection)return null;  // 칸을 고르면 그림 손잡이 대신 칸 테두리 손잡이만
+  const g=selGroup();if(window.layerPart&&window.layerPart.what!=='art'&&window.layerPart.key===pageSelection)return null;  // 칸을 고르면 그림 손잡이 대신 칸 테두리 손잡이만
   if(g&&!isLocked(g,'cut')){const art=g.querySelector('[data-art]');if(art)return {mode:'art',el:art,g,box:{getBoundingClientRect:()=>frameRect(g)}}}
   return null}
 function frameRect(g){const f=JSON.parse(g.dataset.frame),m=g.ownerSVGElement.getScreenCTM(),a=new DOMPoint(f.x,f.y).matrixTransform(m),b=new DOMPoint(f.x+f.w,f.y+f.h).matrixTransform(m);return {left:a.x,top:a.y,width:b.x-a.x,height:b.y-a.y}}
