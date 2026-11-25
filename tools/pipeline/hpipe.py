@@ -7,7 +7,7 @@ from collections import Counter
 from itertools import groupby
 from PIL import Image
 Image.MAX_IMAGE_PIXELS=None
-ep=int(sys.argv[1]);stage=sys.argv[2];P=os.environ.get('P','gm');C=P.upper();NAME={'gm':'녹빛자정의 연인','hc':'함부로 친절하지 말라','hn':'하루만 네가 되고 싶어','md':'마도애를 사랑하는 법'}[P]
+ep=int(sys.argv[1]);stage=sys.argv[2];P=os.environ.get('P','gm');C=P.upper();NAME={'gm':'녹빛자정의 연인','hc':'함부로 친절하지 말라','hn':'하루만 네가 되고 싶어','md':'마도애를 사랑하는 법','yp':'유사품에 주의하세요'}[P]
 B=json.load(open(f'{P}{ep}_seg.json'))
 AB={'흰색':'흰','밝은 톤':'밝','중간 톤·회색':'회','중간 컬러·주황':'주','중간 컬러·노랑':'노','중간 컬러·붉은색':'적','중간 컬러·분홍':'분','중간 컬러·파랑':'파','중간 컬러·남색':'남','중간 컬러·보라':'보','중간 컬러·초록':'초','중간 컬러·청록':'청','어두운 톤':'어','검정':'검','강조색·붉은색':'강적','강조색·주황':'강주','강조색·초록':'강초','강조색·분홍':'강분','강조색·노랑':'강노','강조색·파랑':'강파','강조색·보라':'강보','강조색·청록':'강청','강조색·남색':'강남'}
 def hname(h):
