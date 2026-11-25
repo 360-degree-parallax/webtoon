@@ -115,12 +115,14 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     output.innerHTML='';
     if(!draft){writeWarning();return}
     const web=mode==='webtoon',units=web?'씬':'섹션',total=draft.cards.reduce((sum,card)=>sum+(card.cutCount||0),0),locked=draft.cards.filter(c=>c.locked).length;
-    const stat=web?'<span><b>'+draft.cards.length+'</b>씬</span><span><b>'+total+'</b>컷</span><span>휴대폰 약 <b>'+Math.round(total*1.03)+'</b>화면</span>'+(locked?'<span>잠금 <b>'+locked+'</b></span>':''):
-      '<span><b>'+draft.cards.length+'</b>섹션</span><span>HTML UI <b>'+draft.cards.filter(card=>card.withHTML).length+'</b></span>';
-    output.innerHTML='<div class="po-h"><h2>'+(web?'이번 화 구성':'구성안')+'</h2><span class="grow"></span></div><div class="po-stat">'+stat+'</div>'+
-      '<p class="po-sum">'+localText(draft.summary)+'</p>'+
-      (web&&total?'<div class="po-flow" aria-hidden="true">'+draft.cards.map(c=>'<i class="'+(c.locked?'lk':'')+'" style="flex:'+(c.cutCount||1)+'" title="'+c.n+'. '+localText(c.title)+' · '+c.cutCount+'컷"></i>').join('')+'</div>':'')+
-      '<nav class="po-nav" aria-label="'+units+' 바로가기">'+draft.cards.map(c=>'<a href="#pc-'+c.n+'" data-jump="'+c.n+'"><b>'+c.n+'</b>'+localText(c.title||(c.n+'번'))+(web?' <small>'+c.cutCount+'컷</small>':'')+'</a>').join('')+'</nav>'+
+    // 머리: 제목 → 숫자(크게, 단위는 작게) → 요약(옅은 상자, 라벨). 숫자는 한 줄 지표, 요약은 읽는 글
+    const met=(n,unit,pre='')=>'<span class="po-m">'+(pre?'<small>'+pre+'</small>':'')+'<b>'+n+'</b><small>'+unit+'</small></span>';
+    const stat=web?met(draft.cards.length,'씬')+met(total,'컷')+met(Math.round(total*1.03),'화면','휴대폰 약')+(locked?met(locked,'잠금'):''):
+      met(draft.cards.length,'섹션')+met(draft.cards.filter(card=>card.withHTML).length,'HTML UI');
+    output.innerHTML='<header class="po-head"><div><span class="po-eye">'+(web?'구성안 결과':'결과')+'</span><h2>'+(web?'이번 화 구성':'구성안')+'</h2></div><div class="po-stat">'+stat+'</div></header>'+
+      (draft.summary?'<section class="po-sum"><span>한 줄 요약</span><p>'+localText(draft.summary)+'</p></section>':'')+
+      (web&&total&&draft.cards.length>1?'<div class="po-flow" aria-hidden="true">'+draft.cards.map(c=>'<i class="'+(c.locked?'lk':'')+'" style="flex:'+(c.cutCount||1)+'" title="'+c.n+'. '+localText(c.title)+' · '+c.cutCount+'컷"></i>').join('')+'</div>':'')+
+      (draft.cards.length<2?'':'<nav class="po-nav" aria-label="'+units+' 바로가기">'+draft.cards.map(c=>'<a href="#pc-'+c.n+'" data-jump="'+c.n+'"><b>'+c.n+'</b>'+localText(c.title||(c.n+'번'))+(web?' <small>'+c.cutCount+'컷</small>':'')+'</a>').join('')+'</nav>')+
       draft.cards.map(cardHTML).join('')+
       (web?'<div class="po-send"><button type="button" class="btn" data-do="send">씬으로 보내기 →</button></div>':'');
     for(const article of output.querySelectorAll('[data-card]')){
