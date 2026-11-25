@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """컷 메타데이터(rough/db/cut-meta.json) + 그림·메타 샷 모델 의견을 컷 목록(rough/cuts/index.json)에 열로 붙임 → 이어서 build_index_min.py
-붙이는 열: np 머리(인물) 수 · hr 머리 높이(컷 폭 대비) · mx 주인공 가로 위치(L/C/R) · mono 흑백 · sp 지금 샷 라벨에 대한 그림+메타 모델 확률(한 작품 빼고 학습) · salt 모델이 더 높게 본 샷(0.5 이상일 때)
+붙이는 열: gz 주인공 시선(L/R/F) · np 머리(인물) 수 · hr 머리 높이(컷 폭 대비) · mx 주인공 가로 위치(L/C/R) · mono 흑백 · sp 지금 샷 라벨에 대한 그림+메타 모델 확률(한 작품 빼고 학습) · salt 모델이 더 높게 본 샷(0.5 이상일 때)
 사용: python3 tools/meta/build_meta_cols.py && python3 tools/build_index_min.py
 """
 import sys, json, pathlib, numpy as np
@@ -19,11 +19,12 @@ for k, i in enumerate(ids):
 src = ROOT / 'rough' / 'cuts' / 'index.json'; d = json.loads(src.read_text()); n = 0
 for x in d['items']:
     cid = x['source_cut']; m = M.get(cid)
-    for k in ('np', 'hr', 'mx', 'mono', 'sp', 'salt'): x.pop(k, None)
+    for k in ('np', 'hr', 'mx', 'mono', 'sp', 'salt', 'gz'): x.pop(k, None)
     if not m: continue
     W, H = m['크기']; x['np'] = m['머리 수']; x['mono'] = 1 if m['흑백'] else 0
     if '머리 높이 비' in m: x['hr'] = round(m['머리 높이 비'] * H / W, 2)
     if m.get('주인공'): x['mx'] = {'왼쪽': 'L', '가운데': 'C', '오른쪽': 'R'}[m['주인공']['가로']]
+    if m.get('시선'): x['gz'] = {'왼쪽': 'L', '오른쪽': 'R', '정면': 'F'}[m['시선']]
     if cid in opin: x['sp'], salt = opin[cid]; x['salt'] = salt
     if x.get('salt') is None: x.pop('salt', None)
     n += 1
