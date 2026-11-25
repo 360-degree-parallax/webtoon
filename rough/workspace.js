@@ -227,6 +227,16 @@ const WS_OPTS=Object.entries(PRESETS).map(([k,p])=>`<option value="${k}">${p.nam
 // 빈 컷: 그림·테두리를 없애 배경 위에 글만 남김(다시 누르면 원래대로)
 function toggleBlank(key){const g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}let on=false;withKey(key,()=>{const st=pageSettings(true);on=!st.blank;if(on)st.blank=true;else delete st.blank});
   saveScenes();renderWebtoon();const ng=groupBy(key);if(ng)selectPageCut(ng);renderCtx();flash(on?'빈 컷으로 바꿨어요 · 그림·테두리 없이 글만 나가요':'그림·테두리를 다시 보여요')}
+// 컷 여러 개 한 번에(레이어 패널 Ctrl·Shift+클릭으로 고른 컷)
+function multiCut(op){const MCs=window.RoughStudio?.mcuts;if(!MCs||MCs.size<2)return;const ks=[...MCs],free=ks.filter(k=>{const g=groupBy(k);return !(g&&isLocked(g,'cut'))});
+  if(op==='clear'){window.RoughStudio.clearMC();return}
+  if(op==='lock'){const all=ks.every(k=>{const g=groupBy(k);return g&&isLocked(g,'cut')});ks.forEach(k=>{const g=groupBy(k);if(!!(g&&isLocked(g,'cut'))===all)toggleLock(k,'cut')});renderCtx();return}
+  if(op==='gapgo'){const raw=ctx.querySelector('[data-ctx=mcgap]')?.value,v=raw===''?null:Math.max(0,Math.min(1600,Math.round(+raw)));free.forEach(k=>withKey(k,()=>{const st=pageSettings(v!=null);if(!st)return;if(v==null)delete st.gap;else st.gap=v}));saveScenes();renderWebtoon();flash(v==null?`${free.length}컷 간격을 기본으로`:`${free.length}컷 아래 간격을 ${v}px로 맞췄어요 · Ctrl+Z로 되돌리기`);return}
+  if(op==='blank'){const on=!free.every(k=>withKey(k,()=>pageSettings()?.blank));free.forEach(k=>withKey(k,()=>{const st=pageSettings(true);if(on)st.blank=true;else delete st.blank}));saveScenes();renderWebtoon();flash(on?`${free.length}컷을 빈 컷으로`:`${free.length}컷 그림·테두리를 다시`);return}
+  if(op==='frame'){free.forEach(k=>withKey(k,()=>{const st=pageSettings();if(st){delete st.frame;delete st.quad}}));saveScenes();renderWebtoon();flash(`${free.length}컷 프레임을 처음대로`);return}
+  if(op==='del'){if(!free.length){flash('잠긴 컷이라 지울 수 없어요');return}if(!confirm(`고른 컷 ${free.length}개를 지울까요? (Ctrl+Z로 되돌릴 수 있어요)`))return;
+    const order=free.map(k=>k.split(':').map(Number)).sort((a,b)=>b[0]-a[0]||b[1]-a[1]);window.RoughStudio.clearMC();let n=0;
+    for(const [si,slot] of order){if(SCENES[si].cuts.length<=1)continue;deleteCut(si+':'+slot);n++}flash(`컷 ${n}개를 지웠어요 · Ctrl+Z로 되돌리기`)}}
 // 컷 간격 일괄: 고른 컷의 아래 간격을 씬 전체·모든 씬에, 또는 기본(자동)으로
 function setGaps(scope,v){const sc=pageSelection?.split(':')[0];let n=0;
   reader.querySelectorAll(':scope>section').forEach(sec=>{if(scope==='scene'&&sec.dataset.pageScene!==sc)return;
@@ -287,6 +297,10 @@ const FPRESETS=[['네모',0,0],['위 사선',-8,0],['아래 사선',0,8],['평�
 function shapeTools(g){const a=frameAngles(g);return `<span class="cb-grp" role="group" aria-label="프레임 기울기"><label>위 <input type="number" data-ctx="fatop" min="-30" max="30" step="1" value="${a.top}" style="width:52px">°</label><label>아래 <input type="number" data-ctx="fabot" min="-30" max="30" step="1" value="${a.bot}" style="width:52px">°</label>${FPRESETS.map(([n,t,b])=>`<button class="cb${a.top===t&&a.bot===b?' on':''}" data-fpre="${t},${b}">${n}</button>`).join('')}</span>`}
 function renderCtx(){try{_renderCtx()}catch(e){console.warn('상황 막대',e)}}  // 처음 불러올 때 아직 없는 칸이 있어도 편집기 전체가 멈추지 않게
 function _renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
+  const MCs=window.RoughStudio?.mcuts;if(MCs&&MCs.size>1&&tool==='select'){const ks=[...MCs],allBlank=ks.every(k=>withKey(k,()=>pageSettings()?.blank)),allLock=ks.every(k=>{const g=groupBy(k);return g&&isLocked(g,'cut')});
+    mid=`<b>컷 ${ks.length}개</b><label>아래 간격 <input type="number" data-ctx="mcgap" min="0" max="1600" step="4" placeholder="기본" style="width:64px">px</label><button class="cb" data-ctx="mcgapgo">간격 적용</button>`+
+      `<button class="cb${allBlank?' on':''}" data-ctx="mcblank" aria-pressed="${allBlank}">빈 컷</button><button class="cb" data-ctx="mcframe">프레임 초기화</button><button class="cb" data-ctx="mclock">${allLock?'잠금 풀기':'잠그기'}</button><button class="cb" data-ctx="mcdel">컷 지우기</button><button class="cb" data-ctx="mcclear">선택 풀기</button>`;
+    ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;return}
   if(MULTI.size>1&&tool==='select')mid=`<b>식자 ${MULTI.size}개</b><button class="cb" data-ctx="lfit">글에 맞추기</button>${[['left','왼쪽'],['hcenter','가로 가운데'],['right','오른쪽'],['top','위'],['vcenter','세로 가운데'],['bottom','아래'],['vdist','세로 간격'],['hdist','가로 간격']].map(([k,n])=>`<button class="cb" data-align="${k}">${n}</button>`).join('')}`;
   else if(tool==='balloon')mid=`<label>형태 <select data-ctx="bstyle">${BSTYLES.map(([k,n])=>`<option value="${k}"${k===opt.balloon?' selected':''}>${esc(n)}</option>`).join('')}</select></label>`;
   else if(tool==='sfx')mid=`<label>문구 <input data-ctx="sfxword" value="${esc(opt.sfx)}" maxlength="10" size="6"></label>${['쾅','두근','툭','쿵','휘청','쨍그랑','덜컹','찰칵'].map(w=>`<button class="cb${w===opt.sfx?' on':''}" data-sfxw="${w}">${w}</button>`).join('')}`;
@@ -323,6 +337,7 @@ ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return
   const c=b.dataset.ctx;
   if(c==='ledit')focusText();
   if(c==='lfit')fitLetters();
+  if(c&&c.startsWith('mc'))multiCut(c.slice(2));
   if(c==='blank'&&pageSelection)toggleBlank(pageSelection);
   if(c==='gapall'){const r=b.getBoundingClientRect();cmOpen(gapAllMenu(),r.left,r.bottom+4)}
   if(c==='lstyleall'){const r=b.getBoundingClientRect();cmOpen(styleMenu(),r.left,r.bottom+4)}
@@ -921,5 +936,5 @@ propsBody.querySelector('#wballoonsize').addEventListener('input',()=>{const r=c
 renderDocks();renderCtx();renderAlign();syncHelp();
 Object.keys(PANELS).forEach(k=>{if(!LAYOUT.panels[k].collapsed&&LAYOUT.panels[k].dock!=='X')onOpen(k)});mountOff();assetTab(PRESETS[LAYOUT.preset]?.tab||'rec');
 reader.classList.toggle('artboards',AB);if(AB)RoughStudio.applyZoom();
-window.RoughWS={cmOpen,get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI,lkey,resolve,toggleMulti,clearMulti,markMulti,renderCtx,renderAlign,withKey,groupBy,openInlineText,typing,refreshText,flash};
+window.RoughWS={cmOpen,multiCut,get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI,lkey,resolve,toggleMulti,clearMulti,markMulti,renderCtx,renderAlign,withKey,groupBy,openInlineText,typing,refreshText,flash};
 })();

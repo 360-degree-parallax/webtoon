@@ -234,5 +234,35 @@ function setOrder(on){RO=!!on;try{localStorage.setItem('rough-read-order',RO?'1'
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);drawOrder();return r}}
 {const _az=applyZoom;applyZoom=function(...a){const r=_az(...a);drawOrder();return r}}
 addEventListener('resize',()=>drawOrder());
-window.RoughStudio={get readOrder(){return RO},setOrder,drawOrder,get phoneGuide(){return PG},setGuide,drawGuide,zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
+// ---------- 레이어 패널 여러 개 고르기: Ctrl(⌘)+클릭 = 하나씩 더하기·빼기, Shift+클릭 = 범위 ----------
+// 한 컷 안의 식자끼리면 식자 여러 개, 두 컷 이상에 걸치면 컷 여러 개(요소가 아니라 컷 단위로)
+const MC=new Set();let mcAnchor=null;
+const tocCuts=()=>[...$('#wtoc').querySelectorAll('[data-tcut]')].map(b=>b.dataset.tcut);
+function markMC(){reader.querySelectorAll('[data-slot-index]').forEach(g=>g.classList.toggle('mcut',MC.size>1&&MC.has(pageKey(g))));
+  if(MC.size>1)$('#wtoc').querySelectorAll('[data-tcut]').forEach(b=>b.setAttribute('aria-current',String(MC.has(b.dataset.tcut))));window.RoughWS?.renderCtx?.()}
+function setMC(keys){MC.clear();keys.forEach(k=>k&&MC.add(k));if(MC.size>1){window.RoughWS?.clearMulti?.();selectLetter(null);window.layerPart=null}markMC();
+  if(MC.size>1)window.RoughWS?.flash?.(`컷 ${MC.size}개를 골랐어요 · 위 막대에서 간격·빈 컷·잠금·지우기를 한 번에`)}
+function clearMC(){if(!MC.size)return;MC.clear();markMC()}
+$('#wtoc').addEventListener('click',e=>{if(!inEdit())return;const mod=e.shiftKey||e.ctrlKey||e.metaKey;
+  const c=e.target.closest('[data-tcut]'),l=e.target.closest('[data-tlayer]');if(!c&&!l)return;
+  if(!mod){if(MC.size)clearMC();return}
+  const parts=(c?c.dataset.tcut:l.dataset.tlayer).split('|'),key=parts[0],what=parts[1];
+  const MULTI=window.RoughWS?.MULTI,baseCut=selectedLetter?pageKey(selectedLetter.closest('[data-slot-index]')):pageSelection;
+  // 같은 컷 안 식자끼리: 식자 여러 개
+  if(l&&!c&&what&&what!=='frame'&&what!=='art'&&MC.size<2&&key===baseCut&&[...(MULTI||[])].every(k=>k.startsWith(key+'|'))){
+    const g=groups().find(x=>pageKey(x)===key),L=g?.querySelector(`[data-letter="${CSS.escape(what)}"]`);if(!L)return;
+    e.preventDefault();e.stopImmediatePropagation();if(!selectedLetter)selectLetter(L);else window.RoughWS.toggleMulti(L);mcAnchor=key;return}
+  // 그 밖: 컷 여러 개
+  e.preventDefault();e.stopImmediatePropagation();
+  const seed=MC.size?[...MC]:[baseCut,...[...(MULTI||[])].map(k=>k.split('|')[0])].filter(Boolean);const set=new Set(seed);
+  if(e.shiftKey&&(mcAnchor||baseCut)){const all=tocCuts(),a=all.indexOf(mcAnchor||baseCut),b=all.indexOf(key);if(a>=0&&b>=0){const [lo,hi]=a<b?[a,b]:[b,a];all.slice(lo,hi+1).forEach(k=>set.add(k))}else set.add(key)}
+  else set.has(key)&&set.size>1?set.delete(key):set.add(key);
+  mcAnchor=key;setMC([...set])},true);
+reader.addEventListener('pointerdown',e=>{if(MC.size&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey)clearMC()},true);
+document.addEventListener('keydown',e=>{if(!inEdit()||MC.size<2||typingIn(e.target))return;
+  if(e.key==='Escape'){clearMC();return}
+  if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();e.stopImmediatePropagation();window.RoughWS?.multiCut?.('del')}},true);
+{const _et=editTree;editTree=function(...a){const r=_et(...a);if(MC.size>1)markMC();return r}}
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);if(MC.size){[...MC].forEach(k=>{if(!groups().some(g=>pageKey(g)===k))MC.delete(k)});markMC()}return r}}
+window.RoughStudio={get mcuts(){return MC},clearMC,setMC,get readOrder(){return RO},setOrder,drawOrder,get phoneGuide(){return PG},setGuide,drawGuide,zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
 })();
