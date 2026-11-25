@@ -7,7 +7,9 @@
    - 작품 정보의 집계 칸(수식)은 값이 없으면 행을 세어 채움
    - 값 검사(tools/validate_db.py) → 통과하면 저장, tools/merge_cut_context.py가 있으면 분석 열을 다시 합치고 patterns.json·nai-stats.js 다시 생성
    - --check: 파일을 바꾸지 않고 지금 사본과 다른 점만 보고
-사용: python3 tools/sync_db.py <xlsx> [--revision N] [--check] [--no-build]
+   - xlsx를 여러 개 주면 행을 이어 붙임(「웹툰 연출 DB」가 셀 한도에 닿아 HM·SL은 「웹툰 연출 DB 2」에 있음).
+     코드표·작업 방법은 첫 파일 것을 씀. --revision은 첫 파일, --revision2는 두 번째 파일의 리비전
+사용: python3 tools/sync_db.py <xlsx> [<xlsx2> …] [--revision N] [--revision2 M] [--check] [--no-build]
 """
 import sys, json, datetime, subprocess, pathlib, collections as C
 import openpyxl
@@ -34,6 +36,7 @@ def read(path):
         cols = [str(h) for h in head[:n]]
         body = [r[:n] + [None] * (n - len(r[:n])) for r in rows[1:]]
         body = [r for r in body if any(v not in (None, '') for v in r)]
+        if s == '작품 정보' and '코드' in cols: body = [r for r in body if r[cols.index('코드')]]  # 코드 없는 행은 안내 메모
         out[s] = {'columns': cols, 'rows': body}
     return out
 
@@ -49,10 +52,17 @@ def fill_counts(d):
             if k in c and r[c.index(k)] in (None, ''): r[c.index(k)] = v
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    opt = lambda k: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else None
+    rev, rev2 = opt('--revision'), opt('--revision2')
+    args = [a for i, a in enumerate(sys.argv[1:], 1) if not a.startswith('--') and sys.argv[i - 1] not in ('--revision', '--revision2')]
     if not args: sys.exit(__doc__)
-    rev = sys.argv[sys.argv.index('--revision') + 1] if '--revision' in sys.argv else None
-    new = read(args[0]); fill_counts(new)
+    new = read(args[0])
+    for extra in args[1:]:
+        more = read(extra)
+        for s in ('컷표', '작품 정보', '5컷 리듬', '장면'):
+            if more[s]['columns'] != new[s]['columns']: sys.exit(f'{extra}: {s} 열이 첫 파일과 달라요')
+            new[s]['rows'] += more[s]['rows']
+    fill_counts(new)
     old = json.loads(OUT.read_text()) if OUT.exists() else {}
     diff = []
     for s in SHEETS:
@@ -67,8 +77,10 @@ def main():
         if add or rem: diff.append(f'{s}: 행 {len(a.get("rows", []))}→{len(b["rows"])} (바뀐·새 행 {add}, 없어진·바뀌기 전 행 {rem})')
     print('바뀐 점:' if diff else '바뀐 점 없음'); [print('  ', x) for x in diff]
     if '--check' in sys.argv: return
-    meta = {'source': 'Claude Sheets 「웹툰 연출 DB」', 'revision': int(rev) if rev else old.get('__meta', {}).get('revision'),
-            'exported': datetime.date.today().isoformat(), 'sheets': SHEETS}
+    om = old.get('__meta', {})
+    meta = {'source': 'Claude Sheets 「웹툰 연출 DB」' + (' + 「웹툰 연출 DB 2」' if len(args) > 1 else ''),
+            'revision': int(rev) if rev else om.get('revision'), 'exported': datetime.date.today().isoformat(), 'sheets': SHEETS}
+    if len(args) > 1: meta['revision2'] = int(rev2) if rev2 else om.get('revision2')
     tmp = OUT.with_suffix('.new.json')
     tmp.write_text(json.dumps({'__meta': meta, **new}, ensure_ascii=False, separators=(',', ':')))
     v = subprocess.run([sys.executable, str(ROOT / 'tools' / 'validate_db.py'), str(tmp)], capture_output=True, text=True)
