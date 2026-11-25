@@ -20,6 +20,10 @@ jobs:
         run: |
           npm i --no-save playwright@1.63.0
           npx playwright install --with-deps chromium
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: app.js가 rough/src 조각과 같은지
+        run: python3 tools/build_app.py --check
       - name: 효과음 추천 규칙
         run: node tools/check_sfx_rules.js
       - name: 브라우저 회귀 테스트

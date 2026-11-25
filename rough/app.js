@@ -1,4 +1,7 @@
-// 러프 툴 본체(예전 index.html 안 스크립트). 다른 *.js와 같은 전역 범위에서 순서대로 실행됨
+// 자동 생성: tools/build_app.py — 고치지 말고 rough/src/의 조각을 고친 뒤 다시 만드세요
+// src/app-core.js → src/app-setbook.js → src/app-scene.js → src/app-edit.js → src/app-edit2.js → src/app-views.js
+// 러프 툴 본체 1/6 — 공통: 계산·읽기·표·메뉴·그리기·식자·참고 이미지·프롬프트 내보내기
+// 원본 조각: tools/build_app.py가 6개를 순서대로 이어 rough/app.js를 만듦(사이트는 app.js 하나를 실음 — 조각끼리 불러올 때 서로 부르는 곳이 많아 따로 싣지 않음)
 // UX 시안(docs/ux-brief-plan.md): 기본은 채택안 C(컷 우선). ?ux=A(예전 화면) · B(문구 정리)는 사람 확인이 끝날 때까지 비교용으로 남김
 const UX='C';document.documentElement.dataset.ux=UX;  // 화면 비교안(?ux=A/B/C)은 정리됨. 남은 코드 호환용 상수
 const W=690;
@@ -674,8 +677,8 @@ async function attachCuts(files,from){files=[...files].filter(f=>f.type.startsWi
 
 
 // ---------- data ----------
-
-
+// 러프 툴 본체 2/6 — 설정집: 인물·캐릭터 보관함·세계관
+// 원본 조각: tools/build_app.py가 6개를 순서대로 이어 rough/app.js를 만듦(사이트는 app.js 하나를 실음 — 조각끼리 불러올 때 서로 부르는 곳이 많아 따로 싣지 않음)
 // ---------- 인물 설정 ----------
 const NOTP=/하늘|거리|배경|풍경|장소|정원|복도|방$|집$|도시|건물|골목|숲|바다|교실/;
 let CHARS=[];
@@ -913,7 +916,8 @@ async function wlibImport(file){try{const d=JSON.parse(await file.text());if(d.t
     if(ev==='drop'){const el=rowOf(e);const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!f||!el)return;attach(f,el.dataset.wk==='world'?{kind:'world',key:'cover'}:{kind:'lore',key:LORE[+el.dataset.li].id})}});
   $('#wlibq').addEventListener('input',e=>{WLIBQ=e.target.value;renderWlib()});
   $('#wlibfile').addEventListener('change',e=>{const f=e.target.files[0];if(f)wlibImport(f);e.target.value=''});}
-
+// 러프 툴 본체 3/6 — 씬: @ 자동완성·씬 목록·컷 입력·해석 줄·효과음 추천
+// 원본 조각: tools/build_app.py가 6개를 순서대로 이어 rough/app.js를 만듦(사이트는 app.js 하나를 실음 — 조각끼리 불러올 때 서로 부르는 곳이 많아 따로 싣지 않음)
 // ---------- @ 자동완성 ----------
 const mbox=document.createElement('div');mbox.className='menu';mbox.id='mbox';mbox.setAttribute('role','listbox');mbox.hidden=true;document.body.appendChild(mbox);
 let mSel=0,mList=[],mStart=-1;
@@ -1124,7 +1128,8 @@ function openGrammarGuide(){let d=$('#gramdlg');if(!d){d=document.createElement(
     const edits=cutEdits(),n=CUTS.length,f=from;if(to>f)to--;remapCuts(SCUR,()=>{const ord=[...Array(n).keys()];ord.splice(f,1);ord.splice(to,0,f);const [c]=CUTS.splice(f,1),[ed]=edits.splice(f,1);CUTS.splice(to,0,c);edits.splice(to,0,ed);return Object.fromEntries(ord.map((o,k)=>[o,k]))});from=-1;renderCuts();cutChanged();toast('컷 순서를 바꿨어요')});}
 renderCuts();renderChars();renderSceneList();
 mbox.addEventListener('mousedown',e=>{const b=e.target.closest('[data-mi]');if(b){e.preventDefault();pickMention(+b.dataset.mi)}});
-
+// 러프 툴 본체 4/6 — 편집: 씬 그림·프레임·그림 확대·작업 파일·대사 교정·분할 내보내기
+// 원본 조각: tools/build_app.py가 6개를 순서대로 이어 rough/app.js를 만듦(사이트는 app.js 하나를 실음 — 조각끼리 불러올 때 서로 부르는 곳이 많아 따로 싣지 않음)
 // ---------- 씬 · 편집 ----------
 $('#sctitle').value=SCENES[SCUR].title||'';
 $('#sctitle').addEventListener('input',e=>{SCENES[SCUR].title=e.target.value;saveScenes();renderSceneList()});
@@ -1920,7 +1925,8 @@ async function exportSlices(o,st){st('이미지 만드는 중');await loadPageMa
     files.push({name:`${base}_${String(++n).padStart(3,'0')}.${ext}`,data:new Uint8Array(await (await new Promise(r=>c.toBlob(r,type,o.q/100))).arrayBuffer())});y0+=hh;st(`${n}장째 · ${Math.round(y0/total*100)}%`)}
   const z=await RoughExport._zip(files);download(`${base}-연재용-${o.w}x${o.h}.zip`,URL.createObjectURL(z));
   st(`${n}장으로 나눠 저장했어요 · 전체 ${o.w}×${total}px${hard?` · 한 장 높이보다 긴 컷이라 그림 위에서 자른 곳 ${hard}군데`:''}`);return{n,total,hard,names:files.map(f=>f.name)}}
-
+// 러프 툴 본체 5/6 — 편집 보강: 목차 트리·속성·실행 취소·저장 표시
+// 원본 조각: tools/build_app.py가 6개를 순서대로 이어 rough/app.js를 만듦(사이트는 app.js 하나를 실음 — 조각끼리 불러올 때 서로 부르는 곳이 많아 따로 싣지 않음)
 // ---------- 편집 화면 보강: 목차 트리 · 속성 패널 · 실행 취소 · 자동 저장 표시 (포스타입·노션 에디터 참고) ----------
 function editTree(){const el=$('#wtoc');if(!el)return;const groups=[...pageReader.querySelectorAll('[data-slot-index]')];const by={};
   groups.forEach(g=>{const sc=+g.closest('section').dataset.pageScene;(by[sc]||=[]).push(g)});
@@ -2172,7 +2178,8 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape'||typeof VIEW==='unde
   const t=e.target,typing=t&&t.closest&&t.closest('input,textarea,select,[contenteditable]'),cm=document.querySelector('.cmenu');
   const busy=typing||(cm&&!cm.hidden)||document.querySelector('dialog[open]')||(document.querySelector('.readmode')&&!document.querySelector('.readmode').hidden)||gapDrag||document.querySelector('.tcpop')||(window.RoughWS&&RoughWS.tool!=='select');
   if(busy)return;setTimeout(()=>clearAllSelection(),0)},true);
-
+// 러프 툴 본체 6/6 — 보기 전환·프롬프트 시안·작화·데이터베이스·시작
+// 원본 조각: tools/build_app.py가 6개를 순서대로 이어 rough/app.js를 만듦(사이트는 app.js 하나를 실음 — 조각끼리 불러올 때 서로 부르는 곳이 많아 따로 싣지 않음)
 // ---------- 보기 전환 ----------
 let VIEW='nai';
 function showView(v){if(v==='nai')v='layout';
