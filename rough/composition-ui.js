@@ -3,7 +3,15 @@ import {validateSettings,generateComposition,regenerateCard,missingFixedLines,pr
 const storageKey='rough-composition-v1';
 const defaults=()=>({prompt:'',lengthMode:'exact',count:6,min:5,max:7,source:'reorder',
   mustInclude:'',fixed:'',notes:'',cutCount:'',change:'',ending:'aftertaste',density:'normal',
-  audience:'first',uiCount:2,placement:'auto',positions:'',behavior:'static'});
+  audience:'first',uiCount:2,placement:'auto',positions:'',behavior:'static',epType:'regular',sceneCount:'',coldOpen:'yes'});
+// 한 화 분량: 연재작 44화 실측(docs/webtoon-episode-planning.md) — 1화 약 100컷, 일반 75, 짧은 회차 40.
+// 그림 컷당 휴대폰 약 1.03화면, 말풍선 약 1.4개, 씬당 약 11컷. 마지막 씬이 가장 길고 콜드 오픈은 약 12%
+const EP_PRESET={first:100,regular:75,short:40};
+export function episodePlan(row){const cuts=Math.max(10,Math.min(200,Number(row.cutCount)||EP_PRESET[row.epType]||75)),fixed=Number(row.sceneCount)||0;
+  const auto=Math.max(2,Math.round(cuts/11)),lo=fixed||Math.max(2,Math.round(cuts/15)),hi=fixed||Math.max(lo,Math.round(cuts/8));
+  const open=row.coldOpen==='no'?0:Math.max(3,Math.round(cuts*.12)),hook=Math.max(3,Math.min(5,Math.round(cuts*.05))),rise=Math.round(cuts*.25),dev=Math.max(1,cuts-open-hook-rise);
+  return {cuts,scenes:fixed||auto,lo,hi,fixed:!!fixed,phone:Math.round(cuts*1.03),balloons:Math.round(cuts*1.4),perScene:Math.round(cuts/(fixed||auto)),open,dev,rise,hook}}
+
 const localText=value=>String(value??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const splitLines=value=>value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
 
@@ -39,13 +47,20 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     for(const section of root.querySelectorAll('[data-plan-mode]'))section.hidden=section.dataset.planMode!==mode;
     for(const part of form.querySelectorAll('[data-plan-length]'))part.hidden=part.dataset.planLength!==row.lengthMode;
     root.querySelector('#plan-amount-label').textContent=mode==='webtoon'?'씬 수':'섹션 수';
+    paintPlan();
     for(const group of root.querySelectorAll('[data-chips]'))for(const b of group.querySelectorAll('[data-v]'))b.setAttribute('aria-pressed',String(settings.namedItem(group.dataset.chips)?.value===b.dataset.v));
     root.querySelector('#plan-manual').hidden=row.placement!=='manual'||!Number(row.uiCount);
   }
+  function paintPlan(){const row=current().form,P=episodePlan(row),est=root.querySelector('#plan-est'),shape=root.querySelector('#plan-shape');if(!est)return;
+    settings.namedItem('cutCount').placeholder=String(EP_PRESET[row.epType]||75);
+    est.innerHTML='씬 <b>'+(P.fixed?P.scenes:'약 '+P.scenes)+'개</b>'+(P.fixed?'':' (자동)')+' · 씬당 약 <b>'+P.perScene+'컷</b><br>휴대폰 약 <b>'+P.phone+'화면</b> · 말풍선 약 <b>'+P.balloons+'개</b>';
+    const seg=(cls,label,n)=>n?'<div class="'+cls+'" style="flex:'+n+'" title="'+label+' 약 '+n+'컷">'+label+'<small>'+n+'</small></div>':'';
+    shape.innerHTML=seg('s-open','오프닝',P.open)+seg('s-dev','전개',P.dev)+seg('s-rise','고조',P.rise)+seg('s-hook','엔딩 훅',P.hook)}
   function config(){
     const row=current().form;
-    return validateSettings({...row,mode,exact:row.lengthMode==='exact',count:Number(row.count),min:Number(row.min),max:Number(row.max),
-      cutCount:Number(row.cutCount),uiCount:Number(row.uiCount),positions:row.positions.trim().split(/[,，\s]+/).filter(Boolean).map(Number),
+    const P=mode==='webtoon'?episodePlan(row):null;
+    return validateSettings({...row,mode,exact:mode==='webtoon'?P.fixed:row.lengthMode==='exact',count:mode==='webtoon'?P.scenes:Number(row.count),min:mode==='webtoon'?P.lo:Number(row.min),max:mode==='webtoon'?P.hi:Number(row.max),
+      cutCount:mode==='webtoon'?P.cuts:0,structure:P?{episode:row.epType,coldOpen:row.coldOpen!=='no',openCuts:P.open,hookCuts:P.hook,note:'연재작 실측: 마지막 씬이 가장 길고, 감정 강도 최고점은 마지막 10% 안, 마지막 컷은 공개(새 정보·표정·대사)'}:undefined,uiCount:Number(row.uiCount),positions:row.positions.trim().split(/[,，\s]+/).filter(Boolean).map(Number),
       fixedLines:splitLines(row.fixed),story:mode==='webtoon'?getStory():undefined});
   }
   function writeWarning(){
@@ -91,7 +106,7 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     output.innerHTML='';
     if(!draft){writeWarning();return}
     const web=mode==='webtoon',units=web?'씬':'섹션',total=draft.cards.reduce((sum,card)=>sum+(card.cutCount||0),0),locked=draft.cards.filter(c=>c.locked).length;
-    const stat=web?'<span><b>'+draft.cards.length+'</b>씬</span><span><b>'+total+'</b>컷</span>'+(locked?'<span>잠금 <b>'+locked+'</b></span>':''):
+    const stat=web?'<span><b>'+draft.cards.length+'</b>씬</span><span><b>'+total+'</b>컷</span><span>휴대폰 약 <b>'+Math.round(total*1.03)+'</b>화면</span>'+(locked?'<span>잠금 <b>'+locked+'</b></span>':''):
       '<span><b>'+draft.cards.length+'</b>섹션</span><span>HTML UI <b>'+draft.cards.filter(card=>card.withHTML).length+'</b></span>';
     output.innerHTML='<div class="po-h"><h2>'+(web?'이번 화 구성':'구성안')+'</h2><span class="grow"></span></div><div class="po-stat">'+stat+'</div>'+
       '<p class="po-sum">'+localText(draft.summary)+'</p>'+
@@ -155,8 +170,8 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     if(busy||!modeKnown(next)||next===mode)return;
     takeSettings();mode=next;configure();render();updateStatus('');persist();
   });
-  root.addEventListener('click',event=>{const b=event.target.closest('[data-chips] [data-v]');if(!b||busy)return;const name=b.closest('[data-chips]').dataset.chips,el=settings.namedItem(name);if(!el)return;el.value=b.dataset.v;takeSettings();configure();persist()});
-  form.addEventListener('input',()=>{takeSettings();persist();writeWarning()});
+  root.addEventListener('click',event=>{const b=event.target.closest('[data-chips] [data-v]');if(!b||busy)return;const name=b.closest('[data-chips]').dataset.chips,el=settings.namedItem(name);if(!el)return;el.value=b.dataset.v;if(name==='epType')settings.namedItem('cutCount').value=String(EP_PRESET[b.dataset.v]);takeSettings();configure();persist()});
+  form.addEventListener('input',()=>{takeSettings();persist();writeWarning();paintPlan()});
   form.addEventListener('change',()=>{takeSettings();configure();persist()});
   form.addEventListener('submit',event=>{event.preventDefault();generate()});
   output.addEventListener('click',event=>{const a=event.target.closest('[data-jump]');if(!a)return;event.preventDefault();document.getElementById('pc-'+a.dataset.jump)?.scrollIntoView({behavior:'smooth',block:'start'})});
