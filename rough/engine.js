@@ -499,7 +499,10 @@
   function useLayoutModel(M) { E._lay = M && M.h ? M : null; return !!E._lay; }
   function layFeats(an, k) {
     const bs = an.beats, n = bs.length, x = bs[k], nx = bs[k + 1], pv = bs[k - 1];
-    const ln = b => (b.act || '').length, nd = b => (b.dialogs || []).length;
+    // 글 길이는 씬 안에서의 상대 길이로: 학습 DB의 컷 설명은 짧은 메모(중앙 25자)라, 자세히 쓴 글(구성안·Claude)은 모든 컷이 길쭉해졌음.
+    // 씬의 중앙 길이를 DB 중앙(25자)에 맞춰 늘리고 줄임 → 긴 컷·짧은 컷의 차이는 남기고 글 쓰는 습관(장황함)은 지움
+    if (an._lenK == null) { const ls = bs.map(b => (b.act || '').length).filter(v => v > 0).sort((a, b) => a - b), med = ls.length ? ls[Math.floor(ls.length / 2)] : 25; an._lenK = med > 25 ? 25 / med : 1; }
+    const ln = b => (b.act || '').length * an._lenK, nd = b => (b.dialogs || []).length;
     const f = { bias: 1, pos: k / Math.max(1, n - 1), first: +(k === 0), last: +(k === n - 1), n: n / 5, i: x.i / 3, said: +!!x.said, nd: Math.min(3, nd(x)) / 3,
       cap: Math.min(2, (x.captions || []).length), sfx: Math.min(2, (x.sfx || []).length), len: Math.min(120, ln(x)) / 60,
       ['emo=' + x.emo]: 1, ['role=' + x.role]: 1, ['vng=' + x.vng]: 1, ['tr=' + (x.trans || '')]: 1,
@@ -509,7 +512,9 @@
     if (pv) Object.assign(f, { ['pvng=' + pv.vng]: 1, pdi: (x.i - pv.i) / 2 });
     return f;
   }
-  function predictH(an, k) { const M = E._lay.h, f = layFeats(an, k); let z = M.b; for (const key in f) if (M.w[key]) z += M.w[key] * f[key]; return M.log ? Math.exp(z) : z; }
+  function rawH(an, k) { const M = E._lay.h, f = layFeats(an, k); let z = M.b; for (const key in f) if (M.w[key]) z += M.w[key] * f[key]; return M.log ? Math.exp(z) : z; }
+  // 묶음 전체가 실제 연재작보다 길쭉하게 예측되면(자세한 글·대사가 많은 글) 중앙값을 DB 상위권(1.25) 안으로 눌러 맞춤. 컷끼리의 길고 짧음은 그대로
+  function predictH(an, k) { if (an._hK == null) { const hs = an.beats.map((_, j) => rawH(an, j)).sort((a, b) => a - b), med = hs[Math.floor(hs.length / 2)] || 1; an._hK = med > 1.25 ? 1.25 / med : 1; } return rawH(an, k) * an._hK; }
   // ---------- 7. 컷 배치 ----------
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   function layout(an, p) {
