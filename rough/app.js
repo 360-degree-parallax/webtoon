@@ -682,15 +682,20 @@ async function attachCuts(files,from){files=[...files].filter(f=>f.type.startsWi
 // ---------- 인물 설정 ----------
 const NOTP=/하늘|거리|배경|풍경|장소|정원|복도|방$|집$|도시|건물|골목|숲|바다|교실/;
 let CHARS=[];
-const DEFAULT_CHARS=[{name:'에드가',aliases:'',body:'male',look:'검은 머리를 넘긴 짧은 머리, 초록 눈, 검은 연미복과 흰 나비넥타이 차림의 하인'},{name:'준',aliases:'',body:'female',look:'밤색 머리를 하나로 묶은 하녀, 갈색 눈, 앞치마 차림'}];
-try{const v=localStorage.getItem('rough-chars');CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){CHARS=DEFAULT_CHARS.map(c=>({...c}))}
-// 예전 기본 외형(금발)은 기본 사진(검은 머리)과 달라서, 손대지 않은 기본 문구만 새 문구로
-CHARS.forEach(c=>{if(c.name==='에드가'&&c.look==='금발 짧은 머리, 초록 눈, 검은 연미복과 흰 장갑을 낀 하인')c.look=DEFAULT_CHARS[0].look});
+const DEFAULT_CHARS=[{name:'에드가',aliases:'',body:'male',look:'저택의 수석 하인. 늘 존댓말을 쓰고 표정 변화가 적다. 감정을 드러내지 않으려 하지만 준 앞에서는 말끝이 흐려진다. 생각할 때 장갑 낀 손끝을 만지는 버릇이 있다. 키가 크고 자세가 곧다.'},{name:'준',aliases:'',body:'female',look:'저택에 들어온 지 얼마 안 된 하녀. 밝고 말이 빠르며 감정이 얼굴에 그대로 드러난다. 실수가 잦지만 금방 털고 일어난다. 에드가를 어려워하면서도 자꾸 말을 건다.'}];
+// 기본 인물의 외형 태그(NovelAI) — 처음 열었을 때만 채움
+const DEFAULT_TAGS={'에드가':'black hair, short hair, slicked back hair, green eyes, tall, butler, black tailcoat, white bowtie, white gloves','준':'brown hair, long hair, ponytail, brown eyes, maid, maid headdress, black dress, white apron'};
+// 예전 기본 문구(외형을 글로 적던 시절)를 손대지 않았으면 새 특징 문구로 바꾸고 태그를 채운다
+const OLD_DEFAULT_LOOK={'에드가':['금발 짧은 머리, 초록 눈, 검은 연미복과 흰 장갑을 낀 하인','검은 머리를 넘긴 짧은 머리, 초록 눈, 검은 연미복과 흰 나비넥타이 차림의 하인'],'준':['밤색 머리를 하나로 묶은 하녀, 갈색 눈, 앞치마 차림']};
+let FRESH_CHARS=false;
+try{const v=localStorage.getItem('rough-chars');FRESH_CHARS=!v;CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){FRESH_CHARS=true;CHARS=DEFAULT_CHARS.map(c=>({...c}))}
+const OLD_DEFAULT_HIT=[];CHARS.forEach(c=>{if((OLD_DEFAULT_LOOK[c.name]||[]).includes(c.look)){c.look=DEFAULT_CHARS.find(d=>d.name===c.name).look;OLD_DEFAULT_HIT.push(c.name)}});
 function saveChars(){try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}}
 function engineChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
 // 등장인물 카드 (캐릭터챗 프로필 카드 형태) + 프로필 편집 창
 var NAITAGS;try{NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){NAITAGS={}}
 const saveNaiTags=()=>{try{localStorage.setItem('rough-nai-tags',JSON.stringify(NAITAGS))}catch(_){}};
+{const fill=n=>{if(DEFAULT_TAGS[n]&&!NAITAGS[n])NAITAGS[n]=DEFAULT_TAGS[n]};if(FRESH_CHARS)CHARS.forEach(c=>fill(c.name));OLD_DEFAULT_HIT.forEach(fill);if(FRESH_CHARS||OLD_DEFAULT_HIT.length){saveNaiTags();saveChars()}}
 const hueOf=n=>{let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))%360;return h};
 const avBg=n=>`hsl(${hueOf(n)} 32% 52%)`;
 function charTags(c){return (NAITAGS[c.name]??window.RoughNAI.lookTags(c.look).join(', ')).split(',').map(t=>t.trim()).filter(Boolean)}
@@ -2315,7 +2320,7 @@ function naiText(){return naiCuts().map(({o})=>naiCopy(o)).join('\n\n\n')+'\n'}
 function renderNai(){if(VIEW==='layout')setTimeout(renderConti);$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
   $('#naichars').innerHTML=chars.length?chars.map(c=>{const v=NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),src=artSrc(c.name,v),im=IMG.char[c.name];
-    return `<div class="naichar"><span class="av" style="${im?'':`background:${avBg(c.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(c.name.slice(0,1))}</span><b>${esc(c.name)}${src?`<em class="art-src${src==='자동'?' auto':''}">${src}</em>`:''}</b><input data-naitag="${esc(c.name)}" value="${esc(v)}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="link" data-act="naireset" data-n="${esc(c.name)}" title="외형 글에서 규칙으로 다시 만들기">외형에서 다시</button></div>`}).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
+    return `<div class="naichar"><span class="av" style="${im?'':`background:${avBg(c.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(c.name.slice(0,1))}</span><b>${esc(c.name)}${src?`<em class="art-src${src==='자동'?' auto':''}">${src}</em>`:''}</b><input data-naitag="${esc(c.name)}" value="${esc(v)}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="link" data-act="naireset" data-n="${esc(c.name)}" title="특징 글에서 규칙으로 다시 만들기">특징에서 다시</button></div>`}).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
   {const e=$('#artstylesrc');if(e){const t=NAISTYLE===NAI_STYLE_DEF?'기본':ARTGEN.style===NAISTYLE?'생성':'';e.textContent=t;e.className='art-src'+(t==='기본'?' auto':'')}}
   const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
   $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="write">씬에서 이미지 등록</button>`;
