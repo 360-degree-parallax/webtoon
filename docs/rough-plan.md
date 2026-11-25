@@ -948,7 +948,7 @@
 
 ## 114. 브랜치 정리(2026-11-25)
 
-main에 모두 합쳐진 원격 브랜치를 지움. 되살리려면 `git push origin <커밋>:refs/heads/<이름>`.
+main에 모두 합쳐진 원격 브랜치 8개 — 지울 대상. 이 작업 환경에서는 원격 브랜치 삭제가 403으로 막혀 실행하지 못함(GitHub 웹의 Branches 화면이나 로컬에서 `git push origin --delete <이름>`). 지운 뒤 되살리려면 `git push origin <커밋>:refs/heads/<이름>`.
 
 | 브랜치 | 마지막 커밋 |
 |---|---|
