@@ -264,5 +264,20 @@ document.addEventListener('keydown',e=>{if(!inEdit()||MC.size<2||typingIn(e.targ
   if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();e.stopImmediatePropagation();window.RoughWS?.multiCut?.('del')}},true);
 {const _et=editTree;editTree=function(...a){const r=_et(...a);if(MC.size>1)markMC();return r}}
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);if(MC.size){[...MC].forEach(k=>{if(!groups().some(g=>pageKey(g)===k))MC.delete(k)});markMC()}return r}}
-window.RoughStudio={get mcuts(){return MC},clearMC,setMC,get readOrder(){return RO},setOrder,drawOrder,get phoneGuide(){return PG},setGuide,drawGuide,zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
+// ---------- 씬 고르기: 레이어 패널의 씬 제목 줄을 누르면 씬을 고름 → Delete(또는 위 막대 「씬 지우기」)로 씬 지우기 ----------
+let SCSEL=null;
+function markScene(){$('#wtoc').querySelectorAll('.tsc[data-toc]').forEach(a=>{const on=SCSEL!=null&&+a.dataset.toc===SCSEL;a.classList.toggle('on',on);a.setAttribute('aria-current',String(on))});
+  reader.querySelectorAll(':scope>section').forEach(sec=>sec.classList.toggle('scsel',SCSEL!=null&&+sec.dataset.pageScene===SCSEL));window.RoughWS?.renderCtx?.()}
+function selectScene(i){SCSEL=i;if(i!=null){clearMC();window.RoughWS?.clearMulti?.();selectLetter(null);window.layerPart=null}markScene()}
+function deleteSelScene(){if(SCSEL==null)return;if(SCENES.length<=1){window.RoughWS?.flash?.('씬이 하나뿐이라 지울 수 없어요');return}const i=SCSEL;const before=SCENES.length;deleteScene(i);
+  if(SCENES.length<before){SCSEL=null;if(inEdit()){renderWebtoon();editTree()}markScene()}}
+$('#wtoc').addEventListener('click',e=>{if(!inEdit())return;const a=e.target.closest('.tsc[data-toc]');if(a){selectScene(+a.dataset.toc);return}
+  if(SCSEL!=null&&e.target.closest('[data-tcut],[data-tlayer]'))selectScene(null)},true);
+reader.addEventListener('pointerdown',()=>{if(SCSEL!=null)selectScene(null)},true);
+document.addEventListener('keydown',e=>{if(!inEdit()||SCSEL==null||typingIn(e.target))return;
+  if(e.key==='Escape'){selectScene(null);return}
+  if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();e.stopImmediatePropagation();deleteSelScene()}},true);
+{const _et=editTree;editTree=function(...a){const r=_et(...a);if(SCSEL!=null)markScene();return r}}
+{const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);if(SCSEL!=null&&pageSelection)selectScene(null);return r}}
+window.RoughStudio={get selScene(){return SCSEL},selectScene,deleteSelScene,get mcuts(){return MC},clearMC,setMC,get readOrder(){return RO},setOrder,drawOrder,get phoneGuide(){return PG},setGuide,drawGuide,zoomTo,fitAll,fitWidth,fitSelected,setCrop,openRead,closeRead,applyZoom,mini,stepZoom,get zoom(){return CZ}};
 })();

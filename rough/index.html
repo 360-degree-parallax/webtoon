@@ -1219,6 +1219,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 :root[data-theme=dark] #v-plan .pv-cap{background:#202027}
 .reader [data-slot-index].mcut>.page-frame{stroke:#2d71f7!important;stroke-width:5!important}.reader [data-slot-index].mcut{filter:drop-shadow(0 0 0 #2d71f7)}
 #wtoc [data-tcut][aria-current=true]{background:rgba(45,113,247,.1)}
+#wtoc .tsc.on{background:rgba(45,113,247,.1);border-radius:8px;color:var(--t1)}.reader>section.scsel{outline:3px solid #2d71f7;outline-offset:4px;border-radius:4px}
 </style>
 </head>
 <body>
@@ -3642,9 +3643,15 @@ function imgRestore(sc,m){const cur=imgPlace(sc);if(JSON.stringify(cur)===JSON.s
   Object.values(IMG.cut).filter(r=>r.scene===sc.id).forEach(r=>{delete IMG.cut[r.id];idb.del(r.id)});
   for(const [n,uid,sig] of m){const r=IMG_POOL.get(uid);if(!r)continue;const o={...r,id:cutId(sc.id,n),idx:n,sig};IMG.cut[o.id]=o;idb.put(o)}
   return true}
-const edState=()=>JSON.stringify(SCENES.map(sc=>({c:sc.cuts,e:sc.pageEdits||[],m:imgPlace(sc),t:sc.endTo||''})));
+// 씬 목록 자체(추가·삭제·순서)도 되돌릴 수 있게 씬 id·나머지 속성(r)도 기록
+const edState=()=>JSON.stringify(SCENES.map(sc=>{const {cuts,pageEdits,endTo,...r}=sc;return {c:sc.cuts,e:sc.pageEdits||[],m:imgPlace(sc),t:sc.endTo||'',id:sc.id,r}}));
 function edButtons(){$('#wundo').disabled=$('#gundo-b').disabled=!UNDO.length;$('#wredo').disabled=$('#gredo-b').disabled=!REDO.length}
-function edRestore(json){edRestoring=true;const arr=JSON.parse(json);let text=false;SCENES.forEach((sc,i)=>{const v=arr[i];if(!v){sc.pageEdits=[];return}if(Array.isArray(v)){sc.pageEdits=v;return}
+function edRestore(json){edRestoring=true;const arr=JSON.parse(json);let text=false;
+  // 씬 목록이 달라졌으면(지운 씬 되살리기 등) 목록부터 맞춤
+  if(arr.every(v=>v&&v.id)&&(arr.length!==SCENES.length||arr.some((v,i)=>SCENES[i]?.id!==v.id))){const byId=new Map(SCENES.map(sc=>[sc.id,sc]));const cur=SCENES[SCUR]?.id;
+    SCENES.splice(0,SCENES.length,...arr.map(v=>byId.get(v.id)||{...v.r,cuts:v.c.slice(),pageEdits:v.e}));const k=SCENES.findIndex(sc=>sc.id===cur);SCUR=k>=0?k:Math.min(SCUR,SCENES.length-1);CUTS=SCENES[SCUR].cuts;text=true;
+    if(typeof renderSceneList==='function')renderSceneList()}
+  SCENES.forEach((sc,i)=>{const v=arr[i];if(!v){sc.pageEdits=[];return}if(Array.isArray(v)){sc.pageEdits=v;return}
   if(JSON.stringify(sc.cuts)!==JSON.stringify(v.c)){sc.cuts.splice(0,sc.cuts.length,...v.c);text=true}sc.pageEdits=v.e||[];if(v.m)imgRestore(sc,v.m);if('t' in v){if(v.t)sc.endTo=v.t;else delete sc.endTo}});saveScenes();edRestoring=false;edSnap=json;if(text&&typeof compute==='function')compute(false);renderWebtoon();edButtons()}
 // 원고(쓰기)·콘티·편집 화면 모두 같은 기록을 씀. 쓰기 화면은 타자 묶음을 길게(1.5초)
 const UNDO_VIEWS=['webtoon','layout','write'];

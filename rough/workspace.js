@@ -297,6 +297,9 @@ const FPRESETS=[['네모',0,0],['위 사선',-8,0],['아래 사선',0,8],['평�
 function shapeTools(g){const a=frameAngles(g);return `<span class="cb-grp" role="group" aria-label="프레임 기울기"><label>위 <input type="number" data-ctx="fatop" min="-30" max="30" step="1" value="${a.top}" style="width:52px">°</label><label>아래 <input type="number" data-ctx="fabot" min="-30" max="30" step="1" value="${a.bot}" style="width:52px">°</label>${FPRESETS.map(([n,t,b])=>`<button class="cb${a.top===t&&a.bot===b?' on':''}" data-fpre="${t},${b}">${n}</button>`).join('')}</span>`}
 function renderCtx(){try{_renderCtx()}catch(e){console.warn('상황 막대',e)}}  // 처음 불러올 때 아직 없는 칸이 있어도 편집기 전체가 멈추지 않게
 function _renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
+  const SS_=window.RoughStudio?.selScene;if(SS_!=null&&SCENES[SS_]&&tool==='select'){const sc=SCENES[SS_];
+    mid=`<b>${esc(sceneLabel(sc,SS_))}</b><span class="cb-t">${sc.cuts.filter(c=>String(c).trim()).length}컷</span><button class="cb" data-ctx="scdel"${SCENES.length<=1?' disabled title="씬이 하나뿐이에요"':''}>씬 지우기</button><span class="cb-hint">Delete 키로도 지워요 · Esc 선택 풀기</span>`;
+    ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;return}
   const MCs=window.RoughStudio?.mcuts;if(MCs&&MCs.size>1&&tool==='select'){const ks=[...MCs],allBlank=ks.every(k=>withKey(k,()=>pageSettings()?.blank)),allLock=ks.every(k=>{const g=groupBy(k);return g&&isLocked(g,'cut')});
     mid=`<b>컷 ${ks.length}개</b><label>아래 간격 <input type="number" data-ctx="mcgap" min="0" max="1600" step="4" placeholder="기본" style="width:64px">px</label><button class="cb" data-ctx="mcgapgo">간격 적용</button>`+
       `<button class="cb${allBlank?' on':''}" data-ctx="mcblank" aria-pressed="${allBlank}">빈 컷</button><button class="cb" data-ctx="mcframe">프레임 초기화</button><button class="cb" data-ctx="mclock">${allLock?'잠금 풀기':'잠그기'}</button><button class="cb" data-ctx="mcdel">컷 지우기</button><button class="cb" data-ctx="mcclear">선택 풀기</button>`;
@@ -337,6 +340,7 @@ ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return
   const c=b.dataset.ctx;
   if(c==='ledit')focusText();
   if(c==='lfit')fitLetters();
+  if(c==='scdel')window.RoughStudio?.deleteSelScene();
   if(c&&c.startsWith('mc'))multiCut(c.slice(2));
   if(c==='blank'&&pageSelection)toggleBlank(pageSelection);
   if(c==='gapall'){const r=b.getBoundingClientRect();cmOpen(gapAllMenu(),r.left,r.bottom+4)}
