@@ -1745,7 +1745,9 @@ function balloonTail(meta,tip){
   const mx=(x+end.x)/2,my=(y+end.y)/2;
   const pair=(px,py)=>`${px.toFixed(1)} ${py.toFixed(1)}`;
   const path=`M${pair(x-wx,y-wy)} Q${pair(mx-wx*.4,my-wy*.4)} ${pair(end.x,end.y)} Q${pair(mx+wx*.6,my+wy*.6)} ${pair(x+wx,y+wy)}Z`;
-  return {end,svg:`<path d="${path}" fill="${meta.preset?'#fff':LT.paper}" stroke="${meta.preset?'#161616':LT.ink}" stroke-width="${2*k}" stroke-linejoin="round"${meta.preset==='whisper'?' stroke-dasharray="4 3.5"':''}/>`};
+  // 몸통 테두리는 안쪽 절반이 덮개(cover)에 가려 바깥 절반만 보임 → 꼬리도 같은 굵기로 긋고 그 위에 꼬리 면을 덮어 바깥 절반만 보이게(이전엔 꼬리만 두 배 굵어 보였음)
+  const fill=meta.preset?'#fff':LT.paper;
+  return {end,svg:`<path d="${path}" fill="${fill}" stroke="${meta.preset?'#161616':LT.ink}" stroke-width="${(meta.sw||2*k).toFixed(2)}" stroke-linejoin="round"${meta.preset==='whisper'?' stroke-dasharray="4 3.5"':''}/><path d="${path}" fill="${fill}" stroke="none"/>`};
 }
 function balloonTransform(meta,scale){
   return `translate(${meta.cx} ${meta.cy}) scale(${scale}) translate(${-meta.cx} ${-meta.cy})`;
@@ -1783,7 +1785,7 @@ function balloonSVG(d,p,box,slot,R,edit,interactive){const preset=balloonPreset(
   const anchorX=cx+(linked?.84*rx:0),anchorY=cy+(linked?.82*ry:0);
   const bx=linked?anchorX+.48*rx:cx+(tx-cx)*.2,by=anchorY+ry*.86,len=Math.hypot(tx-bx,ty-by)||1;
   const r=Math.min(1,(kind==='shout'?60:80)*k/len);
-  const meta={cx,cy,anchorX,anchorY,rx,ry,k,kind,bx,by,tx,ty,showTail,preset:preset?.[0],
+  const meta={cx,cy,anchorX,anchorY,rx,ry,k,kind,bx,by,tx,ty,showTail,preset:preset?.[0],sw:preset?(+preset[3]||2)*k:(small?1.8:2.2)*k,
     ex:linked?bx+.58*rx:bx+(tx-bx)*r,ey:linked?by+.38*ry:by+(ty-by)*r};
   const tail=balloonTail(meta,balloonTip(meta,edit?.tail));
   const path=preset?null:shapePath(cx,cy,rx,ry,kind,R),sw=(small?1.8:2.2)*k;
