@@ -5,7 +5,7 @@
 2. python3 tools/sync_db.py 내려받은.xlsx --revision 173
    - 컷표·작품 정보·작업 방법·5컷 리듬·장면·코드표만 읽어 rough/db/db.json으로(명경 시험 시트·요약·컬러 띠·썸네일은 제외)
    - 작품 정보의 집계 칸(수식)은 값이 없으면 행을 세어 채움
-   - 값 검사(tools/validate_db.py) → 통과하면 저장, tools/merge_cut_context.py가 있으면 분석 열을 다시 합치고 patterns.json·nai-stats.js 다시 생성
+   - 값 검사(tools/validate_db.py) → 통과하면 저장, patterns.json·nai-stats.js 다시 생성
    - --check: 파일을 바꾸지 않고 지금 사본과 다른 점만 보고
    - xlsx를 여러 개 주면 행을 이어 붙임(「웹툰 연출 DB」가 셀 한도에 닿아 HM·SL은 「웹툰 연출 DB 2」에 있음).
      코드표·작업 방법은 첫 파일 것을 씀. --revision은 첫 파일, --revision2는 두 번째 파일의 리비전
@@ -67,7 +67,7 @@ def main():
     diff = []
     for s in SHEETS:
         a = old.get(s, {'columns': [], 'rows': []}); b = new[s]
-        # 시트 밖에서 합친 열(예: tools/merge_cut_context.py의 '상세 …' 열)은 비교에서 뺌
+        # 시트 밖에서 합친 열은 비교에서 뺌
         keep = [i for i, h in enumerate(a.get('columns', [])) if h in b['columns']]
         a = {'columns': [a['columns'][i] for i in keep], 'rows': [[r[i] for i in keep] for r in a.get('rows', [])]}
         if a.get('columns') != b['columns']: diff.append(f'{s}: 열 바뀜 {len(a.get("columns", []))}→{len(b["columns"])}')
@@ -88,11 +88,6 @@ def main():
     if v.returncode:
         print(f'검사 실패: 사본을 바꾸지 않았어요. 검사한 파일은 {tmp} 에 남겨 두었어요.'); sys.exit(1)
     tmp.replace(OUT); print('저장', OUT.relative_to(ROOT))
-    # 분석 CSV를 컷ID로 합치는 단계가 있으면 다시 돌림(시트에는 없는 '상세 …' 열)
-    merge = ROOT / 'tools' / 'merge_cut_context.py'
-    if merge.exists():
-        r = subprocess.run([sys.executable, str(merge)], capture_output=True, text=True)
-        print('분석 열 합침' if r.returncode == 0 else '분석 열 합치기 실패: ' + r.stderr.strip()[-300:])
     if '--no-build' in sys.argv: return
     for s in ('build_patterns.py', 'build_nai_stats.py'):
         r = subprocess.run([sys.executable, str(ROOT / 'tools' / s)], capture_output=True, text=True); print((r.stdout.strip().splitlines() or [''])[0])

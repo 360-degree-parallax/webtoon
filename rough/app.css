@@ -1301,7 +1301,7 @@ body.has-stepnav .view:not(#v-webtoon){padding-bottom:64px}
 .rvnb figcaption b{color:var(--t1)}.rvnb.none{cursor:default;opacity:.6}
 .rvscene{font-size:12.5px;color:var(--t2);margin-top:4px}
 .rvnew{font-size:11px;font-weight:700;color:#2d71f7;background:var(--blue-soft);padding:1px 6px;border-radius:999px}
-.rvdetail{font-size:13px;color:var(--t2);margin:-4px 0 8px}
+
 .rvinfo{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
 .rvinfo span{font-size:12.5px;padding:3px 8px;border-radius:999px;background:var(--surface);color:var(--t1)}
 .rvinfo span small{color:var(--t3);margin-right:4px}.rvinfo span.cur{outline:1.5px solid #2d71f7}

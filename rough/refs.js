@@ -14,13 +14,9 @@ const codeOf=r=>r.source_cut.slice(0,2);
 function loadText(){if(TEXT||textLoading)return textLoading;
   textLoading=fetch('db/db.json').then(r=>r.ok?r.json():null).then(d=>{TEXT={};const t=d?.['컷표'];if(!t)return;
     const c=t.columns,ci=c.indexOf('컷ID'),ti=c.indexOf('내용'),si=c.indexOf('장면');
-    // 상세 분석 열(tools/merge_cut_context.py가 붙인 '상세 …')도 검색에 씀: '먹 번짐', '하단 흰 여백' 같은 말로 찾기
-    const di=c.map((h,i)=>String(h).startsWith('상세 ')&&!/근거|영역/.test(h)?i:-1).filter(i=>i>=0);
-    t.rows.forEach(r=>{if(r[ci])TEXT[r[ci]]={text:String(r[ti]||''),scene:String(r[si]||''),detail:di.map(i=>r[i]).filter(Boolean).join(' · ')}});if(!panel.hidden)render()}).catch(()=>{TEXT={}});
+    t.rows.forEach(r=>{if(r[ci])TEXT[r[ci]]={text:String(r[ti]||''),scene:String(r[si]||'')}});if(!panel.hidden)render()}).catch(()=>{TEXT={}});
   return textLoading}
 
-// 검색어가 상세 분석에서 맞았으면 그 앞뒤 문장을 툴팁에
-function detailHit(r){const q=F.q.trim(),d=TEXT?.[r.source_cut]?.detail||'';if(!q||!d)return'';const i=d.toLowerCase().indexOf(q.toLowerCase());return i<0?'':`\n상세: …${d.slice(Math.max(0,i-30),i+q.length+40)}…`}
 function items(){return Object.values(REF_PICK).filter(r=>F.all||r.fit==='ok'||r.fixed)}
 function selPanel(){if(!pageSelection)return null;const [sc,slot]=pageSelection.split(':').map(Number);
   const ps=scenePanels(sc);return ps.find((p,i)=>cutSlot(p,i)===slot)||null}
@@ -30,7 +26,7 @@ function similarity(r,p){if(!p)return 0;const a=RANK[r.shot],b=RANK[p.shot];
     +(p.h&&r.h_ratio?Math.max(0,1-Math.abs(r.h_ratio-p.h)*1.5):0)+(()=>{const n=new Set((String(p.key||'').match(/@[^\s@.,!?"'“”…~{}()\[\]]+/g)||[]).map(x=>x.slice(1))).size;return n&&r.np!=null&&Math.min(r.np,3)===Math.min(n,3)?.5:0})()+(r.balloon_cover!=null?Math.max(0,.4-r.balloon_cover):0)}
 function results(){const q=F.q.trim().toLowerCase(),p=F.similar?selPanel():null;
   let out=items().filter(r=>(!F.work||codeOf(r)===F.work)&&(!F.shot||r.shot===F.shot)&&(!F.angle||r.angle===F.angle)&&(!F.emotion||r.emotion===F.emotion)
-    &&(!F.panel||r.panel===F.panel)&&(!F.np||(F.np==='3'?(r.np??0)>=3:String(r.np??'')===F.np))&&(!F.mx||r.mx===F.mx)&&(!F.gz||r.gz===F.gz)&&(!F.col||(F.col==='mono'?r.mono===1:r.mono!==1))&&(!F.clean||(r.balloon_cover??0)<.08)&&(!q||[r.source_cut,r.work,r.shot,r.angle,r.emotion,r.role,TEXT?.[r.source_cut]?.text,TEXT?.[r.source_cut]?.scene,TEXT?.[r.source_cut]?.detail].join(' ').toLowerCase().includes(q)));
+    &&(!F.panel||r.panel===F.panel)&&(!F.np||(F.np==='3'?(r.np??0)>=3:String(r.np??'')===F.np))&&(!F.mx||r.mx===F.mx)&&(!F.gz||r.gz===F.gz)&&(!F.col||(F.col==='mono'?r.mono===1:r.mono!==1))&&(!F.clean||(r.balloon_cover??0)<.08)&&(!q||[r.source_cut,r.work,r.shot,r.angle,r.emotion,r.role,TEXT?.[r.source_cut]?.text,TEXT?.[r.source_cut]?.scene].join(' ').toLowerCase().includes(q)));
   if(p){out=out.map(r=>[similarity(r,p),r]).sort((a,b)=>b[0]-a[0]).map(x=>x[1])}
   return out}
 const opts=(vals,cur,all)=>`<option value="">${all}</option>`+vals.map(v=>`<option${v===cur?' selected':''}>${esc(v)}</option>`).join('');
@@ -42,7 +38,7 @@ function render(){if(panel.hidden||!panel.isConnected||panel.closest('[hidden]')
   const works=[...new Set(Object.values(REF_PICK).map(codeOf))].sort();const names=Object.fromEntries(Object.values(REF_PICK).map(r=>[codeOf(r),r.work]));
   const list=results(),p=selPanel(),cur=curRef(),pickedRef=REF_PICK[picked];
   const edit=pageSelection&&pageSettings()?.ref;
-  panel.innerHTML=`<div class="rf-search"><input type="search" id="rfq" value="${esc(F.q)}" placeholder="내용·장면·상세 분석·컷ID 검색" aria-label="레퍼런스 검색"></div>
+  panel.innerHTML=`<div class="rf-search"><input type="search" id="rfq" value="${esc(F.q)}" placeholder="내용·장면·컷ID 검색" aria-label="레퍼런스 검색"></div>
   <div class="rf-filters">
     <select data-f="work" aria-label="작품">${`<option value="">모든 작품</option>`+works.map(w=>`<option value="${w}"${w===F.work?' selected':''}>${esc(names[w]||w)}</option>`).join('')}</select>
     <select data-f="shot" aria-label="샷">${opts(uniq('shot',SHOT_ORDER),F.shot,'모든 샷')}</select>
@@ -59,7 +55,7 @@ function render(){if(panel.hidden||!panel.isConnected||panel.closest('[hidden]')
     <div class="rf-actions"><button class="btn sm${F.similar?' dark':''}" data-act="rfsimilar" aria-pressed="${F.similar}">비슷한 컷 순</button>${edit?'<button class="btn sm" data-act="rfreset">자동 추천으로</button>':''}</div>`:'<p class="rf-hint">캔버스에서 컷을 고르면 그 컷에 바로 쓸 수 있어요. 결과를 컷 위로 끌어다 놓아도 돼요.</p>'}</div>
   ${pickedRef?detail(pickedRef,!!p):''}
   <div class="rf-count">${list.length.toLocaleString()}컷${TEXT?'':' · 내용 검색 준비 중'}</div>
-  <div class="rf-grid">${list.slice(0,shown).map(r=>`<button class="rf-item${r.source_cut===picked?' on':''}${cur&&cur.source_cut===r.source_cut?' cur':''}" data-ref-id="${r.source_cut}" draggable="true" title="${esc(r.source_cut+' · '+r.shot+'·'+r.angle+(TEXT?.[r.source_cut]?.text?' · '+TEXT[r.source_cut].text:'')+detailHit(r))}">
+  <div class="rf-grid">${list.slice(0,shown).map(r=>`<button class="rf-item${r.source_cut===picked?' on':''}${cur&&cur.source_cut===r.source_cut?' cur':''}" data-ref-id="${r.source_cut}" draggable="true" title="${esc(r.source_cut+' · '+r.shot+'·'+r.angle+(TEXT?.[r.source_cut]?.text?' · '+TEXT[r.source_cut].text:''))}">
     <img loading="lazy" decoding="async" src="${r.fixed?r.src:(r.thumb||cutThumb(r.source_cut)||r.src)}" onerror="this.onerror=null;this.src='${r.src}'" alt="" draggable="false"><span>${r.source_cut.slice(3)} · ${esc(r.shot)}</span>${r.fit!=='ok'&&!r.fixed?'<i>제외</i>':''}</button>`).join('')}</div>
   ${list.length>shown?`<button class="btn sm rf-more" data-act="rfmore">더 보기 (${(list.length-shown).toLocaleString()})</button>`:''}`;
 }

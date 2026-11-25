@@ -5,7 +5,7 @@
 선택지는 4개: 지금 라벨 + 모델 확률이 높은 라벨들(확률 순). 이미 본 컷(docs/ml/shot-audit.csv 앞 300컷 등)은 뺌
 사용: python3 tools/ml/make_review_queue.py [--shot 300] [--emo 150] [--role 150] [--keep]
 --keep: 지금 큐의 항목(이미 판정한 컷 포함)은 그대로 두고 모자란 만큼 새로 채움(브라우저에 남은 판정 결과가 그대로 맞물림)
-항목마다 앞뒤 컷·다른 DB 값·상세 설명을, meta.examples에 라벨마다 대표 컷 3개를 넣어 판정 화면에서 보여 줌
+항목마다 앞뒤 컷·다른 DB 값을, meta.examples에 라벨마다 대표 컷 3개를 넣어 판정 화면에서 보여 줌
 필요: tools/ml/cache/img-clip.npz, img-dino.npz, text-e5base.npz (embed_image.py·embed_text.py)
 """
 import sys, json, csv, pathlib, datetime, collections, numpy as np
@@ -46,7 +46,6 @@ def enrich(it):
     if r is None: return it
     it['prev'] = near(i, -1); it['next'] = near(i, 1)
     it['info'] = {k: r[I(k)] for k in INFO if r[I(k)] not in (None, '')}
-    it['detail'] = str(r[I('상세 내용과 연출')] or '')[:220]
     m = CM.get(i)
     if m: it['meta'] = {'머리': m['머리 수'], '머리 높이': round(m['머리 높이 비'] * m['크기'][1] / m['크기'][0], 2) if '머리 높이 비' in m else None, '주인공': (m.get('주인공') or {}).get('가로'), '흑백': m['흑백']}
     return it
