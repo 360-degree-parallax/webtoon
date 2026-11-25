@@ -24,7 +24,7 @@ const TOOLS=[
   0,
   {id:'crop',name:'그림 편집',key:'C',icon:'<path d="M6.5 2.5v15h15M2.5 6.5h15v15"/>',hint:'컷을 누르면 그림 확대·이동 모드 · Ctrl+휠 확대, 끌어 이동'},
   0,
-  // 말풍선은 오른쪽 에셋 패널에서만 넣음(접근 경로 하나)
+  {id:'balloon',name:'말풍선',key:'B',sub:true,icon:'<path d="M12 4c5 0 9 3.1 9 7s-4 7-9 7c-1 0-2-.1-2.9-.4L4.5 19.5l1.4-3.6A6.6 6.6 0 0 1 3 11c0-3.9 4-7 9-7z"/>',hint:'컷 안을 누른 자리에 말풍선 · 형태는 막대 왼쪽에서 고르거나 아이콘을 길게 눌러요'},
   {id:'caption',name:'나레이션',key:'T',icon:'<rect x="3" y="6" width="18" height="12" rx="1"/><path d="M7 10.5h10M7 14h6"/>',hint:'컷 안을 누른 자리에 나레이션 상자(한 컷에 여러 개)'},
   {id:'sfx',name:'효과음',key:'S',icon:'<path d="M12 2.5l1.9 5.6 5.6-1.9-3.6 4.6 4.9 2.8-5.8.9.8 5.9-3.8-4.4-3.8 4.4.8-5.9-5.8-.9 4.9-2.8L4.5 6.2l5.6 1.9z"/>',hint:'컷 안을 누른 자리에 효과음 · 문구는 막대에서 바꿔요'},
   0,
@@ -294,10 +294,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!coachEl.hidden)coa
 addEventListener('scroll',()=>{if(!coachEl.hidden)coachEl.hidden=true},{passive:true});
 function coachReset(){coachSeen={};try{localStorage.removeItem(COACH_KEY)}catch(_){}flash('안내를 다시 보여 드릴게요');coachSoon()}
 function coachSoon(){setTimeout(()=>{if(!inEdit()||!coachEl.hidden)return;
-  if(!coachSeen.start)coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 말풍선은 오른쪽 에셋 · 나레이션·효과음·효과선은 왼쪽 도구 · <kbd>?</kbd> 단축키 모음');
+  if(!coachSeen.start)coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 말풍선·나레이션·효과음·효과선은 왼쪽 도구(말풍선은 에셋에서도) · <kbd>?</kbd> 단축키 모음');
   else if(selectedLetter)coach('letter',selectedLetter,'<b>식자 고르기</b> 더블클릭이나 Enter로 글 고치기 · 모서리로 크기 · 파란 회전 손잡이(↻)로 돌리기 · Shift+클릭으로 여러 개');
   else if(pageSelection&&reader.querySelector('[data-slot-index].sel'))coach('cut',ctx.querySelector('[data-ctx=fshape]')||reader.querySelector('[data-slot-index].sel'),'<b>컷 고르기</b> 모퉁이를 끌면 컷 크기 · 컷을 더블클릭하거나 「프레임 모양」을 누르면 사선 칸 · 그림 확대·이동은 「그림 편집」');
-  else coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 말풍선은 오른쪽 에셋 · 나레이션·효과음·효과선은 왼쪽 도구 · <kbd>?</kbd> 단축키 모음')},350)}
+  else coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 말풍선·나레이션·효과음·효과선은 왼쪽 도구(말풍선은 에셋에서도) · <kbd>?</kbd> 단축키 모음')},350)}
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);coachSoon();return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);if(selectedLetter)coachSoon();return r}}
 const FPRESETS=[['네모',0,0],['위 사선',-8,0],['아래 사선',0,8],['평행 사선',-8,-8],['쐐기',-8,8]];
@@ -984,5 +984,5 @@ propsBody.querySelector('#wballoonsize').addEventListener('input',()=>{const r=c
 renderDocks();renderCtx();renderAlign();syncHelp();
 Object.keys(PANELS).forEach(k=>{if(!LAYOUT.panels[k].collapsed&&LAYOUT.panels[k].dock!=='X')onOpen(k)});mountOff();assetTab(PRESETS[LAYOUT.preset]?.tab||'rec');
 reader.classList.toggle('artboards',AB);if(AB)RoughStudio.applyZoom();
-window.RoughWS={cmOpen,multiCut,swatch,openColorPop,fitLetters,styleMenu,deleteLetterEls,get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI,lkey,resolve,toggleMulti,clearMulti,markMulti,renderCtx,renderAlign,withKey,groupBy,openInlineText,typing,refreshText,flash};
+window.RoughWS={deletePart,cmOpen,multiCut,swatch,openColorPop,fitLetters,styleMenu,deleteLetterEls,get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI,lkey,resolve,toggleMulti,clearMulti,markMulti,renderCtx,renderAlign,withKey,groupBy,openInlineText,typing,refreshText,flash};
 })();

@@ -23,7 +23,8 @@ function swatch(k){try{return WS.swatch(k)}catch(_){return ''}}
 
 // 다시 그리는 동안 잠깐 선택이 비었다가 같은 식자가 다시 골라지므로, 숨기기는 한 박자 늦게(문구 칸 커서 유지)
 let hideT=0;
-function render(full=true){const L=selectedLetter,k=kindOf(L);if(!L||!k||!document.querySelector('#v-webtoon:not([hidden])')){clearTimeout(hideT);hideT=setTimeout(()=>{if(!selectedLetter||!kindOf(selectedLetter)){card.hidden=true;cur=null;lastKey=''}},0);return}
+function render(full=true){const L=selectedLetter,k=kindOf(L);if(!L&&partNow()&&document.querySelector('#v-webtoon:not([hidden])')){clearTimeout(hideT);renderPart();return}
+  if(!L||!k||!document.querySelector('#v-webtoon:not([hidden])')){clearTimeout(hideT);hideT=setTimeout(()=>{if(!selectedLetter||!kindOf(selectedLetter)){card.hidden=true;cur=null;lastKey=''}},0);return}
   clearTimeout(hideT);card.hidden=false;
   const key=keyOf(L),id=L.dataset.letter,lk=key+'|'+id,o=setOf(L),text=L.dataset.letterText||'';const [si,slot]=key.split(':').map(Number);
   if(!full&&lk===lastKey&&card.querySelector('[data-c=text]')){paintParts(L,k,o);return}
@@ -96,6 +97,48 @@ card.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b||b.
     WS.cmOpen([...(kindOf(L)!=='sfx'?[{label:'스타일 적용',sub:()=>WS.styleMenu()}]:[]),{label:'복제',key:'Ctrl+D',run:()=>window.RoughClip?.dup?.()},{label:locked?'잠금 풀기':'잠그기',run:()=>WS.toggleLock(keyOf(L),L.dataset.letter)},{sep:1},{label:'지우기',key:'Del',danger:1,run:()=>WS.deleteLetterEls([L])}],r.right-200,r.bottom+4);return}
   if(c==='who'){whoMenu(b);return}
   if(c==='split'){splitBalloon();return}});
+
+// ---------- 배경 · 효과선 · 이미지 소재 카드(레이어 패널에서 그 줄을 골랐을 때) ----------
+function partNow(){const lp=window.layerPart;return lp&&lp.key===pageSelection&&(lp.what==='bg'||/^(line|ov):/.test(lp.what))?lp:null}
+function editPart(fn,{tree=true}={}){const lp=partNow();if(!lp)return;const g=[...document.querySelectorAll('#reader [data-slot-index]')].find(x=>pageKey(x)===lp.key);if(g&&WS.isLocked(g,'cut')){WS.flash('잠긴 컷이에요');return}
+  WS.withKey(lp.key,()=>fn(pageSettings(true)));saveScenes();renderWebtoon();window.layerPart=lp;if(tree&&typeof editTree==='function')editTree();renderPart()}
+function renderPart(){const lp=partNow();if(!lp){card.hidden=true;return}const [si,slot]=lp.key.split(':').map(Number),e=SCENES[si]?.pageEdits?.[slot]||{};lastKey='part|'+lp.key+'|'+lp.what;card.hidden=false;
+  const sec=(t,body)=>`<div class="lc-row"><span class="lc-l">${t}</span><div class="lc-v">${body}</div></div>`;let kind,h='';
+  if(lp.what.startsWith('line:')){const kd=lp.what.slice(5),L=e.materialLines?.[kd]||{};kind='line';
+    h=sec('종류',`<span class="lc-seg"><button data-p="kind" data-v="focus" aria-pressed="${kd==='focus'}">집중선</button><button data-p="kind" data-v="speed" aria-pressed="${kd==='speed'}">속도선</button></span>`)+
+      sec('색',`<button class="lc-dot" data-p="lcolor"><i style="background:${L.color||'#27211e'}"></i>${esc(L.color||'#27211e')}</button>`)+
+      sec('밀도',`<input type="range" data-p="density" min="12" max="90" step="1" value="${L.density||50}"><output data-p="densv">${L.density||50}</output>`)+
+      sec('위치',`<button class="lc-btn" data-p="replace">${kd==='speed'?'방향 다시 긋기':'중심 다시 찍기'}</button>`);
+    h=`<header class="lc-h"><b>${kd==='speed'?'속도선':'집중선'}</b><span class="lc-cut">${slot+1}컷 · 효과선</span><span class="grow"></span><button class="lc-ib" data-p="del" title="지우기 (Delete)">🗑</button><button class="lc-ib" data-p="close" title="선택 풀기 (Esc)">×</button></header>`+h}
+  else if(lp.what==='bg'){kind='bg';const pres=(typeof PAGE_BACKGROUNDS!=='undefined'?PAGE_BACKGROUNDS:[]).map((p,i)=>p?[i,p.name]:null).filter(Boolean);
+    const thumb=i=>document.querySelector(`#wbgpresets [data-bg-preset="${i}"] svg`)?.outerHTML||'';
+    const imgs=typeof IMG!=='undefined'?Object.values(IMG.bg||{}).sort((a,b)=>(a.at||0)-(b.at||0)):[];
+    h=`<header class="lc-h"><b>배경</b><span class="lc-cut">${slot+1}컷 · 아래 전환</span><span class="grow"></span><button class="lc-ib" data-p="del" title="배경 모두 지우기 (Delete)">🗑</button><button class="lc-ib" data-p="close" title="선택 풀기 (Esc)">×</button></header>`+
+      sec('배경색',`<button class="lc-dot" data-p="bgcolor"><i style="background:${/^#/.test(e.background||'')?e.background:'#ffffff'}"></i>${/^#/.test(e.background||'')?esc(e.background):'기본(흰색)'}</button>${e.background?'<button class="lc-btn" data-p="bgcolor0">없애기</button>':''}`)+
+      sec('전환 질감',`<div class="lc-grid lc-bg"><button data-p="trans" data-v="0" aria-pressed="${!e.transition}" title="없음"><span class="lc-auto">없음</span></button>${pres.map(([i,n])=>`<button data-p="trans" data-v="${i}" aria-pressed="${+e.transition===i}" title="${esc(n)}">${thumb(i)}<small>${esc(String(n).split(' ')[0])}</small></button>`).join('')}</div>`)+
+      sec('배경 이미지',imgs.length?`<div class="lc-grid lc-bg"><button data-p="bgimg" data-v="" aria-pressed="${!e.bgImage}" title="없음"><span class="lc-auto">없음</span></button>${imgs.map(r=>`<button data-p="bgimg" data-v="${esc(r.id)}" aria-pressed="${e.bgImage===r.id}" title="${esc(r.name||'')}"><img src="${r.src}" alt=""></button>`).join('')}</div>`:'<span class="lc-auto">에셋 › 배경에서 이미지를 올리면 여기서 골라요</span>')+
+      (e.bgImage?sec('이미지 진하기',`<input type="range" data-p="bgop" min="10" max="100" step="5" value="${Math.round((e.bgImageOp??1)*100)}"><output data-p="bgopv">${Math.round((e.bgImageOp??1)*100)}%</output>`):'')}
+  else{kind='ov';const n=+lp.what.slice(3),o=e.overlays?.[n]||{};
+    h=`<header class="lc-h"><b>이미지 소재 ${n+1}</b><span class="lc-cut">${slot+1}컷</span><span class="grow"></span><button class="lc-ib" data-p="del" title="빼기 (Delete)">🗑</button><button class="lc-ib" data-p="close" title="선택 풀기 (Esc)">×</button></header>`+
+      sec('자세히',`<button class="lc-btn" data-p="ovmore">속성 서랍에서 크기·위치·투명도</button>`)}
+  card.innerHTML=h;card.dataset.kind=kind;card.classList.remove('locked');applyFloat?.()}
+card.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b||b.tagName==='INPUT')return;const lp=partNow();if(!lp)return;const c=b.dataset.p,v=b.dataset.v;
+  if(c==='close'){if(typeof clearAllSelection==='function')clearAllSelection();card.hidden=true;return}
+  if(c==='del'){WS.deletePart?.(lp.key,lp.what);card.hidden=true;return}
+  if(c==='kind'){const kd=lp.what.slice(5);if(v===kd)return;editPart(st=>{const ls=st.materialLines||{};const x={...ls[kd],kind:v};delete ls[kd];ls[v]=x;st.materialLines=ls});window.layerPart={key:lp.key,what:'line:'+v};if(typeof editTree==='function')editTree();renderPart();return}
+  if(c==='lcolor'){const kd=lp.what.slice(5);return WS.openColorPop(b,'color',{cur:pageSettings()?.materialLines?.[kd]?.color||'#27211e',apply:col=>{editPart(st=>{if(st.materialLines?.[kd])st.materialLines[kd].color=col},{tree:false});WS.flash('효과선 색을 바꿨어요')}})}
+  if(c==='replace'){const kd=lp.what.slice(5);WS.setTool(kd);WS.flash(kd==='speed'?'컷 안에서 움직임 방향으로 끌어 주세요 · 새 방향으로 바뀌어요':'컷 안에서 새 중심을 눌러 주세요');return}
+  if(c==='bgcolor'){return WS.openColorPop(b,'color',{cur:pageSettings()?.background||'#ffffff',apply:col=>{editPart(st=>{st.background=col});WS.flash('배경색을 바꿨어요')}})}
+  if(c==='bgcolor0'){editPart(st=>{delete st.background});return}
+  if(c==='trans'){editPart(st=>{if(+v)st.transition=+v;else delete st.transition});return}
+  if(c==='bgimg'){editPart(st=>{if(v)st.bgImage=v;else{delete st.bgImage;delete st.bgImageOp}});return}
+  if(c==='ovmore'){try{WS.openPanel('props')}catch(_){}return}});
+card.addEventListener('input',e=>{const c=e.target.dataset.p;if(c==='density')card.querySelector('[data-p=densv]').textContent=e.target.value;if(c==='bgop')card.querySelector('[data-p=bgopv]').textContent=e.target.value+'%'});
+card.addEventListener('change',e=>{const c=e.target.dataset.p,lp=partNow();if(!lp)return;
+  if(c==='density'){const kd=lp.what.slice(5),v=+e.target.value;editPart(st=>{if(st.materialLines?.[kd])st.materialLines[kd].density=v},{tree:false})}
+  if(c==='bgop'){const v=+e.target.value/100;editPart(st=>{st.bgImageOp=v},{tree:false})}});
+// 레이어 패널을 다시 그릴 때(줄을 고를 때) 카드도
+{const _et=editTree;editTree=function(...a){const r=_et(...a);if(!selectedLetter)render(true);return r}}
 
 // 컷 기준 가로 정렬(왼·가운데·오른)
 function alignInCut(L,mode){const g=L.closest('[data-slot-index]'),f=JSON.parse(g.dataset.frame),svg=g.ownerSVGElement,m=svg.getScreenCTM().inverse(),r=(L.querySelector('[data-balloon]')||L).getBoundingClientRect();
