@@ -1156,6 +1156,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 #v-plan .pshape .s-open{background:#8b95a1}#v-plan .pshape .s-dev{background:#4e5968}#v-plan .pshape .s-rise{background:#333d4b}#v-plan .pshape .s-hook{background:#191f28}
 #v-plan .pshape small{font-weight:400;opacity:.8;margin-left:4px}
 #v-plan .pvol2{margin-top:12px}#v-plan .pshape .s-hook{min-width:72px}#v-plan .pshape .s-open{min-width:64px}
+#v-plan .pshape .s-k1{background:#8b95a1}#v-plan .pshape .s-k2{background:#6b7684}#v-plan .pshape .s-k3{background:#333d4b}#v-plan .pshape .s-k4{background:#191f28}
 </style>
 </head>
 <body>
@@ -1235,15 +1236,15 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
       <section><div class="psh"><h3><i>1</i>기획</h3><span>작품 기획·줄거리·이번 화 메모를 붙여넣어요</span></div>
         <textarea name="prompt" rows="6" class="pbig" placeholder="예: 몰락한 귀족가의 하녀 준이 정체를 숨긴 남자 에드가를 만나는 이야기. 1화는 첫 만남과 의심."></textarea></section>
       <section data-plan-mode="webtoon"><div class="psh"><h3><i>2</i>한 화 분량</h3><span>연재작 44화 실측 기준 · 컷은 그림 칸만 세요</span></div>
-        <div class="pline"><span>회차</span><div class="chips" data-chips="epType"><button type="button" data-v="first">1화(첫 화)</button><button type="button" data-v="regular">일반 회차</button><button type="button" data-v="short">짧은 회차·번외</button></div>
-          <select name="epType" hidden><option value="first">1화</option><option value="regular" selected>일반 회차</option><option value="short">짧은 회차</option></select></div>
+        <div class="pline"><span>회차</span><div class="chips" data-chips="epType"><button type="button" data-v="first">1화(첫 화)</button><button type="button" data-v="regular">일반 회차</button><button type="button" data-v="short">짧은 회차·번외</button><button type="button" data-v="mini">4~6컷 만화</button></div>
+          <select name="epType" hidden><option value="first">1화</option><option value="regular" selected>일반 회차</option><option value="short">짧은 회차</option><option value="mini">4~6컷 만화</option></select></div>
         <div class="pvol pvol2">
           <label class="pnum"><span>컷</span><input type="number" name="cutCount" min="10" max="200" placeholder="75"></label>
-          <label class="pnum"><span>씬</span><input type="number" name="sceneCount" min="1" max="20" placeholder="자동"></label>
-          <p class="pest" id="plan-est" aria-live="polite"></p>
+          <label class="pnum" data-not-mini><span>씬</span><input type="number" name="sceneCount" min="1" max="20" placeholder="자동"></label>
+          <div class="chips" data-mini-only hidden><button type="button" data-mini-cuts="4">4컷</button><button type="button" data-mini-cuts="5">5컷</button><button type="button" data-mini-cuts="6">6컷</button></div><p class="pest" id="plan-est" aria-live="polite"></p>
         </div>
         <div class="pshape" id="plan-shape" aria-hidden="true"></div>
-        <div class="pline"><span>시작</span><div class="chips" data-chips="coldOpen"><button type="button" data-v="yes">타이틀 전 장면부터(콜드 오픈)</button><button type="button" data-v="no">타이틀부터</button></div>
+        <div class="pline" data-not-mini><span>시작</span><div class="chips" data-chips="coldOpen"><button type="button" data-v="yes">타이틀 전 장면부터(콜드 오픈)</button><button type="button" data-v="no">타이틀부터</button></div>
           <select name="coldOpen" hidden><option value="yes" selected>콜드 오픈</option><option value="no">타이틀부터</option></select></div>
       </section>
       <section data-plan-mode="marketing" hidden><div class="psh"><h3><i>2</i>분량</h3><span>섹션 수</span></div>
@@ -1256,8 +1257,8 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
         </div></section>
       <section data-plan-mode="webtoon"><div class="psh"><h3><i>3</i>이번 화 방향</h3><span>비워 두면 기획에서 알아서 잡아요</span></div>
         <label class="pline"><span>보여줄 변화</span><input name="change" placeholder="예: 낯선 인물에서 믿고 싶은 인물로"></label>
-        <div class="pline"><span>마지막 컷</span><div class="chips" data-chips="ending"><button type="button" data-v="aftertaste">여운</button><button type="button" data-v="hook">다음 화 궁금증</button><button type="button" data-v="twist">반전 공개</button><button type="button" data-v="relationship">관계 변화</button></div>
-          <select name="ending" hidden><option value="aftertaste">여운</option><option value="hook">다음 화 궁금증</option><option value="twist">반전 공개</option><option value="relationship">관계 변화</option></select></div>
+        <div class="pline"><span>마지막 컷</span><div class="chips" data-chips="ending"><button type="button" data-v="aftertaste">여운</button><button type="button" data-v="hook">다음 화 궁금증</button><button type="button" data-v="twist">반전 공개</button><button type="button" data-v="relationship">관계 변화</button><button type="button" data-v="punch">웃음 포인트(펀치라인)</button></div>
+          <select name="ending" hidden><option value="aftertaste">여운</option><option value="hook">다음 화 궁금증</option><option value="twist">반전 공개</option><option value="relationship">관계 변화</option><option value="punch">웃음 포인트</option></select></div>
         <div class="pline"><span>대사 양</span><div class="chips" data-chips="density"><button type="button" data-v="low">적게</button><button type="button" data-v="normal">보통</button><button type="button" data-v="high">많게</button></div>
           <select name="density" hidden><option value="low">적게</option><option value="normal" selected>보통</option><option value="high">많게</option></select></div></section>
       <section data-plan-mode="marketing" hidden><div class="psh"><h3><i>3</i>설득 흐름</h3></div>

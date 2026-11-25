@@ -6,8 +6,12 @@ const defaults=()=>({prompt:'',lengthMode:'exact',count:6,min:5,max:7,source:'re
   audience:'first',uiCount:2,placement:'auto',positions:'',behavior:'static',epType:'regular',sceneCount:'',coldOpen:'yes'});
 // 한 화 분량: 연재작 44화 실측(docs/webtoon-episode-planning.md) — 1화 약 100컷, 일반 75, 짧은 회차 40.
 // 그림 컷당 휴대폰 약 1.03화면, 말풍선 약 1.4개, 씬당 약 11컷. 마지막 씬이 가장 길고 콜드 오픈은 약 12%
-const EP_PRESET={first:100,regular:75,short:40};
-export function episodePlan(row){const cuts=Math.max(10,Math.min(200,Number(row.cutCount)||EP_PRESET[row.epType]||75)),fixed=Number(row.sceneCount)||0;
+const EP_PRESET={first:100,regular:75,short:40,mini:4};
+// 4~6컷 만화(인스타툰·4컷): 씬 1개, 콜드 오픈 없음, 컷마다 기승전결 역할
+const MINI_BEATS={3:['기','전','결'],4:['기','승','전','결'],5:['기','승','승','전','결'],6:['기','승','승','전','결','여운'],7:['기','승','승','승','전','결','여운'],8:['기','승','승','승','전','전','결','여운']};
+export function episodePlan(row){
+  if(row.epType==='mini'){const cuts=Math.max(3,Math.min(8,Number(row.cutCount)||4));return {mini:true,cuts,scenes:1,lo:1,hi:1,fixed:true,phone:Math.max(1,Math.round(cuts*1.03)),balloons:Math.round(cuts*1.6),perScene:cuts,open:0,dev:0,rise:0,hook:1,beats:MINI_BEATS[cuts]}}
+  const cuts=Math.max(10,Math.min(200,Number(row.cutCount)||EP_PRESET[row.epType]||75)),fixed=Number(row.sceneCount)||0;
   const auto=Math.max(2,Math.round(cuts/11)),lo=fixed||Math.max(2,Math.round(cuts/15)),hi=fixed||Math.max(lo,Math.round(cuts/8));
   const open=row.coldOpen==='no'?0:Math.max(3,Math.round(cuts*.12)),hook=Math.max(3,Math.min(5,Math.round(cuts*.05))),rise=Math.round(cuts*.25),dev=Math.max(1,cuts-open-hook-rise);
   return {cuts,scenes:fixed||auto,lo,hi,fixed:!!fixed,phone:Math.round(cuts*1.03),balloons:Math.round(cuts*1.4),perScene:Math.round(cuts/(fixed||auto)),open,dev,rise,hook}}
@@ -53,14 +57,19 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
   }
   function paintPlan(){const row=current().form,P=episodePlan(row),est=root.querySelector('#plan-est'),shape=root.querySelector('#plan-shape');if(!est)return;
     settings.namedItem('cutCount').placeholder=String(EP_PRESET[row.epType]||75);
-    est.innerHTML='씬 <b>'+(P.fixed?P.scenes:'약 '+P.scenes)+'개</b>'+(P.fixed?'':' (자동)')+' · 씬당 약 <b>'+P.perScene+'컷</b><br>휴대폰 약 <b>'+P.phone+'화면</b> · 말풍선 약 <b>'+P.balloons+'개</b>';
+    const mini=!!P.mini,ci=settings.namedItem('cutCount');ci.min=mini?3:10;ci.max=mini?8:200;
+    root.querySelectorAll('[data-not-mini]').forEach(e=>e.hidden=mini);root.querySelectorAll('[data-mini-only]').forEach(e=>e.hidden=!mini);
+    root.querySelectorAll('[data-mini-cuts]').forEach(b=>b.setAttribute('aria-pressed',String(mini&&Number(b.dataset.miniCuts)===P.cuts)));
     const seg=(cls,label,n)=>n?'<div class="'+cls+'" style="flex:'+n+'" title="'+label+' 약 '+n+'컷">'+label+'<small>'+n+'</small></div>':'';
+    if(mini){est.innerHTML='씬 <b>1개</b> · 한 컷에 대사 <b>1~2개</b><br>마지막 컷에 반전·웃음 포인트';
+      const cls={기:'s-k1',승:'s-k2',전:'s-k3',결:'s-k4',여운:'s-k1'};shape.innerHTML=P.beats.map((b,i)=>'<div class="'+cls[b]+'" style="flex:1" title="'+(i+1)+'컷 · '+b+'">'+(i+1)+'<small>'+b+'</small></div>').join('');return}
+    est.innerHTML='씬 <b>'+(P.fixed?P.scenes:'약 '+P.scenes)+'개</b>'+(P.fixed?'':' (자동)')+' · 씬당 약 <b>'+P.perScene+'컷</b><br>휴대폰 약 <b>'+P.phone+'화면</b> · 말풍선 약 <b>'+P.balloons+'개</b>';
     shape.innerHTML=seg('s-open','오프닝',P.open)+seg('s-dev','전개',P.dev)+seg('s-rise','고조',P.rise)+seg('s-hook','엔딩 훅',P.hook)}
   function config(){
     const row=current().form;
     const P=mode==='webtoon'?episodePlan(row):null;
     return validateSettings({...row,mode,exact:mode==='webtoon'?P.fixed:row.lengthMode==='exact',count:mode==='webtoon'?P.scenes:Number(row.count),min:mode==='webtoon'?P.lo:Number(row.min),max:mode==='webtoon'?P.hi:Number(row.max),
-      cutCount:mode==='webtoon'?P.cuts:0,structure:P?{episode:row.epType,coldOpen:row.coldOpen!=='no',openCuts:P.open,hookCuts:P.hook,note:'연재작 실측: 마지막 씬이 가장 길고, 감정 강도 최고점은 마지막 10% 안, 마지막 컷은 공개(새 정보·표정·대사)'}:undefined,uiCount:Number(row.uiCount),positions:row.positions.trim().split(/[,，\s]+/).filter(Boolean).map(Number),
+      cutCount:mode==='webtoon'?P.cuts:0,structure:P?(P.mini?{episode:'mini',coldOpen:false,beats:P.beats,note:'4~6컷 만화: 씬 1개, 컷마다 beats 역할(기·승·전·결·여운), 한 컷에 대사 1~2개, 첫 컷에서 상황을 바로 보여 주고 마지막 컷에서 반전·웃음 포인트로 끝낸다'}:{episode:row.epType,coldOpen:row.coldOpen!=='no',openCuts:P.open,hookCuts:P.hook,note:'연재작 실측: 마지막 씬이 가장 길고, 감정 강도 최고점은 마지막 10% 안, 마지막 컷은 공개(새 정보·표정·대사)'}):undefined,uiCount:Number(row.uiCount),positions:row.positions.trim().split(/[,，\s]+/).filter(Boolean).map(Number),
       fixedLines:splitLines(row.fixed),story:mode==='webtoon'?getStory():undefined});
   }
   function writeWarning(){
@@ -170,7 +179,8 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     if(busy||!modeKnown(next)||next===mode)return;
     takeSettings();mode=next;configure();render();updateStatus('');persist();
   });
-  root.addEventListener('click',event=>{const b=event.target.closest('[data-chips] [data-v]');if(!b||busy)return;const name=b.closest('[data-chips]').dataset.chips,el=settings.namedItem(name);if(!el)return;el.value=b.dataset.v;if(name==='epType')settings.namedItem('cutCount').value=String(EP_PRESET[b.dataset.v]);takeSettings();configure();persist()});
+  root.addEventListener('click',event=>{const m=event.target.closest('[data-mini-cuts]');if(!m||busy)return;settings.namedItem('cutCount').value=m.dataset.miniCuts;takeSettings();configure();persist()});
+  root.addEventListener('click',event=>{const b=event.target.closest('[data-chips] [data-v]');if(!b||busy)return;const name=b.closest('[data-chips]').dataset.chips,el=settings.namedItem(name);if(!el)return;el.value=b.dataset.v;if(name==='epType'){settings.namedItem('cutCount').value=String(EP_PRESET[b.dataset.v]);if(b.dataset.v==='mini'){settings.namedItem('ending').value='punch';settings.namedItem('sceneCount').value=''}else if(settings.namedItem('ending').value==='punch')settings.namedItem('ending').value='aftertaste'}takeSettings();configure();persist()});
   form.addEventListener('input',()=>{takeSettings();persist();writeWarning();paintPlan()});
   form.addEventListener('change',()=>{takeSettings();configure();persist()});
   form.addEventListener('submit',event=>{event.preventDefault();generate()});
