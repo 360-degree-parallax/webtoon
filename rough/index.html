@@ -3721,6 +3721,12 @@ document.addEventListener('keydown',e=>{if(typeof VIEW==='undefined'||!UNDO_VIEW
   if(VIEW!=='webtoon')return;
   if(e.key==='Escape'&&materialMode){armMaterialLine('');return}
   if(e.key==='Escape'&&!typing&&selectedLetter){selectLetter(null);document.activeElement?.blur?.()}});
+// Esc = 고른 것 모두 풀기(식자·여러 식자·컷·여러 컷·씬·그림 편집·프레임 모양). 메뉴·창이 열려 있으면 그걸 먼저 닫고,
+// 글칸에 커서가 있으면 먼저 글칸에서 나오고(한 번 더 누르면 풀림), 넣기 도구를 들고 있으면 먼저 선택 도구로
+document.addEventListener('keydown',e=>{if(e.key!=='Escape'||typeof VIEW==='undefined'||VIEW!=='webtoon')return;
+  const t=e.target,typing=t&&t.closest&&t.closest('input,textarea,select,[contenteditable]'),cm=document.querySelector('.cmenu');
+  const busy=typing||(cm&&!cm.hidden)||document.querySelector('dialog[open]')||(document.querySelector('.readmode')&&!document.querySelector('.readmode').hidden)||gapDrag||document.querySelector('.tcpop')||(window.RoughWS&&RoughWS.tool!=='select');
+  if(busy)return;setTimeout(()=>clearAllSelection(),0)},true);
 
 // ---------- 보기 전환 ----------
 let VIEW='nai';
