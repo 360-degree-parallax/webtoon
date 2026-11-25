@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/gowun-batang@5.3.0/400.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/gowun-batang@5.3.0/700.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nanum-pen-script@5.3.0/400.css">
+<script>/* 실제로 보이는 테마(직접 고른 것 또는 시스템)를 data-scheme으로: 다크 전용 규칙이 시스템 다크에서도 걸리게 */(function(){var r=document.documentElement,m=matchMedia('(prefers-color-scheme: dark)');function s(){var t=r.dataset.theme;r.dataset.scheme=(t==='dark'||(!t&&m.matches))?'dark':'light'}try{var t=localStorage.getItem('rough-theme');if(t)r.dataset.theme=t}catch(e){}s();m.addEventListener('change',s);new MutationObserver(s).observe(r,{attributes:true,attributeFilter:['data-theme']})})()</script>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
