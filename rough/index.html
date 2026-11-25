@@ -3045,7 +3045,14 @@ function saveGap(layout,reset=false){
   saveScenes();
 }
 function clampGap(size){return Math.max(0,Math.min(MAX_PAGE_GAP,Math.round(size)))}
+// 고른 것 전부 풀기(식자·여러 식자·컷·여러 컷·씬·그림 편집·프레임 모양) — 컷 사이 여백을 끌 때 손잡이·상황 막대가 가리지 않게
+function clearAllSelection(){window.RoughWS?.clearMulti?.();window.RoughStudio?.clearMC?.();if(window.RoughStudio?.selScene!=null)window.RoughStudio.selectScene(null);
+  if(typeof cropKey!=='undefined'&&cropKey)window.RoughStudio?.setCrop?.(null);if(typeof frameShapeKey!=='undefined'&&frameShapeKey)setFrameShape(null);
+  selectLetter(null);window.layerPart=null;selectPageCut(null);
+  pageReader.querySelector('.cut-selected')?.classList.remove('cut-selected');pageReader.querySelectorAll('.frame-handles.sel').forEach(h=>h.classList.remove('sel'));pageReader.querySelectorAll('[data-slot-index].sel').forEach(g=>g.classList.remove('sel'));
+  if(typeof editTree==='function')editTree();window.RoughWS?.renderCtx?.()}
 function startGapDrag(gap,e){
+  clearAllSelection();
   const layout=gapLayout(gap);
   e.preventDefault();
   gap.focus({preventScroll:true});
