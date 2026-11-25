@@ -111,7 +111,7 @@ document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||document
   if(mod&&!e.altKey&&!e.shiftKey&&k==='v'){if(CLIP.length){e.preventDefault();doPaste()}return}
   if(mod&&!e.altKey&&!e.shiftKey&&k==='d'){e.preventDefault();doDup();return}
   if(mod&&(e.code==='BracketRight'||e.code==='BracketLeft')&&selectedLetter){e.preventDefault();zMove(e.code==='BracketRight'?(e.shiftKey?'front':'up'):(e.shiftKey?'back':'down'));return}
-  if(!mod&&!e.altKey&&e.key==='Enter'&&selectedLetter&&/^(dialog|caption)/.test(selectedLetter.dataset.letter)){e.preventDefault();openInlineText(selectedLetter);return}
+  if(!mod&&!e.altKey&&e.key==='Enter'&&selectedLetter&&/^(dialog|caption)/.test(selectedLetter.dataset.letter)){e.preventDefault();if(!window.RoughCard?.focus?.())openInlineText(selectedLetter);return}  // Enter = 오른쪽 편집 카드 문구 칸(없으면 인라인)
   if(!mod&&!e.altKey&&e.key==='Tab'&&(selectedLetter||pageSelection)){const g=selectedLetter?.closest('[data-slot-index]')||groupBy(pageSelection);if(!g)return;
     const all=[...reader.querySelectorAll('[data-slot-index]')].flatMap(topLetters);if(!all.length)return;e.preventDefault();
     let i=selectedLetter?all.indexOf(selectedLetter):all.findIndex(L=>L.closest('[data-slot-index]')===g)-1;i=(i+(e.shiftKey?-1:1)+all.length)%all.length;

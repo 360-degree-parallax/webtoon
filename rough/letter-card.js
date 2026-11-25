@@ -1,0 +1,139 @@
+// 편집 카드: 고른 식자(말풍선·나레이션·효과음)를 오른쪽 패널(에셋 자리) 맨 위에서 한 번에 고침.
+// 에셋에서 넣은 직후 · 「문구 고치기」 · Enter가 모두 여기로 옴. 고치는 대로 캔버스에 반영, Ctrl+Z로 되돌림(docs/balloon-edit-plan.md)
+(function(){
+const WS=window.RoughWS;if(!WS)return;
+const host=document.querySelector('.ws-assets');if(!host)return;
+const card=document.createElement('section');card.className='lcard2';card.hidden=true;card.setAttribute('aria-label','고른 식자 고치기');host.insertBefore(card,host.firstChild);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const kindOf=L=>{const id=L?.dataset.letter||'';return id.startsWith('dialog-')?'dialog':id.startsWith('caption')?'caption':/^(effect-|material-)/.test(id)?'sfx':''};
+const KNAME={dialog:'말풍선',caption:'나레이션',sfx:'효과음'};
+const keyOf=L=>pageKey(L.closest('[data-slot-index]'));
+const setOf=L=>pageSettings(false,keyOf(L))?.letters?.[L.dataset.letter]||{};
+const find=(key,id)=>[...document.querySelectorAll('#reader [data-slot-index]')].find(g=>pageKey(g)===key)?.querySelector(`[data-letter="${CSS.escape(id)}"]`)||null;
+let cur=null,typing=0,lastKey='';
+
+// 바꾸고 다시 그린 뒤 같은 식자를 다시 고름(카드는 문구 칸을 건드리지 않고 나머지만 새로)
+function patch(p,{rerender=true}={}){const L=selectedLetter;if(!L)return;const key=keyOf(L),id=L.dataset.letter;
+  if(WS.isLocked(L.closest('[data-slot-index]'),id)){WS.flash('잠긴 식자예요');return}
+  WS.withKey(key,()=>{const st=pageSettings(true);const o={...st.letters?.[id],...p};for(const k of Object.keys(p))if(p[k]===null||p[k]===undefined||p[k]==='')delete o[k];(st.letters||={})[id]=o});
+  saveScenes();if(rerender){renderWebtoon();const L2=find(key,id);if(L2)selectLetter(L2)}}
+
+function textInfo(t){const n=[...t.replace(/\s/g,'')].length,lines=t.split('\n').length;return `${n}자 · ${lines}줄`}
+function swatch(k){try{return WS.swatch(k)}catch(_){return ''}}
+
+// 다시 그리는 동안 잠깐 선택이 비었다가 같은 식자가 다시 골라지므로, 숨기기는 한 박자 늦게(문구 칸 커서 유지)
+let hideT=0;
+function render(full=true){const L=selectedLetter,k=kindOf(L);if(!L||!k||!document.querySelector('#v-webtoon:not([hidden])')){clearTimeout(hideT);hideT=setTimeout(()=>{if(!selectedLetter||!kindOf(selectedLetter)){card.hidden=true;cur=null;lastKey=''}},0);return}
+  clearTimeout(hideT);card.hidden=false;
+  const key=keyOf(L),id=L.dataset.letter,lk=key+'|'+id,o=setOf(L),text=L.dataset.letterText||'';const [si,slot]=key.split(':').map(Number);
+  if(!full&&lk===lastKey&&card.querySelector('[data-c=text]')){paintParts(L,k,o);return}
+  lastKey=lk;cur={key,id};card.hidden=false;
+  const who=L.dataset.who||'',over=typeof o.text==='string';
+  const FP=Object.entries(FONT_PRESETS),fcur=o.font||PAGE_PRESET;
+  const sec=(t,body,cls='')=>`<div class="lc-row ${cls}"><span class="lc-l">${t}</span><div class="lc-v">${body}</div></div>`;
+  let h=`<header class="lc-h"><b>${KNAME[k]}</b><span class="lc-cut">${slot+1}컷</span>${k==='dialog'?`<button class="lc-who" data-c="who" aria-haspopup="menu" title="말하는 인물 바꾸기">${who?'@'+esc(who):'화자 없음'} ▾</button>`:k==='caption'?`<button class="lc-who" data-c="who" aria-haspopup="menu" title="종류 바꾸기">나레이션 ▾</button>`:''}<span class="grow"></span>
+    <button class="lc-ib" data-c="more" aria-haspopup="menu" title="더 보기">⋯</button><button class="lc-ib" data-c="close" title="선택 풀기 (Esc)">×</button></header>`;
+  h+=`<div class="lc-text"><textarea data-c="text" rows="${k==='sfx'?1:2}" spellcheck="false" aria-label="${KNAME[k]} 문구" placeholder="${k==='dialog'?'대사를 입력하세요':k==='caption'?'나레이션':'효과음'}">${esc(text)}</textarea>
+    <div class="lc-tm"><span data-c="info">${textInfo(text)}</span>${over?'<button class="lc-link" data-c="orig">작성 문구로</button>':''}<span data-c="split"></span></div></div>`;
+  if(k!=='sfx')h+=sec('글자',`<span class="lc-seg">${FP.map(([v,f])=>`<button data-c="font" data-v="${v}" aria-pressed="${v===fcur}" title="${esc(f.name)}" style="font-family:${f.family.replace(/"/g,"'")}">가</button>`).join('')}</span>
+      <span class="lc-seg">${[['bold','<b>B</b>'],['italic','<i>I</i>'],['underline','<u>U</u>']].map(([d,t])=>`<button data-c="deco" data-v="${d}" aria-pressed="${!!o[d]}">${t}</button>`).join('')}</span>
+      <button class="lc-dot" data-c="color" title="글자색"><i style="background:${o.color||'#161616'}"></i>글자</button><button class="lc-dot" data-c="outline" title="테두리색"><i class="${!o.outline||o.outline==='none'?'none':''}" style="background:${o.outline&&o.outline!=='none'?o.outline:'transparent'}"></i>테두리</button>`);
+  else h+=sec('색',`<button class="lc-dot" data-c="sfxcolor"><i style="background:${o.color||'#161616'}"></i>${o.color?esc(o.color):'기본'}</button>`);
+  if(k==='dialog')h+=sec('형태',`<div class="lc-grid">${[['auto','자동']].concat(BALLOON_STYLES.map(s=>[s[0],s[1]])).map(([v,n])=>`<button data-c="style" data-v="${v}" aria-pressed="${(o.style||'auto')===v}" title="${esc(n)}">${v==='auto'?'<span class="lc-auto">자동</span>':swatch(v)}</button>`).join('')}</div>`);
+  if(k==='caption')h+=sec('상자',`<span class="lc-seg"><button data-c="capbox" data-v="none" aria-pressed="${o.style!=='narration'}">글만</button><button data-c="capbox" data-v="narration" aria-pressed="${o.style==='narration'}">사각 상자</button></span>`);
+  if(k==='sfx'&&typeof materialCatalog!=='undefined')h+=sec('타입',`<span class="lc-seg">${[['A','A'],['B','B'],['C','C'],['D','D']].map(([v,n])=>`<button data-c="variant" data-v="${v}" aria-pressed="${(o.materialVariant||'A')===v}" title="레터링 타입 ${n}">${n}</button>`).join('')}</span>`);
+  h+=sec('크기',`<input type="range" data-c="scale" min="50" max="200" step="5" value="${Math.round((o.scale||1)*100)}"><output data-c="scalev">${Math.round((o.scale||1)*100)}%</output>${k!=='sfx'?`<button class="lc-btn" data-c="fit" title="늘리거나 줄인 상자를 글에 맞게">글에 맞추기</button>`:''}`);
+  if(k==='dialog'){const linkable=typeof CAN_LINK!=='undefined'&&CAN_LINK.has(o.style);
+    h+=sec('꼬리',`<label class="lc-tg"><input type="checkbox" data-c="tail" ${o.showTail===false?'':'checked'}>표시</label><button class="lc-btn" data-c="tailreset"${o.tail?'':' disabled'}>방향 처음대로</button>${linkable?`<label class="lc-tg"><input type="checkbox" data-c="linked" ${o.linked?'checked':''}>두 칸 연결</label>`:''}`)}
+  h+=sec('배치',`<span class="lc-seg"><button data-c="align" data-v="left" title="컷 왼쪽">←</button><button data-c="align" data-v="center" title="컷 가운데">↔</button><button data-c="align" data-v="right" title="컷 오른쪽">→</button></span><span class="lc-rot">회전 <b data-c="rotv">${Math.round(o.rot||0)}°</b></span><button class="lc-btn" data-c="rot0"${o.rot?'':' disabled'}>없애기</button>`);
+  if(k==='dialog')h+=`<p class="lc-foot">다른 형태로 바꾸려면 아래 말풍선 에셋을 눌러요</p>`;
+  card.innerHTML=h;card.dataset.kind=k;card.classList.toggle('locked',WS.isLocked(L.closest('[data-slot-index]'),id));
+  suggestSplit(text,k);requestAnimationFrame(fit);}
+function paintParts(L,k,o){card.querySelectorAll('[data-c=style]').forEach(b=>b.setAttribute('aria-pressed',(o.style||'auto')===b.dataset.v));
+  card.querySelectorAll('[data-c=font]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(o.font||PAGE_PRESET)));
+  card.querySelectorAll('[data-c=deco]').forEach(b=>b.setAttribute('aria-pressed',!!o[b.dataset.v]));
+  const sv=card.querySelector('[data-c=scalev]');if(sv)sv.textContent=Math.round((o.scale||1)*100)+'%';const rv=card.querySelector('[data-c=rotv]');if(rv)rv.textContent=Math.round(o.rot||0)+'°'}
+function paint(full){render(full)}
+function fit(){const t=card.querySelector('[data-c=text]');if(!t)return;t.style.height='auto';t.style.height=Math.min(220,t.scrollHeight+2)+'px'}
+function suggestSplit(text,k){const el=card.querySelector('[data-c=split]');if(!el)return;const n=[...text.replace(/\s/g,'')].length;
+  el.innerHTML=k==='dialog'&&n>40?`<button class="lc-warn" data-c="split" title="말풍선 하나에 글이 많아요">${n}자 · 두 말풍선으로 나누기</button>`:''}
+
+// 문구: 0.3초 묶어 반영(카드 문구 칸은 그대로 두고 캔버스만 다시)
+function commitText(t){const L=selectedLetter;if(!L)return;const k=kindOf(L),v=k==='sfx'?t.trim().replace(/\s+/g,' '):t.trim();if(!v)return;
+  const key=keyOf(L),id=L.dataset.letter;saveLetter(L,{text:v});renderWebtoon();const L2=find(key,id);if(L2)selectLetter(L2);if(k==='sfx'&&typeof refreshPageMaterials==='function')refreshPageMaterials()}
+card.addEventListener('input',e=>{const c=e.target.dataset.c;
+  if(c==='text'){fit();const t=e.target.value;card.querySelector('[data-c=info]').textContent=textInfo(t);suggestSplit(t,card.dataset.kind);clearTimeout(typing);typing=setTimeout(()=>commitText(t),300);return}
+  if(c==='scale'){card.querySelector('[data-c=scalev]').textContent=e.target.value+'%'}});
+card.addEventListener('change',e=>{const c=e.target.dataset.c;
+  if(c==='scale'){const v=+e.target.value/100;patch({scale:v===1?null:v})}
+  if(c==='tail')patch({showTail:e.target.checked?null:false});
+  if(c==='linked')patch({linked:e.target.checked||null})});
+card.addEventListener('keydown',e=>{if(e.target.dataset.c==='text'){if(e.key==='Escape'){e.preventDefault();clearTimeout(typing);commitText(e.target.value);e.target.blur();document.querySelector('#reader')?.focus?.({preventScroll:true})}
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();clearTimeout(typing);commitText(e.target.value)}e.stopPropagation()}});
+// 카드 버튼은 누를 때 포커스를 가져가지 않음(문구 칸을 벗어나며 카드가 다시 그려져 클릭이 사라지던 것 막기)
+card.addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
+card.addEventListener('focusout',e=>{if(e.target.dataset.c==='text'&&typing){clearTimeout(typing);typing=0;commitText(e.target.value)}});
+card.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b||b.tagName==='TEXTAREA'||b.tagName==='INPUT')return;const c=b.dataset.c,v=b.dataset.v,L=selectedLetter;if(!L)return;
+  if(c==='close'){WS.clearMulti();selectLetter(null);return}
+  if(c==='font'){patch({font:v===PAGE_PRESET?null:v});return}
+  if(c==='deco'){patch({[v]:!setOf(L)[v]||null});return}
+  if(c==='color')return WS.openColorPop(b,'color');
+  if(c==='outline')return WS.openColorPop(b,'outline');
+  if(c==='sfxcolor')return WS.openColorPop(b,'color',{what:'효과음 ',cur:setOf(L).color||'#161616',apply:col=>{patch({color:col==='#161616'?null:col});WS.flash('효과음 색을 바꿨어요')}});
+  if(c==='style'){patch({style:v==='auto'?null:v});return}
+  if(c==='capbox'){patch({style:v==='narration'?'narration':null});return}
+  if(c==='variant'){const id=L.dataset.letter,text=(L.dataset.letterText||'').trim(),entry=window.RoughMaterials?.find?.(text);
+    const go=()=>patch({materialVariant:v==='A'?null:v});if(entry&&typeof materialCatalog!=='undefined')materialCatalog.load(entry,v).then(go).catch(go);else go();return}
+  if(c==='fit'){WS.fitLetters();return}
+  if(c==='tailreset'){patch({tail:null});return}
+  if(c==='rot0'){patch({rot:null});return}
+  if(c==='align'){alignInCut(L,v);return}
+  if(c==='orig'){patch({text:null});return}
+  if(c==='more'){const r=b.getBoundingClientRect(),g=L.closest('[data-slot-index]'),locked=WS.isLocked(g,L.dataset.letter);
+    WS.cmOpen([...(kindOf(L)!=='sfx'?[{label:'스타일 적용',sub:()=>WS.styleMenu()}]:[]),{label:'복제',key:'Ctrl+D',run:()=>window.RoughClip?.dup?.()},{label:locked?'잠금 풀기':'잠그기',run:()=>WS.toggleLock(keyOf(L),L.dataset.letter)},{sep:1},{label:'지우기',key:'Del',danger:1,run:()=>WS.deleteLetterEls([L])}],r.right-200,r.bottom+4);return}
+  if(c==='who'){whoMenu(b);return}
+  if(c==='split'){splitBalloon();return}});
+
+// 컷 기준 가로 정렬(왼·가운데·오른)
+function alignInCut(L,mode){const g=L.closest('[data-slot-index]'),f=JSON.parse(g.dataset.frame),svg=g.ownerSVGElement,m=svg.getScreenCTM().inverse(),r=(L.querySelector('[data-balloon]')||L).getBoundingClientRect();
+  const a=new DOMPoint(r.left,0).matrixTransform(m).x,b=new DOMPoint(r.right,0).matrixTransform(m).x,w=b-a,pad=f.w*.04;
+  const target=mode==='left'?f.x+pad:mode==='right'?f.x+f.w-pad-w:f.x+(f.w-w)/2,dx=Math.round(target-a);if(!dx)return;
+  const p=letterPosition(L);patch({x:(p.x||0)+dx,y:p.y||0});WS.flash(mode==='left'?'컷 왼쪽에 맞췄어요':mode==='right'?'컷 오른쪽에 맞췄어요':'컷 가운데에 맞췄어요')}
+
+// ---------- 4단계: 화자 바꾸기 · 나누기 제안 ----------
+// 컷 글에서 이 식자의 줄을 찾아 바꿈(대사 n번째 · 나레이션 n번째)
+function lineIndex(L){const key=keyOf(L),[si,slot]=key.split(':').map(Number),lines=String(SCENES[si].cuts[slot]||'').split('\n'),id=L.dataset.letter;
+  const isD=l=>/^\s*(?:@\S+\s*)?(?:\([^)]*\)\s*)?["“]/.test(l),isC=l=>/^\s*\[.*\]\s*$/.test(l);
+  const want=id.startsWith('dialog-')?['d',+id.split('-')[1]]:id.startsWith('caption')?['c',+(id.split('-')[1]||0)]:null;if(!want)return null;
+  let n=-1;for(let i=0;i<lines.length;i++){if(want[0]==='d'?isD(lines[i]):isC(lines[i])){n++;if(n===want[1])return {si,slot,lines,i}}}return null}
+function rewrite(L,fn,msg){const x=lineIndex(L);if(!x){WS.flash('컷 글에서 이 줄을 찾지 못했어요 · 씬 화면에서 고쳐 주세요');return}
+  const out=fn(x.lines[x.i]);if(out==null)return;x.lines.splice(x.i,1,...[].concat(out));const sc=SCENES[x.si];sc.cuts[x.slot]=x.lines.join('\n');if(x.si===SCUR)CUTS=sc.cuts;
+  const key=keyOf(L);WS.withKey(key,()=>{const st=pageSettings();if(st?.letters?.[L.dataset.letter]?.text)delete st.letters[L.dataset.letter].text});
+  saveScenes();if(x.si===SCUR&&typeof compute==='function')compute(false);renderWebtoon();WS.flash(msg+' · Ctrl+Z로 되돌리기')}
+const bodyOf=l=>{const m=l.match(/["“](.*)["”]/);return m?m[1]:l.replace(/^\s*\[|\]\s*$/g,'').trim()};
+function whoMenu(b){const L=selectedLetter,k=kindOf(L),r=b.getBoundingClientRect(),names=(CHARS||[]).map(c=>c.name.trim()).filter(Boolean);
+  const items=k==='dialog'?[...names.map(n=>({label:'@'+n,check:L.dataset.who===n,run:()=>rewrite(L,l=>`@${n} "${bodyOf(l)}"`,`화자를 ${n}(으)로 바꿨어요`)})),{label:'화자 없이',run:()=>rewrite(L,l=>`"${bodyOf(l)}"`,'화자를 비웠어요')},{sep:1},
+      {label:'나레이션으로 바꾸기',run:()=>rewrite(L,l=>`[${bodyOf(l)}]`,'나레이션으로 바꿨어요')},{label:'속마음(점선 말풍선)으로',run:()=>{patch({style:'whisper'},{rerender:true});WS.flash('속마음 말풍선으로 바꿨어요')}}]
+    :[...names.map(n=>({label:`@${n}의 대사로 바꾸기`,run:()=>rewrite(L,l=>`@${n} "${bodyOf(l)}"`,`${n}의 대사로 바꿨어요`)})),{label:'대사(화자 없이)로 바꾸기',run:()=>rewrite(L,l=>`"${bodyOf(l)}"`,'대사로 바꿨어요')}];
+  WS.cmOpen(items,r.left,r.bottom+4)}
+// 긴 대사 나누기: 문장 끝(.?!…)이나 쉼표에서 가운데에 가까운 곳으로 둘로
+function splitBalloon(){const L=selectedLetter;if(!L)return;const t=(L.dataset.letterText||'').trim(),chars=[...t];if(chars.length<8)return;
+  const mid=t.length/2;let best=-1,bd=1e9;t.replace(/[.?!…~,]+\s*/g,(m,i)=>{const at=i+m.length;const d=Math.abs(at-mid);if(at<t.length-1&&d<bd){bd=d;best=at}return m});
+  if(best<0){const sp=[...t.matchAll(/\s/g)].map(m=>m.index);best=sp.sort((a,b)=>Math.abs(a-mid)-Math.abs(b-mid))[0]??Math.round(mid)}
+  const a=t.slice(0,best).trim(),b=t.slice(best).trim();if(!a||!b)return;
+  rewrite(L,l=>{const m=l.match(/^(\s*(?:@\S+\s*)?(?:\([^)]*\)\s*)?)["“]/);const pre=m?m[1]:'';return [`${pre}"${a}"`,`${pre}"${b}"`]},'말풍선 둘로 나눴어요')}
+
+// 고르기·다시 그리기와 연결
+// 같은 식자를 다시 고른 것(다시 그린 뒤)이면 문구 칸은 두고 나머지만 → 타자 중 커서가 튀지 않음
+{const _sl=selectLetter;selectLetter=function(...a){const prev=selectedLetter,r=_sl(...a);if(selectedLetter!==prev){const L=selectedLetter,same=L&&lastKey===keyOf(L)+'|'+L.dataset.letter,typingNow=document.activeElement?.dataset?.c==='text'&&card.contains(document.activeElement);render(!(same&&typingNow))}return r}}
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);if(!card.hidden&&!selectedLetter)render(true);return r}}
+{const _sv=showView;showView=function(...a){const r=_sv(...a);render(true);return r}}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!card.hidden&&card.contains(document.activeElement))return});
+// 문구 칸으로 커서(스크롤 없이) — 에셋 넣기 직후 · 문구 고치기 · Enter
+function focus(o={}){if(card.hidden)render(true);const t=card.querySelector('[data-c=text]');if(!t)return false;
+  // 오른쪽 패널이 접혀 있으면 펼침
+  try{WS.openPanel?.('assets')}catch(_){}
+  t.focus({preventScroll:true});
+  if(o.select||true)t.select();return true}
+window.RoughCard={render,focus,get el(){return card}};
+})();
