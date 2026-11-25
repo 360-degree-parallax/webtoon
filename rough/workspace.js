@@ -24,7 +24,7 @@ const TOOLS=[
   0,
   {id:'crop',name:'그림 편집',key:'C',icon:'<path d="M6.5 2.5v15h15M2.5 6.5h15v15"/>',hint:'컷을 누르면 그림 확대·이동 모드 · Ctrl+휠 확대, 끌어 이동'},
   0,
-  {id:'balloon',name:'말풍선',key:'B',sub:true,icon:'<path d="M12 4c5 0 9 3.1 9 7s-4 7-9 7c-1 0-2-.1-2.9-.4L4.5 19.5l1.4-3.6A6.6 6.6 0 0 1 3 11c0-3.9 4-7 9-7z"/>',hint:'컷 안을 누른 자리에 말풍선 · 형태는 막대 왼쪽에서 고르거나 아이콘을 길게 눌러요'},
+  // 말풍선은 오른쪽 에셋 패널에서만 넣음(접근 경로 하나)
   {id:'caption',name:'나레이션',key:'T',icon:'<rect x="3" y="6" width="18" height="12" rx="1"/><path d="M7 10.5h10M7 14h6"/>',hint:'컷 안을 누른 자리에 나레이션 상자(한 컷에 여러 개)'},
   {id:'sfx',name:'효과음',key:'S',icon:'<path d="M12 2.5l1.9 5.6 5.6-1.9-3.6 4.6 4.9 2.8-5.8.9.8 5.9-3.8-4.4-3.8 4.4.8-5.9-5.8-.9 4.9-2.8L4.5 6.2l5.6 1.9z"/>',hint:'컷 안을 누른 자리에 효과음 · 문구는 막대에서 바꿔요'},
   0,
@@ -294,10 +294,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!coachEl.hidden)coa
 addEventListener('scroll',()=>{if(!coachEl.hidden)coachEl.hidden=true},{passive:true});
 function coachReset(){coachSeen={};try{localStorage.removeItem(COACH_KEY)}catch(_){}flash('안내를 다시 보여 드릴게요');coachSoon()}
 function coachSoon(){setTimeout(()=>{if(!inEdit()||!coachEl.hidden)return;
-  if(!coachSeen.start)coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 왼쪽 도구로 말풍선·나레이션·효과음 넣기 · <kbd>?</kbd> 단축키 모음');
+  if(!coachSeen.start)coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 말풍선은 오른쪽 에셋 · 나레이션·효과음·효과선은 왼쪽 도구 · <kbd>?</kbd> 단축키 모음');
   else if(selectedLetter)coach('letter',selectedLetter,'<b>식자 고르기</b> 더블클릭이나 Enter로 글 고치기 · 모서리로 크기 · 파란 회전 손잡이(↻)로 돌리기 · Shift+클릭으로 여러 개');
   else if(pageSelection&&reader.querySelector('[data-slot-index].sel'))coach('cut',ctx.querySelector('[data-ctx=fshape]')||reader.querySelector('[data-slot-index].sel'),'<b>컷 고르기</b> 모퉁이를 끌면 컷 크기 · 컷을 더블클릭하거나 「프레임 모양」을 누르면 사선 칸 · 그림 확대·이동은 「그림 편집」');
-  else coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 왼쪽 도구로 말풍선·나레이션·효과음 넣기 · <kbd>?</kbd> 단축키 모음')},350)}
+  else coach('start',rail,'<b>편집 화면</b> 컷이나 말풍선을 눌러 골라요 · 말풍선은 오른쪽 에셋 · 나레이션·효과음·효과선은 왼쪽 도구 · <kbd>?</kbd> 단축키 모음')},350)}
 {const _sc=selectPageCut;selectPageCut=function(...a){const r=_sc(...a);coachSoon();return r}}
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);if(selectedLetter)coachSoon();return r}}
 const FPRESETS=[['네모',0,0],['위 사선',-8,0],['아래 사선',0,8],['평행 사선',-8,-8],['쐐기',-8,8]];
@@ -420,10 +420,9 @@ alignBody.addEventListener('click',e=>{const k=e.target.closest('[data-align]')?
 // ---------- 소재 ----------
 const SFXW=['쾅','두근','툭','쿵','휘청','쨍그랑','덜컹','찰칵','펑','슥','후다닥','부르르'];
 function renderLib(){libBody.innerHTML=`<p class="wsn">눌러서 도구로 쓰거나 캔버스의 컷으로 끌어다 놓아요.</p>
-  <h5>말풍선</h5><div class="libgrid">${BALLOON_STYLES.map(s=>`<button class="lib" draggable="true" data-mat="balloon" data-v="${s[0]}" title="${esc(s[1])}">${swatch(s[0])}<span>${esc(s[1].split(' · ')[0])}</span></button>`).join('')}</div>
   <h5>효과음</h5><div class="libgrid words">${SFXW.map(w=>`<button class="lib" draggable="true" data-mat="sfx" data-v="${w}">${w}</button>`).join('')}</div>
   <h5>배경 전환</h5><div class="libgrid">${PAGE_BACKGROUNDS.map((p,i)=>p?`<button class="lib" draggable="true" data-mat="bg" data-v="${i}" title="${esc(p.name)}">${$(`#wbgpresets [data-bg-preset="${i}"]`)?.querySelector('svg')?.outerHTML||''}<span>${esc(p.name)}</span></button>`:'').join('')}</div>
-  <h5>효과선</h5><div class="libgrid words"><button class="lib" draggable="true" data-mat="line" data-v="focus">집중선</button><button class="lib" draggable="true" data-mat="line" data-v="speed">속도선</button></div>`}
+`}
 function useMat(kind,v,group,pt,target){
   if(kind==='balloon'){if(!group){opt.balloon=v;SS('rough-tool-balloon',v);setTool('balloon');return}
     const L=target?.closest?.('[data-letter^="dialog-"]');if(L){withKey(pageKey(group),()=>saveLetter(L,{style:v}));renderWebtoon();flash('말풍선 형태를 바꿨어요');return}
@@ -517,7 +516,7 @@ ctx.addEventListener('click',e=>{const o=e.target.closest('[data-off]')?.dataset
 
 // ---------- 에셋 패널(오른쪽 전용) ----------
 // 미리캔버스·망고보드처럼 에셋을 한 서랍에: 검색 · 적용 대상 · 탭. 클릭하면 고른 대상에, 끌어 놓으면 놓은 자리에
-const ATABS=[['rec','추천'],['balloon','말풍선'],['sfx','효과음'],['line','효과선'],['bg','배경'],['ref','컷 참고'],['seq','시퀀스'],['up','업로드'],['star','★']];
+const ATABS=[['rec','추천'],['balloon','말풍선'],['sfx','효과음'],['bg','배경'],['ref','컷 참고'],['seq','시퀀스'],['up','업로드'],['star','★']];
 const ASSET={tab:'rec',auto:true,q:''};
 const RECENT=()=>LS('rough-asset-recent',[]);
 function remember(k,v,label){const r=RECENT().filter(x=>!(x.k===k&&x.v===v));r.unshift({k,v,label});SS('rough-asset-recent',r.slice(0,24))}
@@ -609,7 +608,7 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
   const sfxQuick=SFXW.filter(match).map(w=>item('sfx',w,w,sfxTile(w)));
   const bgs=PAGE_BACKGROUNDS.map((p,i)=>p&&match(p.name)?item('bg',i,p.name,bgTile(i,srcs)):'').filter(Boolean);
   const bimgs=Object.values(IMG.bg||{}).filter(r=>match(r.name||'배경 이미지')).map(r=>item('bgimg',r.id,r.name||'배경 이미지',`<img src="${r.src}" alt="">`));
-  const lines=[['focus','집중선'],['speed','속도선']].filter(x=>match(x[1])).map(([v,n])=>item('line',v,n,lineTile(v,srcs[0])));
+  const lines=[];  // 효과선은 왼쪽 도구에서만
   if(k==='rec'){const p=selPanel();
     if(!p)h='<p class="as-empty">컷을 고르면 그 컷의 감정·샷·연출에 맞는 에셋을 골라 보여 줘요.</p>'+grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).slice(0,8).map(x=>item(x.k,x.v,x.label,x.k==='pack'?packTile(x.v):tileFor(x.k,x.v))),'big');
     else{const emo=p.emo||'',hot=(p.i||0)>=2,act=String(p.act||''),lv=`${emo||'기본'}${p.i?` ${p.i}`:''}`;
@@ -621,8 +620,6 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
       const balPv=(()=>{const st=BALLOON_STYLES.find(x=>x[0]===bal);let body='';try{body=presetBalloon(st,0,0,46,22,1,rngL(bal),false).body}catch(_){}
         return overTile(srcs[0],`<g transform="translate(96 36)">${body}<text x="0" y="1" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#161616" font-family="Pretendard, sans-serif">${esc(sample)}</text></g>`)})();
       const recs=[card('bg',bgI,PAGE_BACKGROUNDS[bgI].name,bgTile(bgI,srcs),`${lv}에 어울리는 전환`)];
-      if(hot&&['놀람','분노','긴장','당황','결의'].includes(emo))recs.push(card('line','focus','집중선',lineTile('focus',srcs[0]),`${lv} · 강조`));
-      if(/달리|뛰|돌진|휙|급히|쫓|날아/.test(act))recs.push(card('line','speed','속도선',lineTile('speed',srcs[0]),'빠른 동작 글'));
       recs.push(card('balloon',bal,(BALLOON_STYLES.find(s=>s[0]===bal)||['',''])[1].split(' · ')[0]+' 말풍선',balPv,balWhy));
       [...new Set([...(p.sfx||[]),...(EMO_SFX[emo]||[])])].slice(0,4).forEach(w=>{let g='';try{g=soundEffectSVG(w,{x:0,y:0,w:630,h:394,before:0},'left',1,null)}catch(_){}
         recs.push(card('sfx',w,w,`<span class="apv cut"${cutBg(srcs[0])}><svg viewBox="0 0 630 394" aria-hidden="true">${g}</svg></span>`,(p.sfx||[]).includes(w)?'글에 쓴 효과음':`${emo} 감정에 자주 씀`))});
@@ -645,7 +642,7 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
   else if(k==='star'){const packFav=typeof materialFavorites!=='undefined'?[...materialFavorites].filter(id=>!FAVS.some(f=>f.k==='pack'&&f.v===id)).map(id=>({k:'pack',v:id,label:materialCatalog.entry(id)?.word||id})):[];
     const all=[...FAVS,...packFav].filter(x=>match(x.label)),of=ks=>all.filter(x=>ks.includes(x.k));
     const tile=x=>item(x.k,x.v,x.label,x.k==='pack'?packTile(x.v):tileFor(x.k,x.v));
-    h=all.length?grid('말풍선',of(['balloon']).map(tile),'big')+grid('효과음',of(['sfx','pack']).map(tile),'sfxs')+grid('효과선',of(['line']).map(tile),'big')+
+    h=all.length?grid('말풍선',of(['balloon']).map(tile),'big')+grid('효과음',of(['sfx','pack']).map(tile),'sfxs')+
       grid('배경',of(['bg']).map(tile),'strips')+grid('배경색',of(['color']).map(tile),'tints')+grid('배경 이미지·시퀀스',of(['bgimg','seq']).map(tile)):
       '<p class="as-empty">타일 오른쪽 위 ★를 누르면 여기 모여요.</p>';
     h+=grid('최근 쓴 것',RECENT().filter(x=>match(x.label)).map(x=>item(x.k,x.v,x.label,x.k==='pack'?packTile(x.v):tileFor(x.k,x.v))),'big')}
@@ -826,9 +823,9 @@ function multiMenu(){const els=[...MULTI].map(k=>{const [key,lk]=k.split('|');re
   return [{label:`식자 ${els.length}개 정렬`,sub:()=>[['left','왼쪽'],['hcenter','가로 가운데'],['right','오른쪽'],['top','위'],['vcenter','세로 가운데'],['bottom','아래'],['vdist','세로 간격 고르게'],['hdist','가로 간격 고르게']].map(([k,n])=>({label:n,run:()=>alignLetters(k)}))},
     {label:'선택 풀기',key:'Esc',run:clearMulti},SEP,{label:`식자 ${els.length}개 지우기`,key:'Del',danger:1,run:()=>deleteLetterEls(els)}]}
 function cutMenu(g,pt){const key=pageKey(g),[si,slot]=key.split(':').map(Number),locked=isLocked(g,'cut'),len=SCENES[si].cuts.length;
-  return [{label:'여기에 말풍선',key:K('balloon'),disabled:locked,run:()=>addLetter('balloon',g,pt)},{label:'여기에 나레이션',key:K('caption'),disabled:locked,run:()=>addLetter('caption',g,pt)},
+  return [{label:'여기에 나레이션',key:K('caption'),disabled:locked,run:()=>addLetter('caption',g,pt)},
     {label:'여기에 효과음',sub:()=>[...SFXW.map(w=>({label:w,run:()=>addLetter('sfx',g,pt,{text:w})})),{label:'효과음 소재 더 보기…',run:()=>{selectPageCut(g);assetTab('sfx',true)}}]},
-    {label:'효과선',sub:()=>[{label:'집중선',run:()=>useMat('line','focus',g)},{label:'속도선',run:()=>useMat('line','speed',g)}]},SEP,
+    SEP,
     {label:'그림 편집(확대·이동)',key:'더블클릭',run:()=>{selectPageCut(g);RoughStudio.setCrop(g)}},
     {label:'레퍼런스 바꾸기…',run:()=>{selectPageCut(g);assetTab('ref',true)}},
     {label:'이 컷에 맞는 에셋 추천',run:()=>{selectPageCut(g);assetTab('rec',true)}},

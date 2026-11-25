@@ -1581,7 +1581,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
         <select id="wmaterial-result" aria-label="효과음 선택"></select>
         <div class="prop"><button class="btn sm" id="wmaterial-add">컷에 넣기</button><button class="btn sm" id="wmaterial-fav" aria-pressed="false">☆ 즐겨찾기</button></div>
       </details>
-      <div class="prop"><button class="btn sm" data-material-line="focus" aria-pressed="false">집중선</button><button class="btn sm" data-material-line="speed" aria-pressed="false">속도선</button></div>
+      <div class="prop" hidden><button class="btn sm" data-material-line="focus" aria-pressed="false">집중선</button><button class="btn sm" data-material-line="speed" aria-pressed="false">속도선</button></div>
       <div id="wmaterial-line-edit" hidden>
         <div class="prop"><select id="wmaterial-line-kind" aria-label="편집할 효과선"><option value="focus">집중선</option><option value="speed">속도선</option></select><input id="wmaterial-color" type="color" aria-label="효과선 색"><button class="btn sm" id="wmaterial-delete">삭제</button></div>
         <label class="prop"><span>밀도</span><input id="wmaterial-density" type="range" min="12" max="90" step="1"></label>
@@ -3646,6 +3646,8 @@ function finishMaterialLine(e){
     angle:Math.atan2(dy,dx),color:current?.color||'#27211e',density:current?.density||50};
   $('#wmaterial-line-kind').value=kind;
   saveScenes();armMaterialLine('');renderWebtoon();
+  // 한 번 넣으면 선택 도구로 돌아감(도구가 남아 있어 다음 클릭마다 효과선이 또 들어가던 문제)
+  window.RoughWS?.setTool?.('select');
   materialStatus(kind==='focus'?'집중선을 넣었어요.':'속도선을 넣었어요.');
 }
 function showMaterialLine(){
