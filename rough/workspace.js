@@ -98,7 +98,8 @@ reader.addEventListener('pointerdown',e=>{
 reader.addEventListener('keydown',e=>{if(selectedLetter&&/^Arrow/.test(e.key)){const g=selectedLetter.closest('[data-slot-index]');if(g&&isLocked(g,selectedLetter.dataset.letter)){e.preventDefault();e.stopPropagation();flash('잠긴 식자예요')}}},true);
 
 function refreshText(si){saveScenes();if(si===SCUR&&typeof compute==='function')compute(false);else renderWebtoon()}
-function focusText(){openPanel('props');setTimeout(()=>{letterMemo.focus();letterMemo.select()},30)}
+// 문구 칸으로 커서: 화면이 튀지 않게 preventScroll(편집 카드가 있으면 카드로)
+function focusText(){if(window.RoughCard?.focus?.())return;openPanel('props');setTimeout(()=>{letterMemo.focus({preventScroll:true});letterMemo.select()},30)}
 window.focusLetterText=focusText;
 // 말풍선·나레이션·효과음을 컷 글에 더하고, 누른 자리로 옮김
 function addLetter(kind,group,pt,o={}){
@@ -117,8 +118,10 @@ function addLetter(kind,group,pt,o={}){
   selectPageCut(g);
   const svg=g.ownerSVGElement,r=L.getBoundingClientRect(),c=new DOMPoint(r.left+r.width/2,r.top+r.height/2).matrixTransform(svg.getScreenCTM().inverse());
   const cur=letterPosition(L),pos={x:Math.round(cur.x+pt.x-c.x),y:Math.round(cur.y+pt.y-c.y)};
-  moveLetter(L,pos);saveLetter(L,pos);selectLetter(L);focusText();
-  flash(`${kind==='balloon'?'말풍선':kind==='caption'?'나레이션':'효과음'}을 넣었어요 · 문구를 입력하고 Ctrl+Enter`);
+  moveLetter(L,pos);saveLetter(L,pos);selectLetter(L);
+  // 넣은 뒤 화면 맨 위 서랍을 열지 않음(페이지가 위로 튀고 캔버스를 가렸음) → 편집 카드가 있으면 그 문구 칸으로
+  window.RoughCard?.focus?.({select:true});
+  flash(`${kind==='balloon'?'말풍선':kind==='caption'?'나레이션':'효과음'}을 넣었어요 · 오른쪽 카드에서 문구를 바로 고쳐요`);
 }
 // 칸 나누기: 컷 바로 아래에 새 칸(글)을 끼우고, 이후 컷의 편집값·등록 이미지를 한 칸씩 민다
 function splitCut(group){
