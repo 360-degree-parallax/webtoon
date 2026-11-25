@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """외부 이미지(~/rough-ext/data/img) 임베딩 — 컷 임베딩(embed_image.py)과 같은 모델·전처리(흰 여백 정사각형 → 224px)
-사용: python3 tools/ml/ext/embed_ext.py [clip|dino] [--gray]
+사용: python3 tools/ml/ext/embed_ext.py [clip|dino] [--gray] [--set film|danbooru]
 --gray: 흑백으로 바꿔서(웹툰 흑백·톤 컷과 그림체 차이 줄이기 실험)
 결과: ~/rough-ext/data/emb-<model>[-gray].npz (저장소 밖)
 """
@@ -8,7 +8,8 @@ import sys, csv, pathlib, numpy as np, onnxruntime as ort
 from PIL import Image, ImageOps
 from huggingface_hub import hf_hub_download
 A = sys.argv[1:]; kind = A[0] if A and not A[0].startswith('--') else 'clip'; gray = '--gray' in A
-D = pathlib.Path('/home/user/rough-ext/data')
+SET = A[A.index('--set') + 1] if '--set' in A else 'film'
+D = pathlib.Path('/home/user/rough-ext/data') if SET == 'film' else pathlib.Path('/home/user/rough-ext/raw/danbooru')
 CFG = {'clip': ('Xenova/clip-vit-base-patch32', 'onnx/vision_model.onnx', [0.4815, 0.4578, 0.4082], [0.2686, 0.2613, 0.2758]),
        'dino': ('Xenova/dinov2-small', 'onnx/model.onnx', [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])}
 rid, f, mean, std = CFG[kind]
@@ -28,6 +29,7 @@ def run(batch):
     else: h = out[0]; v = np.concatenate([h[:, 0], h[:, 1:].mean(1)], 1)
     return v / np.linalg.norm(v, axis=1, keepdims=True)
 rows = list(csv.DictReader(open(D / 'labels.csv')))
+for r in rows: r.setdefault('id', r.get('file'))
 ids, X, batch, bid = [], [], [], []
 for k, r in enumerate(rows):
     batch.append(prep(D / 'img' / r['id'])); bid.append(r['id'])
