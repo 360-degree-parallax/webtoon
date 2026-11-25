@@ -28,6 +28,12 @@ $('#gDb').addEventListener('click',()=>{ON=false;if(typeof renderDB==='function'
 {const _sv=showView;showView=function(...a){const r=_sv(...a);if(a[0]!=='db')ON=false;sync();return r}}
 
 const pct=p=>Math.round(p*100)+'%';
+// 선택지 설명(코드표·작화 프롬프트 기준) — 무엇을 눌러야 할지 판단 근거
+const DEF={
+  샷:{설정:'장소 전체가 보이는 컷, 인물은 작게 또는 없이',전경:'인물 전신과 주변 공간이 넉넉하게',전신:'머리부터 발끝까지, 인물이 화면 높이의 70% 안팎',중경:'허리 위, 상반신과 손동작이 보임',클로즈업:'얼굴과 어깨가 화면을 채움, 표정이 중심',디테일:'손·눈·소품 하나가 화면을 채우는 인서트','효과 배경':'인물 대신 효과선·색면·패턴이 중심','화면 인서트':'휴대폰·모니터·편지 같은 화면·글 자체',SD:'2~3등신으로 줄인 개그 그림'},
+  역할:{설정:'장소·상황을 처음 보여 줌(어디서 무엇이)',전개:'행동·대화로 이야기를 앞으로 진행',공개:'새 정보·얼굴·사실이 처음 드러남(펀치)',반응:'앞 컷에 대한 표정·몸짓 반응',전환:'시간·장소·장면이 바뀌는 다리 컷'},
+  감정:{평온:'특별한 감정 없이 담담',개그:'웃기려는 과장·SD·만화적 표현',설렘:'두근거림·호감·로맨틱한 긴장',기쁨:'웃음·즐거움',다정:'따뜻한 배려·애정',당황:'예상 못 한 상황에 허둥댐',의아:'궁금함·고개를 갸웃',놀람:'순간적인 충격·깜짝',긴장:'위험·불안·조마조마',냉담:'차갑고 무심함',분노:'화·짜증',쓸쓸:'외로움·슬픔·상실',회상:'과거 장면(톤·테두리로 구분되는 회상)',결의:'마음먹음·단호함'}};
+const WHY={샷:'인물이 화면에서 차지하는 크기로 골라 주세요(얼굴만=클로즈업, 허리 위=중경).',역할:'앞뒤 컷과의 흐름으로 골라 주세요 — 아래 앞 컷·뒤 컷을 같이 봐요.',감정:'표정·톤과 글을 같이 봐요. 회상 장면이면 회상을 골라요.'};
 function render(){
   if(Q===null){box.innerHTML='<p class="empty">판정 큐를 불러오는 중이에요</p>';return}
   if(Q===false){box.innerHTML='<p class="empty">판정 큐(db/review-queue.json)를 읽지 못했어요.</p>';return}
@@ -42,17 +48,27 @@ function render(){
     <button class="btn sm" data-rvx="copy">결과 복사</button><button class="btn sm" data-rvx="file">파일로 저장</button></div>
   ${!it?`<p class="empty">${F.state==='left'?'이 조건에서 남은 컷이 없어요. 수고했어요!':'해당하는 컷이 없어요.'}</p>`:`
   <div class="rvmain">
-    <figure class="rvimg"><img src="${CUT_BASE}${it.file}" alt="${esc(it.cut)}"></figure>
+    <div class="rvleft">
+      <figure class="rvimg" data-rvzoom title="눌러서 크게 보기"><img src="${CUT_BASE}${it.file}" alt="${esc(it.cut)}"></figure>
+      <div class="rvctx">${[['앞 컷',it.prev],['뒤 컷',it.next]].map(([l,x])=>x?`<figure class="rvnb" data-rvzoom-src="${CUT_BASE}${esc(x.file)}" title="${esc(x.text||'')}"><img loading="lazy" src="${CUT_BASE}${esc(x.file)}" alt=""><figcaption><b>${l}</b> ${esc(x.cut)}<br><span>${esc(x.text||'')}</span></figcaption></figure>`:`<figure class="rvnb none"><figcaption><b>${l}</b> 없음(화의 처음·끝)</figcaption></figure>`).join('')}</div>
+    </div>
     <div class="rvq">
-      <div class="rvmeta"><b>${esc(it.cut)}</b> · ${esc(it.work)} · <span class="rvfield">${esc(it.field)}</span> <span class="rvpos">${cur+1}/${L.length}</span></div>
+      <div class="rvmeta"><b>${esc(it.cut)}</b> · ${esc(it.work)} · <span class="rvfield">${esc(it.field)}</span>${it.new?' <span class="rvnew">새로 추가</span>':''} <span class="rvpos">${cur+1}/${L.length}</span></div>
+      ${it.info?.장면?`<div class="rvscene">${esc(it.info.장면)}</div>`:''}
       <p class="rvtext">${esc(it.text)}</p>
-      <p class="rvask">이 컷의 <b>${esc(it.field)}</b>은? <small>지금 DB 값: ${esc(it.current)}</small></p>
-      <div class="rvopts">${it.options.map((o,k)=>`<button data-rvo="${esc(o.label)}" class="${r&&!r.hold&&r.pick===o.label?'on':''}${o.label===it.current?' now':''}"><kbd>${k+1}</kbd>${esc(o.label)}${o.label===it.current?'<em>지금</em>':''}${showP?`<small>${pct(o.p)}</small>`:''}</button>`).join('')}
-        <button data-rvhold class="hold${r?.hold?' on':''}"><kbd>5</kbd>보류</button></div>
+      ${it.detail&&it.detail!==it.text&&it.detail.replace(/\.$/,'')!==it.text?`<p class="rvdetail">${esc(it.detail)}</p>`:''}
+      ${it.info?`<div class="rvinfo">${['샷','앵글','역할','감정','강도'].filter(k=>it.info[k]!=null).map(k=>`<span class="${k===it.field?'cur':''}"><small>${k}</small>${esc(String(it.info[k]))}${k==='감정'&&it.info['감정(세부)']&&it.info['감정(세부)']!==it.info.감정?` · ${esc(it.info['감정(세부)'])}`:''}</span>`).join('')}</div>`:''}
+      <p class="rvwhy">${(()=>{const top=it.options[0],nowp=it.options.find(o=>o.label===it.current);return `모델은 <b>${esc(top.label)}</b>(${pct(top.p)})로 봤고, 지금 DB 값 <b>${esc(it.current)}</b>은 ${nowp?pct(nowp.p):'낮음'}이에요. ${esc(WHY[it.field]||'')}`})()}</p>
+      <p class="rvask">이 컷의 <b>${esc(it.field)}</b>은?</p>
+      <div class="rvopts">${it.options.map((o,k)=>{const ex=(Q.meta?.examples?.[it.field]?.[o.label]||[]).filter(x=>x.cut!==it.cut).slice(0,3);
+        return `<button data-rvo="${esc(o.label)}" class="${r&&!r.hold&&r.pick===o.label?'on':''}${o.label===it.current?' now':''}"><span class="rvo-h"><kbd>${k+1}</kbd><b>${esc(o.label)}</b>${o.label===it.current?'<em>지금</em>':''}<i class="rvbar2"><i style="width:${Math.round(o.p*100)}%"></i></i><small>${pct(o.p)}</small></span>
+          <span class="rvdef">${esc(DEF[it.field]?.[o.label]||'')}</span>${ex.length?`<span class="rvex">${ex.map(x=>`<img loading="lazy" src="${typeof cutThumb==='function'?cutThumb(x.cut):CUT_BASE+x.file}" onerror="this.onerror=null;this.src='${CUT_BASE}${x.file}'" alt="" title="예시 ${esc(x.cut)}">`).join('')}<small>예시</small></span>`:''}</button>`}).join('')}
+        <button data-rvhold class="hold${r?.hold?' on':''}"><span class="rvo-h"><kbd>5</kbd><b>보류</b></span><span class="rvdef">애매하면 메모와 함께 남겨 두기</span></button></div>
       <div class="rvnote"${r?.hold?'':' hidden'}><label for="rvnote">보류 메모 <small>무엇이 애매한지 적어 두면 나중에 한 번에 해소할 때 써요</small></label>
         <textarea id="rvnote" rows="3" placeholder="예: 얼굴은 클로즈업인데 손이 크게 걸려 중경 같기도 함 / 두 칸이 합쳐진 컷">${esc(r?.note||'')}</textarea>
         <div class="acts"><button class="btn sm dark" data-rvsave>메모 저장 후 다음 (Ctrl+Enter)</button></div></div>
-      <div class="rvnav"><button class="btn sm" data-rvnav="-1">← 이전</button><button class="btn sm" data-rvnav="1">다음 →</button>${r?'<button class="btn sm" data-rvclear>판정 지우기</button>':''}<span class="hint">1~4 고르기 · 5 보류 · ←/→ 이동</span></div>
+      ${r&&!r.hold?`<div class="rvfb"><input id="rvfb" value="${esc(r.note||'')}" placeholder="이 판정에 덧붙일 말(선택) · 예: 회상 장면이라 감정은 회상이 맞음" aria-label="판정 메모"><button class="btn sm" data-rvfb>메모 남기기</button></div>`:''}
+      <div class="rvnav"><button class="btn sm" data-rvnav="-1">← 이전</button><button class="btn sm" data-rvnav="1">다음 →</button>${r?'<button class="btn sm" data-rvclear>판정 지우기</button>':''}<span class="hint">1~4 고르기 · 5 보류 · ←/→ 이동 · 그림 눌러 크게</span></div>
     </div>
   </div>`}
   <div class="rvstrip">${L.slice(Math.max(0,cur-6),cur+18).map(x=>{const i=L.indexOf(x);return `<button data-rvgo="${i}" class="${i===cur?'cur ':''}${st(x)}" title="${esc(x.cut)} · ${esc(x.field)}"><img loading="lazy" src="${typeof cutThumb==='function'?cutThumb(x.cut):CUT_BASE+x.file}" onerror="this.onerror=null;this.src='${CUT_BASE}${x.file}'" alt=""></button>`}).join('')}</div>`;
@@ -66,6 +82,8 @@ function exportData(){const its=Q?.items||[],out=its.filter(it=>R[it.id]).map(it
   pick:R[it.id].hold?null:R[it.id].pick,hold:!!R[it.id].hold,note:R[it.id].note||'',at:new Date(R[it.id].at).toISOString()}));
   return {format:'rough-review',queue:Q?.meta||null,exported:new Date().toISOString(),summary:{...counts(),changed:out.filter(x=>x.pick&&x.pick!==x.current).length},decisions:out}}
 box.addEventListener('click',e=>{const t=e.target;
+  const z=t.closest('[data-rvzoom],[data-rvzoom-src]');if(z){const src=z.dataset.rvzoomSrc||z.querySelector('img')?.src;if(src)zoom(src);return}
+  if(t.closest('[data-rvfb]')){const it=list()[cur];if(it&&R[it.id]){R[it.id].note=($('#rvfb')?.value||'').trim();save();toast('메모를 남겼어요')}return}
   const f=t.closest('[data-rvf]');if(f){F.field=f.dataset.rvf;cur=0;PIN=null;render();return}
   const s=t.closest('[data-rvs]');if(s){F.state=s.dataset.rvs;cur=0;PIN=null;render();return}
   const o=t.closest('[data-rvo]');if(o){pick(o.dataset.rvo);return}
@@ -77,6 +95,7 @@ box.addEventListener('click',e=>{const t=e.target;
   const x=t.closest('[data-rvx]');if(x){const d=exportData(),txt=JSON.stringify(d,null,1);
     if(x.dataset.rvx==='copy')navigator.clipboard?.writeText(txt).then(()=>toast(`판정 ${d.decisions.length}건(보류 ${d.summary.hold})을 복사했어요. Claude에게 붙여 넣어 주세요`,3500),()=>toast('복사가 막혀 있어요. 파일로 저장해 주세요'));
     else download(`판정-${new Date().toISOString().slice(0,10)}.json`,URL.createObjectURL(new Blob([txt],{type:'application/json'})));return}});
+function zoom(src){let d=$('#rvzoomdlg');if(!d){d=document.createElement('dialog');d.id='rvzoomdlg';d.className='rvzoom';d.addEventListener('click',()=>d.close());document.body.appendChild(d)}d.innerHTML=`<img src="${src}" alt="">`;d.showModal()}
 box.addEventListener('change',e=>{if(e.target.matches('[data-rvp]')){showP=e.target.checked;try{localStorage.setItem('rough-review-p',showP?'1':'0')}catch(_){}render()}});
 document.addEventListener('keydown',e=>{if(!ON||box.hidden||VIEW!=='db')return;const typing=e.target.closest('textarea,input,select');
   if(typing){if(e.target.id==='rvnote'&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();saveNote()}return}
