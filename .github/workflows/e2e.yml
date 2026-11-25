@@ -1,0 +1,26 @@
+# 러프 툴 브라우저 회귀 테스트(tests/e2e/run.js) + 효과음 추천 규칙 검사
+name: e2e
+on:
+  push:
+    paths: ['rough/**', 'tests/**', 'tools/check_sfx_rules.js', '.github/workflows/e2e.yml']
+  pull_request:
+    paths: ['rough/**', 'tests/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Playwright 설치
+        run: |
+          npm i --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: 효과음 추천 규칙
+        run: node tools/check_sfx_rules.js
+      - name: 브라우저 회귀 테스트
+        run: node tests/e2e/run.js
