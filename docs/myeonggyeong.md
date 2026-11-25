@@ -8,12 +8,15 @@
 
 ## 인물
 
-### 명경도령 (초안)
+### 명경도령
+여우가 사람으로 둔갑한 모습. 성격 한 줄: 싸가지없는데 은근 다정.
+기준 그림: 짧고 헝클어진 짙은 갈색 머리, 오드아이(왼쪽 파랑·오른쪽 빨강), 붉은 눈매, 진홍 비단 도포에 금실 자수, 금 거울 장신구.
+
 **외형 (NovelAI 태그)**
 ```
-1boy, young man, black hair, long hair, half updo, topknot, narrow eyes, golden eyes, slit pupils, pale skin, slender, beautiful, hanbok, white durumagi, light blue jeogori, gat, holding mirror, bronze mirror
+1boy, young man, dark brown hair, short hair, messy hair, hair between eyes, heterochromia, blue eyes, red eyes, red eyeliner, smirk, gold earrings, coin earring, red hair ribbon, korean clothes, hanbok, dark red robe, gold embroidery, floral embroidery, white collar, red ribbon, gold chain necklace, ornate gold pendant, bronze mirror, red tassel
 ```
-여우 기운을 드러낼 때 덧붙임: `fox ears, fox tail, white fox tail`
+여우 기운을 드러낼 때 덧붙임: `fox ears, fox tail, red fox tail`
 
 **특징**
-천 년 동안 사람 얼굴로 둔갑해 살아온 여우. 지금은 곱게 차린 젊은 도령의 모습으로 다니며, 훔친 조마경을 품에 지니고 다녀 「명경도령」이라 불린다. 남의 얼굴을 빌리는 데 천 년을 쓴 탓에 사람 얼굴을 누구보다 잘 읽는다. 말투는 느긋하고 장난스러우며 반말과 존댓말을 제멋대로 섞는다. 웃을 때 눈이 가늘게 휘어 여우 티가 난다. 자기 진짜 얼굴이 어땠는지는 기억하지 못하고, 그 이야기가 나오면 말을 돌린다. 거울에 비친 남의 고운 얼굴을 보면 부러워하면서도 끝내 그 얼굴을 꺼내 준다. 생각할 때 거울 뒷면을 손끝으로 쓸어 보는 버릇이 있다.
+천 년 동안 사람 얼굴로 둔갑해 온 여우가 사람으로 변한 모습. 자신을 잡으려던 조마경을 훔쳐 늘 몸에 지니고 다녀 「명경도령」이라 불린다. 입이 험하고 싸가지가 없다. 처음 보는 사람에게도 반말을 하고, 남의 얼굴을 대놓고 평가하며, 고맙다는 말에는 코웃음부터 친다. 그런데 정작 상대가 자기 얼굴을 싫어하면 말없이 거울을 들이밀고 끝까지 고운 얼굴을 찾아 준다. 도와줘 놓고 "심심해서"라고 둘러댄다. 비꼬듯 웃을 때 한쪽 입꼬리만 올라가고, 눈을 가늘게 뜨면 여우 티가 난다. 거울을 입가에 대거나 손끝으로 돌리며 노는 버릇이 있다. 천 년 동안 남의 얼굴만 빌려 써서 자기 진짜 얼굴은 기억하지 못하고, 그 이야기가 나오면 화제를 돌린다.
