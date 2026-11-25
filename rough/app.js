@@ -1022,6 +1022,9 @@ function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.
       const st=g.edit?.letters&&Object.entries(g.edit.letters).filter(([key,v])=>v.style&&/^dialog/.test(key)).map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean);
 }
     if(typeof loreHits==='function')loreHits(CUTS[i]).forEach(e=>out.push(`<span>◆ ${esc(e.name)}</span>`));
+    // 효과음 추천: 효과음이 없는 컷에만, 눌러서 바로 넣기(sfx-rec.js)
+    if(window.RoughSfxRec&&!(b.sfx||[]).length){const emo=(state.panels||[]).find(p=>String(p.key||'').startsWith('#'+i+':'))?.emo;
+      const rs=RoughSfxRec.recommend(CUTS[i],emo,3);if(rs.length)out.push(`<span class="sfxrec"><small>효과음</small>${rs.map(r=>`<button type="button" data-sfxadd="${esc(r.word)}" data-i="${i}" title="${esc(r.why)} 때문에 추천 · ${esc(r.cat)}">+ ${esc(r.word)}</button>`).join('')}</span>`)}
     el.innerHTML=out.join('')});
   const m=$('#scmeta2');if(m)m.textContent=`대사 ${nd} · 식자 ${nc} · 효과음 ${ns}`}
 const cutChanged=()=>{saveCuts();scSaved();clearTimeout(tmr);tmr=setTimeout(()=>{compute(true);renderSlots();renderSugg();renderParse()},350)};
@@ -1058,9 +1061,28 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-act]')?.da
   if(a==='prosecancel')$('#pdlg2').close();
   if(a==='prosego'){const c=RE.proseToCuts($('#prosein').value,engineChars()).filter(x=>x.trim());if(c.length){CUTS=c;SCENES[SCUR].pageEdits=[];renderCuts();cutChanged();toast(`${c.length}컷으로 나눴어요`)}$('#pdlg2').close()}});
 // 넣기 도구막대: 마지막으로 쓰던 컷 칸의 커서 자리에 형식을 넣음
+// 효과음 넣기: 그 컷 글 끝 새 줄에 -단어-
+function addSfx(i,w){const ta=document.querySelector(`#cutlist li[data-i="${i}"] .cutin`);if(!ta)return;ta.value=ta.value.replace(/\s*$/,'')+`\n-${w}-`;ta.dispatchEvent(new Event('input',{bubbles:true}));toast(`효과음 「${w}」을 넣었어요`)}
+$('#cutlist').addEventListener('mousedown',e=>{if(e.target.closest('[data-sfxadd]'))e.preventDefault()});
+$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-sfxadd]');if(!b)return;addSfx(+b.dataset.i,b.dataset.sfxadd)});
+// 효과음 고르기 창: 이 컷 추천 + 분류별 전체(615개) + 빈 효과음
+function sfxPicker(btn,ta){let pop=$('#sfxpick');if(!pop){pop=document.createElement('div');pop.id='sfxpick';pop.className='sfxpick';document.body.appendChild(pop);
+    document.addEventListener('mousedown',e=>{if(!pop.hidden&&!pop.contains(e.target)&&!e.target.closest('[data-ins="sfx"]'))pop.hidden=true});
+    pop.addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
+    pop.addEventListener('input',e=>{if(e.target.id==='sfxq'){const q=e.target.value.trim();pop.querySelectorAll('.sp-cat').forEach(c=>{let n=0;c.querySelectorAll('[data-sfxw]').forEach(b=>{const ok=!q||b.dataset.sfxw.includes(q)||c.dataset.cat.includes(q);b.hidden=!ok;n+=ok});c.hidden=!n})}});
+    pop.addEventListener('click',e=>{const b=e.target.closest('[data-sfxw],[data-sfxblank]');if(!b)return;const t=pop._ta;if(!t)return;
+      if(b.dataset.sfxblank!=null){const a=t.selectionStart;t.value=t.value.slice(0,a)+' --'+t.value.slice(a);t.setSelectionRange(a+2,a+2);t.focus()}
+      else{const i=+t.closest('li').dataset.i;addSfx(i,b.dataset.sfxw)}
+      pop.hidden=true;t.dispatchEvent(new Event('input',{bubbles:true}))})}
+  pop._ta=ta;const i=+ta.closest('li').dataset.i,emo=(state.panels||[]).find(p=>String(p.key||'').startsWith('#'+i+':'))?.emo,rec=RoughSfxRec.recommend(ta.value,emo,6);
+  pop.innerHTML=`<div class="sp-top"><input id="sfxq" placeholder="효과음·분류 찾기 (예: 문, 두근, 비)" autocomplete="off"><button type="button" class="btn sm" data-sfxblank>빈 효과음</button></div>`+
+    (rec.length?`<div class="sp-rec"><b>${i+1}컷 추천</b>${rec.map(r=>`<button type="button" data-sfxw="${esc(r.word)}" title="${esc(r.why)} 때문에">${esc(r.word)}<small>${esc(r.why)}</small></button>`).join('')}</div>`:'')+
+    `<div class="sp-all">${RoughSfxRec.categories().map(([c,ws])=>`<div class="sp-cat" data-cat="${esc(c)}"><h6>${esc(c)}</h6>${ws.map(w=>`<button type="button" data-sfxw="${esc(w)}">${esc(w)}</button>`).join('')}</div>`).join('')}</div>`;
+  pop.hidden=false;const r=btn.getBoundingClientRect();pop.style.left=Math.max(8,Math.min(innerWidth-428,r.left))+'px';pop.style.top=(r.bottom+6)+'px';setTimeout(()=>pop.querySelector('#sfxq')?.focus(),0)}
 document.querySelector('.scins').addEventListener('mousedown',e=>{if(e.target.closest('[data-ins]'))e.preventDefault()});
 document.querySelector('.scins').addEventListener('click',e=>{const b=e.target.closest('[data-ins]');if(!b)return;
   let t=TA&&document.body.contains(TA)?TA:null;if(!t){const l=document.querySelectorAll('.cutin');t=l[l.length-1]}if(!t)return;t.focus();
+  if(b.dataset.ins==='sfx'&&window.RoughSfxRec&&t.selectionStart===t.selectionEnd){RoughSfxRec.ready().then(()=>sfxPicker(b,t));return}
   const a=t.selectionStart,z=t.selectionEnd,sel=t.value.slice(a,z),k=b.dataset.ins;const nl=a>0&&t.value[a-1]!=='\n'?'\n':'';
   const [pre,post]=k==='caption'?[nl+'[',']']:k==='sfx'?[' -','- ']:[nl+'@',''];
   t.value=t.value.slice(0,a)+pre+sel+post+t.value.slice(z);const c=a+pre.length+sel.length;t.setSelectionRange(c,c);TA=t;
