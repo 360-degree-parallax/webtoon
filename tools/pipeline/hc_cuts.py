@@ -9,7 +9,7 @@ from PIL import Image
 import sys;sys.path.insert(0,HERE)
 from panels import analyse
 Image.MAX_IMAGE_PIXELS=None
-ep=int(sys.argv[1]);CODE=P.upper();TID={'hc':821095,'hn':738487,'md':849913,'yp':838943}[P];NAME={'hc':'함부로 친절하지 말라','hn':'하루만 네가 되고 싶어','md':'마도애를 사랑하는 법','yp':'유사품에 주의하세요'}[P]
+ep=int(sys.argv[1]);CODE=P.upper();TID={'hc':821095,'hn':738487,'md':849913,'yp':838943,'yd':822557}[P];NAME={'hc':'함부로 친절하지 말라','hn':'하루만 네가 되고 싶어','md':'마도애를 사랑하는 법','yp':'유사품에 주의하세요','yd':'여동생은 오늘 밤 나를 간택한다'}[P]
 R=os.environ.get('ROUGH_CUTS',os.path.join(HERE,'..','..','rough','cuts'))+'/';WJ=f'{P}{ep}_write.json'
 W=json.load(open(WJ));S=Image.open(f'{P}/{ep}/strip.png').convert('RGB')
 os.makedirs(f'{R}{CODE}/{ep:02d}',exist_ok=True)
