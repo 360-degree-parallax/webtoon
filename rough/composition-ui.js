@@ -243,5 +243,10 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
       setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
   });
+  // 초기화·되돌리기(app.js의 초기화 버튼): 저장된 상태 전체를 받아 다시 그림. null이면 지금 유형만 처음 상태로
+  root.addEventListener('plan-load',event=>{if(busy)return;const s=event.detail;
+    if(s){if(modeKnown(s.mode))mode=s.mode;for(const k of ['webtoon','marketing'])modes[k]={form:{...defaults(),...s[k]?.form},draft:s[k]?.draft||null}}
+    else modes[mode]={form:defaults(),draft:null};
+    configure();render();updateStatus('');persist()});
   configure();render();
 }

@@ -308,3 +308,27 @@ Promise.all([
   s.onload=()=>{try{if(it[1]())dirty=true}catch(e){console.warn(it[0],e)}clearTimeout(tm);tm=setTimeout(flush,400);idle(next)};
   s.onerror=()=>idle(next);document.head.appendChild(s)};
  const go=()=>idle(next);document.readyState==='complete'?go():addEventListener('load',go,{once:true})}
+
+// ---------- 초기화(설정집 캐릭터·세계관 / 구성 / 씬) ----------
+// 각 화면 맨 아래 작은 글자 버튼. 확인 뒤 비우고, 8초 동안 같은 자리가 '되돌리기'가 됨(씬은 Ctrl+Z로도 되돌림)
+{const RESET={
+  chars:{ask:'이 작품 등장인물을 모두 지울까요? 캐릭터 보관함은 그대로예요.',done:'등장인물을 비웠어요',
+    snap:()=>JSON.stringify(CHARS),apply:()=>{CHARS=[];saveChars();renderChars()},restore:v=>{CHARS=JSON.parse(v);saveChars();renderChars()}},
+  world:{ask:'세계관 개요와 설정 항목을 모두 지울까요? 세계관 보관함은 그대로예요.',done:'세계관을 비웠어요',
+    snap:()=>JSON.stringify({w:WORLD,l:LORE}),apply:()=>{WORLD={name:'',genre:'',era:'',tone:'',summary:'',detail:'',tags:''};LORE=[];saveWorld();renderWorld()},
+    restore:v=>{const o=JSON.parse(v);WORLD=o.w;LORE=o.l;saveWorld();renderWorld()}},
+  plan:{ask:'지금 유형의 구성 설정과 구성안을 처음 상태로 되돌릴까요?',done:'구성을 처음 상태로 되돌렸어요',
+    snap:()=>{try{return localStorage.getItem('rough-composition-v1')}catch(_){return null}},
+    apply:()=>$('#v-plan').dispatchEvent(new CustomEvent('plan-load',{detail:null})),
+    restore:v=>$('#v-plan').dispatchEvent(new CustomEvent('plan-load',{detail:v?JSON.parse(v):{}}))},
+  scenes:{ask:'모든 씬을 지우고 빈 씬 하나로 시작할까요? 컷 글과 편집 내용이 함께 지워져요.',done:'씬을 비웠어요 · Ctrl+Z로 되돌릴 수 있어요',
+    snap:()=>edState(),
+    apply:()=>{SCENES.splice(0,SCENES.length,{id:'s'+Date.now(),title:'씬 1',cuts:[''],pageEdits:[]});SCUR=0;CUTS=SCENES[0].cuts;$('#sctitle').value='씬 1';saveCuts();renderCuts();compute(false)},
+    restore:v=>{edRestore(v);CUTS=SCENES[SCUR].cuts;$('#sctitle').value=SCENES[SCUR].title||'';renderSceneList();renderCuts();compute(false)}}};
+ const LAST={};
+ document.addEventListener('click',e=>{const b=e.target.closest('[data-reset]');if(!b)return;const k=b.dataset.reset,R=RESET[k];if(!R)return;
+  const back=()=>{b.textContent='초기화';b.classList.remove('undo');delete LAST[k]};
+  if(LAST[k]){clearTimeout(LAST[k].t);try{R.restore(LAST[k].v);toast('되돌렸어요')}catch(err){console.warn(err);toast('되돌리지 못했어요')}back();return}
+  if(!confirm(R.ask))return;const v=R.snap();
+  try{R.apply()}catch(err){console.warn(err);toast('초기화하지 못했어요');return}
+  toast(R.done,2400);b.textContent='되돌리기';b.classList.add('undo');LAST[k]={v,t:setTimeout(back,8000)}})}

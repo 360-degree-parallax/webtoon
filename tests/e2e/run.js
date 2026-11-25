@@ -4,7 +4,7 @@
 const {chromium} = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
-const TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.csv': 'text/csv; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2'};
+const TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.csv': 'text/csv; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2'};
 function serve() {
   return new Promise(res => {
     const s = http.createServer((q, r) => {
@@ -89,6 +89,34 @@ test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');
   assert(await ev(() => !!document.querySelector('.rvdef')?.textContent), '선택지 설명');
   assert(await ev(() => !!document.querySelector('.rvwhy')), '모델 판단 문장');
+});
+test('초기화: 캐릭터·세계관·구성·씬 → 되돌리기', async ({p, ev}) => {
+  await ev(() => showView('chars')); await p.waitForTimeout(300);
+  const n0 = await ev(() => CHARS.length); assert(n0 > 0, '처음 등장인물');
+  await p.click('#v-chars [data-reset=chars]'); await p.waitForTimeout(200);
+  assert((await ev(() => CHARS.length)) === 0, '캐릭터 비움');
+  assert((await ev(() => document.querySelector('#v-chars [data-reset]').textContent)) === '되돌리기', '되돌리기로 바뀜');
+  await p.click('#v-chars [data-reset=chars]'); await p.waitForTimeout(200);
+  assert((await ev(() => CHARS.length)) === n0, '캐릭터 되돌림');
+  await ev(() => showView('world')); await p.waitForTimeout(300);
+  await p.click('#v-world [data-reset=world]'); await p.waitForTimeout(200);
+  assert(await ev(() => !WORLD.name && LORE.length === 0), '세계관 비움');
+  await p.click('#v-world [data-reset=world]'); await p.waitForTimeout(200);
+  assert(await ev(() => !!WORLD.name && LORE.length > 0), '세계관 되돌림');
+  await ev(() => showView('plan')); await p.waitForTimeout(1200);
+  await p.fill('#plan-form [name=cutCount]', '42'); await p.dispatchEvent('#plan-form', 'change'); await p.waitForTimeout(200);
+  await p.click('#v-plan [data-reset=plan]'); await p.waitForTimeout(300);
+  assert((await p.inputValue('#plan-form [name=cutCount]')) !== '42', '구성 설정 처음 상태');
+  await p.click('#v-plan [data-reset=plan]'); await p.waitForTimeout(300);
+  assert((await p.inputValue('#plan-form [name=cutCount]')) === '42', '구성 되돌림');
+  await ev(() => showView('write')); await p.waitForTimeout(500);
+  const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
+  await p.click('#v-write [data-reset=scenes]'); await p.waitForTimeout(600);
+  assert(await ev(() => SCENES.length === 1 && SCENES[0].cuts.join('') === ''), '씬 비움');
+  await p.click('#v-write [data-reset=scenes]'); await p.waitForTimeout(600);
+  assert((await ev(() => JSON.stringify(SCENES.map(s => s.cuts)))) === before, '씬 되돌림');
+  await p.reload(); await p.waitForTimeout(2200);
+  assert((await ev(() => JSON.stringify(SCENES.map(s => s.cuts)))) === before, '되돌린 씬이 저장돼 있음');
 });
 test('다크 모드: 시스템 다크에서 data-scheme=dark', async ({b, url}) => {
   const p = await b.newPage({colorScheme: 'dark'}); await p.goto(url); await p.waitForTimeout(1200);

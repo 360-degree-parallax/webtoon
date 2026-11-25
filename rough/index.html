@@ -54,6 +54,7 @@
     <input type="file" id="libfile" accept="application/json,.json" hidden>
   </section>
   <div class="next"><span class="grow"></span><button class="btn dark big" data-view="world">세계관으로 →</button></div>
+<div class="rstrow"><button type="button" class="rst" data-reset="chars" title="이 작품 등장인물을 비워요 · 보관함은 그대로">초기화</button></div>
 </div>
 </div>
 
@@ -80,6 +81,7 @@
     <input type="file" id="wlibfile" accept="application/json,.json" hidden>
   </section>
   <div class="next"><button class="btn" data-view="chars">← 캐릭터</button><span class="grow"></span><button class="btn dark big" data-view="plan">구성으로 →</button></div>
+<div class="rstrow"><button type="button" class="rst" data-reset="world" title="세계관 개요와 설정 항목을 비워요 · 보관함은 그대로">초기화</button></div>
 </div>
 </div>
 
@@ -139,6 +141,7 @@
     </form>
     <p id="plan-fixed-warning" role="status"></p>
     <section id="plan-output" aria-label="생성한 구성안"></section>
+    <div class="rstrow"><button type="button" class="rst" data-reset="plan" title="지금 유형(웹툰/마케팅)의 구성 설정과 구성안을 처음 상태로">초기화</button></div>
   </main>
 </div>
 
@@ -162,6 +165,7 @@
     <ol id="scenelist"></ol>
     <button class="btn sm" data-act="addscene" style="width:100%">+ 새 씬</button>
     <button class="link scdemo" data-act="adddemo" title="연출 DB에서 가장 많이 쓰인 두 연출이 잡히는 예시 두 씬을 뒤에 추가해요">예시 씬 추가</button>
+    <div class="rstrow"><button type="button" class="rst" data-reset="scenes" title="모든 씬을 지우고 빈 씬 하나로 · 되돌리기(Ctrl+Z) 가능">초기화</button></div>
   </aside>
   <main class="scpaper">
     <input class="sctitle" id="sctitle" placeholder="씬 제목을 입력하세요" aria-label="씬 제목">
