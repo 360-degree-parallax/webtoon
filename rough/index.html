@@ -1193,6 +1193,30 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 #v-plan .po-sum{margin:16px 0 0;padding:16px 20px;border-radius:16px;background:var(--bg);border:1px solid var(--line2)}
 #v-plan .po-sum span{display:block;font-size:12.5px;font-weight:600;color:var(--t3);margin-bottom:6px}
 #v-plan .po-sum p{margin:0;font-size:15px;line-height:1.75;color:var(--t1);white-space:pre-wrap}
+/* 씬 카드 아래: 컷 초안(씬 화면과 같은 문법으로 보여 주고 누르면 고침) */
+#v-plan .pc-ch{display:flex;align-items:baseline;gap:8px;margin:20px 0 8px}#v-plan .pc-ch b{font-size:14px;font-weight:700}#v-plan .pc-ch span{font-size:12.5px;color:var(--t3)}
+#v-plan .pc-cuts{margin:0;padding:0;list-style:none;display:grid;gap:8px;counter-reset:none}
+#v-plan .pc-cuts li.pcut{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;padding:0;border:0}
+#v-plan .pc-cuts li.pcut::before{content:none}
+#v-plan .pcut-n{justify-self:start;margin-top:12px;padding:3px 9px;border-radius:999px;background:var(--surface,#f2f4f6);font-size:12px;font-weight:700;color:var(--t2);white-space:nowrap}
+#v-plan .pcut-b{min-width:0}
+#v-plan .pcut-view{padding:12px 16px;border:1px solid var(--line2);border-radius:14px;background:var(--bg);cursor:text;display:grid;gap:6px;transition:border-color .12s}
+#v-plan .pcut-view:hover,#v-plan .pcut-view:focus{border-color:#8b95a1;outline:none}
+#v-plan .locked .pcut-view{cursor:default;background:transparent}
+#v-plan .pcut-view p{margin:0;font-size:15px;line-height:1.65;color:var(--t1)}
+#v-plan .pv-do{font-weight:500}#v-plan .pv-at{color:#b4235a;font-weight:600}#v-plan .pv-at::before{content:"@";opacity:.45}
+#v-plan .pv-line{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+#v-plan .pv-who{flex:none;font-size:12.5px;font-weight:700;color:#b4235a;padding:1px 8px;border-radius:999px;background:rgba(180,35,90,.08)}
+#v-plan .pv-act{font-size:13px;color:var(--t3)}
+#v-plan .pv-say{padding:4px 12px;border-radius:14px;background:var(--surface,#f2f4f6);font-size:14.5px}
+#v-plan .pv-cap{padding:6px 12px;border-left:3px solid #8b95a1;background:#f7f8fa;border-radius:0 8px 8px 0;font-size:14px!important;color:var(--t2)!important}
+#v-plan .pv-sfx{font-size:14px!important;font-weight:700;color:#e5484d!important;letter-spacing:.5px}
+#v-plan .pv-empty{color:var(--t3)!important;font-size:14px!important}
+#v-plan .pcut textarea{width:100%;box-sizing:border-box;padding:12px 16px;border:1.5px solid #191f28;border-radius:14px;font-size:15px;line-height:1.65;resize:none;overflow:hidden;background:var(--bg)}
+#v-plan .pc-more{display:block;width:100%;margin-top:10px;padding:10px;border:1px dashed var(--line2);border-radius:12px;background:transparent;font-size:13.5px;color:var(--t2);cursor:pointer}
+#v-plan .pc-more:hover{border-color:#8b95a1;color:var(--t1)}
+@media(max-width:640px){#v-plan .pc-cuts li.pcut{grid-template-columns:1fr;gap:4px}#v-plan .pcut-n{margin-top:0}}
+:root[data-theme=dark] #v-plan .pv-cap{background:#202027}
 </style>
 </head>
 <body>

@@ -104,11 +104,24 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     const meta=(label,name,value)=>'<label><span>'+label+'</span><input data-field="'+name+'" value="'+localText(value)+'"></label>';
     if(!web)return '<article class="plan-card'+(card.locked?' locked':'')+'" data-card="'+card.n+'" id="pc-'+card.n+'">'+head+
       '<div class="plan-fields">'+field('purpose','설득 목적',card.purpose)+field('copy','카피',card.copy,true)+field('cta','CTA',card.cta)+(card.withHTML?htmlFields(card):'')+'</div></article>';
-    const open=OPEN.has(card.id),cuts=card.cuts||[],show=open?cuts:cuts.slice(0,4);
+    const open=OPEN.has(card.id),cuts=card.cuts||[],show=open?cuts:cuts.slice(0,4),more=cuts.length-4;
     return '<article class="plan-card'+(card.locked?' locked':'')+'" data-card="'+card.n+'" id="pc-'+card.n+'">'+head+
       '<div class="pc-meta">'+meta('장면의 역할','purpose',card.purpose)+meta('감정 변화','turn',card.turn)+meta('마지막 컷','ending',card.ending)+'</div>'+
-      '<ol class="pc-cuts">'+show.map((cut,i)=>'<li><textarea rows="1" data-field="cut-'+i+'" aria-label="'+(i+1)+'컷">'+localText(cut)+'</textarea></li>').join('')+'</ol>'+
-      (cuts.length>4?'<button type="button" class="pc-more" data-do="more">'+(open?'접기':'컷 '+(cuts.length-4)+'개 더 보기')+'</button>':'')+'</article>';
+      '<div class="pc-ch"><b>컷 초안</b><span>'+cuts.length+'컷 · 누르면 바로 고쳐요</span></div>'+
+      '<ol class="pc-cuts">'+show.map((cut,i)=>'<li class="pcut" data-cut="'+i+'"><span class="pcut-n">'+(i+1)+'컷</span><div class="pcut-b">'+
+        '<div class="pcut-view" tabindex="0" role="button" aria-label="'+(i+1)+'컷 고치기">'+cutView(cut)+'</div>'+
+        '<textarea rows="2" data-field="cut-'+i+'" aria-label="'+(i+1)+'컷" hidden>'+localText(cut)+'</textarea></div></li>').join('')+'</ol>'+
+      (more>0?'<button type="button" class="pc-more" data-do="more">'+(open?'접기 ↑':'컷 '+more+'개 더 보기 ↓')+'</button>':'')+'</article>';
+  }
+  // 컷 글 → 보기 모양(씬 화면과 같은 문법): 행동 · @인물 "대사" · [나레이션] · -효과음-
+  function cutView(text){
+    const lines=String(text||'').split(/\n/).map(l=>l.trim()).filter(Boolean);if(!lines.length)return '<p class="pv-empty">비어 있어요 · 눌러서 쓰기</p>';
+    const name=w=>'<span class="pv-who">'+localText(w)+'</span>',mention=t=>localText(t).replace(/@([^\s"“,.·]+)/g,'<span class="pv-at">$1</span>');
+    return lines.map(l=>{let m;
+      if((m=l.match(/^\[(.*)\]$/)))return '<p class="pv-cap">'+localText(m[1])+'</p>';
+      if((m=l.match(/^-{1,3}(.+?)-{1,3}$/)))return '<p class="pv-sfx">'+localText(m[1])+'</p>';
+      if((m=l.match(/^@(\S+)\s*(\([^)]*\))?\s*["“](.*)["”]\s*$/)))return '<p class="pv-line">'+name(m[1])+(m[2]?'<span class="pv-act">'+localText(m[2])+'</span>':'')+'<span class="pv-say">'+localText(m[3])+'</span></p>';
+      return '<p class="pv-do">'+mention(l)+'</p>'}).join('');
   }
   function render(){
     const draft=current().draft;
@@ -186,9 +199,15 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
   form.addEventListener('input',()=>{takeSettings();persist();writeWarning();paintPlan()});
   form.addEventListener('change',()=>{takeSettings();configure();persist()});
   form.addEventListener('submit',event=>{event.preventDefault();generate()});
+  // 컷 보기 → 누르면 글칸으로, 벗어나면 다시 보기 모양
+  function editCut(li){if(busy||li.closest('.locked'))return;const v=li.querySelector('.pcut-view'),t=li.querySelector('textarea');v.hidden=true;t.hidden=false;t.style.height='auto';t.style.height=t.scrollHeight+'px';t.focus();t.setSelectionRange(t.value.length,t.value.length)}
+  output.addEventListener('click',event=>{const v=event.target.closest('.pcut-view');if(v)editCut(v.closest('.pcut'))});
+  output.addEventListener('keydown',event=>{const v=event.target.closest('.pcut-view');if(v&&(event.key==='Enter'||event.key===' ')){event.preventDefault();editCut(v.closest('.pcut'))}
+    if(event.target.matches('.pcut textarea')&&event.key==='Escape')event.target.blur()});
+  output.addEventListener('focusout',event=>{const t=event.target;if(!t.matches?.('.pcut textarea'))return;const li=t.closest('.pcut');li.querySelector('.pcut-view').innerHTML=cutView(t.value);t.hidden=true;li.querySelector('.pcut-view').hidden=false});
   output.addEventListener('click',event=>{const a=event.target.closest('[data-jump]');if(!a)return;event.preventDefault();document.getElementById('pc-'+a.dataset.jump)?.scrollIntoView({behavior:'smooth',block:'start'})});
   output.addEventListener('input',event=>{
-    if(event.target.matches('.pc-cuts textarea')){event.target.style.height='auto';event.target.style.height=event.target.scrollHeight+'px'}
+    if(event.target.matches('.pcut textarea')){event.target.style.height='auto';event.target.style.height=event.target.scrollHeight+'px'}
     const name=event.target.dataset.field;
     const card=current().draft?.cards.find(row=>row.n===Number(event.target.closest('[data-card]')?.dataset.card));
     if(!name||!card||card.locked||busy)return;
