@@ -3740,6 +3740,9 @@ function showView(v){if(v==='nai')v='layout';  // 작화는 콘티에 합침(예
   ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   // 숨겨진 채 그려진 컷 글 칸은 높이가 0으로 잡혀 글이 안 보임 → 보일 때 다시 맞춤
+  // 편집·콘티에서 바꾼 내용(지운 식자·컷·씬, 제목)을 씬 화면에 다시 반영 — 화면끼리 같은 원고를 봄
+  if(v==='write'){if(SCUR>=SCENES.length)SCUR=Math.max(0,SCENES.length-1);CUTS=SCENES[SCUR].cuts;const t=$('#sctitle');if(document.activeElement!==t)t.value=SCENES[SCUR].title||'';
+    try{renderCuts();renderSceneList();compute(false);renderSlots();renderSugg()}catch(e){console.warn(e)}}
   if(v==='write')requestAnimationFrame(()=>document.querySelectorAll('.cutin').forEach(grow));
   $('#gscbar').hidden=!['write','layout','nai','webtoon'].includes(v);$('#gDb').setAttribute('aria-pressed',v==='db');
   if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons();refreshPageMaterials()}
