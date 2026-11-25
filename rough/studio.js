@@ -202,6 +202,18 @@ function drawGuide(){reader.querySelectorAll('.phoneguide').forEach(x=>x.remove(
   box.innerHTML=html;reader.appendChild(box)}
 function setGuide(on){PG=!!on;try{localStorage.setItem('rough-phone-guide',PG?'1':'0')}catch(_){}drawGuide()}
 {const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);drawGuide();return r}}
+// C-10 화면 밖 씬 건너뛰기: 씬마다 자리 크기(SVG 비율 × 지금 폭)를 미리 알려 줘서 스크롤 막대가 튀지 않게. ?novirt 또는 rough-virt=0이면 끔
+const VIRT=!/[?&]novirt/.test(location.search)&&(()=>{try{return localStorage.getItem('rough-virt')!=='0'}catch(_){return true}})();
+// 씬 제목 줄·씬 추가 단추 높이(EXTRA)는 처음 한 번 실제로 재어 둠. 크기는 늘 계산값을 씀('auto'로 예전 크기를 기억하면 확대 뒤 높이가 어긋남)
+let EXTRA=0;
+function sizeSections(){if(!VIRT){reader.classList.remove('virt');return}const secs=[...reader.querySelectorAll(':scope>section')];if(!secs.length)return;
+  // 제목 줄·씬 추가 단추 높이: 지금 화면에 보이는(그려진) 씬에서 잼 — 다른 화면 보강 코드가 단추를 붙인 뒤라 다음 프레임에
+  reader.classList.add('virt');cancelAnimationFrame(sizeSections.raf);sizeSections.raf=requestAnimationFrame(()=>{const vis=secs.find(sc=>{const r=sc.getBoundingClientRect();return sc.isConnected&&r.bottom>0&&r.top<innerHeight});
+    const v=vis?.querySelector(':scope>svg');if(v){const ex=Math.round(vis.offsetHeight-v.getBoundingClientRect().height);if(ex>0&&ex<400&&ex!==EXTRA){EXTRA=ex;sizeSections()}}});const ab=reader.classList.contains('artboards'),w=ab?BASE*CZ:(reader.clientWidth||BASE*CZ);
+  secs.forEach(sec=>{const svg=sec.querySelector(':scope>svg');const vb=svg?.viewBox?.baseVal;if(!vb||!vb.width){sec.style.containIntrinsicSize='';return}
+    const h=Math.round(vb.height*w/vb.width+(EXTRA||48));const v=`${Math.round(w)}px ${h}px`;if(sec.style.containIntrinsicSize!==v)sec.style.containIntrinsicSize=v})}
+{const _rw=renderWebtoon;renderWebtoon=function(...a){const r=_rw(...a);sizeSections();return r}}
+{const _az=applyZoom;applyZoom=function(...a){const r=_az(...a);sizeSections();return r}}
 {const _az=applyZoom;applyZoom=function(...a){const r=_az(...a);drawGuide();return r}}
 addEventListener('resize',()=>drawGuide());
 // ---------- 말풍선 읽는 순서(대사만 · 나레이션은 기본 자리가 컷 아래라 빼고): 글에 쓴 순서대로 번호, 화면 위치(위→아래, 같은 높이면 왼→오)로 읽히는 순서와 다르면 빨간 표시 ----------
