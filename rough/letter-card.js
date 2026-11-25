@@ -56,20 +56,23 @@ function paintParts(L,k,o){card.querySelectorAll('[data-c=style]').forEach(b=>b.
 function paint(full){render(full)}
 function fit(){const t=card.querySelector('[data-c=text]');if(!t)return;t.style.height='auto';t.style.height=Math.min(220,t.scrollHeight+2)+'px'}
 function suggestSplit(text,k){const el=card.querySelector('[data-c=split]');if(!el)return;const n=[...text.replace(/\s/g,'')].length;
-  el.innerHTML=k==='dialog'&&n>40?`<button class="lc-warn" data-c="split" title="말풍선 하나에 글이 많아요">${n}자 · 두 말풍선으로 나누기</button>`:''}
+  el.innerHTML=k==='dialog'&&n>32?`<button class="lc-warn" data-c="split" title="말풍선 하나에 글이 많아요">${n}자 · 두 말풍선으로 나누기</button>`:''}
 
 // 문구: 0.3초 묶어 반영(카드 문구 칸은 그대로 두고 캔버스만 다시)
 function commitText(t){const L=selectedLetter;if(!L)return;const k=kindOf(L),v=k==='sfx'?t.trim().replace(/\s+/g,' '):t.trim();if(!v)return;
   const key=keyOf(L),id=L.dataset.letter;saveLetter(L,{text:v});renderWebtoon();const L2=find(key,id);if(L2)selectLetter(L2);if(k==='sfx'&&typeof refreshPageMaterials==='function')refreshPageMaterials()}
 card.addEventListener('input',e=>{const c=e.target.dataset.c;
-  if(c==='text'){fit();const t=e.target.value;card.querySelector('[data-c=info]').textContent=textInfo(t);suggestSplit(t,card.dataset.kind);clearTimeout(typing);typing=setTimeout(()=>commitText(t),300);return}
+  if(c==='text'){fit();const t=e.target.value;card.querySelector('[data-c=info]').textContent=textInfo(t);suggestSplit(t,card.dataset.kind);clearTimeout(typing);typing=setTimeout(()=>{typing=0;commitText(t)},300);return}
   if(c==='scale'){card.querySelector('[data-c=scalev]').textContent=e.target.value+'%'}});
 card.addEventListener('change',e=>{const c=e.target.dataset.c;
   if(c==='scale'){const v=+e.target.value/100;patch({scale:v===1?null:v})}
   if(c==='tail')patch({showTail:e.target.checked?null:false});
   if(c==='linked')patch({linked:e.target.checked||null})});
 card.addEventListener('keydown',e=>{if(e.target.dataset.c==='text'){if(e.key==='Escape'){e.preventDefault();clearTimeout(typing);commitText(e.target.value);e.target.blur();document.querySelector('#reader')?.focus?.({preventScroll:true})}
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();clearTimeout(typing);commitText(e.target.value)}e.stopPropagation()}});
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();clearTimeout(typing);commitText(e.target.value)}
+  // 되돌리기: 아직 반영 안 한 타자가 있으면 글칸의 되돌리기, 아니면 작업 전체 되돌리기(카드 버튼을 누른 뒤에도 커서가 글칸에 남아 있으므로)
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!typing&&typeof edUndo==='function'){e.preventDefault();if(e.shiftKey)edRedo();else edUndo();const L=selectedLetter;if(L){lastKey='';render(true)}return}
+  e.stopPropagation()}});
 // 카드 버튼은 누를 때 포커스를 가져가지 않음(문구 칸을 벗어나며 카드가 다시 그려져 클릭이 사라지던 것 막기)
 card.addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
 card.addEventListener('focusout',e=>{if(e.target.dataset.c==='text'&&typing){clearTimeout(typing);typing=0;commitText(e.target.value)}});

@@ -117,8 +117,12 @@ function addLetter(kind,group,pt,o={}){
   if(!L){flash('넣었어요 · 위치를 찾지 못해 기본 자리에 두었어요');return}
   selectPageCut(g);
   const svg=g.ownerSVGElement,r=L.getBoundingClientRect(),c=new DOMPoint(r.left+r.width/2,r.top+r.height/2).matrixTransform(svg.getScreenCTM().inverse());
+  // 누르기로 넣었으면(pt.auto) 실제 크기로 빈자리를 찾음
+  if(pt?.auto){const m=svg.getScreenCTM().inverse(),r0=(L.querySelector('[data-balloon]')||L).getBoundingClientRect(),a=new DOMPoint(r0.left,r0.top).matrixTransform(m),b=new DOMPoint(r0.right,r0.bottom).matrixTransform(m);pt=freeSpot(g,{w:b.x-a.x,h:b.y-a.y},L)}
   const cur=letterPosition(L),pos={x:Math.round(cur.x+pt.x-c.x),y:Math.round(cur.y+pt.y-c.y)};
   moveLetter(L,pos);saveLetter(L,pos);selectLetter(L);
+  // 화면 밖이면 캔버스만 부드럽게 그 자리로(오른쪽 패널·카드는 그대로)
+  {const L2=groupBy(key)?.querySelector(`[data-letter="${lk}"]`),r=L2?.getBoundingClientRect();if(r&&(r.top<200||r.bottom>innerHeight-20))scrollBy({top:r.top+r.height/2-(200+(innerHeight-200)/2),behavior:'smooth'})}
   // 넣은 뒤 화면 맨 위 서랍을 열지 않음(페이지가 위로 튀고 캔버스를 가렸음) → 편집 카드가 있으면 그 문구 칸으로
   window.RoughCard?.focus?.({select:true});
   flash(`${kind==='balloon'?'말풍선':kind==='caption'?'나레이션':'효과음'}을 넣었어요 · 오른쪽 카드에서 문구를 바로 고쳐요`);
@@ -651,6 +655,17 @@ function renderAssets(){if(!asBody.isConnected)return;renderTarget();const k=ASS
     if(miss.length)sfxLoad(miss).then(()=>{if(ASSET.tab===k)renderAssets()})}}
 // 적용: 클릭은 고른 대상에, 끌어 놓기는 놓은 자리에
 function cutCenter(g){try{const f=JSON.parse(g.dataset.frame);return {x:f.x+f.w/2,y:f.y+f.h*.35}}catch(_){return {x:345,y:200}}}
+// 빈자리: 컷 안 후보 자리(3×4) 중 이미 있는 식자와 가장 덜 겹치는 곳(같으면 위·가운데 우선). 새 식자 크기는 컷 폭 38% × 높이 20%로 어림
+function freeSpot(g,size,skip){let f;try{f=JSON.parse(g.dataset.frame)}catch(_){return cutCenter(g)}const svg=g.ownerSVGElement,m=svg.getScreenCTM().inverse();
+  const boxes=[...g.querySelectorAll('[data-letter]')].filter(L=>L!==skip).map(L=>{const r=(L.querySelector('[data-balloon]')||L).getBoundingClientRect(),a=new DOMPoint(r.left,r.top).matrixTransform(m),b=new DOMPoint(r.right,r.bottom).matrixTransform(m);return [a.x,a.y,b.x,b.y]});
+  const w=size?.w||f.w*.38,h=size?.h||Math.max(60,f.h*.2),cands=[];for(const fy of [.2,.4,.6,.8])for(const fx of [.3,.5,.7])cands.push({x:f.x+f.w*fx,y:f.y+f.h*fy,pri:Math.abs(fx-.5)+fy*.6});
+  const ov=c=>boxes.reduce((s,[x1,y1,x2,y2])=>s+Math.max(0,Math.min(x2,c.x+w/2)-Math.max(x1,c.x-w/2))*Math.max(0,Math.min(y2,c.y+h/2)-Math.max(y1,c.y-h/2)),0);
+  // 화면에 보이는 부분 우선(겹침이 같을 때) — 넣자마자 보이게
+  const M=svg.getScreenCTM(),vis=c=>{const y=new DOMPoint(c.x,c.y).matrixTransform(M).y;return y>210&&y<innerHeight-40?0:1};
+  cands.sort((a,b)=>ov(a)-ov(b)||vis(a)-vis(b)||a.pri-b.pri);return {x:cands[0].x,y:cands[0].y}}
+// 컷을 고르지 않았으면 지금 화면 가운데에 보이는 컷
+function visibleCut(){const c=document.querySelector('.edcanvas')?.getBoundingClientRect();if(!c)return null;const y=Math.max(c.top,200)+(Math.min(c.bottom,innerHeight)-Math.max(c.top,200))/2;
+  let best=null,bd=1e9;reader.querySelectorAll(':scope>section [data-slot-index]').forEach(g=>{const r=g.getBoundingClientRect(),d=y<r.top?r.top-y:y>r.bottom?y-r.bottom:0;if(d<bd){bd=d;best=g}});return best}
 // 소재 효과음을 고른 타입(A~D)으로 넣기
 // 고른 효과음이 있으면 새로 넣지 않고 그 자리에서 바꿈(위치·크기·회전 그대로). 글에서 온 효과음(-쾅-)은 컷 글의 그 낱말을, 소재 효과음은 소재 목록을 바꿈
 function selSfx(){const L=selectedLetter;return L&&/^(effect-|material-)/.test(L.dataset.letter)?L:null}
@@ -666,10 +681,16 @@ async function addPack(id,g){const entry=materialCatalog.entry(id),key=pageKey(g
   try{await materialCatalog.load(entry,SFX_TYPE)}catch(_){flash('효과음 이미지를 불러오지 못했어요');return}
   const set=pageSettings(true,key),mid=crypto.randomUUID();(set.materialSounds||=[]).push({id:mid,text:entry.word});
   if(SFX_TYPE!=='A')(set.letters||={})['material-'+mid]={...(set.letters?.['material-'+mid]||{}),materialVariant:SFX_TYPE};
-  saveScenes();renderWebtoon();const L=reader.querySelector(`[data-letter="material-${mid}"]`);if(L)selectLetter(L);
+  saveScenes();renderWebtoon();let L=reader.querySelector(`[data-letter="material-${mid}"]`);
+  if(L){const gg=L.closest('[data-slot-index]'),sp=freeSpot(gg),svg=gg.ownerSVGElement,r=L.getBoundingClientRect(),c=new DOMPoint(r.left+r.width/2,r.top+r.height/2).matrixTransform(svg.getScreenCTM().inverse()),cur=letterPosition(L),pos={x:Math.round((cur.x||0)+sp.x-c.x),y:Math.round((cur.y||0)+sp.y-c.y)};moveLetter(L,pos);saveLetter(L,pos);L=reader.querySelector(`[data-letter="material-${mid}"]`)}
+  if(L)selectLetter(L);
   flash(`${entry.word} · ${SFX_TYPES.find(t=>t[0]===SFX_TYPE)[1]} 효과음을 넣었어요`)}
 function applyAsset(k,v,g,pt,target){const label=asBody.querySelector(`[data-mat="${k}"][data-v="${CSS.escape(String(v))}"]`)?.dataset.label||String(v);
   g=g||(pageSelection?selGroup():null);
+  // 고른 식자가 없고 컷도 안 골랐으면 화면 가운데 컷에 · 누르기로 넣을 땐 빈자리에(끌어 놓으면 놓은 자리)
+  const swapping=(k==='balloon'&&selectedLetter?.dataset.letter?.startsWith('dialog-'))||((k==='sfx'||k==='pack')&&selSfx());
+  if(!g&&!swapping&&(k==='balloon'||k==='sfx'||k==='pack')){g=visibleCut();if(g)selectPageCut(g)}
+  if(g&&!pt&&!swapping&&(k==='balloon'||k==='sfx'))pt={auto:true,...cutCenter(g)};
   if(k==='balloon'||k==='sfx'||k==='line'){if(k==='balloon'&&!g&&selectedLetter){const sg=selectedLetter.closest('[data-slot-index]');useMat('balloon',v,sg,cutCenter(sg),selectedLetter)}else useMat(k,v,g,pt||(g?cutCenter(g):null),target||(k==='balloon'?selectedLetter:null));remember(k,v,label);return}
   if(!g&&k==='pack'&&selSfx())g=selSfx().closest('[data-slot-index]');
   if(!g){flash('먼저 컷을 고르거나, 캔버스의 컷으로 끌어다 놓아요');return}
