@@ -816,7 +816,10 @@ function wState(x,kind){const L=wlibOf(x);if(!L)return'';const F=kind==='world'?
 function loreStat(e){const bs=RE.parseCuts(CUTS,engineChars());return bs.filter(b=>loreKeys(e).some(k=>[b.act,b.caption,...(b.dialogs||[]).map(d=>d.text)].join(' ').includes(k))).length}
 const imgBox=(im,label,attr,cls='')=>`<div class="drop ce-img${cls}${im?' has':''}" ${attr} tabindex="0" role="button" aria-label="${esc(label)}" style="${im?'':`background:${avBg(label)}`}">${im?`<img src="${im.src}" alt=""><button class="x" data-wimgdel aria-label="이미지 지우기">×</button>`:`<span class="ini">${esc((label||'?').slice(0,1))}</span><small>+ 이미지</small>`}</div>${im?`<div class="pal">${im.palette.map(h=>`<i style="background:${h}" title="${h}"></i>`).join('')}</div>`:''}`;
 const libBtns=()=>`<span class="grow"></span><button type="button" class="btn" data-act="wrevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="wsave">보관함에 저장</button>`;
-function worldRow(){const w=WORLD;return `<article class="cedit" data-wk="world"><div class="ce-side">${imgBox(IMG.world,w.name||'세계관','data-wimg="world"',' cover')}</div>
+function worldRow(){const w=WORLD;
+  // 세계관을 뺀 상태(0개): 빈 자리 + 새로 만들기 · 보관함에서 고르기
+  if(w.off)return `<div class="wnone"><b>세계관이 없어요</b><span>세계관 없이도 씬·콘티를 만들 수 있어요. 필요하면 새로 만들거나 아래 보관함에서 골라 넣어요.</span><button type="button" class="btn dark" data-act="wnew">+ 새 세계관</button></div>`;
+  return `<article class="cedit" data-wk="world"><div class="ce-side">${imgBox(IMG.world,w.name||'세계관','data-wimg="world"',' cover')}</div>
   <div class="ce-f"><div class="ce-top"><input class="ce-name" data-wf="name" value="${esc(w.name||'')}" maxlength="30" placeholder="세계관 이름" aria-label="세계관 이름" spellcheck="false"><span class="cbadge" data-badge hidden></span></div>
     <div class="ce-grid2"><label class="cf"><span>장르 <small>쉼표로 구분</small></span><input data-wf="genre" value="${esc(w.genre||'')}" placeholder="예: 로맨스 판타지, 미스터리"></label>
       <label class="cf"><span>시대·배경</span><input data-wf="era" value="${esc(w.era||'')}" placeholder="예: 19세기 말 가상의 왕국"></label>
@@ -824,7 +827,7 @@ function worldRow(){const w=WORLD;return `<article class="cedit" data-wk="world"
       <label class="cf"><span>한줄 소개 <small data-cnt="summary">${(w.summary||'').length}/80</small></span><input data-wf="summary" maxlength="80" value="${esc(w.summary||'')}" placeholder="이 세계를 한 문장으로"></label></div>
     <label class="cf"><span>상세 설정 <small data-cnt="detail">${(w.detail||'').length}/3000</small></span><textarea data-wf="detail" rows="5" maxlength="3000" placeholder="역사, 사회 구조, 계급, 기술·마법 수준, 금기, 일상 풍경 등">${esc(w.detail||'')}</textarea></label>
     <label class="cf"><span>NovelAI 태그 <small>모든 컷의 기본 프롬프트에 붙어요</small></span><input data-wf="tags" value="${esc(w.tags||'')}" placeholder="victorian, 19th century" spellcheck="false"></label>
-    <div class="ce-foot"><span class="cstat">설정 항목 ${LORE.length}개</span>${libBtns()}</div></div></article>`}
+    <div class="ce-foot"><span class="cstat">설정 항목 ${LORE.length}개</span>${libBtns()}<button type="button" class="btn" data-act="wdel">작품에서 빼기</button></div></div></article>`}
 function loreRow(e,i){const c=LORE_CAT[e.cat]||LORE_CAT.place,n=loreStat(e);return `<article class="cedit" data-li="${i}"><div class="ce-side">${imgBox(IMG.lore[e.id],e.name||c[0],`data-wimg="lore"`)}</div>
   <div class="ce-f"><div class="ce-top"><input class="ce-name" data-lf="name" value="${esc(e.name||'')}" maxlength="30" placeholder="항목 이름" aria-label="항목 이름" spellcheck="false"><select class="ce-sel" data-lf="cat" aria-label="분류">${Object.entries(LORE_CAT).map(([k,v])=>`<option value="${k}"${e.cat===k?' selected':''}>${v[0]}</option>`).join('')}</select><span class="cbadge" data-badge hidden></span></div>
     <label class="cf"><span>키워드 <small>쉼표로 구분 · 이름이나 이 단어가 컷 글에 나오면 적용</small></span><input data-lf="keys" value="${esc(e.keys||'')}" placeholder="예: 복도, 대저택" spellcheck="false"></label>
@@ -841,7 +844,7 @@ function renderWorld(){if(!$('#worldov'))return;$('#worldov').innerHTML=worldRow
   $('#lore').innerHTML=rows.map(([e,i])=>loreRow(e,i)).join('')+`<button class="ccadd" data-act="loreadd">+ 새 설정 항목${LORECAT?` (${LORE_CAT[LORECAT][0]})`:''}</button>`;
   document.querySelectorAll('#worldov .cedit,#lore .cedit').forEach(updateWRow);
   const k=LORE.filter(e=>wState(e,'lore')==='same').length;$('#lorest').textContent=`항목 ${LORE.length}개 · 보관함 저장 ${k}`;renderWlib();renderWorldSum()}
-function renderWorldSum(){const el=$('#worldsum');if(!el)return;const w=WORLD,bits=[w.genre,w.era].filter(Boolean).join(' · ');
+function renderWorldSum(){const el=$('#worldsum');if(!el)return;if(WORLD.off&&!LORE.length){el.innerHTML='<span class="wl">세계관 없음</span>';return}const w=WORLD,bits=[w.genre,w.era].filter(Boolean).join(' · ');
   el.innerHTML=`<span class="av" style="${IMG.world?'':`background:${avBg(w.name||'?')}`}">${IMG.world?`<img src="${IMG.world.src}" alt="">`:esc((w.name||'?').slice(0,1))}</span><span class="wl" title="${esc([w.name,bits,w.summary].filter(Boolean).join(' · '))}"><b>${esc(w.name||'이름 없음')}</b>${bits?` · ${esc(bits)}`:''} · 설정 ${LORE.length}개${LORE.length?` (${LORE.map(e=>esc(e.name)).join(', ')})`:''}</span><button class="btn" data-view="world">세계관 페이지에서 편집</button>`}
 // 보관함: 개요(kind world)와 항목(kind lore)을 함께 보관
 function wlibSave(x,kind,quiet){const nm=(x.name||'').trim();if(!nm){toast('이름을 먼저 정해 주세요');return}
@@ -849,7 +852,7 @@ function wlibSave(x,kind,quiet){const nm=(x.name||'').trim();if(!nm){toast('이�
   for(const f of kind==='world'?WF:LF)L[f]=x[f]||'';L.kind=kind;L.at=Date.now();
   const im=kind==='world'?IMG.world:IMG.lore[x.id];if(im){const o={...im,id:'wlib:'+L.id,kind:'wlibimg',libId:L.id};delete o.loreId;IMG.wlib[L.id]=o;idb.put(o)}else if(IMG.wlib[L.id]){delete IMG.wlib[L.id];idb.del('wlib:'+L.id)}
   saveWlib();saveWorld();if(!quiet)toast(`${nm}을(를) 보관함에 저장했어요`)}
-function wlibApply(L,x,kind){for(const f of kind==='world'?WF:LF)x[f]=L[f]||'';x.lib=L.id;const im=IMG.wlib[L.id];
+function wlibApply(L,x,kind){delete x.off;for(const f of kind==='world'?WF:LF)x[f]=L[f]||'';x.lib=L.id;const im=IMG.wlib[L.id];
   if(kind==='world'){if(im){const o={...im,id:'world:cover',kind:'worldimg'};delete o.libId;IMG.world=o;idb.put(o)}else if(IMG.world){IMG.world=null;idb.del('world:cover')}}
   else{if(im){const o={...im,id:'lore:'+x.id,kind:'loreimg',loreId:x.id};delete o.libId;IMG.lore[x.id]=o;idb.put(o)}else if(IMG.lore[x.id]){delete IMG.lore[x.id];idb.del('lore:'+x.id)}}}
 function wlibUse(id){const L=WLIB.find(x=>x.id===id);if(!L)return;
@@ -887,6 +890,9 @@ async function wlibImport(file){try{const d=JSON.parse(await file.text());if(d.t
     const dl=e.target.closest('[data-wlibdel]');if(dl){const L=WLIB.find(x=>x.id===dl.dataset.wlibdel);if(!L||!confirm(`보관함에서 '${L.name}'을(를) 지울까요? 작품에 넣은 내용은 그대로 남아요.`))return;
       WLIB=WLIB.filter(x=>x.id!==L.id);if(IMG.wlib[L.id]){delete IMG.wlib[L.id];idb.del('wlib:'+L.id)}if(WORLD.lib===L.id)delete WORLD.lib;LORE.forEach(x=>{if(x.lib===L.id)delete x.lib});saveWlib();saveWorld();renderWorld();toast('보관함에서 지웠어요');return}
     const a=e.target.closest('[data-act]'),k=a&&a.dataset.act;
+    if(k==='wnew'){WORLD={name:'',genre:'',era:'',tone:'',summary:'',detail:'',tags:''};saveWorld();renderWorld();setTimeout(()=>document.querySelector('#worldov [data-wf=name]')?.focus(),30);return}
+    if(k==='wdel'){if(!confirm(`세계관 「${WORLD.name||'이름 없음'}」을(를) 이 작품에서 뺄까요?${WORLD.lib?' 보관함에는 남아 있어요.':' 보관함에 저장하지 않았다면 다시 불러올 수 없어요.'} 설정 항목은 그대로예요.`))return;
+      if(IMG.world){IMG.world=null;idb.del('world:cover')}WORLD={off:true};saveWorld();renderWorld();render?.();compute(false);toast('세계관을 작품에서 뺐어요');return}
     if(k==='loreadd'){const it={id:'l'+Date.now().toString(36),name:'',cat:LORECAT||'place',keys:'',desc:'',tags:''};LORE.push(it);saveWorld();renderWorld();setTimeout(()=>{const r=document.querySelector(`#lore .cedit[data-li="${LORE.length-1}"]`);if(r){r.scrollIntoView({behavior:'smooth',block:'center'});r.querySelector('[data-lf=name]').focus({preventScroll:true})}},30);return}
     if(k==='wlibsaveall'){let n=0;if((WORLD.name||'').trim()&&wState(WORLD,'world')!=='same'){wlibSave(WORLD,'world',true);n++}LORE.forEach(x=>{if((x.name||'').trim()&&wState(x,'lore')!=='same'){wlibSave(x,'lore',true);n++}});renderWorld();toast(n?`${n}개를 보관함에 저장했어요`:'모두 보관함과 같아요');return}
     if(k==='wlibexport'){wlibExport();return}if(k==='wlibimport'){$('#wlibfile').click();return}
