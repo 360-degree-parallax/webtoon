@@ -3,7 +3,8 @@
 (function(){
 const panel=$('#wrefs'),tabL=$('#ltab-layers'),tabR=$('#ltab-refs');
 const PAGE=48;
-const F={q:'',work:'',shot:'',angle:'',emotion:'',panel:'',clean:false,all:false,similar:false};
+const F={q:'',work:'',shot:'',angle:'',emotion:'',panel:'',np:'',mx:'',col:'',clean:false,all:false,similar:false};
+const MX={L:'왼쪽',C:'가운데',R:'오른쪽'};
 let shown=PAGE,picked='',TEXT=null,textLoading=null;
 const SHOT_ORDER=['설정','전경','전신','중경','클로즈업','디테일','화면 인서트','효과 배경','SD'];
 const PANEL={single:'한 칸',bleed:'끝까지',multi:'여러 칸'};
@@ -26,10 +27,10 @@ function selPanel(){if(!pageSelection)return null;const [sc,slot]=pageSelection.
 const RANK={설정:0,전경:1,전신:2,중경:3,클로즈업:4,디테일:5};
 function similarity(r,p){if(!p)return 0;const a=RANK[r.shot],b=RANK[p.shot];
   return (r.shot===p.shot?2:a!=null&&b!=null&&Math.abs(a-b)===1?.8:0)+(r.angle===p.ang?1:0)+(r.emotion&&r.emotion===p.emo?.6:0)+(r.role&&r.role===p.role?.3:0)
-    +(p.h&&r.h_ratio?Math.max(0,1-Math.abs(r.h_ratio-p.h)*1.5):0)+(r.balloon_cover!=null?Math.max(0,.4-r.balloon_cover):0)}
+    +(p.h&&r.h_ratio?Math.max(0,1-Math.abs(r.h_ratio-p.h)*1.5):0)+(()=>{const n=new Set((String(p.key||'').match(/@[^\s@.,!?"'“”…~{}()\[\]]+/g)||[]).map(x=>x.slice(1))).size;return n&&r.np!=null&&Math.min(r.np,3)===Math.min(n,3)?.5:0})()+(r.balloon_cover!=null?Math.max(0,.4-r.balloon_cover):0)}
 function results(){const q=F.q.trim().toLowerCase(),p=F.similar?selPanel():null;
   let out=items().filter(r=>(!F.work||codeOf(r)===F.work)&&(!F.shot||r.shot===F.shot)&&(!F.angle||r.angle===F.angle)&&(!F.emotion||r.emotion===F.emotion)
-    &&(!F.panel||r.panel===F.panel)&&(!F.clean||(r.balloon_cover??0)<.08)&&(!q||[r.source_cut,r.work,r.shot,r.angle,r.emotion,r.role,TEXT?.[r.source_cut]?.text,TEXT?.[r.source_cut]?.scene,TEXT?.[r.source_cut]?.detail].join(' ').toLowerCase().includes(q)));
+    &&(!F.panel||r.panel===F.panel)&&(!F.np||(F.np==='3'?(r.np??0)>=3:String(r.np??'')===F.np))&&(!F.mx||r.mx===F.mx)&&(!F.col||(F.col==='mono'?r.mono===1:r.mono!==1))&&(!F.clean||(r.balloon_cover??0)<.08)&&(!q||[r.source_cut,r.work,r.shot,r.angle,r.emotion,r.role,TEXT?.[r.source_cut]?.text,TEXT?.[r.source_cut]?.scene,TEXT?.[r.source_cut]?.detail].join(' ').toLowerCase().includes(q)));
   if(p){out=out.map(r=>[similarity(r,p),r]).sort((a,b)=>b[0]-a[0]).map(x=>x[1])}
   return out}
 const opts=(vals,cur,all)=>`<option value="">${all}</option>`+vals.map(v=>`<option${v===cur?' selected':''}>${esc(v)}</option>`).join('');
@@ -48,6 +49,9 @@ function render(){if(panel.hidden||!panel.isConnected||panel.closest('[hidden]')
     <select data-f="angle" aria-label="앵글">${opts(uniq('angle'),F.angle,'모든 앵글')}</select>
     <select data-f="emotion" aria-label="감정">${opts(uniq('emotion'),F.emotion,'모든 감정')}</select>
     <select data-f="panel" aria-label="칸 모양"><option value="">모든 칸</option>${Object.entries(PANEL).map(([k,v])=>`<option value="${k}"${k===F.panel?' selected':''}>${v}</option>`).join('')}</select>
+    <select data-f="np" aria-label="인물 수"><option value="">모든 인물 수</option>${[['0','인물 없음'],['1','1명'],['2','2명'],['3','3명 이상']].map(([k,v])=>`<option value="${k}"${k===F.np?' selected':''}>${v}</option>`).join('')}</select>
+    <select data-f="mx" aria-label="주인공 위치"><option value="">주인공 위치 전체</option>${Object.entries(MX).map(([k,v])=>`<option value="${k}"${k===F.mx?' selected':''}>주인공 ${v}</option>`).join('')}</select>
+    <select data-f="col" aria-label="색"><option value="">컬러·흑백</option><option value="color"${F.col==='color'?' selected':''}>컬러</option><option value="mono"${F.col==='mono'?' selected':''}>흑백</option></select>
   </div>
   <div class="rf-checks"><label><input type="checkbox" data-c="clean"${F.clean?' checked':''}> 말풍선 거의 없음</label><label><input type="checkbox" data-c="all"${F.all?' checked':''}> 제외 컷도</label></div>
   <div class="rf-sel">${p?`<div class="rf-cur"><span>${esc(pageCut.selectedOptions[0]?.textContent||'선택한 컷')}</span><b>${cur?esc(cur.source_cut):'레퍼런스 없음'}</b>${edit?'<em>직접 고름</em>':''}</div>
@@ -59,7 +63,7 @@ function render(){if(panel.hidden||!panel.isConnected||panel.closest('[hidden]')
   ${list.length>shown?`<button class="btn sm rf-more" data-act="rfmore">더 보기 (${(list.length-shown).toLocaleString()})</button>`:''}`;
 }
 function detail(r,canApply){const t=TEXT?.[r.source_cut];
-  return `<div class="rf-detail"><img src="${r.src}" alt="${esc(r.source_cut)}"><div class="rf-meta"><b>${esc(r.source_cut)}</b> · ${esc(r.work)}<br>${esc([r.shot,r.angle,r.role,r.emotion].filter(Boolean).join(' · '))}<br><small>${PANEL[r.panel]||''}${r.frame==='slant'?' · 사선':''}${r.balloon_cover!=null?` · 말풍선 ${Math.round(r.balloon_cover*100)}%`:''}</small>${t?.text?`<p>${esc(t.text)}</p>`:''}</div>
+  return `<div class="rf-detail"><img src="${r.src}" alt="${esc(r.source_cut)}"><div class="rf-meta"><b>${esc(r.source_cut)}</b> · ${esc(r.work)}<br>${esc([r.shot,r.angle,r.role,r.emotion].filter(Boolean).join(' · '))}<br><small>${PANEL[r.panel]||''}${r.frame==='slant'?' · 사선':''}${r.np!=null?` · 인물 ${r.np>=3?'3명 이상':r.np?r.np+'명':'없음'}`:''}${r.mx?` · 주인공 ${MX[r.mx]}`:''}${r.mono?' · 흑백':''}${r.salt?` · 그림으로는 ${esc(r.salt)}에 가까움`:''}${r.balloon_cover!=null?` · 말풍선 ${Math.round(r.balloon_cover*100)}%`:''}</small>${t?.text?`<p>${esc(t.text)}</p>`:''}</div>
     <div class="rf-actions">${canApply?`<button class="btn dark sm" data-act="rfapply">이 컷에 쓰기</button>`:''}<button class="btn sm" data-act="rfclose">닫기</button></div></div>`}
 
 function apply(id,key=pageSelection){if(!key||!REF_PICK[id])return;const prev=pageSelection;pageSelection=key;const set=pageSettings(true);set.ref=id;

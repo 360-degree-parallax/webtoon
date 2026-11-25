@@ -58,6 +58,7 @@ function render(){
       <p class="rvtext">${esc(it.text)}</p>
       ${it.detail&&it.detail!==it.text&&it.detail.replace(/\.$/,'')!==it.text?`<p class="rvdetail">${esc(it.detail)}</p>`:''}
       ${it.info?`<div class="rvinfo">${['샷','앵글','역할','감정','강도'].filter(k=>it.info[k]!=null).map(k=>`<span class="${k===it.field?'cur':''}"><small>${k}</small>${esc(String(it.info[k]))}${k==='감정'&&it.info['감정(세부)']&&it.info['감정(세부)']!==it.info.감정?` · ${esc(it.info['감정(세부)'])}`:''}</span>`).join('')}</div>`:''}
+      ${it.meta?`<div class="rvinfo rvmeta2"><span><small>그림 분석</small>인물 ${it.meta.머리>=3?'3명 이상':it.meta.머리?it.meta.머리+'명':'없음'}</span>${it.meta['머리 높이']!=null?`<span title="머리 높이를 컷 폭에 견준 값 · 샷별 중앙값 설정 0.09 · 전경 0.14 · 전신 0.25 · 중경 0.35 · 클로즈업 0.59"><small>머리 크기</small>${Math.round(it.meta['머리 높이']*100)}% <small>(${it.meta['머리 높이']<.12?'설정':it.meta['머리 높이']<.2?'전경':it.meta['머리 높이']<.3?'전신':it.meta['머리 높이']<.47?'중경':'클로즈업'} 쪽)</small></span>`:''}${it.meta.주인공?`<span><small>주인공</small>${esc(it.meta.주인공)}</span>`:''}${it.meta.흑백?'<span>흑백</span>':''}</div>`:''}
       <p class="rvwhy">${(()=>{const top=it.options[0],nowp=it.options.find(o=>o.label===it.current);return `모델은 <b>${esc(top.label)}</b>(${pct(top.p)})로 봤고, 지금 DB 값 <b>${esc(it.current)}</b>은 ${nowp?pct(nowp.p):'낮음'}이에요. ${esc(WHY[it.field]||'')}`})()}</p>
       <p class="rvask">이 컷의 <b>${esc(it.field)}</b>은?</p>
       <div class="rvopts">${it.options.map((o,k)=>{const ex=(Q.meta?.examples?.[it.field]?.[o.label]||[]).filter(x=>x.cut!==it.cut).slice(0,3);

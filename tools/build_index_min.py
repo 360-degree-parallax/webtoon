@@ -9,7 +9,7 @@ import json, pathlib, gzip
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent / 'rough' / 'cuts'
 SRC, OUT = ROOT / 'index.json', ROOT / 'index.min.json'
-COLS = ['id', 'shot', 'angle', 'role', 'emotion', 'h_ratio', 'art', 'fit', 'w', 'h', 'frame', 'quad', 'panel', 'balloon_cover', 'fixed']
+COLS = ['id', 'shot', 'angle', 'role', 'emotion', 'h_ratio', 'art', 'fit', 'w', 'h', 'frame', 'quad', 'panel', 'balloon_cover', 'fixed', 'np', 'hr', 'mx', 'mono', 'sp', 'salt']  # 뒤 6개: 컷 메타(tools/meta/build_meta_cols.py)
 
 d = json.loads(SRC.read_text())
 works, rows = {}, []

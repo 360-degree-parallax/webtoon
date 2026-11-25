@@ -22,7 +22,13 @@ files = {r['cut_id']: r['file'] for r in csv.DictReader(open(ROOT / 'rough' / 'c
 seen = set()
 p = ROOT / 'docs' / 'ml' / 'shot-audit.csv'
 if p.exists(): seen |= {r['컷ID'] for r in csv.DictReader(open(p, encoding='utf-8-sig'))}
-TASKS = [('shot', '샷', ['clip', 'dino', 'text']), ('emo', '감정', ['clip', 'text']), ('role', '역할', ['clip', 'dino', 'text'])]
+# 컷 메타(tools/meta/eval_meta.py의 숫자 특징): 샷 판정 모델에 더해 머리 크기·인물 수와 라벨이 어긋나는 컷을 더 잘 잡음
+META = {}
+if (ROOT / 'rough' / 'db' / 'cut-meta.json').exists():
+    sys.path.insert(0, str(ROOT / 'tools' / 'meta')); _argv = sys.argv; sys.argv = sys.argv[:1]; import eval_meta as EMT; sys.argv = _argv
+    META = {i: EMT.Xm[k] * .35 for k, i in enumerate(EMT.ids)}; M['meta'] = META
+CM = json.loads((ROOT / 'rough' / 'db' / 'cut-meta.json').read_text())['cuts'] if META else {}
+TASKS = [('shot', '샷', ['clip', 'dino', 'text'] + (['meta'] if META else [])), ('emo', '감정', ['clip', 'text']), ('role', '역할', ['clip', 'dino', 'text'])]
 KEEP = '--keep' in A
 oldq = json.loads((ROOT / 'rough' / 'db' / 'review-queue.json').read_text()) if KEEP and (ROOT / 'rough' / 'db' / 'review-queue.json').exists() else {'items': []}
 old_ids = {x['id'] for x in oldq['items']}
@@ -41,6 +47,8 @@ def enrich(it):
     it['prev'] = near(i, -1); it['next'] = near(i, 1)
     it['info'] = {k: r[I(k)] for k in INFO if r[I(k)] not in (None, '')}
     it['detail'] = str(r[I('상세 내용과 연출')] or '')[:220]
+    m = CM.get(i)
+    if m: it['meta'] = {'머리': m['머리 수'], '머리 높이': round(m['머리 높이 비'] * m['크기'][1] / m['크기'][0], 2) if '머리 높이 비' in m else None, '주인공': (m.get('주인공') or {}).get('가로'), '흑백': m['흑백']}
     return it
 examples = {}
 items = []

@@ -600,9 +600,13 @@
   function suggestRefText(cut, refs) {
     const T = E._refT, M = T.M, raw = String(cut.key || '').replace(/^#\d+:/, '') || [cut.act, cut.said].filter(Boolean).join(' ');
     const q = new Map(T.vec(raw.replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()));
+    // 컷 메타(tools/meta): 컷 글의 @인물 수와 레퍼런스의 검출 머리 수가 같으면 가산, 샷 라벨을 그림 모델이 의심하는 레퍼런스는 조금 감산
+    const ppl = new Set((raw.match(/@[^\s@.,!?"'“”…~{}()\[\]]+/g) || []).map(x => x.slice(1).replace(/(이|가|은|는|을|를|의|에게|와|과|도|만|랑)$/, ''))).size;
     let best = null, bs = -1;
     for (const r of refs) {
       let s = (r.shot === cut.shot ? 2 : RANK[r.shot] != null && Math.abs(RANK[r.shot] - RANK[cut.shot]) === 1 ? 0.8 : 0) + (r.angle === cut.ang ? 1 : 0) + (r.role && r.role === cut.role ? 0.3 : 0) + (r.emotion && r.emotion === cut.emo ? 0.2 : 0);
+      if (ppl && r.np != null) s += Math.min(r.np, 3) === Math.min(ppl, 3) ? 0.6 : 0;
+      if (r.sp != null) s += 0.5 * (r.sp - 0.5);
       const v = M.refs[r.source_cut]; if (v) { let c = 0; for (let i = 0; i < v.length; i += 2) { const w = q.get(v[i]); if (w) c += w * v[i + 1]; } s += M.meta.lam * c; }
       if (s > bs) { bs = s; best = r; }
     }
