@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "source": [
+    "rough/materials.js",
+    "rough/image-materials.js"
+  ],
+  "entries": [
+    {
+      "id": "line-focus",
+      "kind": "procedural",
+      "type": "focus",
+      "parameters": [
+        "x",
+        "y",
+        "angle",
+        "color",
+        "density"
+      ],
+      "opacity_default": 0.72,
+      "semantic": {
+        "purpose_candidates": [
+          "정보 강조",
+          "충격 강조"
+        ],
+        "role_candidates": [
+          "공개",
+          "반응"
+        ],
+        "status": "inferred_unreviewed"
+      }
+    },
+    {
+      "id": "line-speed",
+      "kind": "procedural",
+      "type": "speed",
+      "parameters": [
+        "x",
+        "y",
+        "angle",
+        "color",
+        "density"
+      ],
+      "opacity_default": 0.48,
+      "semantic": {
+        "purpose_candidates": [
+          "긴장 고조",
+          "몰입 유도"
+        ],
+        "role_candidates": [
+          "전개"
+        ],
+        "status": "inferred_unreviewed"
+      }
+    },
+    {
+      "id": "mask-fade",
+      "kind": "procedural_mask",
+      "type": "fade",
+      "parameters": [
+        "edge",
+        "length",
+        "strength"
+      ],
+      "semantic": {
+        "status": "unreviewed"
+      }
+    },
+    {
+      "id": "mask-watercolor",
+      "kind": "procedural_mask",
+      "type": "watercolor",
+      "parameters": [
+        "edge",
+        "length",
+        "strength"
+      ],
+      "semantic": {
+        "status": "unreviewed"
+      }
+    },
+    {
+      "id": "mask-ink",
+      "kind": "procedural_mask",
+      "type": "ink",
+      "parameters": [
+        "edge",
+        "length",
+        "strength"
+      ],
+      "semantic": {
+        "status": "unreviewed"
+      }
+    },
+    {
+      "id": "overlay-user",
+      "kind": "user_image_template",
+      "parameters": [
+        "asset",
+        "scale",
+        "x",
+        "y",
+        "angle",
+        "opacity",
+        "spill",
+        "mask"
+      ],
+      "semantic": {
+        "status": "requires_user_image"
+      },
+      "visual": null
+    }
+  ]
+}
