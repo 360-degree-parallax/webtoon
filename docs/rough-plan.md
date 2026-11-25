@@ -945,3 +945,20 @@
 
 - tests/e2e/run.js: 브라우저 시나리오 12개(처음 열기·설정집·저장/복원·편집↔씬 연동·효과음 추천·인물 추가·효과선 카드·Esc·레퍼런스 필터·판정·다크 모드·IndexedDB 복원·씬 그림 캐시). GitHub Actions e2e.yml에서 rough·tests 변경 때 실행.
 - app.js(25만 자)를 화면별 원본 조각 6개로: rough/src/app-core·app-setbook·app-scene·app-edit·app-edit2·app-views.js. 조각끼리 불러올 때 서로 부르는 곳이 많아(따로 실으면 「CUTS is not defined」 등) 사이트는 tools/build_app.py로 이어 붙인 app.js 하나를 그대로 실음 — 실행 코드는 이전과 같음. 고칠 때는 src를 고치고 build_app.py 실행, CI가 --check로 확인.
+
+## 114. 브랜치 정리(2026-11-25)
+
+main에 모두 합쳐진 원격 브랜치를 지움. 되살리려면 `git push origin <커밋>:refs/heads/<이름>`.
+
+| 브랜치 | 마지막 커밋 |
+|---|---|
+| claude/analysis-rough-v0 | 5c15d4797c8a |
+| claude/cut-meta | 194549851e9d |
+| claude/db-public | 19631c785c28 |
+| claude/rough-engine | 31979cab07fb |
+| claude/rough-references | fd025ef837d1 |
+| claude/rough-ui-desktop | 2e18e1b64bd9 |
+| claude/rough-ui-v1 | f74adc2b474a |
+| claude/tabs-3d | 184bd90aa5fa |
+
+남겨 둔 미병합 브랜치 19개(확인 필요): asset-metadata-v1, builtin-visual-assets-v1, claude/ext-dataset, claude/figure-wip, codex/* 14개, rough/reveal-storyboard, rough/revert-reveal-storyboard.
