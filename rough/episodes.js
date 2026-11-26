@@ -1,7 +1,7 @@
-// 회차 관리: 회차마다 씬·구성을 따로 저장하고 바꿔 가며 작업. 인물·세계관·작화 설정·글꼴 같은 작품 설정은 모든 회차가 같이 씀
+// 회차 관리: 회차마다 씬·구성·등장인물을 따로 저장하고 바꿔 가며 작업. 세계관·작화 설정·글꼴 같은 작품 설정은 모든 회차가 같이 씀(인물은 캐릭터 보관함으로 회차끼리 불러 씀)
 // 지금 회차는 늘 원래 저장 칸(rough-scenes 등)에 두고, 다른 회차는 rough-ep:<id>:<칸>에 보관 → 바꿀 때 서로 맞바꾸고 새로 불러옴
 (function(){
-const META='rough-episodes',KEYS=['rough-scenes','rough-scene-cur','rough-composition-v1'];
+const META='rough-episodes',KEYS=['rough-scenes','rough-scene-cur','rough-composition-v1','rough-chars'];
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(_){return null}},set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);return true}catch(_){return false}}};
 const slot=(id,k)=>`rough-ep:${id}:${k}`;
 let meta=null;try{meta=JSON.parse(ls.get(META)||'null')}catch(_){}
@@ -19,8 +19,9 @@ async function slotSet(k,v){if(v==null){ls.set(k,null);await DB()?.putDoc({id:'d
 async function stash(){if(typeof flushScenes==='function'){saveScenes();flushScenes()}else if(typeof saveScenes==='function')saveScenes();
   try{const t=thumbOf(cur());if(t&&t.length<400000)cur().thumb=t;else delete cur().thumb;save()}catch(_){}
   window.ROUGH_NOSAVE=true;  // 꺼내 바꾸는 동안·새로 고칠 때 예전 원고가 다시 써지지 않게
-  for(const k of KEYS){const v=k==='rough-scenes'&&typeof SCENES!=='undefined'?JSON.stringify(SCENES):ls.get(k);await slotSet(slot(meta.cur,k),v)}}
+  for(const k of KEYS){const v=k==='rough-scenes'&&typeof SCENES!=='undefined'?JSON.stringify(SCENES):k==='rough-chars'&&typeof CHARS!=='undefined'?JSON.stringify(CHARS):ls.get(k);await slotSet(slot(meta.cur,k),v)}}
 async function unstash(id){for(const k of KEYS){const v=await slotGet(slot(id,k));
+    if(k==='rough-chars'&&v==null)continue;  // 회차별 인물이 생기기 전에 보관한 회차: 지금 인물을 그대로 둠
     if(!ls.set(k,v)&&k==='rough-scenes'){try{localStorage.removeItem(k)}catch(_){}await DB()?.putDoc({id:'doc:rough-scenes',kind:'doc',ep:id,at:Date.now(),cur:0,json:v})}
     await slotSet(slot(id,k),null)}}
 async function go(id){if(id===meta.cur)return;await stash();await unstash(id);meta.cur=id;save();location.reload()}
@@ -35,7 +36,7 @@ async function cloneScenes(json){const list=JSON.parse(json||'[]'),map={};const 
 
 function nextTitle(){const ns=meta.list.map(e=>parseInt(e.title)).filter(n=>!isNaN(n));return (ns.length?Math.max(...ns)+1:meta.list.length+1)+'화'}
 async function add(){const id=newId(),title=nextTitle();await stash();meta.list.push({id,title});
-  KEYS.forEach(k=>ls.set(k,null));ls.set('rough-scenes',freshScenes());meta.cur=id;save();location.reload()}
+  KEYS.forEach(k=>{if(k!=='rough-chars')ls.set(k,null)});ls.set('rough-scenes',freshScenes());meta.cur=id;save();location.reload()}  // 새 회차는 지금 등장인물로 시작(바꾸거나 빼도 다른 회차는 그대로)
 async function dup(){const id=newId(),title=cur().title+' 사본';await stash();
   const json=await cloneScenes(await slotGet(slot(meta.cur,'rough-scenes')));
   meta.list.splice(meta.list.indexOf(cur())+1,0,{id,title});
@@ -63,9 +64,9 @@ function countOf(e){const scs=scenesOf(e);return `씬 ${scs.length} · ${scs.red
 function setCover(){const k=typeof pageSelection==='string'&&pageSelection;if(!k){flash('표지로 쓸 컷을 먼저 골라요');return}const [si,slot]=k.split(':').map(Number);
   cur().cover={scene:SCENES[si].id,idx:slot};save();paint();flash(`씬 ${si+1} · ${slot+1}컷을 「${cur().title}」 표지로 정했어요`)}
 function menu(){const SEP={sep:1};return [...meta.list.map(e=>({label:e.title,note:countOf(e),thumb:thumbOf(e),check:e.id===meta.cur,run:()=>go(e.id)})),SEP,
-  {label:'새 회차 (빈 원고)',run:add},{label:'이 회차 복제해 새 회차',run:dup},SEP,
+  {label:'새 회차 (빈 원고 · 지금 인물로 시작)',run:add},{label:'이 회차 복제해 새 회차',run:dup},SEP,
   {label:'고른 컷을 이 회차 표지로',disabled:!(typeof pageSelection==='string'&&pageSelection),run:setCover},  {label:'이름 바꾸기',run:rename},{label:'앞으로',disabled:meta.list.indexOf(cur())===0,run:()=>move(-1)},{label:'뒤로',disabled:meta.list.indexOf(cur())===meta.list.length-1,run:()=>move(1)},
-  {label:'이 회차 지우기',disabled:meta.list.length<2,run:remove},SEP,{label:'인물·세계관·작화 설정·글꼴은 모든 회차가 같이 써요',disabled:true}]}
+  {label:'이 회차 지우기',disabled:meta.list.length<2,run:remove},SEP,{label:'등장인물은 회차마다 따로 · 세계관·작화 설정·글꼴은 같이 써요',disabled:true}]}
 btn.addEventListener('click',e=>{e.stopPropagation();const r=btn.getBoundingClientRect();window.RoughWS?.cmOpen?.(menu(),r.left,r.bottom+4)});
 paint();setTimeout(paint,1500);setTimeout(paint,4000);  // 그림 저장소를 늦게 읽어 오므로 다시
 window.RoughEpisodes={get list(){return meta.list.slice()},get cur(){return cur()},go,add,dup,rename,remove};

@@ -11,7 +11,7 @@ const OLD_DEFAULT_LOOK={'에드가':['금발 짧은 머리, 초록 눈, 검은 �
 let FRESH_CHARS=false;
 try{const v=localStorage.getItem('rough-chars');FRESH_CHARS=!v;CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){FRESH_CHARS=true;CHARS=DEFAULT_CHARS.map(c=>({...c}))}
 const OLD_DEFAULT_HIT=[];CHARS.forEach(c=>{if((OLD_DEFAULT_LOOK[c.name]||[]).includes(c.look)){c.look=DEFAULT_CHARS.find(d=>d.name===c.name).look;OLD_DEFAULT_HIT.push(c.name)}});
-function saveChars(){try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}}
+function saveChars(){try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}if(typeof autoLibSoon==='function')autoLibSoon()}
 function engineChars(){try{syncPropNames()}catch(_){}return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
 // 등장인물 카드 (캐릭터챗 프로필 카드 형태) + 프로필 편집 창
 var NAITAGS;try{NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){NAITAGS={}}
@@ -53,7 +53,7 @@ function renderSugg(){const found=unknownNames(CUTS);
 function renderCastSum(){const el=$('#castsum');if(!el)return;const cs=CHARS.filter(c=>c.name.trim());
   el.innerHTML=cs.length?cs.map(c=>{const n=c.name.trim(),im=IMG.char[n],st=charStat(n);return `<div class="castbox${st.cuts?'':' off'}" title="${esc(c.look||n)}"><span class="av" style="${im?'':`background:${avBg(n)}`}">${im?`<img src="${im.src}" alt="">`:esc(n.slice(0,1))}</span><span class="cb"><b>${esc(n)}</b><small>${st.cuts?`${st.cuts}컷 · 대사 ${st.lines}`:'이 씬에 없음'}</small></span></div>`}).join(''):'<p class="insp-note">아직 인물이 없어요</p>'}
 // ---------- 캐릭터 보관함: 작품과 상관없이 이 브라우저에 남는 캐릭터 목록 ----------
-// 작품의 인물은 보관함 항목의 복사본이고 c.lib로 연결된다. 고쳐도 보관함은 그대로이고, '보관함에 저장'을 눌러야 갱신된다.
+// 회차의 인물은 보관함 항목과 c.lib로 연결된다. 이름과 특징·태그·사진 중 하나를 정하면 자동으로 보관함에 들어가고 고치면 따라 갱신(autoLib)
 let LIB=[];try{LIB=JSON.parse(localStorage.getItem('rough-lib')||'[]')}catch(_){LIB=[]}
 let LIBQ='',LIBG='';
 const saveLib=()=>{try{localStorage.setItem('rough-lib',JSON.stringify(LIB))}catch(_){toast('저장 공간이 부족해요')}};
@@ -66,24 +66,41 @@ function libSave(i,quiet){const c=CHARS[i],n=c.name.trim();if(!n){toast('이름�
   Object.assign(L,{name:n,aliases:c.aliases||'',body:c.body,look:c.look||'',tags:castTags(c),at:Date.now()});
   const im=IMG.char[n];if(im){const o={...im,id:'lib:'+L.id,kind:'libimg',libId:L.id,name:n};IMG.lib[L.id]=o;idb.put(o)}else if(IMG.lib[L.id]){delete IMG.lib[L.id];idb.del('lib:'+L.id)}
   saveLib();saveChars();if(!quiet)toast(`${n}을(를) 보관함에 저장했어요`);renderChars()}
+// 자동 보관: 이름과 특징·태그·사진 중 하나라도 정한 인물은 캐릭터 보관함에 자동으로 넣고, 고치면 보관함도 따라 갱신(회차가 달라도 불러 쓸 수 있게)
+//   보관함에 같은 이름이 있으면: 특징이 같으면 그 항목에 연결, 다르면 별도 항목(같은 이름의 다른 인물·다른 회차 버전). 특징이 아직 비었으면 기다림
+//   L.eps: 이 인물이 나온 회차 id 목록(보관함 카드에 '1화 · 3화'로)
+var AUTOLIB_T=0;function autoLibSoon(){clearTimeout(AUTOLIB_T);AUTOLIB_T=setTimeout(autoLib,500)}
+const curEp=()=>window.RoughEpisodes?.cur||null;
+function autoLib(){let ch=false,ci=false;const ep=curEp()?.id;
+  for(const c of CHARS){const n=c.name.trim();if(!n)continue;const tags=castTags(c),look=(c.look||'').trim(),im=IMG.char[n];if(!look&&!tags&&!im)continue;
+    let L=libOf(c);
+    if(!L){const same=LIB.find(x=>x.name===n&&x.body===c.body&&(x.look||'').trim()===look);if(same){L=same;c.lib=L.id;ci=true}
+      else{L={id:'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),auto:1};LIB.unshift(L);c.lib=L.id;ci=true}}
+    const next={name:n,aliases:c.aliases||'',body:c.body,look:c.look||'',tags};
+    if(Object.keys(next).some(k=>(L[k]||'')!==next[k])){Object.assign(L,next,{at:Date.now()});ch=true}
+    if(ep&&!(L.eps||[]).includes(ep)){(L.eps||=[]).push(ep);ch=true}
+    const li=IMG.lib[L.id];if(im&&li?.src!==im.src){const o={...im,id:'lib:'+L.id,kind:'libimg',libId:L.id,name:n};IMG.lib[L.id]=o;idb.put(o);ch=true}}
+  if(ch)saveLib();if(ci)try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}
+  if((ch||ci)&&typeof VIEW!=='undefined'&&VIEW==='chars')renderLib()}
+const epTitles=L=>{const list=window.RoughEpisodes?.list||[];return (L.eps||[]).map(id=>list.find(e=>e.id===id)?.title).filter(Boolean)};
 function libApply(L,c){const old=c.name.trim();Object.assign(c,{name:L.name,aliases:L.aliases||'',body:L.body,look:L.look||'',lib:L.id});
   if(old&&old!==L.name){delete NAITAGS[old];if(IMG.char[old]){delete IMG.char[old];idb.del('char:'+old)}}
   if(L.tags)NAITAGS[L.name]=L.tags;else delete NAITAGS[L.name];saveNaiTags();
   const im=IMG.lib[L.id];if(im){const o={...im,id:'char:'+L.name,kind:'char',name:L.name};delete o.libId;IMG.char[L.name]=o;idb.put(o)}else if(IMG.char[L.name]){delete IMG.char[L.name];idb.del('char:'+L.name)}}
 function libUse(id){const L=LIB.find(x=>x.id===id);if(!L)return;
-  if(CHARS.some(c=>c.lib===id)){toast('이미 이 작품에 있어요');return}
+  if(CHARS.some(c=>c.lib===id)){toast('이미 이 회차에 있어요');return}
   const same=CHARS.findIndex(c=>c.name.trim()===L.name);
-  if(same>=0&&!confirm(`이 작품에 이미 '${L.name}'이(가) 있어요. 보관함 버전으로 바꿀까요?`))return;
+  if(same>=0&&!confirm(`이 회차에 이미 '${L.name}'이(가) 있어요. 보관함 버전으로 바꿀까요?`))return;
   const c=same>=0?CHARS[same]:{name:'',aliases:'',body:'female',look:''};if(same<0)CHARS.push(c);libApply(L,c);
-  saveChars();compute(false);renderSlots();toast(`${L.name}을(를) 작품에 넣었어요`)}
+  saveChars();compute(false);renderSlots();toast(`${L.name}을(를) 이 회차에 넣었어요`)}
 function renderLib(){const el=$('#libgrid');if(!el)return;const q=LIBQ.trim().toLowerCase();
   const list=LIB.filter(L=>(!LIBG||L.body===LIBG)&&(!q||[L.name,L.aliases,L.look,L.tags].join(' ').toLowerCase().includes(q)));
   document.querySelectorAll('#libg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.g===LIBG));
   el.innerHTML=list.length?list.map(L=>{const im=IMG.lib[L.id],inCast=CHARS.some(c=>c.lib===L.id);
     return `<div class="lcard${inCast?' in':''}"><span class="av" style="${im?'':`background:${avBg(L.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(L.name.slice(0,1))}</span>
-      <div style="min-width:0"><b>${esc(L.name)}</b><small>${L.body==='male'?'남자':'여자'}${L.aliases?` · ${esc(L.aliases)}`:''}</small><div class="ll">${esc(L.look||L.tags||'외형 없음')}</div></div>
-      <div class="la"><button class="lx" data-libdel="${L.id}">삭제</button><small>${new Date(L.at).toLocaleDateString('ko-KR')} 저장</small>${inCast?'<span class="status">이 작품에서 사용 중</span>':`<button class="btn dark" data-libuse="${L.id}">작품에 넣기</button>`}</div></div>`}).join(''):
-    `<p class="empty" style="padding:8px 0">${LIB.length?'검색 결과가 없어요':'아직 보관함이 비어 있어요. 위 캐릭터 카드에서 \'보관함에 저장\'을 누르면 여기 쌓여요.'}</p>`}
+      <div style="min-width:0"><b>${esc(L.name)}</b><small>${L.body==='male'?'남자':'여자'}${L.aliases?` · ${esc(L.aliases)}`:''}${epTitles(L).length?` · <span class="lep">${esc(epTitles(L).join(' · '))}</span>`:''}</small><div class="ll">${esc(L.look||L.tags||'외형 없음')}</div></div>
+      <div class="la"><button class="lx" data-libdel="${L.id}">삭제</button><small>${new Date(L.at).toLocaleDateString('ko-KR')} 저장</small>${inCast?'<span class="status">이 회차에 있음</span>':`<button class="btn dark" data-libuse="${L.id}">이 회차에 넣기</button>`}</div></div>`}).join(''):
+    `<p class="empty" style="padding:8px 0">${LIB.length?'검색 결과가 없어요':'아직 보관함이 비어 있어요. 캐릭터에 이름과 특징(또는 태그·사진)을 정하면 자동으로 여기 들어와요.'}</p>`}
 function libExport(){if(!LIB.length){toast('보관함이 비어 있어요');return}
   const data={type:'rough-characters',version:1,exported:new Date().toISOString(),characters:LIB.map(L=>({...L,image:IMG.lib[L.id]?{src:IMG.lib[L.id].src,w:IMG.lib[L.id].w,h:IMG.lib[L.id].h,palette:IMG.lib[L.id].palette}:null}))};
   download('rough-characters.json',URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'})));toast(`캐릭터 ${LIB.length}명을 파일로 내보냈어요`)}

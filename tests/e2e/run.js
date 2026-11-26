@@ -254,6 +254,26 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   assert(await ev(() => !!document.querySelector('[data-overlay-layer="char"][data-label^="인물 에드가"]') && !!document.querySelector('[data-overlay-layer="prop"]')), '편집 화면에 레이어로 그려짐');
   await ev(() => setLayerMode(false));
 });
+test('회차마다 등장인물 따로 · 설정한 인물은 보관함에 자동 → 다른 회차에서 불러오기', async ({p, ev}) => {
+  await ev(() => { CHARS.push({name: '리나', aliases: '', body: 'female', look: '은발 단발, 검은 망토'}); saveChars(); }); await p.waitForTimeout(900);
+  const a = await ev(() => { const L = LIB.find(x => x.name === '리나'); return L && [L.look, (L.eps || []).length, LIB.some(x => x.name === '에드가')]; });
+  assert(a && a[0] === '은발 단발, 검은 망토' && a[1] === 1 && a[2], '설정한 인물이 보관함에 자동으로(나온 회차 기록)');
+  await ev(() => { CHARS.find(c => c.name === '리나').look = '은발 단발, 붉은 망토'; saveChars(); }); await p.waitForTimeout(900);
+  assert(await ev(() => LIB.filter(x => x.name === '리나').length === 1 && LIB.find(x => x.name === '리나').look === '은발 단발, 붉은 망토'), '고치면 보관함도 갱신');
+  const ep1 = await ev(() => RoughEpisodes.cur.id);
+  await ev(() => { setTimeout(() => RoughEpisodes.add(), 0); }); await p.waitForTimeout(3000);
+  assert(await ev(() => RoughEpisodes.cur.id) !== ep1, '새 회차');
+  assert(await ev(() => CHARS.some(c => c.name === '리나')), '새 회차는 지금 인물로 시작');
+  await ev(() => { CHARS.splice(CHARS.findIndex(c => c.name === '리나'), 1); CHARS.push({name: '카이', aliases: '', body: 'male', look: '흑발, 안경'}); saveChars(); }); await p.waitForTimeout(900);
+  await ev(id => { setTimeout(() => RoughEpisodes.go(id), 0); }, ep1); await p.waitForTimeout(3000);
+  const b = await ev(() => [RoughEpisodes.cur.id, CHARS.map(c => c.name)]);
+  assert(b[0] === ep1 && b[1].includes('리나') && !b[1].includes('카이'), '1화로 돌아오면 1화 인물 그대로');
+  assert(await ev(() => { const L = LIB.find(x => x.name === '카이'); return !!L && (L.eps || []).length === 1; }), '2화 인물도 보관함에');
+  await ev(() => showView('chars')); await p.waitForTimeout(500);
+  const kai = await ev(() => LIB.find(x => x.name === '카이').id);
+  await p.click(`#libgrid [data-libuse="${kai}"]`); await p.waitForTimeout(400);
+  assert(await ev(() => CHARS.some(c => c.name === '카이' && c.look === '흑발, 안경')), '보관함에서 이 회차로 불러오기');
+});
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
   await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);

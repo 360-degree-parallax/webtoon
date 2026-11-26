@@ -608,7 +608,7 @@ function renderSlots(){renderChars();renderSlotsLite()}
 async function attach(file,slot){if(!file||!file.type.startsWith('image/'))return;const im=await shrink(file);
   if(slot.kind==='lore'){const o={id:'lore:'+slot.key,kind:'loreimg',loreId:slot.key,...im};IMG.lore[slot.key]=o;idb.put(o);toast('설정 항목 이미지를 넣었어요');renderSlots();render();return}
   if(slot.kind==='world'){const o={id:'world:cover',kind:'worldimg',...im};IMG.world=o;idb.put(o);toast('세계관 대표 이미지를 넣었어요');renderSlots();render();return}
-  if(slot.kind==='char'){const o={id:'char:'+slot.key,kind:'char',name:slot.key,...im};IMG.char[slot.key]=o;idb.put(o);toast(`${slot.key} 캐릭터 이미지를 연결했어요`)}
+  if(slot.kind==='char'){const o={id:'char:'+slot.key,kind:'char',name:slot.key,...im};IMG.char[slot.key]=o;idb.put(o);toast(`${slot.key} 캐릭터 이미지를 연결했어요`);if(typeof autoLibSoon==='function')autoLibSoon()}
   else{const id=slot.key==='__new'?'scene:'+Date.now():slot.key;const old=IMG.scene.find(r=>r.id===id);const o={id,kind:'scene',name:old?.name||file.name.replace(/\.[^.]+$/,'').slice(0,20)||`장면 ${IMG.scene.length+1}`,...im};
     if(old)Object.assign(old,o);else IMG.scene.push(o);idb.put(o);toast('장면 이미지를 넣었어요')}
   renderSlots();render()}

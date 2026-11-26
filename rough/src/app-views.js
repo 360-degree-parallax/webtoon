@@ -355,7 +355,7 @@ Promise.all([
 // ---------- 초기화(설정집 캐릭터·세계관 / 구성 / 씬) ----------
 // 각 화면 맨 아래 작은 글자 버튼. 확인 뒤 비우고, 8초 동안 같은 자리가 '되돌리기'가 됨(씬은 Ctrl+Z로도 되돌림)
 {const RESET={
-  chars:{ask:'이 작품 등장인물을 모두 지울까요? 캐릭터 보관함은 그대로예요.',done:'등장인물을 비웠어요',
+  chars:{ask:'이 회차 등장인물을 모두 지울까요? 캐릭터 보관함은 그대로예요.',done:'등장인물을 비웠어요',
     snap:()=>JSON.stringify(CHARS),apply:()=>{CHARS=[];saveChars();renderChars()},restore:v=>{CHARS=JSON.parse(v);saveChars();renderChars()}},
   world:{ask:'세계관 개요와 설정 항목을 모두 지울까요? 세계관 보관함은 그대로예요.',done:'세계관을 비웠어요',
     snap:()=>JSON.stringify({w:WORLD,l:LORE}),apply:()=>{WORLD={name:'',genre:'',era:'',tone:'',summary:'',detail:'',tags:''};LORE=[];saveWorld();renderWorld()},

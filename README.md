@@ -23,7 +23,7 @@ git clone --recurse-submodules https://github.com/360-degree-parallax/webtoon
 ## 러프 툴
 
 ### 화면 흐름 (위 단계 탭)
-1. **설정집**: 캐릭터(이름·호칭·체형·외형·참고 이미지)와 세계관(장소·소품). 글에서 `@이름`으로 불러 씀
+1. **설정집**: 캐릭터(이름·호칭·체형·외형·참고 이미지)와 세계관(장소·소품). 글에서 `@이름`으로 불러 씀. 등장인물은 회차마다 따로 정하고, 설정한 인물은 캐릭터 보관함에 자동으로 들어가 다른 회차에서 「이 회차에 넣기」로 불러 씀
 2. **구성**: 작품 개요를 넣으면 Claude가 회차 구성안(장면 카드)을 만듦
    - 카드마다 **다시 생성**을 누르면 "어떻게 다시 만들지" 적는 칸이 열림(Enter 생성 · Esc 닫기, 적은 말은 남음)
    - 생성이 끝나면 Claude가 구성안에서 설정집에 없는 인물·엑스트라·장소를 찾아 "어떤 장면의 누구를 캐릭터/세계관에 추가할까요?" 창을 띄움 → 고른 것만 자동 추가
@@ -56,7 +56,7 @@ node tests/e2e/run.js
 ```bash
 node rough/test_engine.js
 ```
-e2e는 Playwright로 정적 서버를 직접 띄워 23개 시나리오를 돕니다. GitHub Actions: `e2e.yml`(rough·tests 변경 때), `db-check.yml`(DB·도구 변경 때).
+e2e는 Playwright로 정적 서버를 직접 띄워 24개 시나리오를 돕니다. GitHub Actions: `e2e.yml`(rough·tests 변경 때), `db-check.yml`(DB·도구 변경 때).
 
 ## 연출 DB
 
