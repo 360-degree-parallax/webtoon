@@ -263,7 +263,7 @@ function styleTargets(scope){const src=selectedLetter;if(!src)return [];const ki
   else if(scope==='scene')list=list.filter(L=>same(L)&&L.closest('section').dataset.pageScene===sc);
   else list=list.filter(same);
   return list.filter(L=>!isLocked(L.closest('[data-slot-index]'),L.dataset.letter))}
-function applyStyle(scope){const src=selectedLetter;if(!src)return;const sk=lkey(src),[key,id]=sk.split('|');const from=withKey(key,()=>pageSettings()?.letters?.[id])||{};
+function applyStyle(scope){const src=selectedLetter;if(!src)return;const sk=lkey(src),[key,id]=sk.split('|');const from=withKey(key,()=>pageView()?.letters?.[id])||{};
   const list=styleTargets(scope);if(!list.length){flash('적용할 식자가 없어요');return}
   list.forEach(L=>{const [k2,id2]=lkey(L).split('|');withKey(k2,()=>{const st=pageSettings(true);const o={...st.letters?.[id2]};STYLE_KEYS.forEach(f=>{if(from[f]!==undefined)o[f]=from[f];else delete o[f]});(st.letters||={})[id2]=o})});
   saveScenes();renderWebtoon();const L=resolve(sk);if(L)selectLetter(L);flash(`${list.length}개에 같은 스타일을 적용했어요 · Ctrl+Z로 되돌리기`)}
@@ -321,7 +321,7 @@ function _renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
   else if(tool==='select'&&pageSelection){const s=pageSettings(),g=selGroup();
     mid=`<b>${esc(pageCut.selectedOptions[0]?.textContent||'컷')}</b><label>아래 간격 <input type="number" data-ctx="gap" min="0" max="1600" step="4" value="${s?.gap??''}" placeholder="기본" style="width:64px">px</label><button class="cb" data-ctx="gapall" aria-haspopup="menu" title="이 간격을 씬의 모든 컷에">간격 일괄 ▾</button>
       <label>그림 확대 <input type="range" data-ctx="zoom" min="100" max="500" step="5" value="${($('#wzoom')?.value??100)}"><output>${($('#wzoom')?.value??100)}%</output></label>
-      <button class="cb${frameShapeKey===pageSelection?' on':''}" data-ctx="fshape" aria-pressed="${frameShapeKey===pageSelection}" title="모퉁이를 하나씩 끌어 사선 칸 (컷 더블클릭과 같음)">프레임 모양</button>${frameShapeKey===pageSelection&&g?shapeTools(g):''}<button class="cb${s?.blank?' on':''}" data-ctx="blank" aria-pressed="${!!s?.blank}" title="그림·테두리 없이 글만 남는 컷(쉼·나레이션 컷)">빈 컷</button>${(()=>{const ls=s?.materialLines,ks=ls?Object.keys(ls):[];return ks.length?`<button class="cb ccol" data-ctx="linecolor" title="이 컷 효과선 색"><i style="background:${ls[ks[0]].color||'#27211e'}"></i>효과선 색</button>`:''})()}<button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
+      <button class="cb${frameShapeKey===pageSelection?' on':''}" data-ctx="fshape" aria-pressed="${frameShapeKey===pageSelection}" title="모퉁이를 하나씩 끌어 사선 칸 (컷 더블클릭과 같음)">프레임 모양</button>${frameShapeKey===pageSelection&&g?shapeTools(g):''}<button class="cb${s?.blank?' on':''}" data-ctx="blank" aria-pressed="${!!s?.blank}" title="그림·테두리 없이 글만 남는 컷(쉼·나레이션 컷)">빈 컷</button>${(()=>{const ls=pageView()?.materialLines,ks=ls?Object.keys(ls):[];return ks.length?`<button class="cb ccol" data-ctx="linecolor" title="이 컷 효과선 색"><i style="background:${ls[ks[0]].color||'#27211e'}"></i>효과선 색</button>`:''})()}<button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
   else mid=`<span class="cb-hint">${esc(t.hint)}</span>`;
   ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;}
 ctx.addEventListener('change',e=>{const c=e.target.dataset.ctx;
@@ -346,8 +346,8 @@ ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return
   const c=b.dataset.ctx;
   if(c==='ledit')focusText();
   if(c==='lfit')fitLetters();
-  if(c==='sfxcolor'&&selectedLetter)openColorPop(b,'color',{what:'효과음 ',cur:pageSettings()?.letters?.[selectedLetter.dataset.letter]?.color||'#161616',apply:col=>{setLetterStyle({color:col==='#161616'?null:col});flash(col==='#161616'?'효과음 색을 처음대로':'효과음 색을 바꿨어요')}});
-  if(c==='linecolor'&&pageSelection){const ls=pageSettings()?.materialLines||{},k0=Object.keys(ls)[0];openColorPop(b,'color',{cur:ls[k0]?.color||'#27211e',apply:col=>{const st=pageSettings(true);Object.values(st.materialLines||{}).forEach(l=>l.color=col);saveScenes();renderWebtoon();renderCtx();flash('효과선 색을 바꿨어요')}})}
+  if(c==='sfxcolor'&&selectedLetter)openColorPop(b,'color',{what:'효과음 ',cur:pageView()?.letters?.[selectedLetter.dataset.letter]?.color||'#161616',apply:col=>{setLetterStyle({color:col==='#161616'?null:col});flash(col==='#161616'?'효과음 색을 처음대로':'효과음 색을 바꿨어요')}});
+  if(c==='linecolor'&&pageSelection){const ls=pageView()?.materialLines||{},k0=Object.keys(ls)[0];openColorPop(b,'color',{cur:ls[k0]?.color||'#27211e',apply:col=>{const st=pageAdopt('materialLines');Object.values(st.materialLines||{}).forEach(l=>l.color=col);saveScenes();renderWebtoon();renderCtx();flash('효과선 색을 바꿨어요')}})}
   if(c==='scdel')window.RoughStudio?.deleteSelScene();
   if(c&&c.startsWith('mc'))multiCut(c.slice(2));
   if(c==='blank'&&pageSelection)toggleBlank(pageSelection);
@@ -429,9 +429,9 @@ function useMat(kind,v,group,pt,target){
     addLetter('balloon',group,pt,{style:v});return}
   if(kind==='sfx'){const L=selSfx();if(L&&!target?.closest?.('[data-slot-index]:not(.sel)')){swapSfx(L,v,null);return}if(!group){opt.sfx=v;SS('rough-tool-sfx',v);setTool('sfx');return}addLetter('sfx',group,pt,{text:v});return}
   if(kind==='bg'){if(group)selectPageCut(group);if(!pageSelection){flash('배경을 넣을 컷을 먼저 고르세요');return}$(`#wbgpresets [data-bg-preset="${v}"]`)?.click();flash('배경 전환을 넣었어요');return}
-  if(kind==='line'){if(group)selectPageCut(group);const st=pageSelection&&pageSettings(),ls=st?.materialLines,ks=ls?Object.keys(ls):[];
+  if(kind==='line'){if(group)selectPageCut(group);const ks=pageSelection?Object.keys(pageView()?.materialLines||{}):[],ls=ks.length===1&&ks[0]!==v?pageAdopt('materialLines').materialLines:null;
     // 컷에 다른 종류 효과선이 하나 있으면 새로 그리지 않고 종류만 바꿈
-    if(ks.length===1&&ks[0]!==v){const e={...ls[ks[0]],kind:v};delete ls[ks[0]];ls[v]=e;saveScenes();renderWebtoon();flash(`효과선을 ${v==='speed'?'속도선':'집중선'}으로 바꿨어요 · Ctrl+Z로 되돌리기`);return}
+    if(ks.length===1&&ks[0]!==v){const e={...ls[ks[0]],kind:v};delete ls[ks[0]];ls[v]=e;stripCutDir(pageSelection,[ks[0]==='speed'?'속도선':'집중선']);saveScenes();renderWebtoon();flash(`효과선을 ${v==='speed'?'속도선':'집중선'}으로 바꿨어요 · Ctrl+Z로 되돌리기`);return}
     setTool(v)}}
 libBody.addEventListener('click',e=>{const b=e.target.closest('[data-mat]');if(b)useMat(b.dataset.mat,b.dataset.v)});
 libBody.addEventListener('dragstart',e=>{const b=e.target.closest('[data-mat]');if(!b)return;e.dataTransfer.setData('application/x-rough-mat',JSON.stringify({k:b.dataset.mat,v:b.dataset.v}));e.dataTransfer.effectAllowed='copy'});
@@ -491,7 +491,7 @@ function setLetterStyle(patch){const L=selectedLetter;if(!L)return;const key=pag
   if(isLocked(L.closest('[data-slot-index]'),id)){flash('잠긴 식자예요');return}
   withKey(key,()=>{const st=pageSettings(true);const o={...st.letters?.[id],...patch};for(const k of Object.keys(patch))if(patch[k]===null||patch[k]===false||patch[k]==='')delete o[k];(st.letters||={})[id]=o});
   saveScenes();renderWebtoon();const L2=groupBy(key)?.querySelector(`[data-letter="${CSS.escape(id)}"]`);if(L2)selectLetter(L2)}
-const curStyle=()=>selectedLetter?(pageSettings()?.letters?.[selectedLetter.dataset.letter]||{}):{};
+const curStyle=()=>selectedLetter?(pageView()?.letters?.[selectedLetter.dataset.letter]||{}):{};
 ctx.addEventListener('click',e=>{const f=e.target.closest('[data-tf]');if(f){setLetterStyle({font:f.dataset.tf===PAGE_PRESET?null:f.dataset.tf});flash(`글꼴: ${FONT_PRESETS[f.dataset.tf].name}`);return}
   const d=e.target.closest('[data-td]');if(d){const k=d.dataset.td;setLetterStyle({[k]:!curStyle()[k]});return}
   const c=e.target.closest('[data-tcolor]');if(c){openColorPop(c,c.dataset.tcolor);return}});
@@ -771,6 +771,10 @@ document.addEventListener('keydown',e=>{if(!inEdit()||(e.key!=='Delete'&&e.key!=
   const lp=window.layerPart;if(pageSelection&&lp&&lp.key===pageSelection&&lp.what==='art'){e.preventDefault();deleteArt(pageSelection);return}
   if(pageSelection&&lp&&lp.key===pageSelection&&(lp.what==='bg'||/^(line|ov):/.test(lp.what))){e.preventDefault();deletePart(pageSelection,lp.what);return}
   if(pageSelection){e.preventDefault();deleteCut(pageSelection)}});
+// 컷 글의 {…}에서 첫 낱말이 words인 지시를 지움(효과선·배경을 편집 화면에서 지우거나 바꿀 때 글 값이 다시 살아나지 않게)
+function stripCutDir(key,words){const [si,slot]=key.split(':').map(Number),sc=SCENES[si];if(!sc||typeof sc.cuts[slot]!=='string')return false;const hit=typeof words==='function'?words:x=>words.includes(x.split(/\s+/)[0]);
+  const next=sc.cuts[slot].split('\n').map(l=>l.replace(/\{([^{}\n]*)\}/g,(m,inner)=>{const ts=inner.split(/[,，·\/]/).map(x=>x.trim()).filter(Boolean).filter(x=>!hit(x));return ts.length?`{${ts.join(', ')}}`:''}).replace(/[ \t]{2,}/g,' ').replace(/\s+$/,'')).join('\n');
+  if(next===sc.cuts[slot])return false;sc.cuts[slot]=next;if(si===SCUR)CUTS=sc.cuts;if(typeof refreshText==='function')refreshText(si);return true}
 // 레이어 패널의 배경·효과선·이미지 소재 줄을 고르고 Delete: 그것만 지움(Ctrl+Z로 되돌림)
 function deletePart(key,what){const g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}let msg='';
   withKey(key,()=>{const st=pageSettings();if(!st)return;
@@ -778,9 +782,7 @@ function deletePart(key,what){const g=groupBy(key);if(g&&isLocked(g,'cut')){flas
     else if(what.startsWith('line:')){const kd=what.slice(5);if(st.materialLines){delete st.materialLines[kd];if(!Object.keys(st.materialLines).length)delete st.materialLines}msg=(kd==='speed'?'속도선':'집중선')+'을 지웠어요'}
     else if(what.startsWith('ov:')){const n=+what.slice(3);st.overlays?.splice(n,1);if(st.overlays&&!st.overlays.length)delete st.overlays;msg='이미지 소재를 뺐어요'}});
   // 씬 글에 {속도선 …}·{배경 …}으로 적힌 것이면 글에서도 그 지시를 지움(안 그러면 다시 그려짐)
-  if(what.startsWith('line:')||what==='bg'){const [si,slot]=key.split(':').map(Number),sc=SCENES[si],words=what==='bg'?['배경','전환','배경색']:[what.slice(5)==='speed'?'속도선':'집중선'];
-    if(sc&&typeof sc.cuts[slot]==='string'){const next=sc.cuts[slot].split('\n').map(l=>l.replace(/\{([^{}\n]*)\}/g,(m,inner)=>{const ts=inner.split(/[,，·\/]/).map(x=>x.trim()).filter(Boolean).filter(x=>!words.includes(x.split(/\s+/)[0]));return ts.length?`{${ts.join(', ')}}`:''}).replace(/[ \t]{2,}/g,' ').replace(/\s+$/,'')).join('\n');
-      if(next!==sc.cuts[slot]){sc.cuts[slot]=next;if(si===SCUR)CUTS=sc.cuts;if(typeof refreshText==='function')refreshText(si)}}}
+  if(what.startsWith('line:')||what==='bg')stripCutDir(key,what==='bg'?['배경','전환','배경색']:[what.slice(5)==='speed'?'속도선':'집중선']);
   window.layerPart={key,what:'frame'};saveScenes();renderWebtoon();const ng=groupBy(key);if(ng)selectPageCut(ng);editTree();flash(msg+' · Ctrl+Z로 되돌리기')}
 // 레이어 패널의 '그림' 줄을 고르고 Delete: 컷은 두고 넣은 그림만 뺌(Ctrl+Z로 되돌림). 레퍼런스만 있으면 지울 것이 없음
 function deleteArt(key){const [si,slot]=key.split(':').map(Number),g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}
@@ -831,7 +833,7 @@ function letterMenu(L,g,pt){const lk=L.dataset.letter,key=pageKey(g),isD=/^dialo
   return [{label:'문구 고치기',key:'Enter · 더블클릭',run:()=>{sel();openInlineText(L)}},
     {label:'복사',key:'Ctrl+C',run:()=>{sel();RoughClip.copy()}},{label:'복제',key:'Ctrl+D',run:()=>{sel();RoughClip.dup()}},
     {label:'겹침 순서',sub:()=>[{label:'맨 앞으로',key:'Ctrl+Shift+]',run:()=>{sel();RoughOrder.zMove('front')}},{label:'앞으로',key:'Ctrl+]',run:()=>{sel();RoughOrder.zMove('up')}},{label:'뒤로',key:'Ctrl+[',run:()=>{sel();RoughOrder.zMove('down')}},{label:'맨 뒤로',key:'Ctrl+Shift+[',run:()=>{sel();RoughOrder.zMove('back')}}]},
-    {label:'회전 없애기',disabled:!withKey(key,()=>pageSettings()?.letters?.[lk]?.rot),run:()=>{withKey(key,()=>{const s=pageSettings(true);const o={...s.letters?.[lk]};delete o.rot;s.letters[lk]=o});saveScenes();renderWebtoon()}},SEP,
+    {label:'회전 없애기',disabled:!withKey(key,()=>pageView()?.letters?.[lk]?.rot),run:()=>{withKey(key,()=>{const s=pageSettings(true);const o={...s.letters?.[lk]};delete o.rot;s.letters[lk]=o});saveScenes();renderWebtoon()}},SEP,
     isD&&{label:'형태',sub:()=>BALLOON_STYLES.map(s=>({label:s[1],run:()=>useMat('balloon',s[0],g,pt,L)}))},
     isD&&{label:'꼬리 보이기',check:tailOn,run:()=>{withKey(key,()=>{const s=pageSettings(true);(s.letters||={})[lk]={...(s.letters[lk]||{}),showTail:!tailOn}});saveScenes();renderWebtoon()}},
     {label:'위치·크기 처음대로',run:()=>{withKey(key,()=>{const s=pageSettings(true),e=s.letters?.[lk];if(e){const t=e.text;s.letters[lk]=t!==undefined?{text:t}:{}}});saveScenes();renderWebtoon();flash('식자 배치를 처음대로 돌렸어요')}},
@@ -885,7 +887,7 @@ document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||!(e.key=
 // ---------- 변형 손잡이: 식자는 누르면 바로 끌어 옮기고(기존) 모서리로 크기, 컷 그림은 바로 끌고 모서리로 확대 ----------
 const tbox=mk('tbox');tbox.hidden=true;tbox.innerHTML=['nw','ne','se','sw'].map(c=>`<i class="th" data-th="${c}" title="모서리: 끌어서 전체 크기 (Shift: 5% 단위)"></i>`).join('')+'<i class="th" data-th="rot" title="끌어서 돌리기 (Shift: 15° 단위)"></i>'+'<output class="tb-v"></output>';document.body.appendChild(tbox);
 let tdrag=null,tmode=null; // tmode: 'letter' | 'art'
-const letterScale=L=>{const g=L.closest('[data-slot-index]');const s=withKey(pageKey(g),()=>pageSettings()?.letters?.[L.dataset.letter]?.scale);return +s||1};
+const letterScale=L=>{const g=L.closest('[data-slot-index]');const s=withKey(pageKey(g),()=>pageView()?.letters?.[L.dataset.letter]?.scale);return +s||1};
 function tTarget(){if(!inEdit()||tool!=='select'||cropKey)return null;
   if(selectedLetter){const art=selectedLetter.querySelector('[data-balloon]');return {mode:'letter',el:art||selectedLetter,box:(art||selectedLetter)}}
   const g=selGroup();if(window.layerPart&&window.layerPart.what!=='art'&&window.layerPart.key===pageSelection)return null;  // 칸을 고르면 그림 손잡이 대신 칸 테두리 손잡이만
@@ -912,7 +914,7 @@ tbox.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-th]'),t=
     const art=L.querySelector('[data-balloon]');let wrap=null;
     if(!art){wrap=L.querySelector(':scope > .lsc');if(!wrap){wrap=document.createElementNS('http://www.w3.org/2000/svg','g');wrap.setAttribute('class','lsc');wrap.setAttribute('style','transform-box:fill-box;transform-origin:center');while(L.firstChild)wrap.appendChild(L.firstChild);L.appendChild(wrap)}}
     tdrag={mode:'letter',L,art,wrap,meta:art?JSON.parse(art.dataset.balloon):null,cx,cy,d0,s0:art?(Number($('#wballoonsize').value)/100||1):letterScale(L)}}
-  else{const z=(pageSettings()?.img)||{s:1,dx:0,dy:0};tdrag={mode:'art',g:t.g,cx,cy,d0,s0:z.s||1,z}}
+  else{const z=(pageView()?.img)||{s:1,dx:0,dy:0};tdrag={mode:'art',g:t.g,cx,cy,d0,s0:z.s||1,z}}
   tdrag.s=tdrag.s0;h.setPointerCapture(e.pointerId)});
 tbox.addEventListener('pointermove',e=>{if(!tdrag)return;
   if(tdrag.mode==='rot'){const t=tdrag;let a=t.r0+(Math.atan2(e.clientY-t.cy,e.clientX-t.cx)-t.a0)*180/Math.PI;a=((a+180)%360+360)%360-180;if(e.shiftKey)a=Math.round(a/15)*15;else a=Math.round(a);if(Math.abs(a)<2)a=0;
@@ -959,7 +961,7 @@ function closeInlineText(save){const s=ltEdit;if(!s)return;ltEdit=null;const v=s
     setTimeout(()=>{const L=groupBy(key)?.querySelector(`[data-letter="${CSS.escape(lid)}"]`);if(L)openInlineText(L)},30)},true)}
 // 고른 컷의 그림 위에서 Alt+휠로도 확대·축소
 reader.addEventListener('wheel',e=>{if(!e.altKey||!inEdit())return;const g=e.target.closest('[data-slot-index]');if(!g||pageKey(g)!==pageSelection||isLocked(g,'cut'))return;e.preventDefault();
-  const z=(pageSettings()?.img)||{s:1,dx:0,dy:0},s=Math.max(1,Math.min(5,(z.s||1)*(e.deltaY<0?1.1:1/1.1)));setZoom(g,{...z,s});clearTimeout(reader._zt);reader._zt=setTimeout(()=>saveZoom(g),250)},{passive:false});
+  const z=(pageView()?.img)||{s:1,dx:0,dy:0},s=Math.max(1,Math.min(5,(z.s||1)*(e.deltaY<0?1.1:1/1.1)));setZoom(g,{...z,s});clearTimeout(reader._zt);reader._zt=setTimeout(()=>saveZoom(g),250)},{passive:false});
 
 // ---------- 컷 추가: 컷 사이에 마우스를 올리면 +, 씬 끝에는 '+ 컷 추가'. 누르면 새 컷 장면 글을 바로 적음 ----------
 const plus=mk('gapplus');plus.hidden=true;plus.innerHTML='<button type="button" title="여기에 새 컷 넣기" aria-label="여기에 새 컷 넣기">+</button>';document.body.appendChild(plus);
@@ -994,5 +996,5 @@ propsBody.querySelector('#wballoonsize').addEventListener('input',()=>{const r=c
 renderDocks();renderCtx();renderAlign();syncHelp();
 Object.keys(PANELS).forEach(k=>{if(!LAYOUT.panels[k].collapsed&&LAYOUT.panels[k].dock!=='X')onOpen(k)});mountOff();assetTab(PRESETS[LAYOUT.preset]?.tab||'rec');
 reader.classList.toggle('artboards',AB);if(AB)RoughStudio.applyZoom();
-window.RoughWS={deletePart,cmOpen,multiCut,swatch,openColorPop,fitLetters,styleMenu,deleteLetterEls,get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI,lkey,resolve,toggleMulti,clearMulti,markMulti,renderCtx,renderAlign,withKey,groupBy,openInlineText,typing,refreshText,flash};
+window.RoughWS={deletePart,stripCutDir,cmOpen,multiCut,swatch,openColorPop,fitLetters,styleMenu,deleteLetterEls,get tool(){return tool},setTool,openPanel,applyPreset,addLetter,splitCut,toggleLock,isLocked,alignLetters,setAB,get layout(){return LAYOUT},MULTI,lkey,resolve,toggleMulti,clearMulti,markMulti,renderCtx,renderAlign,withKey,groupBy,openInlineText,typing,refreshText,flash};
 })();

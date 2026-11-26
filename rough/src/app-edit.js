@@ -129,6 +129,12 @@ function pageSettings(create=false,key=pageSelection){
   if(create&&!edits[slot])edits[slot]={};
   return edits[slot];
 }
+// 화면에 그려지는 값 = 씬 글 {…}에서 나온 값 + 직접 고친 값. 편집 도구는 이걸 보여 주고,
+// 글에서 나온 값을 고칠 때는 pageAdopt로 직접 고친 값에 먼저 옮긴 뒤 바꿈(안 그러면 고칠 대상이 없거나 글 값이 다시 이김)
+function pagePanel(key=pageSelection){if(!key)return null;const [si,slot]=key.split(':').map(Number);return scenePanels(si).find((p,i)=>cutSlot(p,i)===slot)||null}
+function pageView(key=pageSelection){if(!key)return null;return RoughGrammar.merge(pageSettings(false,key),pagePanel(key))||null}
+function pageAdopt(field,key=pageSelection){const v=pageView(key)?.[field],st=pageSettings(true,key);if(v==null)return st;const cp=x=>JSON.parse(JSON.stringify(x));
+  if(st[field]==null)st[field]=cp(v);else if(typeof v==='object'&&typeof st[field]==='object')for(const k of Object.keys(v))if(st[field][k]==null)st[field][k]=cp(v[k]);return st}
 function refreshPageTools(){
   const previous=selectedLetter&&{key:pageKey(selectedLetter.closest('[data-slot-index]')),letter:selectedLetter.dataset.letter};
   selectLetter(null);
@@ -153,7 +159,7 @@ function selectPageCut(group){
   pageReader.querySelector('.cut-selected')?.classList.remove('cut-selected');
   pageReader.querySelectorAll('.frame-handles.sel').forEach(h=>h.classList.remove('sel'));
   pageReader.querySelector('[data-slot-index].sel')?.classList.remove('sel');group.classList.add('sel');
-  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');showZoom(pageSettings()?.img?.s||1);
+  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');showZoom(pageView()?.img?.s||1);
 }
 const backgroundColor=$('#wbgcolor'),backgroundPresets=$('#wbgpresets');
 const BG_THUMB=[];window.bgThumbSVG=i=>BG_THUMB[i]||'';
@@ -175,7 +181,7 @@ function refreshBackgroundTools(){
   if(isLast){const sel=$('#wsceneend');sel.value=SCENES[si].endTo||'next';sel.options[0].textContent=si<SCENES.length-1?'다음 씬 첫 컷 색으로 이어감':'흰색으로 (마지막 씬)'}
 }
 // 전환 중간색·위치
-function refreshTransTools(){const e=pageSettings(),st=PAGE_BACKGROUNDS[e?.transition];const on=e?.transMid?e.transMid!=='none':!!st;
+function refreshTransTools(){const e=pageView(),st=PAGE_BACKGROUNDS[e?.transition];const on=e?.transMid?e.transMid!=='none':!!st;
   $('#wtmidon').checked=on;$('#wtmid').value=/^#/.test(e?.transMid||'')?e.transMid:(st?.mid||'#808080');$('#wtmid').disabled=!on;
   const sv=e?.transStop??st?.stop??50;$('#wtstop').value=sv;$('#wtstopv').textContent=sv+'%';$('#wtstop').disabled=!on;
   $('#wbgimgs').innerHTML=Object.values(IMG.bg).sort((a,b)=>a.at-b.at).map(r=>`<button type="button" data-bgimg="${r.id}" aria-pressed="${e?.bgImage===r.id}" title="${esc(r.name||'배경 이미지')}"><img src="${r.src}" alt=""><span data-bgimg-del="${r.id}" title="목록에서 지우기">×</span></button>`).join('')+`<button type="button" class="add" data-bgimg-add title="PNG·JPG를 배경 소재로 추가">+ 이미지</button>`+(e?.bgImage?`<button type="button" class="add" data-bgimg-off>빼기</button>`:'');
@@ -246,7 +252,7 @@ $('#wletterreset').addEventListener('click',()=>{
   }
   saveScenes();renderWebtoon();
 });
-function letterPosition(letter){return {x:0,y:0,...pageSettings()?.letters?.[letter.dataset.letter]}}
+function letterPosition(letter){return {x:0,y:0,...pageView()?.letters?.[letter.dataset.letter]}}
 function moveLetter(letter,position){letter.setAttribute('transform',`translate(${position.x} ${position.y})`)}
 function saveLetter(letter,position){
   const settings=pageSettings(true);
@@ -295,7 +301,7 @@ letterMemo.addEventListener('keydown',e=>{
   if(!e.isComposing&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();letterTextForm.requestSubmit()}
 });
 letterOriginal.addEventListener('click',()=>{
-  const edit=selectedLetter&&pageSettings()?.letters?.[selectedLetter.dataset.letter];
+  const edit=selectedLetter&&pageView()?.letters?.[selectedLetter.dataset.letter];
   if(typeof edit?.text!=='string')return;
   const effect=isEffectLetter(selectedLetter);
   delete edit.text;
@@ -437,7 +443,7 @@ pageReader.addEventListener('pointerdown',e=>{
   selectPageCut(group);
   const letter=e.target.closest('[data-letter]');
   selectLetter(letter);
-  if(!letter){if((pageSettings()?.img?.s||1)>1&&e.target.closest('[data-art]'))startArtDrag(group,e);return}  // 확대한 그림은 처음 누를 때부터 바로 끌기
+  if(!letter){if((pageView()?.img?.s||1)>1&&e.target.closest('[data-art]'))startArtDrag(group,e);return}  // 확대한 그림은 처음 누를 때부터 바로 끌기
   e.preventDefault();
   const handle=e.target.closest('[data-tail-handle]');
   if(handle){
@@ -592,14 +598,15 @@ function saveFrame(){const d=frameDrag;frameDrag=null;if(!d.moved)return;const {
   saveScenes();renderWebtoon();markFrameShape()}
 // ---------- 칸 안 그림 확대·이동 ----------
 let artDrag=null,zoomTimer=0;const ZMAX=5;
-function zoomOf(group){const z=pageSettings(false,pageKey(group))?.img;return {s:1,dx:0,dy:0,...z}}
+function zoomOf(group){const z=pageView(pageKey(group))?.img;return {s:1,dx:0,dy:0,...z}}
 function clampZoom(group,z){const f=JSON.parse(group.dataset.frame),s=Math.max(1,Math.min(ZMAX,z.s)),mx=f.w*(s-1)/2,my=f.h*(s-1)/2;
   return {s,dx:Math.max(-mx,Math.min(mx,z.dx)),dy:Math.max(-my,Math.min(my,z.dy))}}
 function setZoom(group,z){z=clampZoom(group,z);const f=JSON.parse(group.dataset.frame),el=group.querySelector('[data-art]');
   const tf=zoomTf(z,f.x,f.y,f.w,f.h);if(tf)el.setAttribute('transform',tf.slice(12,-1));else el.removeAttribute('transform');
   group._z=z;if(pageSelection===pageKey(group))showZoom(z.s);return z}
 function saveZoom(group){const z=group._z;if(!z)return;const set=pageSettings(true,pageKey(group));
-  if(z.s<=1.001)delete set.img;else set.img={s:+z.s.toFixed(3),dx:Math.round(z.dx),dy:Math.round(z.dy)};saveScenes()}
+  // 씬 글에 {확대 …}가 있으면 1배로 줄인 것도 남겨야 글 값이 다시 이기지 않음
+  if(z.s<=1.001){if(RoughGrammar.fromText(pagePanel(pageKey(group)))?.img)set.img={s:1,dx:0,dy:0};else delete set.img}else set.img={s:+z.s.toFixed(3),dx:Math.round(z.dx),dy:Math.round(z.dy)};saveScenes()}
 function startArtDrag(group,e){e.preventDefault();artDrag={group,svg:group.ownerSVGElement,z0:zoomOf(group),start:pagePoint(group.ownerSVGElement,e),id:e.pointerId};pageReader.setPointerCapture(e.pointerId)}
 // 커서 아래 점이 그대로 있도록 확대
 function zoomAt(group,s2,pt){const z=group._z||zoomOf(group),f=JSON.parse(group.dataset.frame),cx=f.x+f.w/2,cy=f.y+f.h/2;

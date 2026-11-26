@@ -55,7 +55,7 @@
     const o={...g,...user};
     if(g.letters||user.letters){o.letters={...(g.letters||{})};for(const [k,v] of Object.entries(user.letters||{}))o.letters[k]={...(g.letters?.[k]||{}),...v}}
     if(g.materialLines||user.materialLines)o.materialLines={...(g.materialLines||{}),...(user.materialLines||{})};
-    if(g.img&&!(user.img?.s>1))o.img={...(user.img||{}),s:g.img.s};
+    if(g.img&&!(user.img&&user.img.s!=null))o.img={...(user.img||{}),s:g.img.s};  // 직접 정한 배율(1배 포함)이 있으면 그게 이김
     return o}
   // 문법 설명: 도움말·'AI용 복사'·구성안 생성 프롬프트가 같은 글을 씀
   const GUIDE=`# 웹툰 러프 씬 문법

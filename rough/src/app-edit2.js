@@ -171,7 +171,7 @@ function finishMaterialLine(e){
   materialStatus(kind==='focus'?'집중선을 넣었어요.':'속도선을 넣었어요.');
 }
 function showMaterialLine(){
-  const lines=pageSelection&&pageSettings()?.materialLines;
+  const lines=pageSelection&&pageView()?.materialLines;
   const existing=Object.keys(lines||{}),select=$('#wmaterial-line-kind');
   $('#wmaterial-line-edit').hidden=!existing.length;
   if(!existing.length)return;
@@ -183,15 +183,17 @@ function showMaterialLine(){
 $('#wmaterial-line-kind').addEventListener('change',showMaterialLine);
 for(const prop of ['color','density']){
   $('#wmaterial-'+prop).addEventListener('change',e=>{
-    const kind=$('#wmaterial-line-kind').value,line=pageSelection&&pageSettings()?.materialLines?.[kind];
+    const kind=$('#wmaterial-line-kind').value,line=pageSelection&&pageView()?.materialLines?.[kind]&&pageAdopt('materialLines').materialLines[kind];
     if(!line)return;
     line[prop]=prop==='density'?Number(e.target.value):e.target.value;
     saveScenes();renderWebtoon();
   });
 }
 $('#wmaterial-delete').addEventListener('click',()=>{
-  const lines=pageSelection&&pageSettings()?.materialLines;if(!lines)return;
-  delete lines[$('#wmaterial-line-kind').value];saveScenes();renderWebtoon();
+  // 글에서 나온 효과선도 같이 지우도록 레이어 Delete와 같은 길로
+  if(!pageSelection||!pageView()?.materialLines)return;const kd=$('#wmaterial-line-kind').value;
+  if(window.RoughWS?.deletePart){RoughWS.deletePart(pageSelection,'line:'+kd);return}
+  const lines=pageSettings()?.materialLines;if(lines){delete lines[kd];saveScenes();renderWebtoon()}
 });
 function inspector(){const L=!!selectedLetter,C=!!pageSelection;$('#wsec-letter').hidden=!L;$('#wsec-cut').hidden=!C;$('#wempty').hidden=L;
   $('#wmaterials').hidden=!pageEditing||!C;materialSearch.hidden=!C||!materialRows.length;showMaterialLine();

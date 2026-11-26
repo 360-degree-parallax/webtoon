@@ -8,7 +8,7 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const kindOf=L=>{const id=L?.dataset.letter||'';return id.startsWith('dialog-')?'dialog':id.startsWith('caption')?'caption':/^(effect-|material-)/.test(id)?'sfx':''};
 const KNAME={dialog:'말풍선',caption:'나레이션',sfx:'효과음'};
 const keyOf=L=>pageKey(L.closest('[data-slot-index]'));
-const setOf=L=>pageSettings(false,keyOf(L))?.letters?.[L.dataset.letter]||{};
+const setOf=L=>pageView(keyOf(L))?.letters?.[L.dataset.letter]||{};
 const find=(key,id)=>[...document.querySelectorAll('#reader [data-slot-index]')].find(g=>pageKey(g)===key)?.querySelector(`[data-letter="${CSS.escape(id)}"]`)||null;
 let cur=null,typing=0,lastKey='';
 
@@ -103,7 +103,7 @@ card.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b||b.
 function partNow(){const lp=window.layerPart;return lp&&lp.key===pageSelection&&(lp.what==='bg'||/^(line|ov):/.test(lp.what))?lp:null}
 function editPart(fn,{tree=true}={}){const lp=partNow();if(!lp)return;const g=[...document.querySelectorAll('#reader [data-slot-index]')].find(x=>pageKey(x)===lp.key);if(g&&WS.isLocked(g,'cut')){WS.flash('잠긴 컷이에요');return}
   WS.withKey(lp.key,()=>fn(pageSettings(true)));saveScenes();renderWebtoon();window.layerPart=lp;if(tree&&typeof editTree==='function')editTree();renderPart()}
-function renderPart(){const lp=partNow();if(!lp){card.hidden=true;return}const [si,slot]=lp.key.split(':').map(Number),e=SCENES[si]?.pageEdits?.[slot]||{};lastKey='part|'+lp.key+'|'+lp.what;card.hidden=false;
+function renderPart(){const lp=partNow();if(!lp){card.hidden=true;return}const [si,slot]=lp.key.split(':').map(Number),e=pageView(lp.key)||{};lastKey='part|'+lp.key+'|'+lp.what;card.hidden=false;
   const sec=(t,body)=>`<div class="lc-row"><span class="lc-l">${t}</span><div class="lc-v">${body}</div></div>`;let kind,h='';
   if(lp.what.startsWith('line:')){const kd=lp.what.slice(5),L=e.materialLines?.[kd]||{};kind='line';
     h=sec('종류',`<span class="lc-seg"><button data-p="kind" data-v="focus" aria-pressed="${kd==='focus'}">집중선</button><button data-p="kind" data-v="speed" aria-pressed="${kd==='speed'}">속도선</button></span>`)+
@@ -126,17 +126,17 @@ function renderPart(){const lp=partNow();if(!lp){card.hidden=true;return}const [
 card.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b||b.tagName==='INPUT')return;const lp=partNow();if(!lp)return;const c=b.dataset.p,v=b.dataset.v;
   if(c==='close'){if(typeof clearAllSelection==='function')clearAllSelection();card.hidden=true;return}
   if(c==='del'){WS.deletePart?.(lp.key,lp.what);card.hidden=true;return}
-  if(c==='kind'){const kd=lp.what.slice(5);if(v===kd)return;editPart(st=>{const ls=st.materialLines||{};const x={...ls[kd],kind:v};delete ls[kd];ls[v]=x;st.materialLines=ls});window.layerPart={key:lp.key,what:'line:'+v};if(typeof editTree==='function')editTree();renderPart();return}
-  if(c==='lcolor'){const kd=lp.what.slice(5);return WS.openColorPop(b,'color',{cur:pageSettings()?.materialLines?.[kd]?.color||'#27211e',apply:col=>{editPart(st=>{if(st.materialLines?.[kd])st.materialLines[kd].color=col},{tree:false});WS.flash('효과선 색을 바꿨어요')}})}
+  if(c==='kind'){const kd=lp.what.slice(5);if(v===kd)return;editPart(()=>{const st=pageAdopt('materialLines'),ls=st.materialLines||{};const x={...ls[kd],kind:v};delete ls[kd];ls[v]=x;st.materialLines=ls;WS.stripCutDir?.(lp.key,[kd==='speed'?'속도선':'집중선'])});window.layerPart={key:lp.key,what:'line:'+v};if(typeof editTree==='function')editTree();renderPart();return}
+  if(c==='lcolor'){const kd=lp.what.slice(5);return WS.openColorPop(b,'color',{cur:pageView()?.materialLines?.[kd]?.color||'#27211e',apply:col=>{editPart(()=>{const st=pageAdopt('materialLines');if(st.materialLines?.[kd])st.materialLines[kd].color=col},{tree:false});WS.flash('효과선 색을 바꿨어요')}})}
   if(c==='replace'){const kd=lp.what.slice(5);WS.setTool(kd);WS.flash(kd==='speed'?'컷 안에서 움직임 방향으로 끌어 주세요 · 새 방향으로 바뀌어요':'컷 안에서 새 중심을 눌러 주세요');return}
-  if(c==='bgcolor'){return WS.openColorPop(b,'color',{cur:pageSettings()?.background||'#ffffff',apply:col=>{editPart(st=>{st.background=col});WS.flash('배경색을 바꿨어요')}})}
-  if(c==='bgcolor0'){editPart(st=>{delete st.background});return}
-  if(c==='trans'){editPart(st=>{if(+v)st.transition=+v;else delete st.transition});return}
+  if(c==='bgcolor'){return WS.openColorPop(b,'color',{cur:pageView()?.background||'#ffffff',apply:col=>{editPart(st=>{st.background=col});WS.flash('배경색을 바꿨어요')}})}
+  if(c==='bgcolor0'){WS.stripCutDir?.(lp.key,x=>{const m=x.match(/^(?:배경|배경색)\s+(.+)$/);return !!(m&&RoughGrammar.colorOf(m[1].trim()))});editPart(st=>{delete st.background});return}
+  if(c==='trans'){if(!+v)WS.stripCutDir?.(lp.key,x=>{const m=x.match(/^(?:배경|전환|배경색)\s+(.+)$/);return !!(m&&typeof PAGE_BACKGROUNDS!=='undefined'&&PAGE_BACKGROUNDS.some(b=>b&&b.name.replace(/\s/g,'')===m[1].replace(/\s/g,'')))});editPart(st=>{if(+v)st.transition=+v;else delete st.transition});return}
   if(c==='bgimg'){editPart(st=>{if(v)st.bgImage=v;else{delete st.bgImage;delete st.bgImageOp}});return}
   if(c==='ovmore'){try{WS.openPanel('props')}catch(_){}return}});
 card.addEventListener('input',e=>{const c=e.target.dataset.p;if(c==='density')card.querySelector('[data-p=densv]').textContent=e.target.value;if(c==='bgop')card.querySelector('[data-p=bgopv]').textContent=e.target.value+'%'});
 card.addEventListener('change',e=>{const c=e.target.dataset.p,lp=partNow();if(!lp)return;
-  if(c==='density'){const kd=lp.what.slice(5),v=+e.target.value;editPart(st=>{if(st.materialLines?.[kd])st.materialLines[kd].density=v},{tree:false})}
+  if(c==='density'){const kd=lp.what.slice(5),v=+e.target.value;editPart(()=>{const st=pageAdopt('materialLines');if(st.materialLines?.[kd])st.materialLines[kd].density=v},{tree:false})}
   if(c==='bgop'){const v=+e.target.value/100;editPart(st=>{st.bgImageOp=v},{tree:false})}});
 // 레이어 패널을 다시 그릴 때(줄을 고를 때) 카드도
 {const _et=editTree;editTree=function(...a){const r=_et(...a);if(!selectedLetter)render(true);return r}}
