@@ -25,7 +25,7 @@
     [['붉어', '빨개'], ['blush']], [['앉'], ['sitting']], [['서 있', '선 채'], ['standing']], [['코피'], ['nosebleed']], [['총'], ['holding gun', 'rifle']],
     [['단추', '소매'], ['sleeve', 'button']], [['촛불을 들', '촛대를 들'], ['holding candle']], [['계단을 오'], ['walking up stairs']],
     // 동작(활용형까지): 달린다·달려·달린·달렸… 어간이 바뀌는 것은 따로 적음
-    [['달리', '달려', '달린', '달렸', '뛰어가', '뛰어간', '뛰어온', '뛰어오', '질주', '내달'], ['running', 'motion blur']],
+    [['§달리다', '뛰어가', '뛰어간', '뛰어온', '뛰어오', '질주', '내달'], ['running', 'motion blur']],
     [['뛰어오르', '뛰어올라', '뛰어오른', '점프', '도약', '뛰어내'], ['jumping']], [['넘어지', '넘어진', '넘어져', '고꾸라'], ['falling', 'tripping']],
     [['쓰러지', '쓰러진', '쓰러져'], ['lying on the ground']], [['누워', '누운', '눕', '드러누'], ['lying']], [['엎드'], ['on stomach']],
     [['무릎을 꿇', '무릎 꿇', '무릎을 꿇은'], ['kneeling']], [['웅크', '쪼그려', '쭈그려', '쪼그리', '쭈그리'], ['squatting', 'curled up']],
@@ -55,6 +55,7 @@
   const HB = 0xAC00, syl = (l, v, t) => String.fromCharCode(HB + (l * 21 + v) * 28 + t), jamo = ch => { const c = ch.charCodeAt(0) - HB; return c < 0 || c >= 11172 ? null : [Math.floor(c / 588), Math.floor(c % 588 / 28), c % 28]; };
   const CONTRACT = { 20: 6, 8: 9, 13: 14, 18: 4 };  // ㅣ→ㅕ, ㅗ→ㅘ, ㅜ→ㅝ, ㅡ→ㅓ
   function forms(base) {
+    if (base[0] === '§' && base.length > 2 && /다$/.test(base)) return forms(base.slice(1)).map(x => x[0] === '§' ? x : '§' + x);  // '§달리다': 모든 형태를 낱말 첫머리에서만(매달리다에 안 걸리게)
     if (!/다$/.test(base)) return [base];
     const st = base.slice(0, -1), head = st.slice(0, -1), j = jamo(st.slice(-1)); if (!j) return [st];
     const [l, v, t] = j, out = new Set(); if (st.length >= 2) out.add(st);
@@ -62,20 +63,21 @@
     if (st.endsWith('하')) { ['한', '할', '해', '했', '하는', '하며', '하고'].forEach(x => out.add(st.slice(0, -1) + x)); return [...out]; }
     if (t === 0) { add(syl(l, v, 4)); add(syl(l, v, 8)); add(syl(l, v, 0) + '는'); add(syl(l, v, 0) + '고'); add(syl(l, v, 0) + '며');
       const cv = CONTRACT[v]; if (cv != null) { const y = v === 20 && l === 11 ? 11 : l; add(syl(y, cv, 0)); add(syl(y, cv, 20)); } else { add(syl(l, v, 20)); } }
-    else { out.add(st); add(syl(l, v, t) + '은'); add(syl(l, v, t) + '는'); add(syl(l, v, t) + '어'); add(syl(l, v, t) + '아'); add(syl(l, v, t) + '었'); add(syl(l, v, t) + '았');
+    else { if (st.length >= 2) out.add(st); add(syl(l, v, t) + '은'); add(syl(l, v, t) + '는'); add(syl(l, v, t) + '어'); add(syl(l, v, t) + '아'); add(syl(l, v, t) + '었'); add(syl(l, v, t) + '았');
       if (t === 8) { add(syl(l, v, 0) + '는'); add(syl(l, v, 4)); add(syl(l, v, 0) + '며'); }
       if (t === 17) { add(syl(l, v, 0) + '운'); add(syl(l, v, 0) + '워'); } }
-    return [...out].filter(x => x.length >= 2);
+    // 어간이 한 글자면(울다·안다·들다·쥐다) 활용형은 낱말 첫머리에서만 맞춤(§)
+    return [...out].filter(x => x.length >= 2).map(x => st.length === 1 && !x.includes(' ') ? '§' + x : x);  // 한 글자 형태(운·든)는 뜻이 갈려서 사전에 직접 적을 때만
   }
   // DB 컷 글에서 자주 빠지던 동작(tools/mine_actions.js) — 기본형으로 적고 위 forms()로 펼침
   const POSE_BASE = [
     [['놀라다', '깜짝'], ['surprised', 'wide-eyed']], [['눈물을 흘리다', '눈물 흘리다', '눈물이 맺히다', '눈물 고이다', '눈물이 고이다', '울먹이다', '흐느끼다'], ['tears', 'crying']],
-    [['당황하다'], ['flustered', 'sweatdrop']], [['감싸다', '감싸 안다'], ['embracing']], [['얼굴을 붉히다', '볼을 붉히다'], ['blush']], [['이마를 짚다', '머리를 짚다'], ['hand on own forehead']],
-    [['안다', '껴안다', '끌어안다', '부둥켜안다'], ['hug']], [['얼굴을 묻다', '품에 얼굴을'], ['face in another\'s chest']], [['떠나다', '나가다', '나서다', '들어서다', '들어오다'], ['walking']],
+    [['당황하다'], ['flustered', 'sweatdrop']], [['감싸 안다', '감싸안다'], ['embracing']], [['얼굴을 붉히다', '볼을 붉히다'], ['blush']], [['이마를 짚다', '머리를 짚다'], ['hand on own forehead']],
+    [['안다', '안아 주다', '안아주다', '껴안다', '끌어안다', '부둥켜안다', '품에 안다'], ['hug']], [['얼굴을 묻다', '품에 얼굴을'], ['face in another\'s chest']], [['떠나다', '나가다', '나서다', '들어서다', '들어오다'], ['walking']],
     [['다가오다', '다가가다'], ['walking towards']], [['손을 내밀다', '내밀다'], ['reaching out']], [['떨어지다', '추락하다'], ['falling']], [['수군대다', '수군거리다'], ['whispering', 'crowd']],
     [['눈을 맞추다', '시선을 맞추다', '눈이 마주치다', '마주하다', '마주 보다'], ['eye contact', 'face-to-face']], [['손을 맞잡다', '맞잡다'], ['holding hands']], [['안기다', '품에 안기다'], ['hug', 'being hugged']],
     [['손을 흔들다'], ['waving']], [['막다', '가로막다'], ['blocking', 'outstretched arm']], [['내려다보다'], ['looking down']], [['올려다보다', '우러러보다'], ['looking up']],
-    [['쓰다듬다'], ['petting', 'headpat']], [['내려놓다'], ['putting down']], [['부르다', '외쳐 부르다'], ['calling out', 'open mouth']], [['문이 열리다'], ['open door']], [['문이 닫히다'], ['closed door']],
+    [['쓰다듬다'], ['petting', 'headpat']], [['내려놓다'], ['putting down']], [['이름을 부르다', '외쳐 부르다', '불러 세우다'], ['calling out', 'open mouth']], [['문이 열리다'], ['open door']], [['문이 닫히다'], ['closed door']],
     [['손을 모으다', '두 손을 모으다'], ['own hands together']], [['움켜쥐다', '꽉 쥐다', '부여잡다'], ['clenched hand', 'grabbing']], [['따지다', '쏘아붙이다', '대들다'], ['arguing', 'open mouth', 'angry']],
     [['멍하다', '멍하니'], ['blank stare']], [['손가락질하다'], ['pointing at another']], [['인사하다', '고개 숙이다'], ['bowing']], [['맞닿다', '이마를 맞대다'], ['forehead-to-forehead']],
     [['건네받다', '받아 들다', '받아들다'], ['receiving', 'holding']], [['손짓하다'], ['beckoning']], [['어깨에 얹다', '손을 얹다'], ["hand on another's shoulder"]], [['고개를 돌리다', '얼굴을 돌리다', '눈을 돌리다'], ['looking away']],
@@ -88,13 +90,42 @@
     [['밀치다', '밀어내다', '떠밀다'], ['pushing']], [['끌고 가다', '끌려가다', '잡아끌다'], ['dragging', 'pulling']], [['붙잡다', '부축하다'], ['holding another']], [['뿌리치다'], ['shaking off']],
     [['통화하다'], ['holding phone', 'talking on phone']], [['문자를 보내다', '휴대폰을 보다', '폰을 보다'], ['looking at phone', 'holding phone']], [['서빙하다', '쟁반을 들다'], ['holding tray']],
     [['요리하다'], ['cooking']], [['청소하다', '빗자루'], ['cleaning', 'holding broom']], [['피아노를 치다', '연주하다'], ['playing instrument']], [['그림을 그리다'], ['drawing', 'holding brush']],
-    [['붉히다'], ['blush']], [['떨리다', '떨다'], ['trembling']], [['기대다', '기대앉다'], ['leaning']], [['돌아서다', '돌아눕다'], ['back turned']], [['생각에 잠기다', '골똘히', '고민하다', '생각하다'], ['thinking', 'hand on own chin']],
+    [['붉히다'], ['blush']], [['떨리다', '몸을 떨다', '덜덜 떨다'], ['trembling']], [['기대다', '기대앉다'], ['leaning']], [['돌아서다', '돌아눕다'], ['back turned']], [['생각에 잠기다', '골똘히', '고민하다', '생각하다'], ['thinking', 'hand on own chin']],
     [['비가 내리다', '빗속', '비를 맞다'], ['rain', 'wet']], [['눈이 내리다', '눈발'], ['snowing']], [['화나다', '화내다', '분노하다', '분개하다'], ['angry']], [['무표정하다'], ['expressionless']],
     [['손목을 잡다', '팔을 잡다', '옷자락을 잡다', '소매를 잡다', '멱살을 잡다'], ["grabbing another's arm"]], [['땀을 흘리다', '식은땀'], ['sweat']], [['빛나다', '반짝이다'], ['glowing', 'sparkle']],
     [['샤워하다'], ['showering', 'wet']], [['옷을 갈아입다', '옷을 입다'], ['changing clothes']], [['화장하다'], ['applying makeup']], [['책상에 엎드리다'], ['head on desk']],
+    // 연출 DB 컷 글에서 캔 동작 2차(tools/mine_actions.js 빈도순) — 앞말에 따라 뜻이 바뀌는 것은 목적어와 함께
+    [['울다', '흐느끼다', '오열하다', '울부짖다', '엉엉'], ['crying', 'tears']], [['문을 열다', '문을 여는'], ['opening door']], [['입을 열다'], ['open mouth', 'talking']], [['손을 들다'], ['hand up']], [['고개를 들다'], ['looking up']],
+    [['턱을 짚다', '턱을 괴다'], ['hand on own chin']], [['가슴을 짚다', '가슴에 손'], ['hand on own chest']], [['탁자를 짚다', '책상을 짚다', '손을 짚다'], ['hand on table', 'leaning forward']],
+    [['입을 가리다'], ['covering mouth']], [['얼굴을 가리다', '얼굴을 감싸다'], ['covering face']], [['코를 가리다', '코를 막다'], ['covering nose']], [['눈을 가리다'], ['covering eyes']],
+    [['보고서를 쓰다', '노트에 쓰다', '깃펜', '필기하다'], ['writing', 'holding pen']], [['이를 물다', '입술을 물다'], ['biting lip']], [['한입에 물다', '베어물다'], ['eating', 'biting']],
+    [['말을 걸다'], ['talking to another']], [['전화를 걸다', '전화하다'], ['holding phone', 'talking on phone']], [['팔을 벌리다', '두 팔을 벌리다'], ['spread arms']], [['사진을 찍다', '셀카를 찍다', '촬영하다'], ['taking photo', 'holding camera']],
+    [['차를 따르다', '술을 따르다', '잔을 따르다', '따라 주다'], ['pouring', 'holding teapot']], [['잔을 들다', '건배하다', '잔을 부딪'], ['holding cup', 'toast (gesture)']], [['집어 들다', '집어들다', '주워들다'], ['picking up']],
+    [['누르다', '버튼을 누르다', '번호를 누르다'], ['pressing']], [['안경을 올리다', '안경을 고쳐'], ['adjusting eyewear']], [['선글라스를 올리다', '선글라스를 내리다'], ['adjusting eyewear', 'sunglasses']],
+    [['불을 켜다', '스위치를 켜다'], ['turning on light']], [['기지개'], ['stretching', 'arms up']], [['불을 끄다'], ['turning off light']], [['두리번거리다', '둘러보다', '살피다', '주위를 살피다'], ['looking around']], [['비틀거리다', '휘청이다', '휘청거리다'], ['staggering']],
+    [['기도하다', '두 손을 모으다'], ['praying', 'own hands together']], [['눈을 부릅뜨다', '부릅뜨다'], ['wide-eyed', 'glaring']], [['경악하다', '기겁하다'], ['shocked', 'wide-eyed']], [['멈칫하다', '멈칫'], ['flinch']],
+    [['엿보다', '훔쳐보다'], ['peeking']], [['엿듣다', '귀를 기울이다'], ['eavesdropping', 'hand to ear']], [['곁눈질하다', '흘겨보다', '흘끗'], ['side glance']], [['지켜보다'], ['watching']],
+    [['읽다', '책을 읽다', '서류를 읽다', '편지를 읽다', '읽어 내려가다'], ['reading']], [['찌르다', '칼로 찌르다'], ['stabbing']], [['내리치다', '내려치다'], ['striking down']], [['밟다', '짓밟다'], ['stepping on']],
+    [['뒤집어쓰다', '이불을 덮어쓰다'], ['under covers']], [['헛기침하다'], ['clearing throat', 'hand to mouth']], [['휘두르다'], ['swinging']], [['떠들다', '수다를 떨다', '대화하다', '이야기를 나누다'], ['talking', 'chatting']],
+    [['만지다', '쓰다듬다', '어루만지다'], ['touching']], [['나르다', '옮기다', '짐을 들다'], ['carrying']], [['반지를 끼다', '장갑을 끼다'], ['putting on']], [['쓸어내리다', '가슴을 쓸어'], ['hand on own chest', 'relieved']],
+    [['던지다', '집어던지다'], ['throwing']], [['들여다보다', '내려다보다'], ['looking down']], [['정색하다'], ['serious']], [['연기를 뿜다', '연기를 내뿜다'], ['smoke']], [['골라 들다', '고르는 중'], ['choosing', 'reaching']],
+    [['환호하다', '만세'], ['cheering', 'arms up']], [['토하다', '구역질'], ['vomiting']], [['입장하다', '들어가다'], ['walking', 'entering']], [['달래다', '다독이다', '토닥이다'], ['comforting', 'patting']],
+    [['투덜대다', '투덜거리다', '구시렁'], ['pout', 'grumbling']], [['감탄하다'], ['amazed', 'sparkling eyes']], [['씩씩대다', '씩씩거리다'], ['angry', 'huffing']], [['젓다', '저어'], ['stirring']],
+    [['울컥하다'], ['tearing up']], [['긁다', '머리를 긁적'], ['scratching']], [['삼키다'], ['gulping']], [['발끈하다', '욱하다'], ['angry', 'flustered']], [['다투다', '말다툼', '언쟁'], ['arguing']],
+    [['서성이다', '서성거리다'], ['pacing']], [['잡아채다', '낚아채다'], ['snatching']], [['당기다', '잡아당기다'], ['pulling']], [['미끄러지다'], ['slipping', 'falling']], [['지시하다', '명령하다'], ['pointing', 'commanding']],
+    [['발을 내딛다', '내딛다'], ['stepping forward']], [['따라가다', '뒤따르다', '쫓아가다', '쫓다'], ['following', 'running']], [['찢다', '찢어발기다'], ['tearing']], [['찡그리다', '인상을 쓰다'], ['frown']],
+    [['먼지를 털다', '옷을 털다'], ['brushing off']], [['쥐여주다', '건네주다', '쥐어 주다'], ['giving', 'handing over']], [['젖히다', '고개를 젖히다'], ['head back']], [['윙크하다', '윙크'], ['one eye closed', 'wink']],
+    [['닦다', '눈물을 닦다', '땀을 닦다'], ['wiping']], [['머뭇거리다', '망설이다'], ['hesitant']], [['쏟다', '엎지르다'], ['spilling']], [['부딪히다', '부딪치다', '충돌하다'], ['collision']],
+    [['공부하다'], ['studying', 'writing']], [['안도하다', '안심하다'], ['relieved', 'sigh']], [['구기다', '구겨'], ['crumpling']], [['줍다', '주워 들다'], ['picking up']], [['폭소하다', '깔깔'], ['laughing']],
+    [['자다', '잠을 자다', '곯아떨어지다', '새근새근'], ['sleeping']], [['변명하다', '해명하다'], ['flustered', 'waving hands']], [['피우다', '담배를 피우다'], ['smoking']], [['빈정대다', '비꼬다'], ['smirk']],
+    [['나동그라지다', '나뒹굴다', '굴러떨어지다'], ['falling', 'lying on the ground']], [['손을 잡다'], ['holding hands']], [['꽉 잡다', '꽉 쥐다', '§든', '§들고', '§쥔', '§쥐고', '§잡은', '§잡고'], ['holding']], [['고개를 돌리다'], ['turning head']],
+    [['머리를 묶다', '머리를 땋다'], ['tying hair']], [['넘기다', '책장을 넘기다', '페이지를 넘기다'], ['turning page']], [['접다', '편지를 접다'], ['folding']], [['맞서다', '대치하다'], ['confrontation', 'facing another']],
+    [['눈물이 흐르다', '눈물이 흘러'], ['tears']], [['피를 흘리다'], ['blood', 'bleeding']], [['코피를 흘리다'], ['nosebleed']], [['침을 흘리다'], ['drooling']], [['흩날리다'], ['wind', 'floating']],
+    [['피아노를 치다'], ['playing piano']], [['박수를 치다', '박수'], ['clapping']], [['탁자를 치다', '책상을 치다', '탁자를 내리치다'], ['slamming table']], [['손뼉을 치다'], ['clapping']],
+    [['주먹을 쥐다'], ['clenched hand']], [['몸을 웅크리다'], ['curled up']], [['몸을 떨다', '부들거리다', '부들부들'], ['trembling']], [['흔들리다'], ['shaking']], [['한숨을 내쉬다'], ['sigh']],
   ];
   // 사람 동작으로 보이는 한국어 어미(동작 태그를 못 찾았을 때 알림용)
-  POSE.push(...POSE_BASE.map(([ws, t]) => [[...new Set(ws.flatMap(forms))], t]));
+  { const ex = ([ws, t]) => [[...new Set(ws.flatMap(forms))], t]; POSE.splice(0, POSE.length, ...POSE.map(ex), ...POSE_BASE.map(ex)); }  // 처음 목록도 기본형(…다)이면 펼침
   // Claude가 컷 프롬프트를 만들며 새로 옮긴 동작(배운 동작) — 앱이 N.useLearned([[한국어 낱말들], [태그들]])로 넣음
   let LEARNED_N = 0;
   N.useLearned = list => { POSE.splice(POSE.length - LEARNED_N, LEARNED_N); const L = (list || []).filter(x => Array.isArray(x) && x[0]?.length && x[1]?.length).map(([ws, t]) => [[...new Set(ws.flatMap(forms))], t]); POSE.push(...L); LEARNED_N = L.length; };
@@ -187,7 +218,10 @@
   const EYES = { 초록: 'green eyes', 녹색: 'green eyes', 갈색: 'brown eyes', 파란: 'blue eyes', 푸른: 'blue eyes', 붉은: 'red eyes', 빨간: 'red eyes', 검은: 'black eyes', 금색: 'yellow eyes', 노란: 'yellow eyes', 회색: 'grey eyes', 보라: 'purple eyes' };
   const CLOTH = [[['연미복'], 'tailcoat'], [['집사'], 'butler'], [['하인'], 'butler'], [['하녀', '메이드'], 'maid'], [['앞치마'], 'apron'], [['장갑'], 'gloves'], [['드레스'], 'dress'], [['정장'], 'suit'],
     [['교복'], 'school uniform'], [['셔츠'], 'shirt'], [['코트'], 'coat'], [['안경'], 'glasses'], [['리본'], 'hair ribbon'], [['넥타이'], 'necktie'], [['조끼'], 'vest'], [['망토'], 'cape'], [['모자'], 'hat'], [['귀족'], 'aristocrat']];
-  const has = (s, ws) => ws.some(w => s.includes(w));
+  // '§'로 시작하는 낱말은 낱말 첫머리에서만(한 글자 동사: '§우는'은 '우는 아이'에만, '배우는'에는 안 걸림)
+  //   한 글자(§든·§운)는 앞뒤 모두 낱말 경계
+  const BOUND = new Map(), bound = w => BOUND.get(w) || (BOUND.set(w, new RegExp('(^|[^가-힣])' + w.slice(1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + (w.length === 2 ? '(?![가-힣])' : ''))), BOUND.get(w));
+  const has = (s, ws) => ws.some(w => w[0] === '§' ? bound(w).test(s) : s.includes(w));
   const tagsOf = (s, table) => table.filter(([ws]) => has(s, ws)).flatMap(([, t]) => t);
   const uniq = a => [...new Set(a.filter(Boolean))];
   const actionOf = p => String(p.act || '').replace(/^(?:.+ )?대사$|^효과음 .*$/, '');
@@ -511,5 +545,5 @@
   const SHOT_ALL = new Set(Object.values(SHOT).flat().concat(['wide shot', 'very wide shot']).map(t => t.toLowerCase()));
   // 칸 이름(A1~E5) → 좌표
   const cellPos = cell => { const c = COLS.indexOf(String(cell)[0]), r = +String(cell).slice(1) - 1; return c < 0 || !(r >= 0 && r < 5) ? null : pos(+(0.1 + c * 0.2).toFixed(1), +(0.1 + r * 0.2).toFixed(1)); };
-  Object.assign(N, { poseTags: t => tagsOf(String(t || ''), POSE), cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
+  Object.assign(N, { poseTags: t => tagsOf(String(t || ''), POSE), interactTags: t => tagsOf(String(t || ''), INTERACT), cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughNAI = {}));

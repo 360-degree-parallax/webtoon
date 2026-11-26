@@ -10,6 +10,7 @@
    - --check: 파일을 바꾸지 않고 지금 사본과 다른 점만 보고
    - xlsx를 여러 개 주면 행을 이어 붙임(「웹툰 연출 DB」가 셀 한도에 닿아 HM·SL은 「웹툰 연출 DB 2」에 있음).
      코드표·작업 방법은 첫 파일 것을 씀. --revision은 첫 파일, --revision2는 두 번째 파일의 리비전
+   - 「동작」 시트(컷ID·동작·인원·상호작용·확인, 「웹툰 연출 DB 2」)가 들어 있으면 rough/db/actions.json으로(시트에서 고친 값이 사본에 반영)
 사용: python3 tools/sync_db.py <xlsx> [<xlsx2> …] [--revision N] [--revision2 M] [--check] [--no-build]
 """
 import sys, json, datetime, subprocess, pathlib, collections as C
@@ -40,6 +41,18 @@ def read(path):
         if s == '작품 정보' and '코드' in cols: body = [r for r in body if r[cols.index('코드')]]  # 코드 없는 행은 안내 메모
         out[s] = {'columns': cols, 'rows': body}
     return out
+
+def read_actions(paths):
+    """「동작」 시트 → rough/db/actions.json (없으면 None)"""
+    for path in paths:
+        wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
+        if '동작' not in wb.sheetnames: continue
+        rows = [[cell(v) for v in r] for r in wb['동작'].iter_rows(values_only=True)]
+        h = [str(x) for x in rows[0]]; I = h.index
+        num = lambda v: int(v) if isinstance(v, (int, float)) else (int(v) if str(v or '').strip().isdigit() else None)
+        cuts = {r[I('컷ID')]: {'a': r[I('동작')] or '', 'n': num(r[I('인원')]), 'i': r[I('상호작용')] or '', 'q': r[I('확인')] or ''} for r in rows[1:] if r and r[I('컷ID')]}
+        return {'made': datetime.date.today().isoformat(), 'how': '시트 「동작」(웹툰 연출 DB 2)', 'cuts': cuts}
+    return None
 
 def fill_counts(d):
     # 작품 정보 집계 칸: 내려받은 파일에 수식 값이 없으면(None) 직접 셈
@@ -91,6 +104,8 @@ def main():
     if v.returncode:
         print(f'검사 실패: 사본을 바꾸지 않았어요. 검사한 파일은 {tmp} 에 남겨 두었어요.'); sys.exit(1)
     tmp.replace(OUT); print('저장', OUT.relative_to(ROOT))
+    acts = read_actions(args)
+    if acts: (ROOT / 'rough' / 'db' / 'actions.json').write_text(json.dumps(acts, ensure_ascii=False)); print('동작 시트 →', len(acts['cuts']), '컷 rough/db/actions.json')
     if '--no-build' in sys.argv: return
     for s in ('build_patterns.py', 'build_nai_stats.py', 'build_db_lite.py'):
         r = subprocess.run([sys.executable, str(ROOT / 'tools' / s)], capture_output=True, text=True); print((r.stdout.strip().splitlines() or [''])[0])
