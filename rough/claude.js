@@ -95,6 +95,12 @@ const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 한 컷�
 - effect: no humans, abstract background. 인물이나 실제 장소의 묘사 없이 색, 빛, 선의 방향과 질감을 쓴다. chars는 빈 배열.
 - character: base에는 인원·프레이밍·공간·조명. 외형·표정·동작·시선은 캐릭터마다 분리한다. draft.chars에서 화면에 보이는 인물만 사용한다. 등록 인물이 없는 경우 컷에 보이는 사람의 동작을 base에 쓴다. cell은 A~E(좌→우), 1~5(상→하)이며 원문 위치와 연속성을 따른다.
 
+연출을 태그로 옮기는 기준(초안 draft.base에 이미 들어 있는 카메라·감정 태그는 지우지 말고 살린다):
+- angle은 감정 연출이다. 로우앵글은 위압·결의·분노를(from below, looking down at viewer, dramatic perspective, foreshortening), 하이앵글은 작고 약하고 외로움을(from above, looking up, 넓은 빈 공간), 아이레벨이라도 긴장·당황이 크면 dutch angle로. 그 감정이 화면 구도·인물 자세·시선에 보이게 쓴다.
+- emotion과 intensity(0~3): 표정·몸짓·조명을 감정에 맞게, intensity가 높을수록 더 강하게(2는 1.15::태그::, 3은 1.3::태그:: 가중치). peak 컷은 dynamic angle·강한 명암으로 씬에서 가장 센 구도.
+- sceneMood는 씬 전체 분위기다. 그 색감·조명(tags)을 모든 컷에 같게 깔아 컷끼리 톤이 이어지게 하고, 컷의 감정 조명은 그 위에 얹는다. 시간대(밤·낮)와 어긋나는 밝기 태그는 쓰지 않는다.
+- story(묶음 흐름·목적)와 앞뒤 컷을 보고, 이 컷이 흐름에서 맡은 역할(설정·고조·정점·여운)에 맞게 프레이밍과 빛의 세기를 정한다.
+
 props는 작가가 #으로 표시해 모양을 고정한 소품이다(name·look 한국어 형태·tags 영어 태그). 컷의 props에 이름이 있으면 그 컷 base에 그 소품의 태그를 넣고, 모든 컷에서 같은 단어·같은 색·같은 재질로 쓴다. 소품의 색·모양·크기를 컷마다 바꾸거나 다른 수식어를 덧붙이지 않는다. tags가 있으면 그대로 쓴다. tags가 비어 있으면 look(없으면 세계관·컷 글)에 맞춰 영어 태그 2~6개(사물 이름 + 색·재질·특징)를 한 번 정해 응답 props에 name과 함께 돌려주고, 그 소품이 나오는 컷마다 그 태그를 똑같이 쓴다. 소품 태그는 그 컷의 props에 이름이 있는 컷에만 넣고, props에 없는 컷에는 넣지 않는다(앞뒤 컷에 나왔더라도). tags가 이미 있는 소품은 응답 props에 넣지 않는다.
 
 컷에 note가 있으면 작가가 그 컷에 직접 남긴 지시다. 그 컷에서는 가장 먼저 반영하고, 지시와 무관한 부분은 씬 흐름대로 쓴다.
@@ -129,7 +135,7 @@ const SCHEMA_NAI = {
   required: ['cuts', 'props'],
   additionalProperties: false,
 };
-// payload: { title, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], props:[{name, look, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, props:[name], dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
+// payload: { title, sceneMood:{emotion, tags}, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], props:[{name, look, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, props:[name], dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
 export async function refineNai(apiKey, payload, { onStatus } = {}) {
   const r = await run(apiKey, SYSTEM_NAI, SCHEMA_NAI, `다음 씬의 NovelAI V4.5 태그를 다시 짜줘.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
   return { cuts: r.out.cuts, props: r.out.props || [], model: r.model, usage: r.usage };

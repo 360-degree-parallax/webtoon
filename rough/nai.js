@@ -64,6 +64,30 @@
   ];
   const MOOD = { 긴장: ['dramatic lighting', 'high contrast'], 설렘: ['soft lighting', 'bloom'], 쓸쓸: ['muted colors'], 분노: ['high contrast', 'dramatic lighting'], 놀람: ['dramatic lighting'],
     회상: ['soft focus', 'light particles', 'vignetting'], 다정: ['warm lighting'], 냉담: ['cold colors'], 개그: ['simple background'] };
+  // 감정별 분위기 조명(모든 구도에) — 위 MOOD에 없던 감정도 채움
+  Object.assign(MOOD, { 평온: ['soft lighting'], 기쁨: ['warm lighting', 'sparkle'], 결의: ['dramatic lighting', 'rim lighting'], 당황: ['high contrast'] });
+  // 앵글 × 감정: 카메라 높이로 감정을 실음(로우앵글=위압·결의, 하이앵글=작고 외로움). '_'는 그 앵글 기본
+  const ANG_FEEL = {
+    로우앵글: { 분노: ['looking down at viewer', 'imposing', 'dramatic perspective'], 결의: ['looking down at viewer', 'imposing', 'dramatic perspective'], 냉담: ['looking down at viewer', 'imposing'],
+      놀람: ['dramatic perspective'], 설렘: ['looking down at viewer'], 다정: ['looking down at viewer'], 기쁨: ['perspective'], _: ['perspective'] },
+    하이앵글: { 쓸쓸: ['looking up', 'alone'], 긴장: ['looking up'], 당황: ['looking up'], 놀람: ['looking up'], 설렘: ['looking up at viewer'], 의아: ['looking up'], _: ['perspective'] },
+    탑뷰: { 쓸쓸: ['alone'], _: ['perspective'] },
+    아이레벨: { 긴장: ['dutch angle'], 당황: ['dutch angle'], 놀람: ['dutch angle'], 분노: ['dutch angle'], _: [] },
+  };
+  // 씬 무드: 씬 전체에 같은 색감(색 보정)을 깔아 컷끼리 톤이 맞게
+  const SCENE_MOOD = { 설렘: ['warm colors', 'pastel colors'], 다정: ['warm colors'], 기쁨: ['vivid colors', 'warm colors'], 긴장: ['cold colors', 'high contrast'],
+    쓸쓸: ['cold colors', 'desaturated'], 분노: ['high contrast', 'red theme'], 냉담: ['cold colors', 'desaturated'], 회상: ['sepia', 'soft focus'], 결의: ['high contrast'], 개그: ['vivid colors'],
+    평온: [], 놀람: [], 의아: [], 당황: [] };
+  const DARK_MOOD = new Set(['긴장', '쓸쓸', '냉담', '분노']);
+  // 감정 강도 → NovelAI 가중치(2: 1.15배, 3: 1.3배)
+  const weigh = (tags, i) => !tags.length ? [] : i >= 3 ? [`1.3::${tags.join(', ')}::`] : i === 2 ? [`1.15::${tags.join(', ')}::`] : tags;
+  // 씬에서 가장 무게 있는 감정(강도 가중, 평온 제외)이 30% 넘으면 그 감정, 아니면 평온
+  function sceneMood(panels) {
+    const w = {}; let all = 0;
+    for (const p of panels || []) { const k = (p.i ?? 1) + 1; all += k; if (p.emo && p.emo !== '평온') w[p.emo] = (w[p.emo] || 0) + k * (p.vng === 'P' ? 1.5 : 1); }
+    const top = Object.entries(w).sort((a, b) => b[1] - a[1])[0];
+    return top && top[1] >= all * 0.3 ? top[0] : '평온';
+  }
   // 연출 DB 덩어리 색 → 빛·색 태그 (nai-stats.js가 감정별로 고른 색)
   const TONE = { '어두운 톤': ['dark', 'low key'], 검정: ['dark background'], '밝은 톤': ['bright', 'high key'], '중간 톤·회색': ['muted colors'],
     '중간 컬러·주황': ['warm lighting', 'orange theme'], '중간 컬러·붉은색': ['red theme'], '중간 컬러·분홍': ['pink theme'], '중간 컬러·파랑': ['blue theme'],
@@ -227,11 +251,16 @@
     }[mode];
     // #소품(고정): 설정집 물건의 태그를 그대로, 화면 구도 태그 바로 뒤에(컷마다 같은 모양). 효과 배경 컷에는 안 넣음
     const props = mode === 'effect' ? [] : (ctx.props?.(p) || []).filter(x => x.tags);
-    const frameTags = [...frame, ...(mode === 'effect' ? [] : ANG[p.ang] || []), ...props.flatMap(x => splitTags(x.tags))].filter(Boolean);
+    // 카메라: 앵글 태그 + 앵글×감정(인물이 없으면 시선 태그는 뺌) + 정점 컷은 역동적 구도
+    const feel = mode === 'effect' ? [] : [...((ANG_FEEL[p.ang] || {})[p.emo] || (ANG_FEEL[p.ang] || {})._ || [])].filter(t => (hasPerson || !/looking/.test(t)) && (p.ang !== '아이레벨' || (p.i ?? 1) >= 2));
+    const cam = mode === 'effect' ? [] : [...(ANG[p.ang] || []), ...feel, peak && 'dynamic angle'];
+    const frameTags = [...frame, ...cam, ...props.flatMap(x => splitTags(x.tags))].filter(Boolean);
+    const sm = ctx.sceneMood || '평온', night = light.includes('night') || DARK_MOOD.has(sm);
     const base = joinTags([
       ...frameTags, ...(mode === 'effect' ? [] : tagsOf(action, SURFACE)), ...light,
-      ...(showCast || mode === 'effect' ? MOOD[p.emo] || [] : []),
-      ...(mode !== 'effect' ? tone.tags.filter(t => !light.length || !['dark', 'night'].includes(t)) : []),
+      ...weigh(MOOD[p.emo] || [], p.i ?? 1),
+      ...(mode !== 'effect' ? tone.tags.filter(t => !(light.length && ['dark', 'night'].includes(t)) && !(night && ['bright', 'high key'].includes(t))) : []),
+      ...(SCENE_MOOD[sm] || []),
       (dialogs.length || p.caption) && 'negative space',
       ...sceneTags([...(ctx.loreTags?.(p) || []), ...splitTags(ctx.worldTags), ...splitTags(style)], mode), 'no text',
     ]);
@@ -244,7 +273,7 @@
       const y = n < 3 ? (far ? 0.7 : 0.5) : (far ? 0.9 : 0.7);
       const prompt = joinTags([
         ...countTags([c]), far && 'far away', ...appearance,
-        ...(!far && n === 0 ? EXPR[p.emo] || [] : []), ...actionTags,
+        ...(!far && n === 0 ? weigh(EXPR[p.emo] || [], p.i ?? 1) : []), ...actionTags,
       ]);
       return { name: c.name, prompt, pos: pos(x, y), ref: !far && !!refs.char?.(c.name) };
     });
@@ -255,7 +284,7 @@
       const isMain = c === main, drawn = charP.find(x => x.name === c.name);
       const k = Math.min(visible.length, 6), x = k === 1 ? 0.5 : [0.3, 0.7, 0.5, 0.3, 0.7, 0.5][n];
       return { name: c.name, pos: drawn && !far ? drawn.pos : pos(x, n < 3 ? 0.5 : 0.7),
-        prompt: joinTags([...countTags([c]), ...appearance, ...(isMain ? EXPR[p.emo] || [] : []), ...(isMain ? tagsOf(onScreen, POSE) : []), ...(mode === 'detail' ? body : [])]) };
+        prompt: joinTags([...countTags([c]), ...appearance, ...(isMain ? weigh(EXPR[p.emo] || [], p.i ?? 1) : []), ...(isMain ? tagsOf(onScreen, POSE) : []), ...(mode === 'detail' ? body : [])]) };
     });
     const charRef = mode === 'character' && main && refs.char?.(main.name) ? main.name : null;
     const strength = ['detail', 'object'].includes(mode) ? 0.72 : NO_HUMANS.has(mode) || far ? 0.62 : peak ? 0.7 : 0.66;
@@ -348,13 +377,15 @@
     const [sc, ratio] = LAYER_SHOT[p.shot] || LAYER_SHOT.중경;
     // 자세 키: 화풍·흰 배경을 뺀 인물 태그(외형·표정·자세·든 소품·프레이밍·앵글)를 정렬해 이음 → 같으면 같은 그림을 여러 컷·씬이 같이 씀
     const poseOf = (name, tags) => name + '|' + [...new Set(tags.map(t => tagName(t).toLowerCase()).filter(t => t && !CUTOUT.includes(t) && t !== 'no text' && !style.some(x => tagName(x).toLowerCase() === t)))].sort().join(',');
-    const frame = [...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || []];
+    const frame = [...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || [], ...splitTags(o.base).filter(t => /^(looking (down|up)( at viewer)?|imposing|dramatic perspective|perspective|dutch angle|dynamic angle)$/.test(tagName(t)))];
+    // 인물 레이어도 배경과 같은 빛·색감(자세 키에는 안 넣음 — 조명만 다른 같은 자세는 같은 그림)
+    const lit = splitTags(o.base).filter(t => /light|colors|contrast|sepia|desaturated|pastel|bloom|sparkle|theme|soft focus/i.test(tagName(t)) && !/background|candle/i.test(tagName(t)));
     const held = name => propA.filter(x => x.at.to === 'char' && x.at.name === name);
     // 개별 인물 레이어에는 둘이 닿는 동작 태그(hug 등)를 뺌 — 함께 레이어의 기본 프롬프트로
     const bodyOf = c => [...splitTags(c.prompt).filter(t => !/^(far away)$/i.test(tagName(t)) && !isProp(t) && !(cast.length >= 2 && INTER_TAGS.has(tagName(t).toLowerCase()))), ...held(c.name).flatMap(x => [...tagsFor(x), HOLD.test(act.slice(act.indexOf(x.name) + x.name.length)) && /들|든|쥐|쥔|잡|움켜|움킨|흔들|흔든|꺼내|꺼낸|꺼냈/.test(act.slice(act.indexOf(x.name) + x.name.length, act.indexOf(x.name) + x.name.length + 6)) ? 'holding' : ''].filter(Boolean))];
     const chars = cast.map(c => { const body = [...bodyOf(c), ...frame];
       return { kind: 'char', label: `인물 ${c.name}`, name: c.name, key: c.name, pose: poseOf(c.name, body), holds: held(c.name).map(x => x.name),
-        prompt: joinTags([...body, ...CUTOUT, ...style, 'no text']),
+        prompt: joinTags([...body, ...lit, ...CUTOUT, ...style, 'no text']),
         size: size(ratio), x: Math.round(c.pos.x * 100), y: Math.round(c.pos.y * 100), scale: Math.round(Math.min(95, sc * 100 * (n > 1 ? 0.75 : 1))) }; });
     // 함께: 두 명 이상 — 기본 프롬프트(인원·상호작용·구도) + 인물 칸마다 그 인물 묘사(NovelAI V4.5 여러 인물)
     let group = null;
@@ -362,7 +393,7 @@
       const names = cast.map(c => c.name), counts = cast.flatMap(c => splitTags(c.prompt).filter(t => COUNT_TAG.test(tagName(t))));
       const inter = uniq([...tagsOf(act, INTERACT), ...cast.flatMap(c => splitTags(c.prompt).map(tagName).filter(t => INTER_TAGS.has(t.toLowerCase())))]);
       const parts = cast.map(c => ({ name: c.name, cell: c.pos.cell || pos(c.pos.x, c.pos.y).cell, prompt: joinTags(bodyOf(c).filter(t => !COUNT_TAG.test(tagName(t)))) }));
-      const base = joinTags([...counts, ...inter, ...frame, ...CUTOUT, ...style, 'no text']);
+      const base = joinTags([...counts, ...inter, ...frame, ...lit, ...CUTOUT, ...style, 'no text']);
       group = { kind: 'group', label: `함께 ${names.join('·')}`, names, key: [...names].sort().join('+'), interact: inter,
         pose: [...names].sort().join('+') + '#' + poseOf('', [base, ...parts.map(x => x.name + ':' + x.prompt)].flatMap(splitTags)),
         prompt: [base, ...parts.map(x => x.prompt)].join('\n\n'), blocks: [{ title: '기본 프롬프트', text: base }, ...parts.map((x, k) => ({ title: `캐릭터 ${k + 1} · ${x.name} <small>위치 ${x.cell}</small>`, text: x.prompt }))],
@@ -377,5 +408,5 @@
   const SHOT_ALL = new Set(Object.values(SHOT).flat().concat(['wide shot', 'very wide shot']).map(t => t.toLowerCase()));
   // 칸 이름(A1~E5) → 좌표
   const cellPos = cell => { const c = COLS.indexOf(String(cell)[0]), r = +String(cell).slice(1) - 1; return c < 0 || !(r >= 0 && r < 5) ? null : pos(+(0.1 + c * 0.2).toFixed(1), +(0.1 + r * 0.2).toFixed(1)); };
-  Object.assign(N, { cut, refine, layers, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
+  Object.assign(N, { cut, refine, layers, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughNAI = {}));

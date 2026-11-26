@@ -323,6 +323,24 @@ test('레이어: 소품은 나온 컷에만 · 소품 중심 컷에도 인물 �
   assert(await ev(() => { const ov = SCENES[SCUR].pageEdits[layerPlan(SCUR)[2].slot].overlays; return ov.length === 1 && !ov[0].layer; }), '컷에 없는 소품 레이어는 빼고 직접 넣은 소재는 둠');
   await ev(() => setLayerMode(false));
 });
+test('프롬프트에 앵글×감정 · 감정 강도 가중치 · 씬 무드', async ({p, ev}) => {
+  await ev(() => { showView('write'); CUTS.splice(0, CUTS.length, '밤, 복도. {설정}', '@에드가가 @준을 내려다본다. {로우앵글, 감정 결의}', '@준이 혼자 남아 고개를 떨군다. {하이앵글, 감정 쓸쓸}'); saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(700);
+  await ev(() => showView('layout')); await p.waitForTimeout(500);
+  const c = await ev(() => naiCuts().map(({p, o}) => [p.ang, p.emo, p.i, o.base, o.chars.map(x => x.prompt).join(' | ')]));
+  assert(/from below/.test(c[1][3]) && /looking down at viewer|imposing|dramatic perspective/.test(c[1][3]), '로우앵글+결의: 위압 구도');
+  assert(/from above/.test(c[2][3]) && /looking up|alone/.test(c[2][3]), '하이앵글+쓸쓸: 작고 외로운 구도');
+  assert(c.every(x => !/\bbright\b|high key/.test(x[3])), '밤 장면에 밝은 톤 없음');
+  const mood = await ev(() => sceneMoodOf(SCUR));
+  await p.selectOption('#conti [data-scenemood]', '설렘'); await p.waitForTimeout(300);
+  const c2 = await ev(() => naiCuts().map(({o}) => o.base));
+  assert(c2.every(b => b.includes('warm colors') && b.includes('pastel colors')), '씬 무드를 고르면 모든 컷에 같은 색감');
+  assert(await ev(() => naiPayload().sceneMood.emotion === '설렘'), 'Claude에도 씬 무드 전달');
+  await p.selectOption('#conti [data-scenemood]', ''); await p.waitForTimeout(200);
+  assert(await ev(() => !SCENES[SCUR].mood) && typeof mood === 'string', '자동으로 되돌림');
+  await ev(() => { CUTS[1] = '@에드가가 @준을 내려다본다. {로우앵글, 감정 분노}'; saveScenes(); compute(false); });
+  const strong = await ev(() => state.panels[1].i >= 2 ? /1\.(15|3)::/.test(naiCuts()[1].o.chars.map(x => x.prompt).join(' ')) : true);
+  assert(strong, '강한 감정은 표정 가중치');
+});
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
   await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);

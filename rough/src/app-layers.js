@@ -10,7 +10,7 @@ function setLayerMode(on){LAYER_MODE=!!on;try{localStorage.setItem('rough-layer-
   toast(on?'요소별 레이어로 뽑아요 · 배경·인물·소품 프롬프트를 따로 복사해 만든 그림을 각 칸에 넣어 주세요':'컷 한 장으로 뽑아요',2600)}
 // 장면 하나의 컷마다 레이어 설계(지금 씬은 Claude가 다듬은 프롬프트, 다른 씬은 규칙 초안)
 function layerPlan(si){const cur=si===SCUR,ps=cur?state.panels:panelsOf(si);if(!ps.length)return[];
-  const L=cur?naiCuts():(()=>{const chars=naiChars(),ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n]},worldTags:WORLD.tags||'',loreTags:p=>loreHits(p.act||'').filter(e=>e.cat!=='item').flatMap(e=>loreTagList(e)),props:propsFor};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))})();
+  const L=cur?naiCuts():(()=>{const chars=naiChars(),ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n]},worldTags:WORLD.tags||'',sceneMood:sceneMoodOf(si,ps),loreTags:p=>loreHits(p.act||'').filter(e=>e.cat!=='item').flatMap(e=>loreTagList(e)),props:propsFor};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))})();
   const eds=SCENES[si].pageEdits||[];
   return L.map(({p,i,o})=>{const slot=cutSlot(p,i);return{p,i,slot,...NAI.layers(o,p,{style:NAISTYLE,i,attach:nm=>(eds[slot]?.propAttach||{})[nm]||'auto'})}})}
 // 인물은 자세 키(pose)가 같으면 어느 씬·컷이든 같은 그림. 자세 키가 없던 예전 그림은 그 컷에서만
