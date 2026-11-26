@@ -19,7 +19,7 @@ export function episodePlan(row){
 const localText=value=>String(value??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 const splitLines=value=>value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
 
-export function mountComposition(root,{getKey,requestKey,addScenes,getStory,request,reportError}) {
+export function mountComposition(root,{getKey,requestKey,addScenes,getStory,request,reportError,onDraft}) {
   const form=root.querySelector('#plan-form');
   const output=root.querySelector('#plan-output');
   const status=root.querySelector('#plan-status');
@@ -195,6 +195,7 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
         row.draft={...result,behavior:options.behavior};
       }
       render();updateStatus(card?'카드를 다시 만들었어요.':'구성안을 만들었어요.');persist();
+      if(!card&&mode==='webtoon'&&onDraft)onDraft(row.draft,updateStatus);  // 설정집에 없는 인물·설정 제안(따로 확인 창)
     }catch(error){updateStatus(reportError(error))}
     finally{setBusy(false)}
   }

@@ -151,6 +151,23 @@ test('콘티: 컷 지우기 → 씬·편집에 반영 · Ctrl+Z', async ({p, ev}
   await p.keyboard.press('Control+z'); await p.waitForTimeout(600);
   assert(JSON.stringify(await ev(() => SCENES[SCUR].cuts)) === JSON.stringify(before), 'Ctrl+Z로 되돌림');
 });
+test('구성안 → 설정집 제안 창 → 고른 대로 추가', async ({p, ev}) => {
+  await ev(() => setKey('sk-test', 'session'));
+  const n0 = await ev(() => [CHARS.length, LORE.length]);
+  // 가짜 Claude 응답: 엑스트라 하녀(캐릭터 제안)와 시장 상인들(세계관 제안), 이미 있는 에드가는 걸러져야 함
+  await ev(() => { window._fake = { findEntities: async () => ({ items: [
+    { name: '하녀1', suggest: 'char', where: '2번 씬 「마차 소리」 2컷 — 떠나냐고 묻는 하녀', reason: '대사가 있음', body: 'female', aliases: '', look: '갈색 단발, 하녀복', cat: 'term', keys: '', desc: '', tags: '' },
+    { name: '시장 상인들', suggest: 'lore', where: '1번 씬 배경', reason: '배경 무리', body: 'other', aliases: '', look: '', cat: 'faction', keys: '상인', desc: '광장 시장의 상인들', tags: 'merchants' },
+    { name: '에드가', suggest: 'char', where: 'x', reason: 'x', body: 'male', aliases: '', look: '', cat: 'term', keys: '', desc: '', tags: '' } ] }), explain: e => String(e) };
+    suggestEntities({ cards: [{ n: 1, title: 't', cuts: ['a'] }] }, () => {}, window._fake); });
+  await p.waitForSelector('#entdlg[open]');
+  assert((await ev(() => document.querySelectorAll('#entdlg .entl li').length)) === 2, '이미 있는 인물은 빠지고 2개');
+  await p.click('#entdlg [data-r=go]'); await p.waitForTimeout(300);
+  const n1 = await ev(() => [CHARS.length, LORE.length, CHARS.some(c => c.name === '하녀1'), LORE.some(l => l.name === '시장 상인들' && l.cat === 'faction')]);
+  assert(n1[0] === n0[0] + 1 && n1[1] === n0[1] + 1 && n1[2] && n1[3], '캐릭터 1명·세계관 1개 추가');
+  await p.reload(); await p.waitForTimeout(2000);
+  assert(await ev(() => CHARS.some(c => c.name === '하녀1')), '저장됨');
+});
 test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   await p.click('#gReview'); await p.waitForTimeout(1500);
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');

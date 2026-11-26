@@ -2214,6 +2214,7 @@ function openComposition(){
         cast:CHARS.map(({name,aliases,look})=>({name,aliases,look}))}),
       request:claude.requestComposition,
       reportError:claude.explain,
+      onDraft:(draft,status)=>suggestEntities(draft,status,claude),
     });
   }).catch(()=>{
     compositionModule=null;
@@ -2532,3 +2533,33 @@ function contiDelete(i){const p=state.panels[i];if(!p)return;const slot=cutSlot(
   remapCuts(SCUR,()=>{CUTS.splice(slot,1);edits.splice(slot,1);return moveMap(n,x=>x===slot?-1:x>slot?x-1:x)});
   saveCuts();compute(false);CT_CUR=Math.min(i,Math.max(0,state.panels.length-1));CT_COPIED.clear();renderConti();
   toast(`${i+1}번 컷을 지웠어요 · 씬·편집에도 반영돼요 · Ctrl+Z로 되돌리기`,2600)}
+
+// ---------- 구성안 → 설정집 제안 ----------
+// 구성안 생성이 끝나면 Claude가 설정집에 없는 인물(엑스트라 포함)·장소·물건을 찾고, 어디에 넣을지 물어봄. 고른 것만 바로 추가
+async function suggestEntities(draft,status,claude){if(!AIKEY||!draft?.cards?.length)return;
+  const payload={cast:CHARS.map(c=>({name:c.name,aliases:c.aliases||''})),lore:LORE.map(l=>({name:l.name,keys:l.keys||''})),world:worldBrief(),
+    cards:draft.cards.map(c=>({n:c.n,title:c.title||'',cuts:c.cuts||[]}))};
+  status?.('구성안을 만들었어요 · 설정집에 없는 인물·설정을 찾는 중…');
+  try{const r=await claude.findEntities(AIKEY,payload,{onStatus:()=>{}});
+    const have=new Set(CHARS.flatMap(c=>[c.name,...String(c.aliases||'').split(',')]).map(x=>x.trim()).filter(Boolean).concat(LORE.map(l=>l.name.trim())));
+    const items=(r.items||[]).filter(x=>x.name&&!have.has(x.name.trim()));
+    status?.(items.length?`구성안을 만들었어요 · 설정집에 없는 것 ${items.length}개를 찾았어요`:'구성안을 만들었어요 · 설정집에 더할 것은 없어요');
+    if(items.length)entityDialog(items)}
+  catch(err){console.warn(err);status?.('구성안을 만들었어요 · 인물·설정 찾기는 실패했어요('+claude.explain(err)+')')}}
+function entityDialog(items){let d=$('#entdlg');if(!d){d=document.createElement('dialog');d.id='entdlg';d.className='keydlg entdlg';document.body.appendChild(d)}
+  const CAT=k=>(LORE_CAT[k]||['설정'])[0];
+  d.innerHTML=`<h3>설정집에 추가할까요?</h3><p>구성안에 나오지만 설정집에 없는 것을 Claude가 찾았어요. 고른 대로 바로 추가돼요.</p>
+  <ol class="entl">${items.map((x,n)=>`<li><div class="enth"><b>${esc(x.name)}</b><small>${esc(x.where)}</small></div>
+    <p class="entr">${esc(x.reason)}</p><p class="entd">${x.suggest==='lore'?`${esc(CAT(x.cat))} · ${esc(x.desc)}`:esc(x.look)}</p>
+    <div class="seg3 entc" role="radiogroup" aria-label="${esc(x.name)} 추가 위치">${[['char','캐릭터로'],['lore','세계관에'],['skip','추가 안 함']].map(([v,l])=>`<button type="button" data-n="${n}" data-v="${v}" aria-pressed="${x.suggest===v}">${l}</button>`).join('')}</div></li>`).join('')}</ol>
+  <div class="acts"><button class="btn" data-r="x">나중에</button><button class="btn dark" data-r="go">선택대로 추가</button></div>`;
+  const pick=items.map(x=>x.suggest);
+  d.onclick=e=>{const b=e.target.closest('[data-v]');if(b){pick[+b.dataset.n]=b.dataset.v;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
+    const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;
+    if(k==='go'){let nc=0,nl=0;items.forEach((x,n)=>{const v=pick[n];
+        if(v==='char'){CHARS.push({name:x.name.trim(),aliases:x.aliases||'',body:x.body==='male'?'male':'female',look:x.look||''});nc++}
+        else if(v==='lore'){LORE.push({id:'l'+Date.now().toString(36)+n,name:x.name.trim(),cat:LORE_CAT[x.cat]?x.cat:'term',keys:x.keys||'',desc:x.desc||'',tags:x.tags||''});nl++}});
+      if(nc){saveChars();if(VIEW==='chars')renderChars()}if(nl){saveWorld();if(VIEW==='world')renderWorld()}
+      if(nc||nl){try{compute(false)}catch(_){}toast([nc&&`캐릭터 ${nc}명`,nl&&`세계관 항목 ${nl}개`].filter(Boolean).join(' · ')+'를 설정집에 추가했어요',2600)}}
+    d.close()};
+  d.showModal()}

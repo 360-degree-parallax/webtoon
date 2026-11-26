@@ -1377,3 +1377,9 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 #conti .ccard>header{position:relative;padding-right:52px}
 #conti .ct-del{position:absolute;top:0;right:0;background:none;border:0;padding:2px 4px;font:inherit;font-size:12px;color:var(--t3);cursor:pointer;opacity:.75;flex:none}
 #conti .ct-del:hover,#conti .ct-del:focus-visible{opacity:1;color:var(--warn,#b45309);text-decoration:underline;text-underline-offset:3px}
+/* 구성안 → 설정집 제안 창 */
+.entdlg{max-width:620px;width:calc(100vw - 32px)}.entdlg .entl{list-style:none;margin:12px 0;padding:0;display:grid;gap:10px;max-height:60vh;overflow:auto}
+.entdlg .entl li{padding:12px;border:1px solid var(--line2);border-radius:12px;display:grid;gap:6px}
+.entdlg .enth{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.entdlg .enth b{font-size:15px}.entdlg .enth small{font-size:12px;color:var(--t3)}
+.entdlg .entr,.entdlg .entd{margin:0;font-size:13px;color:var(--t2)}.entdlg .entd{color:var(--t3)}
+.entdlg .entc{justify-self:start}

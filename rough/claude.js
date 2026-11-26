@@ -175,3 +175,28 @@ export function explain(err) {
 export function requestComposition(apiKey, system, schema, payload, onStatus) {
   return run(apiKey, system, schema, JSON.stringify(payload), status=>onStatus?.(status.replace('씬을 읽는','기획을 읽는')));
 }
+
+// 구성안이 나온 직후: 설정집에 없는 인물(엑스트라 포함)·장소·물건·세력을 찾아 캐릭터/세계관 중 어디에 넣을지 제안
+const ENT_SYSTEM = `너는 웹툰 설정 정리 담당이다. 입력은 이번 화 구성안(씬 카드와 컷 초안)과 이미 설정집에 있는 캐릭터·세계관 항목이다.
+할 일: 구성안에 나오지만 설정집에 아직 없는 것을 모두 찾아, 각각 캐릭터로 둘지 세계관 항목으로 둘지 제안한다.
+- 사람은 이름이 없어도(하녀1, 경비병, 점원, 행인들) 컷에 모습이 나오면 후보다. 이미 있는 캐릭터 이름·별칭과 같은 사람은 빼고, 같은 사람을 여러 이름으로 부르면 하나로 묶는다.
+- 대사가 있거나 두 컷 이상 나오거나 이야기에 영향을 주는 사람은 suggest를 "char"로. 배경에 한 번 지나가는 무리·직업군(예: 시장 상인들, 기사단 병사들)은 "lore"(cat: faction)로. 아주 사소하면 "skip".
+- 장소·건물·물건·조직·용어·사건도 이름이 붙어 있거나 그림에 반복되면 lore 후보(cat: place|faction|item|term|history|rule).
+- where: 어떤 상황에 나오는지 사람이 바로 알아보게 "2번 씬 「마차 소리」 3컷 — 에드가에게 떠나냐고 묻는 하녀"처럼 짧게.
+- 캐릭터 look: NovelAI·이미지 생성에 바로 쓸 외형(머리·눈·체형·옷차림·나이대)을 한국어 한 줄로. 원문에 없으면 장면·시대·직업에 맞게 정하되 지어낸 티 나는 고유 설정은 넣지 않는다.
+- 세계관 항목 desc는 한두 문장, keys는 컷 글에 나올 법한 호칭을 쉼표로, tags는 영어 이미지 태그 몇 개.
+- 최대 12개, 중요한 순서로. 없으면 빈 배열.`;
+const ENT_SCHEMA = {
+  type: 'object',
+  properties: { items: { type: 'array', items: { type: 'object', properties: {
+    name: { type: 'string' }, suggest: { type: 'string', enum: ['char', 'lore', 'skip'] }, where: { type: 'string' }, reason: { type: 'string' },
+    body: { type: 'string', enum: ['female', 'male', 'other'] }, aliases: { type: 'string' }, look: { type: 'string' },
+    cat: { type: 'string', enum: ['place', 'faction', 'item', 'term', 'history', 'rule'] }, keys: { type: 'string' }, desc: { type: 'string' }, tags: { type: 'string' },
+  }, required: ['name', 'suggest', 'where', 'reason', 'body', 'aliases', 'look', 'cat', 'keys', 'desc', 'tags'], additionalProperties: false } } },
+  required: ['items'], additionalProperties: false,
+};
+// payload: { cast:[{name,aliases}], lore:[{name,keys}], world:{…}, cards:[{n,title,cuts:[…]}] }
+export async function findEntities(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, ENT_SYSTEM, ENT_SCHEMA, JSON.stringify(payload), s => onStatus?.(s.replace('씬을 읽는', '등장인물·설정을 찾는')));
+  return { items: r.out.items || [], model: r.model };
+}
