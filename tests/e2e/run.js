@@ -177,6 +177,23 @@ test('콘티: 컷 비율 기준(작품별) 바꾸면 칸 길이가 따라감', a
   await p.reload(); await p.waitForTimeout(2500); await ev(() => showView('layout')); await p.waitForTimeout(800);
   assert((await p.inputValue('#conti [data-ratioref]')) === '호수의 백조', '고른 기준이 남음');
 });
+test('콘티: 컷 하나 상세 수정(샷·감정) · 이 컷만 프롬프트 다시 생성', async ({p, ev}) => {
+  let req = null;
+  await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
+    "export async function refineNaiCut(k,p,n,r){window._req={n,r};return {cut:{n,base:'REGEN base',chars:[]},model:'test'}}export function explain(e){return String(e)}"}));
+  await ev(() => { setKey('sk-test', 'session'); showView('layout'); }); await p.waitForTimeout(800);
+  await p.click('#conti .ccard[data-ct="1"] [data-ctedit]'); await p.waitForTimeout(200);
+  assert(await ev(() => !!document.querySelector('#conti .ct-edit[data-i="1"]')), '수정 칸 열림');
+  await p.selectOption('#conti .ct-edit[data-i="1"] [data-ctf=shot]', '디테일'); await p.waitForTimeout(400);
+  assert(await ev(() => state.panels[1].shot === '디테일'), '샷 바뀜');
+  await p.selectOption('#conti .ct-edit[data-i="1"] [data-ctf=emo]', '분노'); await p.waitForTimeout(400);
+  assert(await ev(() => state.panels[1].emo === '분노'), '감정 바뀜');
+  await p.fill('#conti .ct-edit[data-i="1"] textarea', '역광으로'); await p.click('#conti [data-ctregen="1"]'); await p.waitForTimeout(800);
+  assert(await ev(() => window._req && window._req.n === 2 && window._req.r === '역광으로'), '이 컷 번호와 요청을 보냄');
+  assert((await p.textContent('#conti .ct-edit[data-i="1"] .ct-edst')).includes('새로 만들었어요'), '완료 표시');
+  await p.click('#conti [data-ctauto="1"]'); await p.waitForTimeout(400);
+  assert(await ev(() => state.panels[1].shot !== '디테일' || !Object.keys(state.panels[1].lock).length), '엔진 값으로 되돌림');
+});
 test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   await p.click('#gReview'); await p.waitForTimeout(1500);
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');

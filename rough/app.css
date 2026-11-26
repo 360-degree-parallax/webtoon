@@ -1386,3 +1386,14 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 #conti .ct-ratio{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;font-size:13px;color:var(--t2)}
 #conti .ct-ratio select{margin-left:6px;height:30px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);color:var(--t1);font:inherit;font-size:13px;padding:0 6px}
 #conti .ct-ratio small{font-size:12px;color:var(--t3)}
+/* 콘티 컷 하나 상세 수정 */
+#conti .ct-edbtn{position:absolute;top:0;right:48px;background:none;border:0;padding:2px 4px;font:inherit;font-size:12px;color:var(--t2);cursor:pointer}
+#conti .ct-edbtn:hover,#conti .ct-edbtn[aria-expanded=true]{color:var(--tb,var(--t1));text-decoration:underline;text-underline-offset:3px}
+#conti .ccard>header{padding-right:132px}
+#conti .ct-edit{margin:0 0 16px;padding:12px;border-radius:12px;background:var(--surface);display:grid;gap:10px}
+#conti .ct-edrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}
+#conti .ct-edrow label,#conti .ct-edreq{display:grid;gap:4px;font-size:12px;color:var(--t3)}
+#conti .ct-edrow select{height:32px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);color:var(--t1);font:inherit;font-size:13px;padding:0 6px}
+#conti .ct-edreq textarea{width:100%;resize:vertical;min-height:48px;padding:8px 10px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:13px;background:var(--bg);color:var(--t1)}
+#conti .ct-edact{display:flex;align-items:center;gap:8px}#conti .ct-edact .grow{flex:1}#conti .ct-edst{font-size:12px;color:var(--t3)}
+#conti .ct-edact .tpill{height:34px;font-size:14px;padding:0 14px}

@@ -200,3 +200,13 @@ export async function findEntities(apiKey, payload, { onStatus } = {}) {
   const r = await run(apiKey, ENT_SYSTEM, ENT_SCHEMA, JSON.stringify(payload), s => onStatus?.(s.replace('씬을 읽는', '등장인물·설정을 찾는')));
   return { items: r.out.items || [], model: r.model };
 }
+
+// 컷 하나만 다시 생성: 씬 전체는 연속성 확인용으로 주고, only의 컷만 반환하게 함. request는 작가가 적은 방향
+export async function refineNaiCut(apiKey, payload, n, request, { onStatus } = {}) {
+  const sys = SYSTEM_NAI + `\n\n이번에는 cuts 중 n=${n}인 컷 하나만 다시 쓴다. 반환 cuts에는 그 컷 하나만 넣는다. 다른 컷은 앞뒤 연속성(의상·위치·조명)을 맞추는 데만 쓴다.` +
+    (request ? `\n작가 요청이 있으면 그 컷의 샷·인원 같은 draft 값은 지키면서 요청을 가장 먼저 반영한다.` : '');
+  const r = await run(apiKey, sys, SCHEMA_NAI, `다음 씬에서 ${n}번 컷의 NovelAI V4.5 태그만 다시 짜줘.${request ? `\n작가 요청: ${request}` : ''}\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
+  const cut = (r.out.cuts || []).find(c => c.n === n) || (r.out.cuts || [])[0];
+  if (!cut) throw new Error('그 컷의 프롬프트가 오지 않았어요');
+  return { cut: { ...cut, n }, model: r.model };
+}

@@ -48,7 +48,7 @@ function compute(resetPick){
   state.ranks=state.an.map(a=>RE.rank(a,PATS,12));
   state.panels=[];
   state.an.forEach((a,ci)=>{const r=state.ranks[ci][state.pick[ci]];if(!r)return;
-    RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=pickRef(c,SCENES[SCUR]?.pageEdits,state.panels.length);state.panels.push(c)})});
+    RE.layout(a,r.p).forEach(c=>{const L=locks[c.key]||{};c.auto={shot:c.shot,ang:c.ang,h:c.h,emo:c.emo};Object.assign(c,L);c.lock=L;c.chunk=ci;c.ref=pickRef(c,SCENES[SCUR]?.pageEdits,state.panels.length);state.panels.push(c)})});
   state.panels.forEach((c,i)=>c.side=i%2?'left':'right');
   if(state.sel>=state.panels.length)state.sel=-1;
   const n=state.panels.length;$('#count').textContent=n?`${n}컷`:'';$('#count').title=n?`${state.an.length}묶음 · ${$('#scmeta2')?.textContent||''}`:'';$('#pvsize').textContent=n?`${n}컷`:'';
