@@ -1456,3 +1456,5 @@ button.ct-prop{border:0;cursor:pointer;font:inherit;font-size:11px}.ct-prop.off{
 .ovh [data-ovh]{pointer-events:all}
 .ct-auto{font-size:12px;display:inline-flex;gap:4px;align-items:center;margin-right:6px;color:var(--t2,#555)}
 .learnl{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.learnl li{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line,#eee);font-size:13px}.learnl code{font-size:12px;color:#7c3aed}.learnl .link{margin-left:auto}
+.learnb summary{cursor:pointer;font-size:13px;color:var(--t2,#555);margin:6px 0}
+#learndlg .acts{display:flex;gap:6px;align-items:center}#learndlg .grow{flex:1}

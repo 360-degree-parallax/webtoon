@@ -415,6 +415,16 @@ test('배운 동작: Claude가 옮긴 새 동작을 규칙 사전에 쌓음 · �
   await p.waitForTimeout(2000);
   assert(await ev(c => window._calls === c + 1, c0), '최신이면 다시 안 부름');
   await ev(() => { NAI_AUTO = false; localStorage.setItem('rough-nai-auto', '0'); });
+  // 따로 보관: 파일로 내보내기 → 지운 뒤 가져오기
+  await p.click('#conti [data-act="learned"]'); await p.waitForSelector('#learndlg[open]');
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#learndlg [data-r=exp]')]);
+  const file = await dl.path(); const txt = require('fs').readFileSync(file, 'utf8');
+  assert(JSON.parse(txt).type === 'rough-actions' && txt.includes('팔을 벌리다'), '배운 동작 파일로 내보내기');
+  await p.click('#learndlg [data-learndel="팔을 벌리다"]'); await p.waitForTimeout(200);
+  assert(await ev(() => !LEARNED.length && !NAI.poseTags('팔을 벌린다').includes('spread arms')), '지우면 규칙 사전에서도 빠짐');
+  await p.setInputFiles('#learndlg [data-r=imp]', file); await p.waitForTimeout(400);
+  assert(await ev(() => LEARNED.some(x => x.ko === '팔을 벌리다') && NAI.poseTags('팔을 벌린다').includes('spread arms')), '파일에서 가져오기');
+  assert(await ev(() => !!document.querySelector('#learndlg .hint code')), '도구에 넣는 방법 안내');
 });
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
