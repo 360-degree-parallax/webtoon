@@ -48,6 +48,8 @@ if out:
     json.dump(col, open(out, 'w'), ensure_ascii=False)
 for i, r in enumerate(t['rows']):
     r[MI] = col[i]
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from db_derive import derive; derive(d)  # 메모의 판정 글을 칸 형태·사선·말풍선 수 칸으로
 json.dump(d, open(DB, 'w'), ensure_ascii=False, separators=(',', ':'))
 print('fit 전', dict(before)); print('fit 후', dict(C.Counter(i['fit'] for i in idx['items'])))
 print(dict(sorted(stat.items())))

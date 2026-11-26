@@ -119,4 +119,5 @@ meta = {'made': datetime.date.today().isoformat(), 'revision': d.get('__meta', {
                + (f' · 작품 {",".join(sorted(ONLY))}만' if ONLY else '') + '. 선택지는 지금 라벨 + 모델 확률 상위, 확률 순',
         'counts': {col: sum(1 for x in items if x['field'] == col) for _, col, _ in TASKS}, 'examples': examples}
 out = ROOT / 'rough' / 'db' / 'review-queue.json'; out.write_text(json.dumps({'meta': meta, 'items': items}, ensure_ascii=False, separators=(',', ':')))
+import subprocess; subprocess.run([sys.executable, str(ROOT / 'tools' / 'build_db_lite.py')])  # 판정 배지용 id 목록도 새로
 print('저장', out, len(items), '항목', round(out.stat().st_size / 1024), 'KB')

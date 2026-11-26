@@ -2,6 +2,7 @@
 """연출 DB 사본(rough/db/db.json) 값 검사. 오류가 있으면 종료 코드 1.
 
 - 정해진 값: 컷표 유형·샷·앵글·역할·감정·덩어리 색, 5컷 리듬 연출명·주된 컷 전환·템포·VNG 기호가 코드표 목록 안에 있는지
+- 파생 칸: 칸 형태(끝까지·칸·여러 칸·칸 없음)·사선(0/1)·자동 말풍선·나레이션 상자(0 이상 정수)
 - 일관성: 컷ID 중복·형식, 5컷 리듬 묶음이 컷표에 있는지, VNG 칸 수 = 그 묶음 그림 컷 수,
   리듬 유형 = '거리 흐름 · 템포 · 서사 형태', 연출명 빈칸은 그림 2컷 이하만, 장면 컷 범위의 컷이 있는지,
   작품 정보의 컷 수·묶음 수·장면 수·화수가 실제 행과 같은지
@@ -23,6 +24,15 @@ def T(name):
 
 # 컷표
 R, I, cc = T('컷표')
+# 메모에서 나눈 파생 칸(tools/db_derive.py): 값 범위, 그리고 메모에 판정 글이 다시 남아 있지 않은지
+if '칸 형태' in cc:
+    for r in R:
+        cid = r[I('컷ID')]; f = r[I('칸 형태')]
+        if f not in (None, '끝까지', '칸', '여러 칸', '칸 없음'): err.append(f'컷표 {cid}: 칸 형태 값 "{f}"')
+        if f is not None and r[I('사선')] not in (0, 1): err.append(f'컷표 {cid}: 사선 값 "{r[I("사선")]}"')
+        for k in ('자동 말풍선', '나레이션 상자'):
+            if f is not None and not (isinstance(r[I(k)], int) and r[I(k)] >= 0): err.append(f'컷표 {cid}: {k} 값 "{r[I(k)]}"')
+        if str(r[I('메모')] or '').startswith('칸:'): warn.append(f'컷표 {cid}: 메모에 칸 판정 글이 남아 있음(tools/db_derive.py로 나누기)')
 ids = C.Counter(r[I('컷ID')] for r in R)
 for k, n in ids.items():
     if n > 1: err.append(f'컷표: 컷ID 중복 {k} ({n}번)')
