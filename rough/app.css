@@ -1453,3 +1453,4 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .ct-miss{display:inline-block;font-size:11px;color:#b45309;background:rgba(245,158,11,.12);border-radius:6px;padding:1px 6px;margin:2px 0}
 button.ct-prop{border:0;cursor:pointer;font:inherit;font-size:11px}.ct-prop.off{color:#8a909a;background:rgba(138,144,154,.12);text-decoration:line-through}.ct-prop.off small{text-decoration:none;display:inline-block}
 .ly-melt.off{color:#9aa3b2}
+.ovh [data-ovh]{pointer-events:all}

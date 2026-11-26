@@ -2969,27 +2969,50 @@ function layerRows(L,o,dim){const sid=SCENES[SCUR].id,bg=IMG.lybg[lybId(sid,L.i)
   el.addEventListener('change',e=>{const s=e.target.closest('[data-lyatt]');if(!s)return;const r=s.closest('.ly-row');setPropAttach(+s.dataset.lyatt,r.dataset.key,s.value)});
   el.addEventListener('change',e=>{if(e.target.matches('[data-layermode]'))setLayerMode(e.target.checked);
   })}
-// 편집 화면: 레이어(이미지 소재)를 눌러 고르고 끌어서 옮김. 고르면 오른쪽 이미지 패널도 그 레이어(크기·회전·투명도)
+// 편집 화면: 레이어(이미지 소재)를 눌러 고르고, 끌어서 옮기고, 네 모서리 손잡이·상단 「레이어 크기」·Alt+휠로 크기를 바꿈
+//   고른 레이어는 OV_SEL={key:'씬:컷', i:소재 번호}. 다시 그려도 골라 둔 채로(손잡이 포함). 다른 곳을 누르면 풀림
+var OV_SEL=null;
+const ovG=()=>{if(!OV_SEL)return null;const [si,sl]=OV_SEL.key.split(':');return pageReader.querySelector(`section[data-page-scene="${si}"] [data-slot-index="${sl}"] [data-overlay="${OV_SEL.i}"]`)};
+const ovBox=g=>{const v=(g?.dataset.ovBox||'').split(',').map(Number);return v.length===6?{x:v[0],y:v[1],w:v[2],h:v[3],bw:v[4],bh:v[5]}:null};
+const ovLayer=()=>OV_SEL&&pageSettings(true,OV_SEL.key).overlays?.[OV_SEL.i];
+function ovMark(){pageReader.querySelectorAll('.ov-pick.on').forEach(x=>x.classList.remove('on'));pageReader.querySelectorAll('.ovh').forEach(x=>x.remove());
+  const g=ovG();if(!g){if(OV_SEL&&!pageReader.querySelector(`[data-overlay]`))OV_SEL=null;return}g.classList.add('on');const b=ovBox(g),svg=g.ownerSVGElement;if(!b||!svg)return;
+  const NS='http://www.w3.org/2000/svg',h=document.createElementNS(NS,'g');h.setAttribute('class','ovh');h.dataset.ovhFor=OV_SEL.key+'#'+OV_SEL.i;
+  h.innerHTML=`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#2d71f7" stroke-width="2" stroke-dasharray="6 4" pointer-events="none"/>`+
+    [['tl',b.x,b.y],['tr',b.x+b.w,b.y],['bl',b.x,b.y+b.h],['br',b.x+b.w,b.y+b.h]].map(([k,x,y])=>`<rect data-ovh="${k}" x="${x-8}" y="${y-8}" width="16" height="16" rx="3" fill="#fff" stroke="#2d71f7" stroke-width="2.5" style="cursor:${k==='tl'||k==='br'?'nwse':'nesw'}-resize"/>`).join('');
+  svg.appendChild(h)}
+function ovSelect(key,i){OV_SEL={key,i:+i};ovMark();window.RoughOverlayPanel?.select(+i);window.dispatchEvent(new Event('rough-ov-select'))}
+// 크기 바꾸기(가운데 기준). commit=false면 화면만, true면 저장하고 다시 그림
+window.RoughOverlayScale=(v,commit)=>{const L=ovLayer(),g=ovG();if(!L)return;const s0=L.scale??100;v=Math.max(5,Math.min(300,Math.round(v)));
+  if(!commit&&g){const b=ovBox(g),k=v/s0,cx=b.x+b.w/2,cy=b.y+b.h/2;g.firstElementChild.setAttribute('transform',`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy}) rotate(${L.angle||0} ${cx} ${cy})`);return}
+  L.scale=v;delete L.auto;saveScenes();renderWebtoon()};
+// 다시 그린 뒤에도 고른 레이어·손잡이 유지
+{const orig=renderWebtoon;renderWebtoon=function(...a){const r=orig.apply(this,a);try{ovMark()}catch(_){}return r}}
 {let drag=null;
-  pageReader.addEventListener('pointerdown',e=>{if(!pageEditing||e.button!==0||materialMode)return;const ov=e.target.closest('[data-overlay]');if(!ov)return;
+  pageReader.addEventListener('pointerdown',e=>{if(!pageEditing||e.button!==0||materialMode)return;
+    const hd=e.target.closest('[data-ovh]');
+    if(hd&&OV_SEL){const g=ovG(),b=ovBox(g),L=ovLayer();if(!g||!b||!L)return;e.preventDefault();e.stopPropagation();const svg=g.ownerSVGElement,pt=pagePoint(svg,e),cx=b.x+b.w/2,cy=b.y+b.h/2;
+      drag={id:e.pointerId,mode:'size',svg,cx,cy,d0:Math.hypot(pt.x-cx,pt.y-cy)||1,s0:L.scale??100};pageReader.setPointerCapture(e.pointerId);return}
+    const ov=e.target.closest('[data-overlay]');
+    if(!ov){if(OV_SEL&&!e.target.closest('.ovh')){OV_SEL=null;ovMark();window.RoughOverlayPanel?.select(-1);window.dispatchEvent(new Event('rough-ov-select'))}return}
     const group=ov.closest('[data-slot-index]');if(!group)return;e.preventDefault();e.stopPropagation();
-    selectPageCut(group);selectLetter(null);const i=+ov.dataset.overlay;window.RoughOverlayPanel?.select(i);
-    pageReader.querySelectorAll('.ov-pick.on').forEach(x=>x.classList.remove('on'));ov.classList.add('on');
-    const [,,,,bw,bh]=(ov.dataset.ovBox||'').split(',').map(Number),svg=ov.ownerSVGElement,st=pageSettings(true,pageKey(group)),L=st.overlays?.[i];if(!L||!bw||!bh)return;
-    drag={id:e.pointerId,ov,svg,key:pageKey(group),i,start:pagePoint(svg,e),x0:L.x??50,y0:L.y??50,bw,bh,inner:ov.firstElementChild,tf:ov.firstElementChild.getAttribute('transform')||'',moved:false};
+    selectPageCut(group);selectLetter(null);const i=+ov.dataset.overlay,key=pageKey(group);ovSelect(key,i);
+    const b=ovBox(ov),svg=ov.ownerSVGElement,L=pageSettings(true,key).overlays?.[i];if(!L||!b)return;
+    drag={id:e.pointerId,mode:'move',svg,key,i,start:pagePoint(svg,e),x0:L.x??50,y0:L.y??50,bw:b.bw,bh:b.bh,inner:ov.firstElementChild,tf:ov.firstElementChild.getAttribute('transform')||'',moved:false};
     pageReader.setPointerCapture(e.pointerId)},true);
-  pageReader.addEventListener('pointermove',e=>{if(drag?.id!==e.pointerId)return;const pt=pagePoint(drag.svg,e),dx=pt.x-drag.start.x,dy=pt.y-drag.start.y;
-    if(Math.abs(dx)+Math.abs(dy)>2)drag.moved=true;drag.inner.setAttribute('transform',`translate(${dx} ${dy}) ${drag.tf}`);drag.dx=dx;drag.dy=dy},true);
+  pageReader.addEventListener('pointermove',e=>{if(drag?.id!==e.pointerId)return;const pt=pagePoint(drag.svg,e);
+    if(drag.mode==='size'){drag.v=drag.s0*Math.hypot(pt.x-drag.cx,pt.y-drag.cy)/drag.d0;window.RoughOverlayScale(drag.v,false);const o=document.querySelector('.cb-mid [data-ctx=ovscale]');if(o){o.value=Math.round(drag.v);o.nextElementSibling&&(o.nextElementSibling.textContent=Math.round(drag.v)+'%')}return}
+    const dx=pt.x-drag.start.x,dy=pt.y-drag.start.y;if(Math.abs(dx)+Math.abs(dy)>2)drag.moved=true;drag.inner.setAttribute('transform',`translate(${dx} ${dy}) ${drag.tf}`);drag.dx=dx;drag.dy=dy},true);
   const end=e=>{if(drag?.id!==e.pointerId)return;const d=drag;drag=null;try{pageReader.releasePointerCapture(e.pointerId)}catch(_){}
+    if(d.mode==='size'){if(d.v)window.RoughOverlayScale(d.v,true);return}
     if(!d.moved){window.RoughOverlayPanel?.refresh();return}
-    const st=pageSettings(true,d.key),L=st.overlays?.[d.i];if(!L)return;
-    L.x=Math.round((d.x0+d.dx/d.bw*100)*10)/10;L.y=Math.round((d.y0+d.dy/d.bh*100)*10)/10;delete L.auto;saveScenes();renderWebtoon();
-    const g=pageReader.querySelector(`section[data-page-scene="${d.key.split(':')[0]}"] [data-slot-index="${d.key.split(':')[1]}"] [data-overlay="${d.i}"]`);g?.classList.add('on');window.RoughOverlayPanel?.select(d.i)};
+    const L=pageSettings(true,d.key).overlays?.[d.i];if(!L)return;
+    L.x=Math.round((d.x0+d.dx/d.bw*100)*10)/10;L.y=Math.round((d.y0+d.dy/d.bh*100)*10)/10;delete L.auto;saveScenes();renderWebtoon();window.RoughOverlayPanel?.select(d.i)};
   pageReader.addEventListener('pointerup',end,true);pageReader.addEventListener('pointercancel',end,true);
-  // 고른 레이어 크기: Alt+휠
+  // Alt+휠로도 크기
   pageReader.addEventListener('wheel',e=>{if(!pageEditing||!e.altKey)return;const ov=e.target.closest('[data-overlay]');if(!ov)return;const group=ov.closest('[data-slot-index]');if(!group)return;e.preventDefault();
-    const st=pageSettings(true,pageKey(group)),L=st.overlays?.[+ov.dataset.overlay];if(!L)return;L.scale=Math.max(5,Math.min(300,Math.round((L.scale??100)*(e.deltaY<0?1.05:1/1.05))));delete L.auto;saveScenes();renderWebtoon();
-    selectPageCut(pageReader.querySelector(`section[data-page-scene="${pageKey(group).split(':')[0]}"] [data-slot-index="${pageKey(group).split(':')[1]}"]`)||group);window.RoughOverlayPanel?.select(+ov.dataset.overlay)},{passive:false})}
+    const key=pageKey(group),i=+ov.dataset.overlay;if(!OV_SEL||OV_SEL.key!==key||OV_SEL.i!==i){selectPageCut(group);ovSelect(key,i)}
+    const L=ovLayer();if(L)window.RoughOverlayScale((L.scale??100)*(e.deltaY<0?1.05:1/1.05),true)},{passive:false})}
 
 async function layerReuse(i,kind,key,src){const L=layerPlan(SCUR)[i],x=L&&layerItem(L,kind,key);if(!x)return;const sid=SCENES[SCUR].id,old=charOf(L,x,sid);
   const a={...src,id:'overlay:'+(crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2)),layer:{kind,key,pose:x.pose,scene:sid,slot:L.slot}};

@@ -302,7 +302,8 @@ function coachSoon(){setTimeout(()=>{if(!inEdit()||!coachEl.hidden)return;
 {const _sl=selectLetter;selectLetter=function(...a){const r=_sl(...a);if(selectedLetter)coachSoon();return r}}
 const FPRESETS=[['네모',0,0],['위 사선',-8,0],['아래 사선',0,8],['평행 사선',-8,-8],['쐐기',-8,8]];
 function shapeTools(g){const a=frameAngles(g);return `<span class="cb-grp" role="group" aria-label="프레임 기울기"><label>위 <input type="number" data-ctx="fatop" min="-30" max="30" step="1" value="${a.top}" style="width:52px">°</label><label>아래 <input type="number" data-ctx="fabot" min="-30" max="30" step="1" value="${a.bot}" style="width:52px">°</label>${FPRESETS.map(([n,t,b])=>`<button class="cb${a.top===t&&a.bot===b?' on':''}" data-fpre="${t},${b}">${n}</button>`).join('')}</span>`}
-function renderCtx(){try{_renderCtx()}catch(e){console.warn('상황 막대',e)}}  // 처음 불러올 때 아직 없는 칸이 있어도 편집기 전체가 멈추지 않게
+function renderCtx(){try{_renderCtx()}catch(e){console.warn('상황 막대',e)}}
+window.addEventListener('rough-ov-select',()=>renderCtx());  // 편집에서 레이어(이미지 소재)를 고르면 상황 막대의 「그림 확대」가 「레이어 크기」로  // 처음 불러올 때 아직 없는 칸이 있어도 편집기 전체가 멈추지 않게
 function _renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
   const SS_=window.RoughStudio?.selScene;if(SS_!=null&&SCENES[SS_]&&tool==='select'){const sc=SCENES[SS_];
     mid=`<b>${esc(sceneLabel(sc,SS_))}</b><span class="cb-t">${sc.cuts.filter(c=>String(c).trim()).length}컷</span><button class="cb" data-ctx="scdel"${SCENES.length<=1?' disabled title="씬이 하나뿐이에요"':''}>씬 지우기</button><span class="cb-hint">Delete 키로도 지워요 · Esc 선택 풀기</span>`;
@@ -320,7 +321,7 @@ function _renderCtx(){if(!ctx.isConnected)return;const t=TOOL[tool];let mid='';
       `<button class="cb" data-ctx="llock">${isLocked(selectedLetter.closest('[data-slot-index]'),selectedLetter.dataset.letter)?'잠금 풀기':'잠그기'}</button>`}
   else if(tool==='select'&&pageSelection){const s=pageSettings(),g=selGroup();
     mid=`<b>${esc(pageCut.selectedOptions[0]?.textContent||'컷')}</b><label>아래 간격 <input type="number" data-ctx="gap" min="0" max="1600" step="4" value="${s?.gap??''}" placeholder="기본" style="width:64px">px</label><button class="cb" data-ctx="gapall" aria-haspopup="menu" title="이 간격을 씬의 모든 컷에">간격 일괄 ▾</button>
-      <label>그림 확대 <input type="range" data-ctx="zoom" min="100" max="500" step="5" value="${($('#wzoom')?.value??100)}"><output>${($('#wzoom')?.value??100)}%</output></label>
+      ${typeof OV_SEL!=='undefined'&&OV_SEL&&OV_SEL.key===pageSelection&&s?.overlays?.[OV_SEL.i]?`<label title="고른 레이어 크기 · 모서리 손잡이를 끌거나 Alt+휠로도 바꿔요">레이어 크기 <input type="range" data-ctx="ovscale" min="5" max="300" step="1" value="${Math.round(s.overlays[OV_SEL.i].scale??100)}"><output>${Math.round(s.overlays[OV_SEL.i].scale??100)}%</output></label>`:`<label>그림 확대 <input type="range" data-ctx="zoom" min="100" max="500" step="5" value="${($('#wzoom')?.value??100)}"><output>${($('#wzoom')?.value??100)}%</output></label>`}
       <button class="cb${frameShapeKey===pageSelection?' on':''}" data-ctx="fshape" aria-pressed="${frameShapeKey===pageSelection}" title="모퉁이를 하나씩 끌어 사선 칸 (컷 더블클릭과 같음)">프레임 모양</button>${frameShapeKey===pageSelection&&g?shapeTools(g):''}<button class="cb${s?.blank?' on':''}" data-ctx="blank" aria-pressed="${!!s?.blank}" title="그림·테두리 없이 글만 남는 컷(쉼·나레이션 컷)">빈 컷</button>${(()=>{const g=selGroup(),[si,slot]=pageSelection.split(':').map(Number),p=g&&scenePanels(si)[+g.dataset.p],has=p&&cutImg(si,+g.dataset.p,p);if(!has)return'';const r=fitRatio(s);return `<button class="cb" data-ctx="fit" aria-pressed="${r}" title="켜면 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로">${r?'칸: 컷 비율':'칸: 그림 비율'}</button>`})()}${(()=>{const ls=pageView()?.materialLines,ks=ls?Object.keys(ls):[];return ks.length?`<button class="cb ccol" data-ctx="linecolor" title="이 컷 효과선 색"><i style="background:${ls[ks[0]].color||'#27211e'}"></i>효과선 색</button>`:''})()}<button class="cb" data-ctx="crop">그림 편집</button><button class="cb" data-ctx="frame">프레임 초기화</button><button class="cb" data-ctx="ref">레퍼런스 ${esc($('#wrefid')?.textContent||'')}</button><button class="cb" data-ctx="clock">${g&&isLocked(g,'cut')?'잠금 풀기':'잠그기'}</button>`}
   else mid=`<span class="cb-hint">${esc(t.hint)}</span>`;
   ctx.innerHTML=`<span class="cb-tool">${ico(t.icon)}<b>${t.name}</b></span><span class="cb-sep"></span><span class="cb-mid">${mid}</span><span class="cb-right"></span>`;}
@@ -330,12 +331,14 @@ ctx.addEventListener('change',e=>{const c=e.target.dataset.ctx;
   if(c==='lstyle'){const s=$('#wballoonstyle');s.value=e.target.value;s.dispatchEvent(new Event('change'))}
   if(c==='gap'&&pageSelection){const s=pageSettings(true),v=e.target.value;if(v==='')delete s.gap;else s.gap=clamp(Math.round(+v),0,1600);saveScenes();renderWebtoon()}
   if(c==='zoom'){const z=$('#wzoom');z.value=e.target.value;z.dispatchEvent(new Event('change'))}
+  if(c==='ovscale')window.RoughOverlayScale?.(+e.target.value,true);
   if(c==='fatop'||c==='fabot'){setFrameAngles(ctx.querySelector('[data-ctx=fatop]').value,ctx.querySelector('[data-ctx=fabot]').value);renderCtx()}
 });
 ctx.addEventListener('input',e=>{const c=e.target.dataset.ctx;
   if(c==='sfxword'){opt.sfx=e.target.value.replace(/[-\s]/g,'')||'쾅';SS('rough-tool-sfx',opt.sfx)}
   if(c==='lsize'){const s=$('#wballoonsize');s.value=e.target.value;s.dispatchEvent(new Event('input'));e.target.nextElementSibling.textContent=e.target.value+'%'}
-  if(c==='zoom'){const z=$('#wzoom');z.value=e.target.value;z.dispatchEvent(new Event('input'));e.target.nextElementSibling.textContent=e.target.value+'%'}});
+  if(c==='zoom'){const z=$('#wzoom');z.value=e.target.value;z.dispatchEvent(new Event('input'));e.target.nextElementSibling.textContent=e.target.value+'%'}
+  if(c==='ovscale'){window.RoughOverlayScale?.(+e.target.value,false);e.target.nextElementSibling.textContent=e.target.value+'%'}});
 // 입력칸에 쓰다 메뉴 버튼을 누르면 입력칸의 change(다시 그리기)가 먼저 일어나 버튼이 바뀌어 클릭이 사라졌음 → 메뉴 버튼은 누를 때 포커스를 옮기지 않음
 ctx.addEventListener('mousedown',e=>{if(e.target.closest('[data-ctx=gapall],[data-ctx=lstyleall]'))e.preventDefault()});
 ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;

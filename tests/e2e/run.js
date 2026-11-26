@@ -274,6 +274,15 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   assert(after[0] > x0 && !after[1], '끌어서 옮기면 위치가 바뀌고 자동 크기 표시가 빠짐');
   assert(after[2] === before.i && after[3] === before.key, '누른 레이어가 이미지 패널에서 골라짐');
   assert(await ev(() => !document.querySelector('[data-layercut]')), '흰색 자동 투명 선택창 없음');
+  // 크기: 모서리 손잡이 끌기 · 상단 「레이어 크기」
+  assert(await ev(() => !!document.querySelector('.ovh [data-ovh="br"]') && !!document.querySelector('[data-ctx="ovscale"]')), '고른 레이어에 모서리 손잡이·상단 레이어 크기');
+  const s0 = await ev(b => pageSettings(true, b.key).overlays[b.i].scale, before);
+  const hb = await p.locator('.ovh [data-ovh="br"]').boundingBox();
+  await p.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await p.mouse.down(); await p.mouse.move(hb.x + 60, hb.y + 60, {steps: 6}); await p.mouse.up(); await p.waitForTimeout(500);
+  const s1 = await ev(b => pageSettings(true, b.key).overlays[b.i].scale, before);
+  assert(s1 > s0, `모서리를 끌면 레이어가 커짐 (${s0}→${s1})`);
+  await ev(() => { const r = document.querySelector('[data-ctx="ovscale"]'); r.value = 40; r.dispatchEvent(new Event('change', {bubbles: true})); }); await p.waitForTimeout(400);
+  assert(await ev(b => pageSettings(true, b.key).overlays[b.i].scale === 40, before), '상단 레이어 크기로 바꿈');
   assert(await ev(() => !!document.querySelector('[data-overlay-layer="char"][data-label^="인물 에드가"]') && !!document.querySelector('[data-overlay-layer="prop"]')), '편집 화면에 레이어로 그려짐');
   // 레이어를 끄면 편집·씬 미리보기가 한 컷 그림으로(레이어 배경이 한 컷 그림을 덮어쓰지 않음)
   const single = await ev(async () => { const c = document.createElement('canvas'); c.width = 60; c.height = 60; c.getContext('2d').fillStyle = '#0a0'; c.getContext('2d').fillRect(0, 0, 60, 60);
