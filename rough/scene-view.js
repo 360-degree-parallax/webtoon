@@ -10,13 +10,14 @@ const isDlg=bare=>/^(?:@[^\s"“]+\s*)?["“].*["”]\s*[.!?…]*$/.test(bare),i
 const bareOf=line=>line.replace(DIR_TOK,'').replace(SFX_ONE,'$1').trim();
 
 // ---------- 고른 컷: 입력칸 뒤 글자층(글자 폭은 그대로, 색·흐림·기울임만) ----------
-const OV=/(\{[^{}\n]*\})|((?:^|(?<=\s))(-{1,3})([^\s-][^-\n]{0,10}?)\3(?=\s|$|[.,!?]))|(@)([^\s"“”.,!?{}()]+)|(["“”])|(\([^()\n]*\))|(^\s*\[|\]\s*(?=\{|$))/g;
+const OV=/(\{[^{}\n]*\})|((?:^|(?<=\s))(-{1,3})([^\s-][^-\n]{0,10}?)\3(?=\s|$|[.,!?]))|(@)([^\s"“”.,!?{}()]+)|((?<![가-힣A-Za-z0-9_&#])#)([가-힣A-Za-z_][가-힣A-Za-z0-9_]{0,19})(\([^()\n]{1,160}\))?|(["“”])|(\([^()\n]*\))|(^\s*\[|\]\s*(?=\{|$))/g;
 cutHL=function(text){return String(text??'').split('\n').map(line=>{const bare=bareOf(line);
     const kind=!bare?'empty':isDlg(bare)?'dlg':isCap(bare)?'cap':/["“][^"”]+["”]/.test(bare)?'mix':'act';
     const who=kind==='dlg'?(bare.match(/^@([^\s"“]+)/)||[])[1]:'';
-    let o='',last=0;line.replace(OV,(m,d,sfx,dash,w,at,nm,q,memo,br,off)=>{o+=esc(line.slice(last,off));last=off+m.length;
+    let o='',last=0;line.replace(OV,(m,d,sfx,dash,w,at,nm,ph,pn,pl,q,memo,br,off)=>{o+=esc(line.slice(last,off));last=off+m.length;
       if(d)o+=dirHL(d);else if(sfx){const lead=m.match(/^\s*/)[0];o+=`${lead}<i class="sy">${dash}</i><i class="h-sfx">${esc(w)}</i><i class="sy">${dash}</i>`}
       else if(at)o+=`<i class="sy">@</i><i class="nm" style="color:${nameColor(nm)}">${esc(nm)}</i>`;
+      else if(ph)o+=`<i class="sy">#</i><i class="h-prop">${esc(pn)}</i>${pl?`<i class="memo">${esc(pl)}</i>`:''}`;
       else if(q||br)o+=`<i class="sy">${esc(m)}</i>`;
       else if(memo)o+=kind==='dlg'?`<i class="memo">${esc(m)}</i>`:esc(m);
       else o+=esc(m);return m});

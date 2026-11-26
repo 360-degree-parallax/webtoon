@@ -1427,3 +1427,11 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .filldlg .fillrow textarea{min-height:0!important;height:auto;max-height:220px;field-sizing:content}
 
 #conti .ct-fit{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;color:var(--t2);cursor:pointer}
+/* #소품(고정) */
+.cuthl .h-prop{background:rgba(161,98,7,.16)}
+.cutparse .propfix{color:#a16207}.cutparse .propfix small{margin-left:3px;font-size:10px;padding:0 4px;border-radius:6px;background:rgba(161,98,7,.14)}
+.cutparse .propclash{color:#b45309;font-size:11px}
+.pv-prop{color:#a16207;font-weight:600}
+:root[data-scheme=dark] .cutparse .propfix,:root[data-scheme=dark] .pv-prop{color:#fbbf24}
+.ct-props{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0}.ct-prop{font-style:normal;font-size:11px;color:#a16207;background:rgba(161,98,7,.1);border-radius:6px;padding:0 5px}.ct-prop.notag{opacity:.7;border:1px dashed rgba(161,98,7,.4)}
+:root[data-scheme=dark] .ct-prop{color:#fbbf24}

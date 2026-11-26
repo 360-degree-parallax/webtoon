@@ -83,6 +83,32 @@
     }
     return out;
   }
+  // #소품 · #소품(형태): 그림에 나오는 물건 표시. 처음 나올 때 괄호에 형태를 적으면 그 모양으로 모든 컷에 고정
+  //   이름 뒤 조사는 뗌(받침 있는 말 뒤 은·을·과, 없는 말 뒤 가·는·를·와. '이'는 같은 글에 조사 없는 표기가 있을 때만). E.PROP_NAMES(설정집 물건 이름)를 먼저 맞춤
+  const PROP_RE = /(^|[^가-힣A-Za-z0-9_&#])#([가-힣A-Za-z_][가-힣A-Za-z0-9_]{0,19})(?:\(([^()\n]{1,160})\))?/g;
+  const JOSA_ANY = ['에게서', '에게', '한테', '에서', '으로', '까지', '처럼', '보다', '마저', '조차', '이랑', '부터', '로', '의', '도', '만', '에', '랑'];
+  const hasBat = ch => { const c = ch.charCodeAt(0) - 0xAC00; return c >= 0 && c < 11172 && c % 28 !== 0; };
+  function propName(tok) {
+    const known = (E.PROP_NAMES || []).filter(Boolean).sort((a, b) => b.length - a.length).find(n => tok.startsWith(n));
+    if (known) return [known, tok.slice(known.length)];
+    const a = JOSA_ANY.find(j => tok.length > j.length + 1 && tok.endsWith(j)); if (a) return [tok.slice(0, -a.length), a];
+    if (tok.length >= 3 || (tok.length === 2 && /[가-힣]$/.test(tok))) {
+      const last = tok.slice(-1), prev = tok.slice(-2, -1);
+      if (/[은을과]/.test(last) && hasBat(prev)) return [tok.slice(0, -1), last];  // '이'는 목걸이·종이처럼 이름 끝인 경우가 많아 떼지 않음(설정집 이름이나 같은 글의 다른 표기로만)
+      if (/[가는를와]/.test(last) && /[가-힣]/.test(prev) && !hasBat(prev)) return [tok.slice(0, -1), last];
+    }
+    return [tok, ''];
+  }
+  function props(t) {
+    const out = [];
+    for (const m of String(t || '').matchAll(PROP_RE)) {
+      const [name] = m[3] != null ? [m[2]] : propName(m[2]); const look = (m[3] || '').trim();
+      const o = out.find(x => x.name === name); if (o) { if (!o.look && look) o.look = look; } else out.push({ name, look });
+    }
+    for (const x of out.slice()) if (/이$/.test(x.name)) { const b = out.find(y => y.name === x.name.slice(0, -1)); if (b) { if (!b.look) b.look = x.look; out.splice(out.indexOf(x), 1); } }
+    return out;
+  }
+  const stripProps = t => String(t || '').replace(PROP_RE, (_, a, tok, look) => a + (look != null ? tok : propName(tok).join('')));
   function findWho(t, chars) {
     const ms = mentions(t.replace(/["“][^"”]*["”]/g, ' '), chars);
     if (ms.length) {
@@ -110,13 +136,13 @@
       const said = (t.match(/["“]([^"”]+)["”]/) || [])[1] || '';
       const onlyQuote = /^["“][^"”]*["”][.!?…]*$/.test(t);
       const who = findWho(t, list);
-      const act = t.replace(/["“][^"”]*["”]\s*(하고|라고|하며|라며)?/g, ' ').replace(/@/g, '').replace(/\s+/g, ' ').trim();
+      const act = stripProps(t).replace(/["“][^"”]*["”]\s*(하고|라고|하며|라며)?/g, ' ').replace(/@/g, '').replace(/\s+/g, ' ').trim();
       const prev = beats[beats.length - 1];
       if (onlyQuote && prev && !prev.said) { prev.said = said; prev.line += ' ' + t; prev.key = prev.line; continue; }
       if (!who && !said && prev && !prev.who && beats.length === 1) { prev.act += ' ' + act; prev.line += ' ' + t; prev.key = prev.line; continue; }
       const w = who || (onlyQuote ? last : '');
       if (w) last = w;
-      beats.push({ line: t, who: w, act: act || t.replace(/@/g, ''), said, key: t, prose: true });
+      beats.push({ line: t, who: w, act: act || stripProps(t).replace(/@/g, ''), said, key: t, prose: true, props: props(t) });
     }
     return beats;
   }
@@ -153,12 +179,12 @@
   //   그 밖의 줄         → 행동 묘사
   function parseCut(text, chars, idx) {
     const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
-    const actions = [], captions = [], dialogs = [], sfx = [], sfxSize = [], tokens = [];
+    const actions = [], captions = [], dialogs = [], sfx = [], sfxSize = [], tokens = [], prs = props(text);
     // -효과음- 보통 · --효과음-- 크게 · ---효과음--- 아주 크게
     const SFX = /(^|\s)(-{1,3})([^\s-][^-\n]{0,10}?)\2(?=\s|$|[.,!?])/g;
     for (let l of lines) {
       let m; const lineDirs = [];
-      l = takeDirs(l, lineDirs); tokens.push(...lineDirs);
+      l = stripProps(takeDirs(l, lineDirs)); tokens.push(...lineDirs);
       l = l.replace(SFX, (_, a, d, w) => { sfx.push(w.trim()); sfxSize.push(d.length); return a; }).replace(/\s{2,}/g, ' ').trim();
       if (!l) continue;
       if ((m = l.match(/^\[(.+)\]$/))) { captions.push(m[1].trim()); continue; }
@@ -178,7 +204,7 @@
     const cue = [actText, ...dialogs.map(d => d.note), ...dialogs.map(d => d.text), ...captions, ...sfx].filter(Boolean).join(' ');
     const act = actText.replace(/@/g, '') || (dialogs[0] ? `${dialogs[0].who ? dialogs[0].who + ' ' : ''}대사` : captions[0] || (sfx[0] ? `효과음 ${sfx[0]}` : ''));
     const rcue = [actText, ...dialogs.map(d => d.note), said ? `"${said}"` : ''].filter(Boolean).join(' ').replace(/@/g, '');
-    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), captions, sfx, sfxSize, dialogs, cue: cue.replace(/@/g, ''), rcue, dir: readDirs(tokens) };
+    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), captions, sfx, sfxSize, dialogs, cue: cue.replace(/@/g, ''), rcue, dir: readDirs(tokens), props: prs };
   }
   function parseCuts(cuts, chars) {
     const named = chars && chars.length ? chars.slice() : [];
@@ -269,7 +295,7 @@
     const pick = (H, xs) => { const z = score(H, xs); let m = 0; z.forEach((v, c) => { if (v > z[m]) m = c; }); return { label: H.classes[m], z }; };
     return (t, p, n) => { const xs = [vec(t), vec(p), vec(n)], e = pick(M.emo, xs), i = pick(M.int, xs); return { emo: e.label, i: +i.label }; };
   }
-  const plain = b => String(b.line || b.act || '').replace(/@/g, '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+  const plain = b => stripProps(b.line || b.act || '').replace(/@/g, '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
   // 컷 묶음 전체에 미리 예측을 붙임(앞뒤 컷 문맥). E.useFeelModel(model)로 켬
   function applyFeel(beats) { if (!E._feel) return beats; const T = beats.map(plain);
     beats.forEach((b, k) => { const r = E._feel(T[k], T[k - 1] || '', T[k + 1] || ''); b._m = { emo: r.emo, i: r.i, why: '글 전체로 판단(학습 모델)' }; }); return beats; }
@@ -437,7 +463,7 @@
     return { p, s, pct: Math.round(s / WSUM * 100), parts };
   }
   // 연출명 모델(tools/ml/train_rank.py): 씬 글 → 연출명 확률. E.useRankModel(model)로 켬
-  const rankText = an => an.beats.map(b => String(b.line || b.act || '').replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()).join(' ');
+  const rankText = an => an.beats.map(b => stripProps(b.line || b.act || '').replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()).join(' ');
   function useRankModel(M) { E._rank = M && M.vocab ? { M, vec: ngramVec(M) } : null; return !!E._rank; }
   function nameProbs(an) { const R = E._rank; if (!R) return null; const x = R.vec(rankText(an)), M = R.M;
     const z = M.classes.map((_, c) => x.reduce((a, [k, v]) => a + v * M.W[c][k], M.b[c])), mx = Math.max(...z), e = z.map(v => Math.exp(v - mx)), t = e.reduce((a, v) => a + v, 0);
@@ -479,7 +505,7 @@
   function bundlePredict(beats) {
     const R = E._bun; if (!R) return null; const M = R.M;
     const shots = beats.map(b => (b._s && b._s.shot) || '중경'), roles = beats.map(b => b.role), emos = beats.map(b => b.emo), ints = beats.map(b => Math.round(b.i));
-    const f = seqFeats(shots, ints, emos, roles, beats), x = R.vec(beats.map(b => String(b.line || b.act || '').replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()).join(' ').replace(/\s+/g, ' ').trim());
+    const f = seqFeats(shots, ints, emos, roles, beats), x = R.vec(beats.map(b => stripProps(b.line || b.act || '').replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()).join(' ').replace(/\s+/g, ' ').trim());
     const out = {};
     for (const [field, H] of Object.entries(M.fields)) {
       let best = -Infinity, pick = null;
@@ -601,7 +627,7 @@
       if (D.ang) { ang = D.ang; why.ang.unshift('글에 적은 연출'); }
       if (D.h) { h = D.h; why.h.unshift('글에 적은 연출'); }
       if (D.gap) { gap = { 붙임: 0.09, 보통: 0.22, 쉼: 0.48, '큰 쉼': 0.9 }[D.gap]; why.gap.unshift(`${D.gap} · 글에 적은 연출`); }
-      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || (b.caption ? [b.caption] : []), sfx: b.sfx || [], sfxSize: b.sfxSize || [], dialogs: b.dialogs || [], dir: b.dir || null, pre, key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
+      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || (b.caption ? [b.caption] : []), sfx: b.sfx || [], sfxSize: b.sfxSize || [], dialogs: b.dialogs || [], dir: b.dir || null, props: b.props || [], pre, key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
     });
   }
 
@@ -611,7 +637,7 @@
   function useRefText(M) { E._refT = M && M.refs ? { M, vec: ngramVec(M) } : null; return !!E._refT; }
   function suggestRefText(cut, refs) {
     const T = E._refT, M = T.M, raw = String(cut.key || '').replace(/^#\d+:/, '') || [cut.act, cut.said].filter(Boolean).join(' ');
-    const q = new Map(T.vec(raw.replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()));
+    const q = new Map(T.vec(stripProps(raw).replace(/\{[^{}\n]*\}/g, ' ').replace(/@/g, '').replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim()));
     // 컷 메타(tools/meta): 컷 글의 @인물 수와 레퍼런스의 검출 머리 수가 같으면 가산, 샷 라벨을 그림 모델이 의심하는 레퍼런스는 조금 감산
     const ppl = new Set((raw.match(/@[^\s@.,!?"'“”…~{}()\[\]]+/g) || []).map(x => x.slice(1).replace(/(이|가|은|는|을|를|의|에게|와|과|도|만|랑)$/, ''))).size;
     let best = null, bs = -1;
@@ -637,5 +663,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { useRatio, RATIO: null, SHOTS, ANGLES, EMOS, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, useRefText, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { props, stripProps, PROP_NAMES: null, useRatio, RATIO: null, SHOTS, ANGLES, EMOS, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, useRefText, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));

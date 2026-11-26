@@ -138,7 +138,9 @@
     ].filter(Boolean);
     const mjFlags = [`--ar ${ar}`, `--no ${NEG.slice(0, 7).join(', ')}`, main && ctx.charRef?.(main.name) ? `--oref <${main.name} 캐릭터 이미지 링크> --ow 100` : '', ctx.sceneRef ? `--sref <장면 이미지 링크>` : ''].filter(Boolean).join(' ');
     const mj = `${en.join('. ')}. story beat (Korean): ${dot(p.act)}. ${mjFlags}`;
-    const sdPos = [`korean webtoon panel`, S.en, A.en, S.frame, castEn && castEn, main && expr[0], ...poses.map(x => x[1]), place && place[1], light && light[1], mood && mood[0], peak && 'dramatic composition', dlg.length && 'empty space at top', style.trim()].filter(Boolean).join(', ');
+    const propEn = (ctx.props?.(p) || []).map(x => x.tags).filter(Boolean);
+    if (propEn.length) en.splice(2, 0, `props (keep identical in every panel): ${propEn.join('; ')}`);
+    const sdPos = [`korean webtoon panel`, ...propEn, S.en, A.en, S.frame, castEn && castEn, main && expr[0], ...poses.map(x => x[1]), place && place[1], light && light[1], mood && mood[0], peak && 'dramatic composition', dlg.length && 'empty space at top', style.trim()].filter(Boolean).join(', ');
     const sd = { positive: sdPos, negative: NEG.join(', '), size: `${1024} x ${Math.round(1024 * p.h / 8) * 8}` };
     // 한국어 자연어: 출력 규격 → 연출 의도 → 카메라 → 구도 → 인물·연기 → 동작 → 장소·조명 → 이어짐 → 비울 자리 → 금지
     const sp = spec(p.h), R = ROLE[p.vng] || ROLE.I, gt = gapTag(p.gap ?? 0.3);
@@ -189,6 +191,7 @@
       insert && main ? `- 손의 연기(${p.emo}, ${k[1]}): ${HANDF[p.emo] || '감정이 손의 힘과 각도에 드러나게'}` : '',
       main && !insert ? `- 표정(${p.emo}, ${k[1]})${tiny ? ' — 작게 보이니 표정보다 자세와 실루엣으로' : ''}: ${expr[1]}${dlg[0]?.note ? ` — 연기 지시 "${dlg[0].note}"를 표정과 자세에 담음` : ''}` : '',
       main && !insert ? `- 몸: ${handPose ? (BODY[p.emo] || BODY['평온']).split(',')[0] + ', 손은 동작에 씀' : (BODY[p.emo] || BODY['평온'])}` : '',
+      ...((ctx.props?.(p) || []).length ? ['§', `■ 소품 (모양 고정 — 모든 컷에서 같은 모양·색·재질·크기)`, ...ctx.props(p).map(x => `- ${x.name}${x.look ? `: ${x.look}` : ''}${x.img ? ' — 함께 올린 소품 이미지와 똑같이' : ''}`)] : []),
       '§',
       `■ 동작`,
       `- ${dot(p.act)}`,

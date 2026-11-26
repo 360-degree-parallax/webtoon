@@ -194,6 +194,30 @@ test('콘티: 컷 하나 상세 수정(샷·감정) · 이 컷만 프롬프트 �
   await p.click('#conti [data-ctauto="1"]'); await p.waitForTimeout(400);
   assert(await ev(() => state.panels[1].shot !== '디테일' || !Object.keys(state.panels[1].lock).length), '엔진 값으로 되돌림');
 });
+test('#소품: 처음 적은 형태로 세계관에 고정 → 콘티 모든 컷에 같은 태그', async ({p, ev}) => {
+  await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
+    "export async function refineNai(k,pl){window._pl=pl;return {cuts:pl.cuts.map(c=>({n:c.n,base:'AI base',chars:[]})),props:[{name:'회중시계',tags:'gold pocket watch, rose engraving'}],model:'test'}}export function explain(e){return String(e)}"}));
+  await ev(() => { setKey('sk-test', 'session'); showView('write');
+    CUTS.splice(0, CUTS.length, '@에드가 #회중시계(금색, 뚜껑에 장미 문양)를 꺼낸다. {디테일}', '#회중시계가 바닥에 떨어진다', '@준 "그 시계…"');
+    saveScenes(); renderCuts(); cutChanged(); });
+  await p.waitForTimeout(700);
+  const it = await ev(() => { const e = LORE.find(x => x.name === '회중시계'); return e && [e.cat, e.desc, e.tags]; });
+  assert(it && it[0] === 'item' && it[1] === '금색, 뚜껑에 장미 문양' && !it[2], '세계관 물건으로 등록, 형태 고정');
+  const hl = await ev(() => [!!document.querySelector('.cuthl .h-prop'), !!document.querySelector('.cutparse .propfix')]);
+  assert(hl[0] && hl[1], '글 강조 · 고정 표시');
+  assert(await ev(() => state.panels.length && state.panels[1].props?.[0]?.name === '회중시계' && !state.panels[0].act.includes('#')), '컷 글에서 소품 읽음');
+  await ev(() => { CUTS[1] = '#회중시계(은색)가 바닥에 떨어진다'; saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(600);
+  assert(await ev(() => LORE.find(x => x.name === '회중시계').desc === '금색, 뚜껑에 장미 문양' && !!document.querySelector('.cutparse .propclash')), '다른 형태는 경고만, 처음 형태 유지');
+  await ev(() => showView('layout')); await p.waitForTimeout(600);
+  await p.click('#conti [data-act=nairefine]'); await p.click('#refinedlg [data-r=go]'); await p.waitForTimeout(1200);
+  const pl = await ev(() => window._pl && [window._pl.props, window._pl.cuts.map(c => c.props)]);
+  assert(pl && pl[0].length === 1 && pl[0][0].look === '금색, 뚜껑에 장미 문양' && pl[1][0][0] === '회중시계' && pl[1][1][0] === '회중시계', 'Claude에 소품과 컷별 소품 전달');
+  const r = await ev(() => [LORE.find(x => x.name === '회중시계').tags, naiRuleCuts().slice(0, 2).map(x => x.o.base), !!ainFor() && ainFor().stale]);
+  assert(r[0] === 'gold pocket watch, rose engraving', 'Claude가 정한 태그를 설정집에 고정');
+  assert(r[1].every(b => b.includes('gold pocket watch, rose engraving')), '두 컷 모두 같은 소품 태그');
+  assert(r[2] === false, '태그 저장 뒤에도 생성 결과가 최신');
+  assert(await ev(() => document.querySelectorAll('#conti .ct-prop').length >= 2), '콘티 카드에 고정 소품 표시');
+});
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
   await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);

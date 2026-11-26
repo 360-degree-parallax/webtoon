@@ -698,7 +698,7 @@ let FRESH_CHARS=false;
 try{const v=localStorage.getItem('rough-chars');FRESH_CHARS=!v;CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){FRESH_CHARS=true;CHARS=DEFAULT_CHARS.map(c=>({...c}))}
 const OLD_DEFAULT_HIT=[];CHARS.forEach(c=>{if((OLD_DEFAULT_LOOK[c.name]||[]).includes(c.look)){c.look=DEFAULT_CHARS.find(d=>d.name===c.name).look;OLD_DEFAULT_HIT.push(c.name)}});
 function saveChars(){try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}}
-function engineChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
+function engineChars(){try{syncPropNames()}catch(_){}return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
 // 등장인물 카드 (캐릭터챗 프로필 카드 형태) + 프로필 편집 창
 var NAITAGS;try{NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){NAITAGS={}}
 const saveNaiTags=()=>{try{localStorage.setItem('rough-nai-tags',JSON.stringify(NAITAGS))}catch(_){}};
@@ -829,7 +829,8 @@ async function inferChars(names,{fresh=false,hints={}}={}){names=names.filter(n=
     toast(k?`${names.join(', ')} 외형을 구성·씬 글로 채웠어요 · 설정집에서 확인해 주세요`:'채울 외형을 찾지 못했어요',2800)}
   catch(err){console.warn(err?.status||err);toast('외형을 추론하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요'),3000);for(const n of names){const c=CHARS.find(c=>c.name.trim()===n);if(c&&!String(c.look||'').trim()&&hints[n]){c.look=hints[n];saveChars()}}if(err?.status===401){setKey('',null);openKey(()=>inferChars(names,{fresh,hints}))}}
   finally{names.forEach(n=>INFER_BUSY.delete(n));if(VIEW==='chars')renderChars();if(VIEW==='layout')renderNai?.()}}
-$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('.newchar [data-sug]');if(b){e.preventDefault();addCharFromSugg(b.dataset.sug)}});
+$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('.newchar [data-sug]');if(b){e.preventDefault();addCharFromSugg(b.dataset.sug)}
+  const q=e.target.closest('[data-propadd]');if(q){e.preventDefault();ensureProps([CUTS[+q.dataset.propadd]]);renderParse();compute(false)}});
 $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();compute(false);renderSlots();showView('chars');focusCard(CHARS.length-1)});
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a||a.closest('#chars .cedit'))return;const k=a.dataset.act;
   if(k==='addchar'){CHARS.push({name:'',aliases:'',body:'female',look:''});saveChars();renderChars();focusCard(CHARS.length-1)}
@@ -853,6 +854,22 @@ const saveWlib=()=>{try{localStorage.setItem('rough-wlib',JSON.stringify(WLIB))}
 const loreKeys=e=>[e.name,...String(e.keys||'').split(/[,·]/)].map(x=>x.trim()).filter(x=>x.length>=1);
 function loreHits(text){text=String(text||'');return LORE.filter(e=>e.name&&loreKeys(e).some(k=>text.includes(k)))}
 function loreTagList(e){return String(e.tags||'').split(',').map(t=>t.trim()).filter(Boolean)}
+// #소품 고정: 컷 글의 #이름(형태)를 세계관 '물건' 항목으로 등록하고, 그 뒤로는 설정집 형태·태그·이미지를 모든 컷에 똑같이 씀
+//   형태는 처음 적은 것이 고정(설정집에서만 바꿈). 괄호 없는 #이름은 입력칸을 벗어날 때·프롬프트를 만들 때 등록
+function syncPropNames(){RE.PROP_NAMES=LORE.filter(e=>e.name).flatMap(loreKeys)}
+function propOf(name){const hit=LORE.filter(e=>e.name&&loreKeys(e).includes(name));return hit.find(e=>e.cat==='item')||hit[0]||null}
+function ensureProps(texts,{withLookOnly=false,quiet=false}={}){syncPropNames();const added=[],filled=[];
+  for(const t of texts)for(const {name,look} of RE.props(t)){if(!name||(withLookOnly&&!look))continue;const e=propOf(name);
+    if(!e){const it={id:'l'+Date.now().toString(36)+added.length,name,cat:'item',keys:'',desc:look,tags:'',prop:1};LORE.push(it);added.push(it);syncPropNames()}
+    else if(look&&!String(e.desc||'').trim()){e.desc=look;filled.push(e)}}
+  if(added.length||filled.length){saveWorld();if(typeof VIEW!=='undefined'&&VIEW==='world')renderWorld();renderWorldSum();
+    if(!quiet)toast(`소품 ${[...added,...filled].map(e=>'◆'+e.name).join(' ')}의 형태를 세계관 물건에 고정했어요`,2600)}
+  return{added,filled}}
+// 컷 하나에 나오는 고정 소품: #표시한 것 + 글에 이름이 나오는 세계관 물건
+function propsFor(p){const out=[],seen=new Set(),put=e=>{if(!e||seen.has(e.id))return;seen.add(e.id);out.push({name:e.name,look:String(e.desc||'').trim(),tags:loreTagList(e).join(', '),img:!!IMG.lore[e.id],id:e.id})};
+  (p.props||[]).forEach(x=>put(propOf(x.name)));loreHits([p.act,p.caption].join(' ')).filter(e=>e.cat==='item').forEach(put);return out}
+// 컷 글에 적은 형태가 설정집과 다르면 알려 줌(설정집 형태가 이김)
+function propClash(t){return RE.props(t).map(x=>({...x,e:propOf(x.name)})).filter(x=>x.look&&x.e&&String(x.e.desc||'').trim()&&x.e.desc.trim()!==x.look)}
 function worldBrief(){const w=WORLD;return{name:w.name||'',genre:w.genre||'',era:w.era||'',tone:w.tone||'',summary:w.summary||'',detail:(w.detail||'').slice(0,1500),tags:w.tags||''}}
 const WF=['name','genre','era','tone','summary','detail','tags'],LF=['name','cat','keys','desc','tags'];
 const wlibOf=x=>x&&x.lib&&WLIB.find(y=>y.id===x.lib);
@@ -876,9 +893,9 @@ function worldRow(){const w=WORLD;
 function loreRow(e,i){const c=LORE_CAT[e.cat]||LORE_CAT.place,n=loreStat(e);return `<article class="cedit" data-li="${i}"><div class="ce-side">${imgBox(IMG.lore[e.id],e.name||c[0],`data-wimg="lore"`)}</div>
   <div class="ce-f"><div class="ce-top"><input class="ce-name" data-lf="name" value="${esc(e.name||'')}" maxlength="30" placeholder="항목 이름" aria-label="항목 이름" spellcheck="false"><select class="ce-sel" data-lf="cat" aria-label="분류">${Object.entries(LORE_CAT).map(([k,v])=>`<option value="${k}"${e.cat===k?' selected':''}>${v[0]}</option>`).join('')}</select><span class="cbadge" data-badge hidden></span></div>
     <label class="cf"><span>키워드 <small>쉼표로 구분 · 이름이나 이 단어가 컷 글에 나오면 적용</small></span><input data-lf="keys" value="${esc(e.keys||'')}" placeholder="예: 복도, 대저택" spellcheck="false"></label>
-    <label class="cf"><span>설명 <small data-cnt="desc">${(e.desc||'').length}/1000</small></span><textarea data-lf="desc" rows="3" maxlength="1000" placeholder="생김새, 역할, 얽힌 사연, 규칙">${esc(e.desc||'')}</textarea></label>
+    <label class="cf"><span>${e.cat==='item'?'형태 <small>(고정) 컷 글에 #'+esc(e.name||'이름')+'으로 쓰면 이 형태·태그·이미지가 모든 컷에 똑같이 들어가요</small> ':'설명 '}<small data-cnt="desc">${(e.desc||'').length}/1000</small></span><textarea data-lf="desc" rows="3" maxlength="1000" placeholder="${e.cat==='item'?'색·재질·모양·크기 예: 금색 회중시계, 뚜껑에 장미 문양, 낡은 은색 체인':'생김새, 역할, 얽힌 사연, 규칙'}">${esc(e.desc||'')}</textarea></label>
     <label class="cf"><span>NovelAI 태그 <small>이 항목이 나오는 컷의 기본 프롬프트에 붙어요</small></span><input data-lf="tags" value="${esc(e.tags||'')}" placeholder="mansion, long hallway" spellcheck="false"></label>
-    <div class="ce-foot"><span class="cstat"><i class="catdot" style="background:${c[1]}"></i>${c[0]} · 이 씬 ${n}컷에 등장</span>${libBtns()}<button type="button" class="btn" data-act="ldel">작품에서 빼기</button></div></div></article>`}
+    <div class="ce-foot"><span class="cstat"><i class="catdot" style="background:${c[1]}"></i>${c[0]}${e.prop?' · #소품에서 등록':''} · 이 씬 ${n}컷에 등장</span>${libBtns()}<button type="button" class="btn" data-act="ldel">작품에서 빼기</button></div></div></article>`}
 function updateWRow(el){const isW=el.dataset.wk==='world',x=isW?WORLD:LORE[+el.dataset.li];if(!x)return;const st=wState(x,isW?'world':'lore');
   const bd=el.querySelector('[data-badge]');bd.textContent=st==='same'?'보관함과 같음':st==='diff'?'보관함과 다름':'';bd.className='cbadge'+(st==='diff'?' diff':'');bd.hidden=!st;
   const sv=el.querySelector('[data-act=wsave]');sv.textContent=st?'보관함 갱신':'보관함에 저장';sv.disabled=st==='same';el.querySelector('[data-act=wrevert]').hidden=st!=='diff';
@@ -1077,15 +1094,15 @@ function renderCuts(){if(!CUTS.length)CUTS=[''];
   $('#cutlist').innerHTML=CUTS.map((c,i)=>`<li data-i="${i}"><span class="cn" title="끌어서 순서 바꾸기">${i+1}</span><div class="cutbox"><div class="cuthl" aria-hidden="true">${cutHL(c)}</div><textarea class="cutin" rows="1" spellcheck="false" aria-label="${i+1}번 컷" placeholder="${(i===firstEmpty?'@준 창가로 다가간다. {클로즈업}&#10;@준 &quot;누구세요?&quot;':'')}">${esc(c)}</textarea></div><span class="tools"><button data-cut="up" aria-label="위로" title="위로">↑</button><button data-cut="down" aria-label="아래로" title="아래로">↓</button><button data-cut="del" aria-label="삭제" title="삭제">×</button></span><div class="cutparse" data-parse></div></li>`).join('');
   document.querySelectorAll('.cutin').forEach(grow);renderParse()}
 // 글 위 강조: 문법을 입력칸 글자 뒤에 바로 칠함(배경만 칠해 글자 위치는 입력칸 그대로). 대사 줄·나레이션 줄은 줄 전체, 효과음·연출·@인물은 그 부분만
-const HL_TOK=/(\{[^{}\n]*\})|((?:^|(?<=\s))(-{1,3})[^\s-][^-\n]{0,10}?\3(?=\s|$|[.,!?]))|(@[^\s"“”.,!?{}()]+)/g;
+const HL_TOK=/(\{[^{}\n]*\})|((?:^|(?<=\s))(-{1,3})[^\s-][^-\n]{0,10}?\3(?=\s|$|[.,!?]))|(@[^\s"“”.,!?{}()]+)|((?<![가-힣A-Za-z0-9_&#])#[가-힣A-Za-z_][가-힣A-Za-z0-9_]{0,19}(?:\([^()\n]{1,160}\))?)/g;
 const HL_DLG=/^(?:@[^\s"“]+\s*)?["“].*["”]\s*[.!?…]*$/,HL_MIX=/["“][^"”]+["”]/;
 const dirBad=t=>!!t.trim()&&RoughGrammar.derive({dir:RE.readDirs([t])}).unknown.length>0;
 // {…} 안을 항목별로: 못 읽은 항목만 빨갛게
 const dirHL=tok=>`<i class="h-dir">{${tok.slice(1,-1).split(/([,，·\/])/).map((x,k)=>k%2?esc(x):dirBad(x)?`<i class="bad">${esc(x)}</i>`:esc(x)).join('')}}</i>`;
 function cutHL(text){return String(text??'').split('\n').map(line=>{const bare=line.replace(/\{[^{}\n]*\}/g,'').replace(/(^|\s)-{1,3}[^\s-][^-\n]{0,10}?-{1,3}(?=\s|$|[.,!?])/g,'$1').trim();
     const kind=!bare?'':HL_DLG.test(bare)?'dlg':/^\[.*\]$/.test(bare)?'cap':HL_MIX.test(bare)?'mix':'act';
-    let o='',last=0;line.replace(HL_TOK,(m,d,sfx,_dash,at,off)=>{o+=esc(line.slice(last,off));last=off+m.length;
-      o+=d?dirHL(d):sfx?`<i class="h-sfx">${esc(m)}</i>`:`<i class="h-who">${esc(m)}</i>`;return m});
+    let o='',last=0;line.replace(HL_TOK,(m,d,sfx,_dash,at,pr,off)=>{o+=esc(line.slice(last,off));last=off+m.length;
+      o+=d?dirHL(d):sfx?`<i class="h-sfx">${esc(m)}</i>`:pr?`<i class="h-prop">${esc(m)}</i>`:`<i class="h-who">${esc(m)}</i>`;return m});
     o+=esc(line.slice(last));return `<div class="hl-${kind||'empty'}">${o||'<br>'}</div>`}).join('')}
 function syncHL(t){const h=t.previousElementSibling;if(h?.classList.contains('cuthl'))h.innerHTML=cutHL(t.value)}
 // 대사와 줄글 나누기: 한 줄에 묘사와 "대사"가 섞여 있으면 입력칸을 벗어날 때 대사를 @인물 "대사" 줄로 떼어 냄
@@ -1105,20 +1122,23 @@ function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.
     {const D=b.dir||{},g=RoughGrammar.derive(b);
       const st=g.edit?.letters&&Object.entries(g.edit.letters).filter(([key,v])=>v.style&&/^dialog/.test(key)).map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean);
 }
-    if(typeof loreHits==='function')loreHits(CUTS[i]).forEach(e=>out.push(`<span>◆ ${esc(e.name)}</span>`));
+    if(typeof loreHits==='function'){const pr=new Set((b.props||[]).map(x=>propOf(x.name)?.id).filter(Boolean));
+      loreHits(RE.stripProps(CUTS[i])).forEach(e=>out.push(`<span${pr.has(e.id)?' class="propfix" title="#소품: 모든 컷에서 이 형태로 고정'+(e.desc?' — '+esc(e.desc):' · 형태는 세계관에서 적어 주세요')+'"':''}>◆ ${esc(e.name)}${pr.has(e.id)?'<small>고정</small>':''}</span>`));
+      const nw=(b.props||[]).filter(x=>!propOf(x.name));if(nw.length)out.push(`<span class="newchar"><small>새 소품</small>${nw.map(x=>`<button type="button" data-propadd="${i}" title="세계관 물건에 「${esc(x.name)}」 고정${x.look?' — '+esc(x.look):''}">+ ◆${esc(x.name)}</button>`).join('')}</span>`);
+      propClash(CUTS[i]).forEach(x=>out.push(`<span class="propclash" title="설정집 형태로 고정돼요. 바꾸려면 세계관 페이지에서 고쳐 주세요">◆ ${esc(x.name)}: 적은 형태와 설정집이 달라요 — 설정집 「${esc(x.e.desc.slice(0,40))}」</span>`))}
     {const un=unknownNames([CUTS[i]]);if(un.length)out.push(`<span class="newchar"><small>설정집에 없음</small>${un.map(n=>`<button type="button" data-sug="${esc(n)}" title="설정집 캐릭터에 「${esc(n)}」 추가">+ ${esc(n)}</button>`).join('')}</span>`)}
     // 효과음 추천: 효과음이 없는 컷에만, 눌러서 바로 넣기(sfx-rec.js)
     if(window.RoughSfxRec&&!(b.sfx||[]).length){const emo=(state.panels||[]).find(p=>String(p.key||'').startsWith('#'+i+':'))?.emo;
       const rs=RoughSfxRec.recommend(CUTS[i],emo,3);if(rs.length)out.push(`<span class="sfxrec"><small>효과음</small>${rs.map(r=>`<button type="button" data-sfxadd="${esc(r.word)}" data-i="${i}" title="${esc(r.why)} 때문에 추천 · ${esc(r.cat)}">+ ${esc(r.word)}</button>`).join('')}</span>`)}
     el.innerHTML=out.join('')});
   const m=$('#scmeta2');if(m)m.textContent=`대사 ${nd} · 식자 ${nc} · 효과음 ${ns}`}
-const cutChanged=()=>{saveCuts();scSaved();clearTimeout(tmr);tmr=setTimeout(()=>{compute(true);renderSlots();renderSugg();renderParse()},350)};
+const cutChanged=()=>{saveCuts();scSaved();clearTimeout(tmr);tmr=setTimeout(()=>{ensureProps(CUTS,{withLookOnly:true});compute(true);renderSlots();renderSugg();renderParse()},350)};
 let scSavedAt=0;function scSaved(){scSavedAt=Date.now();scSaveLabel()}
 function scSaveLabel(){const el=$('#scsave');if(!el)return;if(SAVE_FAIL){saveFailLabel();return}if(!scSavedAt)return;const s=Math.round((Date.now()-scSavedAt)/1000);el.textContent=s<5?'저장됨 · 방금':s<60?`저장됨 · ${s}초 전`:`저장됨 · ${Math.round(s/60)}분 전`;el.classList.add('on')}
 setInterval(scSaveLabel,5000);
 $('#cutlist').addEventListener('input',e=>{const t=e.target.closest('.cutin');if(!t)return;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();mSel=0;showMbox()});
 $('#cutlist').addEventListener('focusin',e=>{const t=e.target.closest('.cutin');if(t)TA=t});
-$('#cutlist').addEventListener('focusout',e=>{const t=e.target.closest('.cutin');if(!t)return;const r=splitMixed(t.value);if(!r.n||r.text===t.value)return;
+$('#cutlist').addEventListener('focusout',e=>{const t=e.target.closest('.cutin');if(!t)return;if(ensureProps([t.value]).added.length)renderParse();const r=splitMixed(t.value);if(!r.n||r.text===t.value)return;
   if(typeof edRecord==='function'){edRecord();edLast=0}  // 나누기 전 글을 따로 한 단계로
   t.value=r.text;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();toast(`대사를 따로 줄로 나눴어요 (${r.n}줄) · 묘사와 대사는 줄을 나눠 써요 · Ctrl+Z로 되돌리기`,2400)});
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cut]');if(e.target.closest('.cutin'))showMbox();if(!b)return;cutAct(+b.closest('li').dataset.i,b.dataset.cut)});
@@ -1169,7 +1189,8 @@ document.querySelector('.scins').addEventListener('click',e=>{const b=e.target.c
   let t=TA&&document.body.contains(TA)?TA:null;if(!t){const l=document.querySelectorAll('.cutin');t=l[l.length-1]}if(!t)return;t.focus();
   if(b.dataset.ins==='sfx'&&window.RoughSfxRec&&t.selectionStart===t.selectionEnd){RoughSfxRec.ready().then(()=>sfxPicker(b,t));return}
   const a=t.selectionStart,z=t.selectionEnd,sel=t.value.slice(a,z),k=b.dataset.ins;const nl=a>0&&t.value[a-1]!=='\n'?'\n':'';
-  const [pre,post]=k==='caption'?[nl+'[',']']:k==='sfx'?[' -','- ']:[nl+'@',''];
+  const sp=a>0&&!/\s/.test(t.value[a-1])?' ':'';
+  const [pre,post]=k==='caption'?[nl+'[',']']:k==='sfx'?[' -','- ']:k==='prop'?[sp+'#','']:[nl+'@',''];
   t.value=t.value.slice(0,a)+pre+sel+post+t.value.slice(z);const c=a+pre.length+sel.length;t.setSelectionRange(c,c);TA=t;
   t.dispatchEvent(new Event('input',{bubbles:true}))});
 // 연출 넣기 메뉴: 누르면 지금 줄 끝에 {…}. 같은 줄에 이미 {…}가 있으면 그 안에 쉼표로 이어 붙임
@@ -2328,6 +2349,7 @@ function showView(v){if(v==='nai')v='layout';
   if(v==='setbook'){try{v=localStorage.getItem('rough-setbook-sub')||'chars'}catch(_){v='chars'}}if(v==='chars'||v==='world'){try{localStorage.setItem('rough-setbook-sub',v)}catch(_){}}  // 작화는 콘티에 합침(예전 주소·저장된 화면 호환)
   if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='write';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v||(b.dataset.view==='setbook'&&(v==='chars'||v==='world'))));
   ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
+  if(v==='write'||v==='layout'){try{ensureProps(SCENES.flatMap(s=>s.cuts||[]))}catch(_){}}  // 구성에서 넘어온 씬의 #소품도 세계관에 고정
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   // 숨겨진 채 그려진 컷 글 칸은 높이가 0으로 잡혀 글이 안 보임 → 보일 때 다시 맞춤
   // 편집·콘티에서 바꾼 내용(지운 식자·컷·씬, 제목)을 씬 화면에 다시 반영 — 화면끼리 같은 원고를 봄
@@ -2402,13 +2424,13 @@ let NAISTYLE=NAI_STYLE_DEF;
 try{NAISTYLE=localStorage.getItem('rough-nai-style')||NAI_STYLE_DEF}catch(_){}
 function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(a=>a.trim()).filter(Boolean),body:c.body||'female',look:c.look||''}))}
 function naiRuleCuts(){const ps=state.panels,chars=naiChars(),sc=ps.length?sceneFor(ps[0]):null;
-  const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc},worldTags:WORLD.tags||'',loreTags:p=>loreHits(p.act||'').flatMap(e=>loreTagList(e))};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
+  const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc},worldTags:WORLD.tags||'',loreTags:p=>loreHits(p.act||'').filter(e=>e.cat!=='item').flatMap(e=>loreTagList(e)),props:propsFor};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
 // Claude 다듬기(NovelAI): 결과는 씬별로 입력 서명과 함께 저장, 기본/Claude 전환
 let NAIVIEW='ai',AIN={};try{AIN=JSON.parse(localStorage.getItem('rough-ai-nai')||'{}')}catch(_){}
 function naiPayload(){const L=naiRuleCuts(),chars=naiChars();
   const sceneText=L.map(({p})=>[p.act,p.caption,...(p.dialogs||[]).map(d=>d.text)].join(' ')).join(' ');
-  return{format:2,title:SCENES[SCUR].title||'',world:worldBrief(),lore:loreHits(sceneText).map(e=>({name:e.name,category:LORE_CAT[e.cat]?.[0]||e.cat,keywords:e.keys||'',description:(e.desc||'').slice(0,600),tags:loreTagList(e).join(', ')})),style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
-    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,
+  return{format:2,title:SCENES[SCUR].title||'',world:worldBrief(),lore:loreHits(sceneText).map(e=>({name:e.name,category:LORE_CAT[e.cat]?.[0]||e.cat,keywords:e.keys||'',description:(e.desc||'').slice(0,600),tags:loreTagList(e).join(', ')})),props:(()=>{const m=new Map();L.forEach(({p})=>propsFor(p).forEach(x=>m.set(x.name,{name:x.name,look:x.look,tags:x.tags})));return[...m.values()]})(),style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
+    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,props:propsFor(p).map(x=>x.name),
       dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${narrLabel(a.narr)} · ${a.goal}`:'',draft:{base:o.base,chars:o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}}})}}
 function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(naiPayload())}}
 function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return L;
@@ -2450,10 +2472,10 @@ var CTNOTE;try{CTNOTE=JSON.parse(localStorage.getItem('rough-ct-note')||'{}')}ca
 const ctNote=i=>(CTNOTE[SCENES[SCUR].id]||{})[i]||'';
 function setCtNote(i,v){const sid=SCENES[SCUR].id,m=CTNOTE[sid]||={};if(v.trim())m[i]=v;else delete m[i];if(!Object.keys(m).length)delete CTNOTE[sid];try{localStorage.setItem('rough-ct-note',JSON.stringify(CTNOTE))}catch(_){}}
 const withNotes=pl=>({...pl,cuts:pl.cuts.map(c=>{const n=ctNote(c.n-1).trim();return n?{...c,note:n}:c})});
-async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}
+async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}if(ensureProps(CUTS).added.length)compute(false);
   if(!AIKEY){openKey(naiRefine);return}const st=t=>{$('#naist').textContent=t;NAI_MSG=t;naiBtnSync()};naiBusy=true;NAI_ERR=false;NAI_DONE=0;$('#naibtn').disabled=true;st('Claude에 보내는 중… 컷이 많으면 1분 안팎 걸려요');const sid=SCENES[SCUR].id,payload=naiPayload();
-  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});
-    AIN[sid]={sig:sigOf(payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
+  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});const np=savePropTags(r.props);
+    AIN[sid]={sig:sigOf(np?naiPayload():payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';naiBusy=false;NAI_DONE=Date.now();st(`컷 ${r.cuts?.length||''}개 프롬프트를 만들었어요 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);setTimeout(naiBtnSync,4100);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';naiBusy=false;NAI_ERR=true;st('생성하지 못했어요 · '+m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false;naiBtnSync()}}
 $('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;NAIVIEW=b.dataset.v;renderNai()});
@@ -2502,7 +2524,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
       <span class="ct-keys" title="J·K 다음·이전 컷 · C 지금 컷 프롬프트 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기"><span><kbd>J</kbd><kbd>K</kbd>이동</span><span><kbd>C</kbd>복사</span><span><kbd>Ctrl</kbd><kbd>V</kbd>붙여 넣기</span></span></nav>`;
   el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
     return `<article class="ccard${CT_COPIED.has(i)?' copied':''}${i===CT_CUR?' cur':''}" data-ct="${i}"${CT_EMPTY&&im?' hidden':''}>
-      <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}<button type="button" class="ct-edbtn" data-ctedit="${i}" aria-expanded="${CT_EDIT.has(i)}" title="이 컷의 구도·감정·길이를 고치고 프롬프트를 이 컷만 다시 만들어요">${CT_EDIT.has(i)?'수정 닫기':'이 컷 수정'+(ctNote(i).trim()||['shot','ang','emo','h'].some(f=>p.dir&&p.dir[f]!=null)?' •':'')}</button><button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
+      <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p>${(o.props||[]).length?`<span class="ct-props">${o.props.map(x=>`<i class="ct-prop${x.tags?'':' notag'}" title="고정 소품 · ${esc(x.look||'형태 미정')}${x.tags?' · '+esc(x.tags):' · 태그는 컷 프롬프트 생성 때 Claude가 한 번 정해 고정해요'}">◆${esc(x.name)}</i>`).join('')}</span>`:''}<small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}<button type="button" class="ct-edbtn" data-ctedit="${i}" aria-expanded="${CT_EDIT.has(i)}" title="이 컷의 구도·감정·길이를 고치고 프롬프트를 이 컷만 다시 만들어요">${CT_EDIT.has(i)?'수정 닫기':'이 컷 수정'+(ctNote(i).trim()||['shot','ang','emo','h'].some(f=>p.dir&&p.dir[f]!=null)?' •':'')}</button><button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
       ${CT_EDIT.has(i)?ctEditor(p,i):''}
       <div class="ct-body">
         <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><span class="ct-swap" aria-hidden="true">그림 바꾸기</span><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>${CT_COPIED.has(i)?'Ctrl+V로 붙여 넣기':'끌어다 놓아도 돼요'}</small></span>`}</div></div>
@@ -2760,10 +2782,13 @@ function ctEditor(p,i){const L=p.dir||{},has=f=>L[f]!==undefined&&L[f]!==null,se
 const CT_MSG={};
 // 엔진 값으로: 이 컷 글의 샷·앵글·감정·길이 지시를 모두 지움
 function ctAuto(i){const p=state.panels[i],k=cutIdxOf(p);if(!p||k<0)return;let x=CUTS[k];for(const f of ['shot','ang','emo','h'])x=writeDir(x,f,'');delete locks[p.key];if(x!==CUTS[k]){CUTS[k]=x;saveScenes()}compute(false);renderNai();toast('이 컷을 엔진 값으로 되돌렸어요')}
+// Claude가 지은 소품 태그: 설정집에 태그가 비어 있는 소품만 저장 → 그 뒤로 모든 컷·씬에 같은 태그(고정)
+function savePropTags(list){let n=0;for(const x of list||[]){const e=propOf(x.name),t=String(x.tags||'').trim();if(e&&t&&!loreTagList(e).length){e.tags=t;n++}}if(n){saveWorld();if(VIEW==='world')renderWorld()}return n}
 async function contiRegenCut(i,req){if(CT_BUSY.has(i))return;if(!AIKEY){openKey(()=>contiRegenCut(i,req));return}
   setCtNote(i,req);CT_BUSY.add(i);CT_MSG[i]='Claude에 보내는 중…';renderConti();const sid=SCENES[SCUR].id,payload=naiPayload();
   let mod;try{mod=await import('./claude.js');const r=await mod.refineNaiCut(AIKEY,payload,i+1,req,{onStatus:t=>{CT_MSG[i]=t;const x=$('#conti')?.querySelector(`.ct-edit[data-i="${i}"] .ct-edst`);if(x)x.textContent=t}});
-    const prev=AIN[sid],cuts=(prev&&!ainFor()?.stale?prev.cuts:[]).filter(c=>c.n!==i+1).concat([r.cut]);
+    const wasFresh=prev0=>prev0&&!ainFor()?.stale,prev=AIN[sid],fresh=wasFresh(prev);savePropTags(r.props);
+    const cuts=(fresh?prev.cuts:[]).filter(c=>c.n!==i+1).concat([r.cut]);
     AIN[sid]={sig:sigOf(naiPayload()),cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';CT_MSG[i]=`✓ ${i+1}번 컷 프롬프트를 새로 만들었어요`;toast(CT_MSG[i],2200)}
   catch(err){console.warn(err);CT_MSG[i]='생성하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요');if(err?.status===401){setKey('',null);openKey(()=>contiRegenCut(i,req))}}

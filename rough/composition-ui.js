@@ -116,7 +116,7 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
   // 컷 글 → 보기 모양(씬 화면과 같은 문법): 행동 · @인물 "대사" · [나레이션] · -효과음-
   function cutView(text){
     const lines=String(text||'').split(/\n/).map(l=>l.trim()).filter(Boolean);if(!lines.length)return '<p class="pv-empty">비어 있어요 · 눌러서 쓰기</p>';
-    const name=w=>'<span class="pv-who">'+localText(w)+'</span>',mention=t=>localText(t).replace(/@([^\s"“,.·]+)/g,'<span class="pv-at">$1</span>');
+    const name=w=>'<span class="pv-who">'+localText(w)+'</span>',mention=t=>localText(t).replace(/@([^\s"“,.·]+)/g,'<span class="pv-at">$1</span>').replace(/(^|[^가-힣A-Za-z0-9_&;#])#([가-힣A-Za-z_][가-힣A-Za-z0-9_]*)(\([^()]*\))?/g,'$1<span class="pv-prop" title="고정 소품$3">◆$2</span>');
     return lines.map(l=>{let m;
       if((m=l.match(/^\[(.*)\]$/)))return '<p class="pv-cap">'+localText(m[1])+'</p>';
       if((m=l.match(/^-{1,3}(.+?)-{1,3}$/)))return '<p class="pv-sfx">'+localText(m[1])+'</p>';

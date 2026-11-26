@@ -95,6 +95,8 @@ const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 한 컷�
 - effect: no humans, abstract background. 인물이나 실제 장소의 묘사 없이 색, 빛, 선의 방향과 질감을 쓴다. chars는 빈 배열.
 - character: base에는 인원·프레이밍·공간·조명. 외형·표정·동작·시선은 캐릭터마다 분리한다. draft.chars에서 화면에 보이는 인물만 사용한다. 등록 인물이 없는 경우 컷에 보이는 사람의 동작을 base에 쓴다. cell은 A~E(좌→우), 1~5(상→하)이며 원문 위치와 연속성을 따른다.
 
+props는 작가가 #으로 표시해 모양을 고정한 소품이다(name·look 한국어 형태·tags 영어 태그). 컷의 props에 이름이 있으면 그 컷 base에 그 소품의 태그를 넣고, 모든 컷에서 같은 단어·같은 색·같은 재질로 쓴다. 소품의 색·모양·크기를 컷마다 바꾸거나 다른 수식어를 덧붙이지 않는다. tags가 있으면 그대로 쓴다. tags가 비어 있으면 look(없으면 세계관·컷 글)에 맞춰 영어 태그 2~6개(사물 이름 + 색·재질·특징)를 한 번 정해 응답 props에 name과 함께 돌려주고, 이 씬의 모든 컷에 그 태그를 똑같이 쓴다. tags가 이미 있는 소품은 응답 props에 넣지 않는다.
+
 컷에 note가 있으면 작가가 그 컷에 직접 남긴 지시다. 그 컷에서는 가장 먼저 반영하고, 지시와 무관한 부분은 씬 흐름대로 쓴다.
 
 영어 소문자 태그를 쉼표와 공백으로 구분한다. 핵심 시각 요소를 앞에 둔다. 물체 배치나 빛의 방향에 필요하면 짧은 영문 구절을 추가한다. 샷·앵글·해상도는 입력을 따른다. world/lore의 정보는 화면에 드러나는 요소만 쓴다. 대사·나레이션·효과음은 이미지에 쓰지 않는다. 사용자가 정한 화풍은 기본 프롬프트 뒤에 둔다.`;
@@ -122,14 +124,15 @@ const SCHEMA_NAI = {
         additionalProperties: false,
       },
     },
+    props: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, tags: { type: 'string' } }, required: ['name', 'tags'], additionalProperties: false } },
   },
-  required: ['cuts'],
+  required: ['cuts', 'props'],
   additionalProperties: false,
 };
-// payload: { title, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
+// payload: { title, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], props:[{name, look, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, props:[name], dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
 export async function refineNai(apiKey, payload, { onStatus } = {}) {
   const r = await run(apiKey, SYSTEM_NAI, SCHEMA_NAI, `다음 씬의 NovelAI V4.5 태그를 다시 짜줘.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
-  return { cuts: r.out.cuts, model: r.model, usage: r.usage };
+  return { cuts: r.out.cuts, props: r.out.props || [], model: r.model, usage: r.usage };
 }
 
 
@@ -251,5 +254,5 @@ export async function refineNaiCut(apiKey, payload, n, request, { onStatus } = {
   const r = await run(apiKey, sys, SCHEMA_NAI, `다음 씬에서 ${n}번 컷의 NovelAI V4.5 태그만 다시 짜줘.${request ? `\n작가 요청: ${request}` : ''}\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
   const cut = (r.out.cuts || []).find(c => c.n === n) || (r.out.cuts || [])[0];
   if (!cut) throw new Error('그 컷의 프롬프트가 오지 않았어요');
-  return { cut: { ...cut, n }, model: r.model };
+  return { cut: { ...cut, n }, props: r.out.props || [], model: r.model };
 }

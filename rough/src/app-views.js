@@ -9,6 +9,7 @@ function showView(v){if(v==='nai')v='layout';
   if(v==='setbook'){try{v=localStorage.getItem('rough-setbook-sub')||'chars'}catch(_){v='chars'}}if(v==='chars'||v==='world'){try{localStorage.setItem('rough-setbook-sub',v)}catch(_){}}  // 작화는 콘티에 합침(예전 주소·저장된 화면 호환)
   if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='write';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v||(b.dataset.view==='setbook'&&(v==='chars'||v==='world'))));
   ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
+  if(v==='write'||v==='layout'){try{ensureProps(SCENES.flatMap(s=>s.cuts||[]))}catch(_){}}  // 구성에서 넘어온 씬의 #소품도 세계관에 고정
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   // 숨겨진 채 그려진 컷 글 칸은 높이가 0으로 잡혀 글이 안 보임 → 보일 때 다시 맞춤
   // 편집·콘티에서 바꾼 내용(지운 식자·컷·씬, 제목)을 씬 화면에 다시 반영 — 화면끼리 같은 원고를 봄
@@ -83,13 +84,13 @@ let NAISTYLE=NAI_STYLE_DEF;
 try{NAISTYLE=localStorage.getItem('rough-nai-style')||NAI_STYLE_DEF}catch(_){}
 function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(a=>a.trim()).filter(Boolean),body:c.body||'female',look:c.look||''}))}
 function naiRuleCuts(){const ps=state.panels,chars=naiChars(),sc=ps.length?sceneFor(ps[0]):null;
-  const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc},worldTags:WORLD.tags||'',loreTags:p=>loreHits(p.act||'').flatMap(e=>loreTagList(e))};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
+  const ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n],scene:!!sc},worldTags:WORLD.tags||'',loreTags:p=>loreHits(p.act||'').filter(e=>e.cat!=='item').flatMap(e=>loreTagList(e)),props:propsFor};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))}
 // Claude 다듬기(NovelAI): 결과는 씬별로 입력 서명과 함께 저장, 기본/Claude 전환
 let NAIVIEW='ai',AIN={};try{AIN=JSON.parse(localStorage.getItem('rough-ai-nai')||'{}')}catch(_){}
 function naiPayload(){const L=naiRuleCuts(),chars=naiChars();
   const sceneText=L.map(({p})=>[p.act,p.caption,...(p.dialogs||[]).map(d=>d.text)].join(' ')).join(' ');
-  return{format:2,title:SCENES[SCUR].title||'',world:worldBrief(),lore:loreHits(sceneText).map(e=>({name:e.name,category:LORE_CAT[e.cat]?.[0]||e.cat,keywords:e.keys||'',description:(e.desc||'').slice(0,600),tags:loreTagList(e).join(', ')})),style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
-    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,
+  return{format:2,title:SCENES[SCUR].title||'',world:worldBrief(),lore:loreHits(sceneText).map(e=>({name:e.name,category:LORE_CAT[e.cat]?.[0]||e.cat,keywords:e.keys||'',description:(e.desc||'').slice(0,600),tags:loreTagList(e).join(', ')})),props:(()=>{const m=new Map();L.forEach(({p})=>propsFor(p).forEach(x=>m.set(x.name,{name:x.name,look:x.look,tags:x.tags})));return[...m.values()]})(),style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
+    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,props:propsFor(p).map(x=>x.name),
       dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${narrLabel(a.narr)} · ${a.goal}`:'',draft:{base:o.base,chars:o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}}})}}
 function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(naiPayload())}}
 function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return L;
@@ -131,10 +132,10 @@ var CTNOTE;try{CTNOTE=JSON.parse(localStorage.getItem('rough-ct-note')||'{}')}ca
 const ctNote=i=>(CTNOTE[SCENES[SCUR].id]||{})[i]||'';
 function setCtNote(i,v){const sid=SCENES[SCUR].id,m=CTNOTE[sid]||={};if(v.trim())m[i]=v;else delete m[i];if(!Object.keys(m).length)delete CTNOTE[sid];try{localStorage.setItem('rough-ct-note',JSON.stringify(CTNOTE))}catch(_){}}
 const withNotes=pl=>({...pl,cuts:pl.cuts.map(c=>{const n=ctNote(c.n-1).trim();return n?{...c,note:n}:c})});
-async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}
+async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}if(ensureProps(CUTS).added.length)compute(false);
   if(!AIKEY){openKey(naiRefine);return}const st=t=>{$('#naist').textContent=t;NAI_MSG=t;naiBtnSync()};naiBusy=true;NAI_ERR=false;NAI_DONE=0;$('#naibtn').disabled=true;st('Claude에 보내는 중… 컷이 많으면 1분 안팎 걸려요');const sid=SCENES[SCUR].id,payload=naiPayload();
-  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});
-    AIN[sid]={sig:sigOf(payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
+  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});const np=savePropTags(r.props);
+    AIN[sid]={sig:sigOf(np?naiPayload():payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';naiBusy=false;NAI_DONE=Date.now();st(`컷 ${r.cuts?.length||''}개 프롬프트를 만들었어요 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);setTimeout(naiBtnSync,4100);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';naiBusy=false;NAI_ERR=true;st('생성하지 못했어요 · '+m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false;naiBtnSync()}}
 $('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;NAIVIEW=b.dataset.v;renderNai()});
@@ -183,7 +184,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
       <span class="ct-keys" title="J·K 다음·이전 컷 · C 지금 컷 프롬프트 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기"><span><kbd>J</kbd><kbd>K</kbd>이동</span><span><kbd>C</kbd>복사</span><span><kbd>Ctrl</kbd><kbd>V</kbd>붙여 넣기</span></span></nav>`;
   el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
     return `<article class="ccard${CT_COPIED.has(i)?' copied':''}${i===CT_CUR?' cur':''}" data-ct="${i}"${CT_EMPTY&&im?' hidden':''}>
-      <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}<button type="button" class="ct-edbtn" data-ctedit="${i}" aria-expanded="${CT_EDIT.has(i)}" title="이 컷의 구도·감정·길이를 고치고 프롬프트를 이 컷만 다시 만들어요">${CT_EDIT.has(i)?'수정 닫기':'이 컷 수정'+(ctNote(i).trim()||['shot','ang','emo','h'].some(f=>p.dir&&p.dir[f]!=null)?' •':'')}</button><button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
+      <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p>${(o.props||[]).length?`<span class="ct-props">${o.props.map(x=>`<i class="ct-prop${x.tags?'':' notag'}" title="고정 소품 · ${esc(x.look||'형태 미정')}${x.tags?' · '+esc(x.tags):' · 태그는 컷 프롬프트 생성 때 Claude가 한 번 정해 고정해요'}">◆${esc(x.name)}</i>`).join('')}</span>`:''}<small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}<button type="button" class="ct-edbtn" data-ctedit="${i}" aria-expanded="${CT_EDIT.has(i)}" title="이 컷의 구도·감정·길이를 고치고 프롬프트를 이 컷만 다시 만들어요">${CT_EDIT.has(i)?'수정 닫기':'이 컷 수정'+(ctNote(i).trim()||['shot','ang','emo','h'].some(f=>p.dir&&p.dir[f]!=null)?' •':'')}</button><button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
       ${CT_EDIT.has(i)?ctEditor(p,i):''}
       <div class="ct-body">
         <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><span class="ct-swap" aria-hidden="true">그림 바꾸기</span><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>${CT_COPIED.has(i)?'Ctrl+V로 붙여 넣기':'끌어다 놓아도 돼요'}</small></span>`}</div></div>
@@ -441,10 +442,13 @@ function ctEditor(p,i){const L=p.dir||{},has=f=>L[f]!==undefined&&L[f]!==null,se
 const CT_MSG={};
 // 엔진 값으로: 이 컷 글의 샷·앵글·감정·길이 지시를 모두 지움
 function ctAuto(i){const p=state.panels[i],k=cutIdxOf(p);if(!p||k<0)return;let x=CUTS[k];for(const f of ['shot','ang','emo','h'])x=writeDir(x,f,'');delete locks[p.key];if(x!==CUTS[k]){CUTS[k]=x;saveScenes()}compute(false);renderNai();toast('이 컷을 엔진 값으로 되돌렸어요')}
+// Claude가 지은 소품 태그: 설정집에 태그가 비어 있는 소품만 저장 → 그 뒤로 모든 컷·씬에 같은 태그(고정)
+function savePropTags(list){let n=0;for(const x of list||[]){const e=propOf(x.name),t=String(x.tags||'').trim();if(e&&t&&!loreTagList(e).length){e.tags=t;n++}}if(n){saveWorld();if(VIEW==='world')renderWorld()}return n}
 async function contiRegenCut(i,req){if(CT_BUSY.has(i))return;if(!AIKEY){openKey(()=>contiRegenCut(i,req));return}
   setCtNote(i,req);CT_BUSY.add(i);CT_MSG[i]='Claude에 보내는 중…';renderConti();const sid=SCENES[SCUR].id,payload=naiPayload();
   let mod;try{mod=await import('./claude.js');const r=await mod.refineNaiCut(AIKEY,payload,i+1,req,{onStatus:t=>{CT_MSG[i]=t;const x=$('#conti')?.querySelector(`.ct-edit[data-i="${i}"] .ct-edst`);if(x)x.textContent=t}});
-    const prev=AIN[sid],cuts=(prev&&!ainFor()?.stale?prev.cuts:[]).filter(c=>c.n!==i+1).concat([r.cut]);
+    const wasFresh=prev0=>prev0&&!ainFor()?.stale,prev=AIN[sid],fresh=wasFresh(prev);savePropTags(r.props);
+    const cuts=(fresh?prev.cuts:[]).filter(c=>c.n!==i+1).concat([r.cut]);
     AIN[sid]={sig:sigOf(naiPayload()),cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';CT_MSG[i]=`✓ ${i+1}번 컷 프롬프트를 새로 만들었어요`;toast(CT_MSG[i],2200)}
   catch(err){console.warn(err);CT_MSG[i]='생성하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요');if(err?.status===401){setKey('',null);openKey(()=>contiRegenCut(i,req))}}

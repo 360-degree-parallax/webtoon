@@ -225,7 +225,9 @@
       effect: ['no humans', 'abstract background', ...tagsOf(action + ' ' + (p.dir?.fx || []).join(' '), FX), ...tone.tags],
       character: [...countTags(cast), !cast.length && 'person', ...(SHOT[p.shot] || SHOT['중경']), ...place, ...objects],
     }[mode];
-    const frameTags = [...frame, ...(mode === 'effect' ? [] : ANG[p.ang] || [])].filter(Boolean);
+    // #소품(고정): 설정집 물건의 태그를 그대로, 화면 구도 태그 바로 뒤에(컷마다 같은 모양). 효과 배경 컷에는 안 넣음
+    const props = mode === 'effect' ? [] : (ctx.props?.(p) || []).filter(x => x.tags);
+    const frameTags = [...frame, ...(mode === 'effect' ? [] : ANG[p.ang] || []), ...props.flatMap(x => splitTags(x.tags))].filter(Boolean);
     const base = joinTags([
       ...frameTags, ...(mode === 'effect' ? [] : tagsOf(action, SURFACE)), ...light,
       ...(showCast || mode === 'effect' ? MOOD[p.emo] || [] : []),
@@ -252,6 +254,7 @@
       mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h),
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
+      props: (ctx.props?.(p) || []).map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '' })),
     };
   }
 
@@ -272,6 +275,7 @@
     const L = [`[컷 ${i + 1} / ${total}] ${head || ''}`.trim(),
       `해상도: ${o.size.w} × ${o.size.h}${o.size.exact ? '' : ` (생성 후 ${o.size.crop} 자르기)`}`,
       `기본 프롬프트:\n${o.base}`,
+      (o.props || []).length ? `고정 소품: ${o.props.map(x => `${x.name}${x.tags ? ` (${x.tags})` : ''}`).join(' · ')}` : '',
       ...o.chars.map((c, n) => `캐릭터 ${n + 1} · ${c.name} · 위치 ${c.pos.cell} (x ${c.pos.x}, y ${c.pos.y}):\n${c.prompt}`),
       `설정: Steps ${o.settings.steps} · Guidance ${o.settings.guidance} · Sampler ${o.settings.sampler} · Noise Schedule ${o.settings.noise}`,
       `img2img: 바탕 PNG 업로드, Strength ${o.settings.strength} · Noise ${o.settings.noiseImg}`,

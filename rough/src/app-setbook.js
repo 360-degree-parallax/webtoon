@@ -12,7 +12,7 @@ let FRESH_CHARS=false;
 try{const v=localStorage.getItem('rough-chars');FRESH_CHARS=!v;CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){FRESH_CHARS=true;CHARS=DEFAULT_CHARS.map(c=>({...c}))}
 const OLD_DEFAULT_HIT=[];CHARS.forEach(c=>{if((OLD_DEFAULT_LOOK[c.name]||[]).includes(c.look)){c.look=DEFAULT_CHARS.find(d=>d.name===c.name).look;OLD_DEFAULT_HIT.push(c.name)}});
 function saveChars(){try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}}
-function engineChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
+function engineChars(){try{syncPropNames()}catch(_){}return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
 // 등장인물 카드 (캐릭터챗 프로필 카드 형태) + 프로필 편집 창
 var NAITAGS;try{NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){NAITAGS={}}
 const saveNaiTags=()=>{try{localStorage.setItem('rough-nai-tags',JSON.stringify(NAITAGS))}catch(_){}};
@@ -143,7 +143,8 @@ async function inferChars(names,{fresh=false,hints={}}={}){names=names.filter(n=
     toast(k?`${names.join(', ')} 외형을 구성·씬 글로 채웠어요 · 설정집에서 확인해 주세요`:'채울 외형을 찾지 못했어요',2800)}
   catch(err){console.warn(err?.status||err);toast('외형을 추론하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요'),3000);for(const n of names){const c=CHARS.find(c=>c.name.trim()===n);if(c&&!String(c.look||'').trim()&&hints[n]){c.look=hints[n];saveChars()}}if(err?.status===401){setKey('',null);openKey(()=>inferChars(names,{fresh,hints}))}}
   finally{names.forEach(n=>INFER_BUSY.delete(n));if(VIEW==='chars')renderChars();if(VIEW==='layout')renderNai?.()}}
-$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('.newchar [data-sug]');if(b){e.preventDefault();addCharFromSugg(b.dataset.sug)}});
+$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('.newchar [data-sug]');if(b){e.preventDefault();addCharFromSugg(b.dataset.sug)}
+  const q=e.target.closest('[data-propadd]');if(q){e.preventDefault();ensureProps([CUTS[+q.dataset.propadd]]);renderParse();compute(false)}});
 $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();compute(false);renderSlots();showView('chars');focusCard(CHARS.length-1)});
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a||a.closest('#chars .cedit'))return;const k=a.dataset.act;
   if(k==='addchar'){CHARS.push({name:'',aliases:'',body:'female',look:''});saveChars();renderChars();focusCard(CHARS.length-1)}
@@ -167,6 +168,22 @@ const saveWlib=()=>{try{localStorage.setItem('rough-wlib',JSON.stringify(WLIB))}
 const loreKeys=e=>[e.name,...String(e.keys||'').split(/[,·]/)].map(x=>x.trim()).filter(x=>x.length>=1);
 function loreHits(text){text=String(text||'');return LORE.filter(e=>e.name&&loreKeys(e).some(k=>text.includes(k)))}
 function loreTagList(e){return String(e.tags||'').split(',').map(t=>t.trim()).filter(Boolean)}
+// #소품 고정: 컷 글의 #이름(형태)를 세계관 '물건' 항목으로 등록하고, 그 뒤로는 설정집 형태·태그·이미지를 모든 컷에 똑같이 씀
+//   형태는 처음 적은 것이 고정(설정집에서만 바꿈). 괄호 없는 #이름은 입력칸을 벗어날 때·프롬프트를 만들 때 등록
+function syncPropNames(){RE.PROP_NAMES=LORE.filter(e=>e.name).flatMap(loreKeys)}
+function propOf(name){const hit=LORE.filter(e=>e.name&&loreKeys(e).includes(name));return hit.find(e=>e.cat==='item')||hit[0]||null}
+function ensureProps(texts,{withLookOnly=false,quiet=false}={}){syncPropNames();const added=[],filled=[];
+  for(const t of texts)for(const {name,look} of RE.props(t)){if(!name||(withLookOnly&&!look))continue;const e=propOf(name);
+    if(!e){const it={id:'l'+Date.now().toString(36)+added.length,name,cat:'item',keys:'',desc:look,tags:'',prop:1};LORE.push(it);added.push(it);syncPropNames()}
+    else if(look&&!String(e.desc||'').trim()){e.desc=look;filled.push(e)}}
+  if(added.length||filled.length){saveWorld();if(typeof VIEW!=='undefined'&&VIEW==='world')renderWorld();renderWorldSum();
+    if(!quiet)toast(`소품 ${[...added,...filled].map(e=>'◆'+e.name).join(' ')}의 형태를 세계관 물건에 고정했어요`,2600)}
+  return{added,filled}}
+// 컷 하나에 나오는 고정 소품: #표시한 것 + 글에 이름이 나오는 세계관 물건
+function propsFor(p){const out=[],seen=new Set(),put=e=>{if(!e||seen.has(e.id))return;seen.add(e.id);out.push({name:e.name,look:String(e.desc||'').trim(),tags:loreTagList(e).join(', '),img:!!IMG.lore[e.id],id:e.id})};
+  (p.props||[]).forEach(x=>put(propOf(x.name)));loreHits([p.act,p.caption].join(' ')).filter(e=>e.cat==='item').forEach(put);return out}
+// 컷 글에 적은 형태가 설정집과 다르면 알려 줌(설정집 형태가 이김)
+function propClash(t){return RE.props(t).map(x=>({...x,e:propOf(x.name)})).filter(x=>x.look&&x.e&&String(x.e.desc||'').trim()&&x.e.desc.trim()!==x.look)}
 function worldBrief(){const w=WORLD;return{name:w.name||'',genre:w.genre||'',era:w.era||'',tone:w.tone||'',summary:w.summary||'',detail:(w.detail||'').slice(0,1500),tags:w.tags||''}}
 const WF=['name','genre','era','tone','summary','detail','tags'],LF=['name','cat','keys','desc','tags'];
 const wlibOf=x=>x&&x.lib&&WLIB.find(y=>y.id===x.lib);
@@ -190,9 +207,9 @@ function worldRow(){const w=WORLD;
 function loreRow(e,i){const c=LORE_CAT[e.cat]||LORE_CAT.place,n=loreStat(e);return `<article class="cedit" data-li="${i}"><div class="ce-side">${imgBox(IMG.lore[e.id],e.name||c[0],`data-wimg="lore"`)}</div>
   <div class="ce-f"><div class="ce-top"><input class="ce-name" data-lf="name" value="${esc(e.name||'')}" maxlength="30" placeholder="항목 이름" aria-label="항목 이름" spellcheck="false"><select class="ce-sel" data-lf="cat" aria-label="분류">${Object.entries(LORE_CAT).map(([k,v])=>`<option value="${k}"${e.cat===k?' selected':''}>${v[0]}</option>`).join('')}</select><span class="cbadge" data-badge hidden></span></div>
     <label class="cf"><span>키워드 <small>쉼표로 구분 · 이름이나 이 단어가 컷 글에 나오면 적용</small></span><input data-lf="keys" value="${esc(e.keys||'')}" placeholder="예: 복도, 대저택" spellcheck="false"></label>
-    <label class="cf"><span>설명 <small data-cnt="desc">${(e.desc||'').length}/1000</small></span><textarea data-lf="desc" rows="3" maxlength="1000" placeholder="생김새, 역할, 얽힌 사연, 규칙">${esc(e.desc||'')}</textarea></label>
+    <label class="cf"><span>${e.cat==='item'?'형태 <small>(고정) 컷 글에 #'+esc(e.name||'이름')+'으로 쓰면 이 형태·태그·이미지가 모든 컷에 똑같이 들어가요</small> ':'설명 '}<small data-cnt="desc">${(e.desc||'').length}/1000</small></span><textarea data-lf="desc" rows="3" maxlength="1000" placeholder="${e.cat==='item'?'색·재질·모양·크기 예: 금색 회중시계, 뚜껑에 장미 문양, 낡은 은색 체인':'생김새, 역할, 얽힌 사연, 규칙'}">${esc(e.desc||'')}</textarea></label>
     <label class="cf"><span>NovelAI 태그 <small>이 항목이 나오는 컷의 기본 프롬프트에 붙어요</small></span><input data-lf="tags" value="${esc(e.tags||'')}" placeholder="mansion, long hallway" spellcheck="false"></label>
-    <div class="ce-foot"><span class="cstat"><i class="catdot" style="background:${c[1]}"></i>${c[0]} · 이 씬 ${n}컷에 등장</span>${libBtns()}<button type="button" class="btn" data-act="ldel">작품에서 빼기</button></div></div></article>`}
+    <div class="ce-foot"><span class="cstat"><i class="catdot" style="background:${c[1]}"></i>${c[0]}${e.prop?' · #소품에서 등록':''} · 이 씬 ${n}컷에 등장</span>${libBtns()}<button type="button" class="btn" data-act="ldel">작품에서 빼기</button></div></div></article>`}
 function updateWRow(el){const isW=el.dataset.wk==='world',x=isW?WORLD:LORE[+el.dataset.li];if(!x)return;const st=wState(x,isW?'world':'lore');
   const bd=el.querySelector('[data-badge]');bd.textContent=st==='same'?'보관함과 같음':st==='diff'?'보관함과 다름':'';bd.className='cbadge'+(st==='diff'?' diff':'');bd.hidden=!st;
   const sv=el.querySelector('[data-act=wsave]');sv.textContent=st?'보관함 갱신':'보관함에 저장';sv.disabled=st==='same';el.querySelector('[data-act=wrevert]').hidden=st!=='diff';

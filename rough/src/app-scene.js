@@ -85,15 +85,15 @@ function renderCuts(){if(!CUTS.length)CUTS=[''];
   $('#cutlist').innerHTML=CUTS.map((c,i)=>`<li data-i="${i}"><span class="cn" title="끌어서 순서 바꾸기">${i+1}</span><div class="cutbox"><div class="cuthl" aria-hidden="true">${cutHL(c)}</div><textarea class="cutin" rows="1" spellcheck="false" aria-label="${i+1}번 컷" placeholder="${(i===firstEmpty?'@준 창가로 다가간다. {클로즈업}&#10;@준 &quot;누구세요?&quot;':'')}">${esc(c)}</textarea></div><span class="tools"><button data-cut="up" aria-label="위로" title="위로">↑</button><button data-cut="down" aria-label="아래로" title="아래로">↓</button><button data-cut="del" aria-label="삭제" title="삭제">×</button></span><div class="cutparse" data-parse></div></li>`).join('');
   document.querySelectorAll('.cutin').forEach(grow);renderParse()}
 // 글 위 강조: 문법을 입력칸 글자 뒤에 바로 칠함(배경만 칠해 글자 위치는 입력칸 그대로). 대사 줄·나레이션 줄은 줄 전체, 효과음·연출·@인물은 그 부분만
-const HL_TOK=/(\{[^{}\n]*\})|((?:^|(?<=\s))(-{1,3})[^\s-][^-\n]{0,10}?\3(?=\s|$|[.,!?]))|(@[^\s"“”.,!?{}()]+)/g;
+const HL_TOK=/(\{[^{}\n]*\})|((?:^|(?<=\s))(-{1,3})[^\s-][^-\n]{0,10}?\3(?=\s|$|[.,!?]))|(@[^\s"“”.,!?{}()]+)|((?<![가-힣A-Za-z0-9_&#])#[가-힣A-Za-z_][가-힣A-Za-z0-9_]{0,19}(?:\([^()\n]{1,160}\))?)/g;
 const HL_DLG=/^(?:@[^\s"“]+\s*)?["“].*["”]\s*[.!?…]*$/,HL_MIX=/["“][^"”]+["”]/;
 const dirBad=t=>!!t.trim()&&RoughGrammar.derive({dir:RE.readDirs([t])}).unknown.length>0;
 // {…} 안을 항목별로: 못 읽은 항목만 빨갛게
 const dirHL=tok=>`<i class="h-dir">{${tok.slice(1,-1).split(/([,，·\/])/).map((x,k)=>k%2?esc(x):dirBad(x)?`<i class="bad">${esc(x)}</i>`:esc(x)).join('')}}</i>`;
 function cutHL(text){return String(text??'').split('\n').map(line=>{const bare=line.replace(/\{[^{}\n]*\}/g,'').replace(/(^|\s)-{1,3}[^\s-][^-\n]{0,10}?-{1,3}(?=\s|$|[.,!?])/g,'$1').trim();
     const kind=!bare?'':HL_DLG.test(bare)?'dlg':/^\[.*\]$/.test(bare)?'cap':HL_MIX.test(bare)?'mix':'act';
-    let o='',last=0;line.replace(HL_TOK,(m,d,sfx,_dash,at,off)=>{o+=esc(line.slice(last,off));last=off+m.length;
-      o+=d?dirHL(d):sfx?`<i class="h-sfx">${esc(m)}</i>`:`<i class="h-who">${esc(m)}</i>`;return m});
+    let o='',last=0;line.replace(HL_TOK,(m,d,sfx,_dash,at,pr,off)=>{o+=esc(line.slice(last,off));last=off+m.length;
+      o+=d?dirHL(d):sfx?`<i class="h-sfx">${esc(m)}</i>`:pr?`<i class="h-prop">${esc(m)}</i>`:`<i class="h-who">${esc(m)}</i>`;return m});
     o+=esc(line.slice(last));return `<div class="hl-${kind||'empty'}">${o||'<br>'}</div>`}).join('')}
 function syncHL(t){const h=t.previousElementSibling;if(h?.classList.contains('cuthl'))h.innerHTML=cutHL(t.value)}
 // 대사와 줄글 나누기: 한 줄에 묘사와 "대사"가 섞여 있으면 입력칸을 벗어날 때 대사를 @인물 "대사" 줄로 떼어 냄
@@ -113,20 +113,23 @@ function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.
     {const D=b.dir||{},g=RoughGrammar.derive(b);
       const st=g.edit?.letters&&Object.entries(g.edit.letters).filter(([key,v])=>v.style&&/^dialog/.test(key)).map(([,v])=>balloonPreset(v.style)?.[1].split(' · ')[0]).filter(Boolean);
 }
-    if(typeof loreHits==='function')loreHits(CUTS[i]).forEach(e=>out.push(`<span>◆ ${esc(e.name)}</span>`));
+    if(typeof loreHits==='function'){const pr=new Set((b.props||[]).map(x=>propOf(x.name)?.id).filter(Boolean));
+      loreHits(RE.stripProps(CUTS[i])).forEach(e=>out.push(`<span${pr.has(e.id)?' class="propfix" title="#소품: 모든 컷에서 이 형태로 고정'+(e.desc?' — '+esc(e.desc):' · 형태는 세계관에서 적어 주세요')+'"':''}>◆ ${esc(e.name)}${pr.has(e.id)?'<small>고정</small>':''}</span>`));
+      const nw=(b.props||[]).filter(x=>!propOf(x.name));if(nw.length)out.push(`<span class="newchar"><small>새 소품</small>${nw.map(x=>`<button type="button" data-propadd="${i}" title="세계관 물건에 「${esc(x.name)}」 고정${x.look?' — '+esc(x.look):''}">+ ◆${esc(x.name)}</button>`).join('')}</span>`);
+      propClash(CUTS[i]).forEach(x=>out.push(`<span class="propclash" title="설정집 형태로 고정돼요. 바꾸려면 세계관 페이지에서 고쳐 주세요">◆ ${esc(x.name)}: 적은 형태와 설정집이 달라요 — 설정집 「${esc(x.e.desc.slice(0,40))}」</span>`))}
     {const un=unknownNames([CUTS[i]]);if(un.length)out.push(`<span class="newchar"><small>설정집에 없음</small>${un.map(n=>`<button type="button" data-sug="${esc(n)}" title="설정집 캐릭터에 「${esc(n)}」 추가">+ ${esc(n)}</button>`).join('')}</span>`)}
     // 효과음 추천: 효과음이 없는 컷에만, 눌러서 바로 넣기(sfx-rec.js)
     if(window.RoughSfxRec&&!(b.sfx||[]).length){const emo=(state.panels||[]).find(p=>String(p.key||'').startsWith('#'+i+':'))?.emo;
       const rs=RoughSfxRec.recommend(CUTS[i],emo,3);if(rs.length)out.push(`<span class="sfxrec"><small>효과음</small>${rs.map(r=>`<button type="button" data-sfxadd="${esc(r.word)}" data-i="${i}" title="${esc(r.why)} 때문에 추천 · ${esc(r.cat)}">+ ${esc(r.word)}</button>`).join('')}</span>`)}
     el.innerHTML=out.join('')});
   const m=$('#scmeta2');if(m)m.textContent=`대사 ${nd} · 식자 ${nc} · 효과음 ${ns}`}
-const cutChanged=()=>{saveCuts();scSaved();clearTimeout(tmr);tmr=setTimeout(()=>{compute(true);renderSlots();renderSugg();renderParse()},350)};
+const cutChanged=()=>{saveCuts();scSaved();clearTimeout(tmr);tmr=setTimeout(()=>{ensureProps(CUTS,{withLookOnly:true});compute(true);renderSlots();renderSugg();renderParse()},350)};
 let scSavedAt=0;function scSaved(){scSavedAt=Date.now();scSaveLabel()}
 function scSaveLabel(){const el=$('#scsave');if(!el)return;if(SAVE_FAIL){saveFailLabel();return}if(!scSavedAt)return;const s=Math.round((Date.now()-scSavedAt)/1000);el.textContent=s<5?'저장됨 · 방금':s<60?`저장됨 · ${s}초 전`:`저장됨 · ${Math.round(s/60)}분 전`;el.classList.add('on')}
 setInterval(scSaveLabel,5000);
 $('#cutlist').addEventListener('input',e=>{const t=e.target.closest('.cutin');if(!t)return;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();mSel=0;showMbox()});
 $('#cutlist').addEventListener('focusin',e=>{const t=e.target.closest('.cutin');if(t)TA=t});
-$('#cutlist').addEventListener('focusout',e=>{const t=e.target.closest('.cutin');if(!t)return;const r=splitMixed(t.value);if(!r.n||r.text===t.value)return;
+$('#cutlist').addEventListener('focusout',e=>{const t=e.target.closest('.cutin');if(!t)return;if(ensureProps([t.value]).added.length)renderParse();const r=splitMixed(t.value);if(!r.n||r.text===t.value)return;
   if(typeof edRecord==='function'){edRecord();edLast=0}  // 나누기 전 글을 따로 한 단계로
   t.value=r.text;CUTS[+t.closest('li').dataset.i]=t.value;grow(t);syncHL(t);cutChanged();toast(`대사를 따로 줄로 나눴어요 (${r.n}줄) · 묘사와 대사는 줄을 나눠 써요 · Ctrl+Z로 되돌리기`,2400)});
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cut]');if(e.target.closest('.cutin'))showMbox();if(!b)return;cutAct(+b.closest('li').dataset.i,b.dataset.cut)});
@@ -177,7 +180,8 @@ document.querySelector('.scins').addEventListener('click',e=>{const b=e.target.c
   let t=TA&&document.body.contains(TA)?TA:null;if(!t){const l=document.querySelectorAll('.cutin');t=l[l.length-1]}if(!t)return;t.focus();
   if(b.dataset.ins==='sfx'&&window.RoughSfxRec&&t.selectionStart===t.selectionEnd){RoughSfxRec.ready().then(()=>sfxPicker(b,t));return}
   const a=t.selectionStart,z=t.selectionEnd,sel=t.value.slice(a,z),k=b.dataset.ins;const nl=a>0&&t.value[a-1]!=='\n'?'\n':'';
-  const [pre,post]=k==='caption'?[nl+'[',']']:k==='sfx'?[' -','- ']:[nl+'@',''];
+  const sp=a>0&&!/\s/.test(t.value[a-1])?' ':'';
+  const [pre,post]=k==='caption'?[nl+'[',']']:k==='sfx'?[' -','- ']:k==='prop'?[sp+'#','']:[nl+'@',''];
   t.value=t.value.slice(0,a)+pre+sel+post+t.value.slice(z);const c=a+pre.length+sel.length;t.setSelectionRange(c,c);TA=t;
   t.dispatchEvent(new Event('input',{bubbles:true}))});
 // 연출 넣기 메뉴: 누르면 지금 줄 끝에 {…}. 같은 줄에 이미 {…}가 있으면 그 안에 쉼표로 이어 붙임
