@@ -711,7 +711,7 @@ function charCard(c,i){const n=c.name.trim(),im=n&&IMG.char[n],st=n?charStat(n):
       <label class="cf"><span>다른 호칭 <small>쉼표로 구분 · 줄글에서 같은 인물로 찾아요</small></span><input data-ck="aliases" value="${esc(c.aliases||'')}" placeholder="예: 도련님, 에드" spellcheck="false"></label>
       <label class="cf"><span>외형 <small>NovelAI 태그 · 쉼표로 구분 · 비우면 특징 글에서 자동으로 만들어요</small></span><textarea class="ce-tags" data-ck="tags" rows="3" placeholder="${esc(tagEx(c))}" spellcheck="false">${esc(NAITAGS[n]??'')}</textarea></label>
       <label class="cf cf-big"><span>특징 <small data-cnt>${(c.look||'').length}/1000</small></span><textarea data-ck="look" rows="9" maxlength="1000" placeholder="성격, 말투, 버릇, 관계, 태그로 다 못 담는 외형 특징(흉터·분위기·체격) 등을 자유롭게">${esc(c.look||'')}</textarea></label>
-      <div class="ce-foot"><span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span><span class="grow"></span><button type="button" class="btn" data-act="librevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="libsave">보관함에 저장</button><button type="button" class="btn" data-act="chdel">작품에서 빼기</button></div>
+      <div class="ce-foot"><span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span>${n?(INFER_BUSY.has(n)?'<span class="ce-infer busy">외형 추론 중…</span>':`<button type="button" class="link ce-infer" data-act="charinfer" title="구성안·씬 글에서 이 인물이 나오는 대목을 읽고 비어 있는 외형 태그·특징을 채워요">글에서 외형 추론</button>`):''}<span class="grow"></span><button type="button" class="btn" data-act="librevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="libsave">보관함에 저장</button><button type="button" class="btn" data-act="chdel">작품에서 빼기</button></div>
     </div></article>`}
 function updateCard(i){const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`),c=CHARS[i];if(!el||!c)return;const st=libState(c);
   const bd=el.querySelector('[data-badge]');bd.textContent=st==='same'?'보관함과 같음':st==='diff'?'보관함과 다름':'';bd.className='cbadge'+(st==='diff'?' diff':'');bd.hidden=!st;
@@ -792,6 +792,7 @@ $('#chars').addEventListener('click',e=>{const i=cardOf(e);if(i<0)return;const c
   if(e.target.closest('[data-cimgdel]')){e.stopPropagation();if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n);renderSlots();render()}return}
   if(e.target.closest('[data-cimg]')){if(!n){toast('이름을 먼저 정해 주세요');e.target.closest('.cedit').querySelector('[data-ck=name]').focus();return}target={kind:'char',key:n};$('#file').click();return}
   const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
+  if(k==='charinfer'){if(n)inferChars([n]);return}
   if(k==='libsave')libSave(i);
   else if(k==='librevert'){const L=libOf(c);if(L){libApply(L,c);saveChars();compute(false);renderSlots();toast('보관함 버전으로 되돌렸어요')}}
   else if(k==='chdel'){if(!confirm(`${n||'이 캐릭터'}을(를) 이 작품에서 뺄까요?${c.lib?' 보관함에는 남아 있어요.':' 보관함에 저장하지 않았다면 다시 불러올 수 없어요.'}`))return;if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n)}CHARS.splice(i,1);saveChars();compute(false);renderSlots();toast('작품에서 뺐어요')}});
@@ -799,7 +800,28 @@ $('#chars').addEventListener('keydown',e=>{if(e.target.matches('[data-cimg]')&&(
 for(const ev of ['dragover','dragleave','drop'])$('#chars').addEventListener(ev,e=>{const d=e.target.closest('[data-cimg]');if(!d)return;e.preventDefault();d.classList.toggle('over',ev==='dragover');
   if(ev==='drop'){const i=cardOf(e),n=i>=0&&CHARS[i].name.trim();const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!n){toast('이름을 먼저 정해 주세요');return}if(f)attach(f,{kind:'char',key:n})}});
 const focusCard=i=>setTimeout(()=>{const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.querySelector(CHARS[i].name.trim()?'[data-ck=tags]':'[data-ck=name]').focus({preventScroll:true})}},30);
-function addCharFromSugg(name){CHARS.push({name,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderSugg();renderCastSum?.();renderParse?.();toast(`설정집에 「${name}」을 추가했어요 · 외형은 설정집에서 채워 주세요`)}
+function addCharFromSugg(name){CHARS.push({name,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderSugg();renderCastSum?.();renderParse?.();
+  if(AIKEY){toast(`설정집에 「${name}」을 추가했어요 · 구성·씬 글로 외형을 추론하는 중…`,2600);inferChars([name],{fresh:true})}else toast(`설정집에 「${name}」을 추가했어요 · API 키를 넣으면 구성·씬 글로 외형을 채워 드려요`,3000)}
+// ---------- 새 인물 외형 추론: 구성안·씬 글에서 그 인물이 나오는 대목을 모아 Claude에게 ----------
+// 비어 있는 칸만 채움(작가가 이미 적은 태그·특징은 그대로). fresh면 방금 넣은 인물이라 성별도 추론값으로
+const INFER_BUSY=new Set();
+function planBrief(){try{const o=JSON.parse(localStorage.getItem('rough-composition-v1')||'null'),w=o?.webtoon;if(!w)return null;
+  return{prompt:String(w.form?.prompt||'').slice(0,2000),cards:(w.draft?.cards||[]).map(c=>({n:c.n,title:c.title||'',purpose:c.purpose||'',cuts:(c.cuts||[])}))}}catch(_){return null}}
+function mentionsOf(name,plan){const hit=t=>String(t||'').includes(name),out=[];
+  SCENES.forEach((sc,si)=>(sc.cuts||[]).forEach((c,k)=>{if(hit(c)){const prev=sc.cuts[k-1],next=sc.cuts[k+1];out.push(`[씬 ${si+1} ${sc.title||''} · ${k+1}컷] ${[prev&&'(앞) '+String(prev).replace(/\n/g,' / '),String(c).replace(/\n/g,' / '),next&&'(뒤) '+String(next).replace(/\n/g,' / ')].filter(Boolean).join(' ‖ ')}`)}}));
+  (plan?.cards||[]).forEach(cd=>(cd.cuts||[]).forEach((c,k)=>{if(hit(c))out.push(`[구성 ${cd.n}번 「${cd.title}」 ${k+1}컷] ${String(c).replace(/\n/g,' / ')}`)}));
+  return out.slice(0,40).map(s=>s.slice(0,400))}
+async function inferChars(names,{fresh=false,hints={}}={}){names=names.filter(n=>n&&!INFER_BUSY.has(n));if(!names.length)return;if(!AIKEY){openKey(()=>inferChars(names,{fresh}));return}
+  names.forEach(n=>INFER_BUSY.add(n));if(VIEW==='chars')renderChars();
+  const plan=planBrief(),payload={world:worldBrief(),cast:CHARS.filter(c=>c.name.trim()&&!names.includes(c.name.trim())).map(c=>({name:c.name.trim(),gender:c.body,tags:charTags(c).join(', ')})),
+    plan:plan&&{prompt:plan.prompt,cards:plan.cards.map(({n,title,purpose})=>({n,title,purpose}))},chars:names.map(n=>({name:n,mentions:mentionsOf(n,plan),...(hints[n]?{note:hints[n]}:{})}))};
+  let mod;try{mod=await import('./claude.js');const r=await mod.inferChars(AIKEY,payload);let k=0;
+    for(const x of r.chars){const c=CHARS.find(c=>c.name.trim()===x.name.trim());if(!c)continue;
+      if(fresh&&x.body)c.body=x.body;if(!String(c.look||'').trim()&&x.look)c.look=x.look.trim();if(NAITAGS[c.name.trim()]==null&&x.tags){NAITAGS[c.name.trim()]=x.tags.trim();ARTGEN.chars[c.name.trim()]=x.tags.trim()}k++}
+    saveChars();saveNaiTags();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}
+    toast(k?`${names.join(', ')} 외형을 구성·씬 글로 채웠어요 · 설정집에서 확인해 주세요`:'채울 외형을 찾지 못했어요',2800)}
+  catch(err){console.warn(err?.status||err);toast('외형을 추론하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요'),3000);for(const n of names){const c=CHARS.find(c=>c.name.trim()===n);if(c&&!String(c.look||'').trim()&&hints[n]){c.look=hints[n];saveChars()}}if(err?.status===401){setKey('',null);openKey(()=>inferChars(names,{fresh,hints}))}}
+  finally{names.forEach(n=>INFER_BUSY.delete(n));if(VIEW==='chars')renderChars();if(VIEW==='layout')renderNai?.()}}
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('.newchar [data-sug]');if(b){e.preventDefault();addCharFromSugg(b.dataset.sug)}});
 $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();compute(false);renderSlots();showView('chars');focusCard(CHARS.length-1)});
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a||a.closest('#chars .cedit'))return;const k=a.dataset.act;
@@ -2387,7 +2409,7 @@ function naiText(){return naiCuts().map(({o})=>naiCopy(o)).join('\n\n\n')+'\n'}
 function renderNai(){if(VIEW==='layout')setTimeout(renderConti);$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
   $('#naichars').innerHTML=chars.length?chars.map(c=>{const v=NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),src=artSrc(c.name,v),im=IMG.char[c.name];
-    return `<div class="naichar"><span class="av" style="${im?'':`background:${avBg(c.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(c.name.slice(0,1))}</span><b>${esc(c.name)}${src?`<em class="art-src${src==='자동'?' auto':''}">${src}</em>`:''}</b><input data-naitag="${esc(c.name)}" value="${esc(v)}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="link" data-act="naireset" data-n="${esc(c.name)}" title="특징 글에서 규칙으로 다시 만들기">특징에서 다시</button></div>`}).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
+    return `<div class="naichar"><span class="av" style="${im?'':`background:${avBg(c.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(c.name.slice(0,1))}</span><b>${esc(c.name)}${src?`<em class="art-src${src==='자동'?' auto':''}">${src}</em>`:''}</b><input data-naitag="${esc(c.name)}" value="${esc(v)}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="link naidel" data-act="naireset" data-n="${esc(c.name)}" title="이 인물 태그 지우기 · 비우면 특징 글에서 자동으로 만들어요"${NAITAGS[c.name]==null?' hidden':''}>지우기</button></div>`}).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
   {const e=$('#artstylesrc');if(e){const t=NAISTYLE===NAI_STYLE_DEF?'기본':ARTGEN.style===NAISTYLE?'생성':'';e.textContent=t;e.className='art-src'+(t==='기본'?' auto':'')}}
   const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
   $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="write">씬에서 이미지 등록</button>`;
@@ -2518,7 +2540,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   else if(a==='naibase')naiBase(+el.dataset.i);
   else if(a==='nairef'){const r=IMG.char[el.dataset.n];if(r)dataUrlDownload(`${el.dataset.n}-character-reference.jpg`,r.src)}
   else if(a==='naivibe'){const sc=state.panels.length&&sceneFor(state.panels[0]);if(sc)dataUrlDownload(`${sc.name||'scene'}-vibe.jpg`,sc.src)}
-  else if(a==='naireset'){delete NAITAGS[el.dataset.n];saveNaiTags();renderNai()}});
+  else if(a==='naireset'){delete NAITAGS[el.dataset.n];saveNaiTags();renderNai();toast(`${el.dataset.n} 태그를 지웠어요 · 특징 글에서 자동으로 만들어요`)}});
 $('#naichars').addEventListener('change',e=>{const t=e.target.closest('[data-naitag]');if(!t)return;NAITAGS[t.dataset.naitag]=t.value.trim();saveNaiTags();renderNai()});
 $('#naistyle').value=NAISTYLE;
 $('#naistyle').addEventListener('input',e=>{NAISTYLE=e.target.value;try{localStorage.setItem('rough-nai-style',NAISTYLE)}catch(_){}clearTimeout(window._nst);window._nst=setTimeout(renderNai,300)});
@@ -2646,11 +2668,12 @@ function entityDialog(items){let d=$('#entdlg');if(!d){d=document.createElement(
   const pick=items.map(x=>x.suggest);
   d.onclick=e=>{const b=e.target.closest('[data-v]');if(b){pick[+b.dataset.n]=b.dataset.v;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
     const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;
-    if(k==='go'){let nc=0,nl=0;items.forEach((x,n)=>{const v=pick[n];
-        if(v==='char'){CHARS.push({name:x.name.trim(),aliases:x.aliases||'',body:x.body==='male'?'male':'female',look:x.look||''});nc++}
+    if(k==='go'){let nc=0,nl=0;const added=[],hints={};items.forEach((x,n)=>{const v=pick[n];
+        if(v==='char'){CHARS.push({name:x.name.trim(),aliases:x.aliases||'',body:x.body==='male'?'male':'female',look:''});added.push(x.name.trim());if(x.look)hints[x.name.trim()]=`구성 정리 메모(외형): ${x.look}${x.where?` · 나오는 곳: ${x.where}`:''}`;nc++}
         else if(v==='lore'){LORE.push({id:'l'+Date.now().toString(36)+n,name:x.name.trim(),cat:LORE_CAT[x.cat]?x.cat:'term',keys:x.keys||'',desc:x.desc||'',tags:x.tags||''});nl++}});
       if(nc){saveChars();if(VIEW==='chars')renderChars()}if(nl){saveWorld();if(VIEW==='world')renderWorld()}
-      if(nc||nl){try{compute(false)}catch(_){}toast([nc&&`캐릭터 ${nc}명`,nl&&`세계관 항목 ${nl}개`].filter(Boolean).join(' · ')+'를 설정집에 추가했어요',2600)}}
+      if(nc||nl){try{compute(false)}catch(_){}toast([nc&&`캐릭터 ${nc}명`,nl&&`세계관 항목 ${nl}개`].filter(Boolean).join(' · ')+`를 설정집에 추가했어요${added.length?' · 캐릭터 외형을 구성·씬 글로 추론하는 중…':''}`,2600)}
+      if(added.length)inferChars(added,{hints})}
     d.close()};
   d.showModal()}
 

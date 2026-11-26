@@ -204,6 +204,24 @@ export async function findEntities(apiKey, payload, { onStatus } = {}) {
   return { items: r.out.items || [], model: r.model };
 }
 
+// 설정집에 새로 넣은 인물: 구성안·씬 글에서 그 인물이 나오는 대목을 읽고 외형 태그(NovelAI)·특징 글·성별을 추론
+const INFER_SYSTEM = `너는 웹툰 캐릭터 설정 담당이다. 입력은 세계관, 이미 있는 등장인물(외형 태그 예시), 이번 화 구성안 요약, 그리고 새로 추가한 인물들이 나오는 컷 글(mentions)이다.
+새 인물마다 세 가지를 정한다.
+1) body: female 또는 male. 글의 호칭·대사·직업에서 판단하고, 정말 모르면 이야기에 자연스러운 쪽.
+2) tags: NovelAI V4.5용 외형 태그. 영어 소문자 Danbooru 태그를 쉼표로, 10~18개. 1girl·1boy 같은 인원 태그는 넣지 않는다.
+   머리 색·길이·모양, 눈 색, 나이대 느낌(young man, old man, child 등), 체형, 늘 입는 옷과 장신구, 흉터·안경 같은 고정 특징만. 표정·자세·장소·조명은 넣지 않는다.
+   글에 나온 외모·옷·직업·신분을 먼저 반영하고, 없는 것은 세계관의 시대·장르와 이 인물의 역할에 어울리게 정한다. 이미 있는 인물과 머리 색·옷이 겹쳐 헷갈리지 않게 한다.
+3) look: 특징 글(한국어 3~5문장). 이 인물이 이야기에서 맡은 역할, 성격, 말투, 버릇, 다른 인물과의 관계를 글에 근거해 쓰고, 태그로 다 못 담는 외형 특징(분위기·체격·흉터)을 덧붙인다. 글에 없는 큰 비밀이나 과거사는 지어내지 않는다.
+입력에 있는 새 인물만, 같은 이름으로 돌려준다.`;
+const INFER_SCHEMA = { type: 'object', properties: { chars: { type: 'array', items: { type: 'object', properties: {
+  name: { type: 'string' }, body: { type: 'string', enum: ['female', 'male'] }, tags: { type: 'string' }, look: { type: 'string' },
+}, required: ['name', 'body', 'tags', 'look'], additionalProperties: false } } }, required: ['chars'], additionalProperties: false };
+// payload: { world, cast:[{name, gender, tags}], plan:{prompt, cards:[{n,title,purpose}]}, chars:[{name, mentions:[…]}] }
+export async function inferChars(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, INFER_SYSTEM, INFER_SCHEMA, `새로 추가한 인물의 외형 태그와 특징 글을 정해줘.\n\n${JSON.stringify(payload, null, 1)}`, s => onStatus?.(s.replace('씬을 읽는', '인물을 읽는')));
+  return { chars: r.out.chars || [], model: r.model };
+}
+
 // 컷 하나만 다시 생성: 씬 전체는 연속성 확인용으로 주고, only의 컷만 반환하게 함. request는 작가가 적은 방향
 export async function refineNaiCut(apiKey, payload, n, request, { onStatus } = {}) {
   const sys = SYSTEM_NAI + `\n\n이번에는 cuts 중 n=${n}인 컷 하나만 다시 쓴다. 반환 cuts에는 그 컷 하나만 넣는다. 다른 컷은 앞뒤 연속성(의상·위치·조명)을 맞추는 데만 쓴다.` +
