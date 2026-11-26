@@ -1363,3 +1363,10 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .rst:hover,.rst:focus-visible{opacity:1;color:var(--t1);text-decoration:underline;text-underline-offset:3px}
 .rst.undo{opacity:1;color:var(--t2);text-decoration:underline;text-underline-offset:3px}
 .scenes .rstrow{justify-content:center;margin-top:14px}
+
+/* 콘티: 컷별 지시사항 + 이 컷 다시 생성 */
+.ct-note{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line2)}
+.ct-note label{display:grid;gap:6px}.ct-note label>span{font-size:13px;font-weight:700;color:var(--t2)}
+.ct-note textarea{width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px;line-height:1.55;resize:vertical;min-height:60px}
+.ct-nrow{display:flex;align-items:center;gap:10px;margin-top:8px}.ct-nrow .tpill{margin-left:auto}.ct-nst{color:var(--t3);font-size:12.5px}
+.ct-applied{font-style:normal;font-weight:600;font-size:12px;margin-left:6px;padding:2px 8px;border-radius:10px;background:#e7f3ea;color:#1d4a2a}

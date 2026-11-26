@@ -2279,7 +2279,7 @@ function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)retur
 function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai)return L;
   return L.map(x=>{const c=ai.cuts.find(k=>k.n===x.i+1);if(!c)return x;
     const chars=c.chars.slice(0,6).map((k,n)=>{const old=x.o.chars.find(o=>o.name===k.name)||x.o.chars[n]||{};return{name:k.name,prompt:k.prompt,pos:NAI.cellPos(k.cell)||old.pos||NAI.cellPos('C3'),ref:!!IMG.char[k.name]}});
-    return{...x,o:{...x.o,base:c.base,chars,ai:true}}})}
+    return{...x,o:{...x.o,base:c.base,chars,ai:true,note:c.note||''}}})}
 let naiBusy=false;
 // 작화 설정 값의 출처: 자동(외형 규칙)·생성(Claude)·직접(작가가 고침)
 var ARTGEN;try{ARTGEN=JSON.parse(localStorage.getItem('rough-art-gen')||'{}')}catch(_){ARTGEN={}}ARTGEN.chars||={};
@@ -2304,12 +2304,33 @@ function artCompare(r,chars){let d=$('#artdlg');if(!d){d=document.createElement(
         else{const nm=x.k.slice(2);NAITAGS[nm]=x.next;ARTGEN.chars[nm]=x.next}});
       saveNaiTags();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}$('#naistyle').value=NAISTYLE;renderNai();toast(n?`작화 프롬프트 ${n}개를 바꿨어요 · 컷 프롬프트 생성을 다시 누르면 컷에도 반영돼요`:'바꾼 것이 없어요',2600)}
     d.close()};d.showModal()}
+// 컷별 지시사항: 씬마다 컷 번호로 저장. 컷 프롬프트 생성(씬 전체)에도 note로 같이 보냄(서명에는 넣지 않음 — 지시만 적어도 '예전 것' 표시가 뜨지 않게)
+var CTNOTE;try{CTNOTE=JSON.parse(localStorage.getItem('rough-ct-note')||'{}')}catch(_){CTNOTE={}}
+const ctNote=i=>(CTNOTE[SCENES[SCUR].id]||{})[i]||'';
+function setCtNote(i,v){const sid=SCENES[SCUR].id,m=CTNOTE[sid]||={};if(v.trim())m[i]=v;else delete m[i];if(!Object.keys(m).length)delete CTNOTE[sid];try{localStorage.setItem('rough-ct-note',JSON.stringify(CTNOTE))}catch(_){}}
+const withNotes=pl=>({...pl,cuts:pl.cuts.map(c=>{const n=ctNote(c.n-1).trim();return n?{...c,note:n}:c})});
 async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}
   if(!AIKEY){openKey(naiRefine);return}const st=t=>$('#naist').textContent=t;naiBusy=true;$('#naibtn').disabled=true;const sid=SCENES[SCUR].id,payload=naiPayload();
-  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,payload,{onStatus:st});
+  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});
     AIN[sid]={sig:sigOf(payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';st(`컷 프롬프트를 만들었어요 · ${r.model}`);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';st(m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false}}
+// 컷 하나만 다시 생성: 지금 화면의 프롬프트를 앞뒤 맥락으로 주고, 지시사항대로 이 컷만 바꿔 Claude 결과에 끼워 넣음
+const CT_BUSY=new Set();
+async function ctRegen(i){const sid=SCENES[SCUR].id;if(CT_BUSY.has(sid+':'+i))return;if(!state.panels[i])return;
+  if(!AIKEY){openKey(()=>ctRegen(i));return}
+  const shown=naiCuts(),base=naiPayload(),note=ctNote(i).trim();
+  const payload={...base,cuts:base.cuts.map((c,k)=>{const o=shown[k]?.o;return o?{...c,draft:{base:o.base,chars:o.chars.map(x=>({name:x.name,cell:x.pos.cell,prompt:x.prompt}))}}:c}),
+    target:{n:i+1,instruction:note,current:payload0(shown[i])}};
+  const key=sid+':'+i,st=t=>{const e=$('#conti')?.querySelector(`[data-ctst="${i}"]`);if(e)e.textContent=t};CT_BUSY.add(key);ctBusyUi(i,true);st('Claude가 이 컷을 다시 짜는 중…');
+  let mod;try{mod=await import('./claude.js');const r=await mod.refineNaiCut(AIKEY,payload,{onStatus:st});
+    const rec=AIN[sid]||(AIN[sid]={sig:sigOf(base),cuts:[],model:r.model,at:Date.now()});
+    const cut={n:i+1,base:r.base,chars:r.chars,note,at:Date.now()};const k=rec.cuts.findIndex(c=>c.n===i+1);if(k<0)rec.cuts.push(cut);else rec.cuts[k]=cut;
+    try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}NAIVIEW='ai';CT_BUSY.delete(key);
+    if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable?.()}toast(`${i+1}번 컷 프롬프트를 다시 만들었어요${note?' · 지시사항을 반영했어요':''}`,2400)}
+  catch(err){CT_BUSY.delete(key);console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';ctBusyUi(i,false);st(m);if(err?.status===401){setKey('',null);openKey(()=>ctRegen(i),m)}}}
+const payload0=x=>x?{base:x.o.base,chars:x.o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}:null;
+function ctBusyUi(i,on){const b=$('#conti')?.querySelector(`[data-act="ctregen"][data-i="${i}"]`);if(b){b.disabled=on;b.textContent=on?'만드는 중…':'이 컷 다시 생성'}}
 $('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;NAIVIEW=b.dataset.v;renderNai()});
 // 전체 복사: 기본 프롬프트와 캐릭터 프롬프트만, 각 줄 끝에 쉼표, 빈 줄로 구분
 // 같은 태그가 두 번 들어가면(예: 1girl, 1girl) 한 번만
@@ -2359,7 +2380,9 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
       <div class="ct-body">
         <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><span class="ct-swap" aria-hidden="true">그림 바꾸기</span><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>${CT_COPIED.has(i)?'Ctrl+V로 붙여 넣기':'끌어다 놓아도 돼요'}</small></span>`}</div></div>
         <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="tpill${CT_COPIED.has(i)?' done':''}" data-act="ncopyall" data-i="${i}">${CT_COPIED.has(i)?'✓ 복사했어요':'프롬프트 복사'}</button></div>
-          ${ctBlk('기본 프롬프트',o.base,dim)}${o.chars.map((c,n)=>ctBlk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,c.prompt,dim)).join('')}</div>
+          ${ctBlk('기본 프롬프트',o.base,dim)}${o.chars.map((c,n)=>ctBlk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,c.prompt,dim)).join('')}
+          <div class="ct-note"><label><span>이 컷 지시사항${o.note&&o.note===ctNote(i).trim()?' <em class="ct-applied">지시 반영됨</em>':''}</span><textarea data-ctnote="${i}" rows="2" maxlength="500" placeholder="예: 에드가는 등을 돌리고 창밖을 봐요 · 비 오는 밤 · 준의 손만 크게" spellcheck="false">${esc(ctNote(i))}</textarea></label>
+            <div class="ct-nrow"><small class="ct-nst" data-ctst="${i}" aria-live="polite"></small><button class="tpill" data-act="ctregen" data-i="${i}"${CT_BUSY.has(sc.id+':'+i)?' disabled':''}>${CT_BUSY.has(sc.id+':'+i)?'만드는 중…':'이 컷 다시 생성'}</button></div></div></div>
       </div></article>`}).join('')+(CT_EMPTY&&done===ps.length?'<p class="empty ct-alldone">모든 컷에 그림이 있어요</p>':'')}
 function ctGo(i,smooth=true){const L=state.panels.length;if(!L)return;i=Math.max(0,Math.min(L-1,i));CT_CUR=i;
   $('#conti').querySelectorAll('.ccard').forEach(c=>c.classList.toggle('cur',+c.dataset.ct===i));$('#conti').querySelectorAll('.ct-dot').forEach(d=>d.classList.toggle('cur',+d.dataset.ctgo===i));
@@ -2367,8 +2390,11 @@ function ctGo(i,smooth=true){const L=state.panels.length;if(!L)return;i=Math.max
 {const el=$('#conti');
   el.addEventListener('click',e=>{const d=e.target.closest('[data-ctgo]');if(d){if(CT_EMPTY&&$('#conti').querySelector(`.ccard[data-ct="${d.dataset.ctgo}"]`)?.hidden){CT_EMPTY=false;renderConti()}ctGo(+d.dataset.ctgo);return}
     const c=e.target.closest('.ccard');if(c){CT_CUR=+c.dataset.ct;el.querySelectorAll('.ct-dot').forEach(x=>x.classList.toggle('cur',+x.dataset.ctgo===CT_CUR));el.querySelectorAll('.ccard').forEach(x=>x.classList.toggle('cur',x===c))}
+    const g=e.target.closest('[data-act="ctregen"]');if(g){ctRegen(+g.dataset.i);return}
     const a=e.target.closest('[data-act="ncopyall"]');if(a){const i=+a.dataset.i;CT_COPIED.add(i);CT_CUR=i;target={kind:'cut',key:String(i)};setTimeout(renderConti,0);toast(`${i+1}번 컷 프롬프트를 복사했어요 · 생성한 그림을 Ctrl+V로 붙여 넣으면 이 컷에 들어가요`,2600)}});
   el.addEventListener('change',e=>{if(e.target.matches('[data-ctempty]')){CT_EMPTY=e.target.checked;renderConti()}});
+  el.addEventListener('input',e=>{const n=e.target.dataset.ctnote;if(n!=null)setCtNote(+n,e.target.value)});
+  el.addEventListener('keydown',e=>{const n=e.target.dataset?.ctnote;if(n!=null&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ctRegen(+n)}});
   document.addEventListener('keydown',e=>{if(VIEW!=='layout'||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target;if(t.closest&&t.closest('input,textarea,select,[contenteditable],dialog'))return;if(!$('#naidrawer')?.hidden)return;
     const k=e.key.toLowerCase(),vis=[...$('#conti').querySelectorAll('.ccard:not([hidden])')].map(c=>+c.dataset.ct);if(!vis.length)return;
     if(k==='j'||k==='k'){e.preventDefault();const p=vis.indexOf(CT_CUR);const n=p<0?(k==='j'?0:vis.length-1):Math.max(0,Math.min(vis.length-1,p+(k==='j'?1:-1)));ctGo(vis[n])}

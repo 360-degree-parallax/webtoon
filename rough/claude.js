@@ -97,6 +97,7 @@ const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 컷을 �
 - 연속성: 앞 컷에서 든 소품, 옷, 머리 모양, 빛 방향은 다음 컷에도 같은 태그로 남긴다. 원문과 모순되는 걸 지어내지 않는다.
 - 디테일(인서트) 컷은 얼굴 대신 손·소품에 초점(hands focus, close-up, head out of frame 등)을 둔다.
 - 글자·말풍선 관련 태그는 넣지 않는다(제외 칸은 쓰지 않음). 대사가 있으면 base에 negative space 정도만.
+- 컷에 note가 있으면 작가가 그 컷에 직접 남긴 지시다. 위 규칙보다 먼저 지키고, 지시와 무관한 부분은 씬 흐름대로 짠다.
 - world(세계관 개요)의 시대·장르·분위기와 lore(이 씬에 나오는 설정 항목: 장소·세력·물건·용어·역사·규칙)의 설명을 읽고, 배경·소품·의상·조명 태그를 그 세계에 맞게 고른다. lore의 tags는 해당 항목이 나오는 컷에 살린다. 세계관과 어긋나는 현대 소품 등은 넣지 않는다.`;
 const SCHEMA_NAI = {
   type: 'object',
@@ -132,6 +133,21 @@ export async function refineNai(apiKey, payload, { onStatus } = {}) {
   return { cuts: r.out.cuts, model: r.model, usage: r.usage };
 }
 
+
+// 컷 하나만 다시: 씬 전체(지금 화면의 프롬프트를 draft로)를 주고 target 컷만 작가 지시대로 다시 짠다
+const SYSTEM_NAI_CUT = SYSTEM_NAI + `
+
+지금은 씬 전체가 아니라 target 컷 하나만 다시 짠다.
+- instruction은 작가가 이 컷에 남긴 지시다. 가장 먼저, 빠짐없이 반영한다. 지시가 엔진의 샷·앵글과 부딪히면 지시를 따른다.
+- 지시와 무관한 부분은 target 컷의 지금 프롬프트(current)를 최대한 그대로 둔다. 바꿀 이유가 없는 태그는 지우지 않는다.
+- 다른 컷의 draft는 지금 화면에 있는 프롬프트다. 앞뒤 컷과 인물 좌우 위치·의상·소품·빛이 이어지게 맞춘다(지시가 바꾸라고 한 것은 예외).`;
+const SCHEMA_NAI_CUT = { type: 'object', properties: { base: SCHEMA_NAI.properties.cuts.items.properties.base, chars: SCHEMA_NAI.properties.cuts.items.properties.chars }, required: ['base', 'chars'], additionalProperties: false };
+// payload: refineNai와 같은 씬 정보 + target:{n, instruction, current:{base, chars}}
+export async function refineNaiCut(apiKey, payload, { onStatus } = {}) {
+  const t = payload.target;
+  const r = await run(apiKey, SYSTEM_NAI_CUT, SCHEMA_NAI_CUT, `다음 씬에서 ${t.n}번 컷의 NovelAI V4.5 태그만 다시 짜줘. 작가 지시: ${t.instruction || '(없음 — 씬 흐름에 맞게 다듬기)'}\n\n${JSON.stringify(payload, null, 1)}`, s => onStatus?.(s.replace('씬을 읽는', `${t.n}번 컷을 읽는`)));
+  return { base: r.out.base, chars: r.out.chars, model: r.model, usage: r.usage };
+}
 
 // 작화 프롬프트 생성: 세계관·인물 외형 → NovelAI 화풍 태그 + 인물별 외형 태그(모든 컷에 공통으로 붙는 값)
 const SYSTEM_ART = `너는 NovelAI Diffusion V4.5용 태그를 짓는 웹툰 작화 감독이다.
