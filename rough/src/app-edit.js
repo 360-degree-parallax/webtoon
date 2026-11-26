@@ -23,8 +23,14 @@ function closeXMenu(){const m=$('#wxmenu');if(m&&!m.hidden){m.hidden=true;$('#we
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#wxmenu').hidden){closeXMenu();$('#wexport').focus()}});
 document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switchScene(+e.target.value)});
 const WMODE='final';  // 편집 화면은 늘 완성본(등록 그림, 없으면 레퍼런스). 완성본/러프 전환은 뺌
-try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 예시'}catch(_){$('#wtitle').value='제목 없는 작품'}
-$('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
+// 작품 제목: 직접 적으면 그 값으로 고정. 비어 있으면 세계관 이름 → 첫 씬 제목을 대신 보여 줌(흐린 글씨). 예전 예시 문구는 빈 것으로 침
+const OLD_SAMPLE_TITLE='녹빛자정의 연인 · 예시';
+try{const v=localStorage.getItem('rough-work-title')||'';$('#wtitle').value=v===OLD_SAMPLE_TITLE?'':v}catch(_){}
+function workTitleAuto(){const w=typeof WORLD!=='undefined'&&WORLD&&!WORLD.off?(WORLD.name||'').trim():'';return w||(SCENES?.[0]?.title||'').trim()||'제목 없음'}
+function workTitle(){return ($('#wtitle')?.value||'').trim()||workTitleAuto()}
+function syncWorkTitle(){const el=$('#wtitle');if(!el)return;el.placeholder=workTitleAuto();el.title=el.value.trim()?'작품 제목 · 지우면 세계관 이름을 대신 보여 줘요':'작품 제목 · 비어 있어서 세계관 이름(없으면 첫 씬 제목)을 보여 주는 중 · 눌러서 직접 적어요'}
+$('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}syncWorkTitle()});
+syncWorkTitle();
 // 다른 씬의 컷 계산은 글·고른 레퍼런스·고정값이 같으면 다시 돌리지 않음(레이어 패널·씬 경계 색이 컷마다 불러 무거웠음)
 var SP_CACHE=new Map(),SP_FRESH=null;  // SP_FRESH: 이번 작업 안에서 이미 확인한 씬(같은 작업 안에서 수백 번 불려 확인 비용도 컸음)
 function spStale(){SP_FRESH=null}
@@ -97,7 +103,7 @@ function patchSection(os,html){const t=document.createElement('template');t.inne
     const ok=[...o.children],nk=[...n.children];if(ok.length!==nk.length||ok.some((c,j)=>c.tagName!==nk[j].tagName)){o.replaceWith(n);return}
     for(const a of [...o.attributes])if(!n.hasAttribute(a.name))o.removeAttribute(a.name);for(const a of n.attributes)if(o.getAttribute(a.name)!==a.value)o.setAttribute(a.name,a.value);
     ok.forEach((x,j)=>{if(x.outerHTML!==nk[j].outerHTML)x.replaceWith(nk[j])})})}
-function renderWebtoon(){SP_FRESH=null;SA_G=saGlobal();SA_ON=true;try{return _renderWebtoon()}finally{SA_ON=false}}
+function renderWebtoon(){syncWorkTitle();SP_FRESH=null;SA_G=saGlobal();SA_ON=true;try{return _renderWebtoon()}finally{SA_ON=false}}
 function _renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
     const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':art.svg;
@@ -663,7 +669,7 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
   const draw=(list,name)=>{const H=Math.round(list.reduce((a,x)=>a+LABEL+x.im.height*W/x.im.width,0));const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);let y=0;
     for(const x of list){g.fillStyle='#8a8f98';g.font='600 15px Pretendard, sans-serif';g.textAlign='center';g.fillText(sceneLabel(SCENES[x.i],x.i),W/2,y+34);y+=LABEL;const h=x.im.height*W/x.im.width;g.drawImage(x.im,0,y,W,h);y+=h}
     return new Promise(res=>c.toBlob(bl=>{download(name,URL.createObjectURL(bl));res()},'image/png'))};
-  const base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
+  const base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
   if(total<=30000){await draw(items,`${base}.png`);st('이미지로 저장했어요')}else{for(const x of items)await draw([x],`${base}-씬${x.i+1}.png`);st(`길어서 씬별 ${items.length}장으로 저장했어요`)}}
 
 // ---------- 작업 파일: localStorage의 rough-* 설정(AI 키 제외) + IndexedDB 이미지(rough-refs)를 한 JSON으로 ----------
@@ -672,8 +678,8 @@ async function saveProject(){const local={};for(let k=0;k<localStorage.length;k+
   flushScenes();local['rough-scenes']=JSON.stringify(SCENES);local['rough-scene-cur']=String(SCUR);  // 기본 저장 공간이 차서 IndexedDB에만 있어도 빠지지 않게
   for(const r of (await idb.allDocs()))if(r.json&&r.id.startsWith('doc:rough-ep:')&&local[r.id.slice(4)]==null)local[r.id.slice(4)]=r.json;
   const images=(await idb.all()).filter(r=>!String(r.id).startsWith('snap:'));
-  const data={format:'rough-project',version:1,savedAt:new Date().toISOString(),title:$('#wtitle')?.value||'',scenes:SCENES.length,local,images};
-  const base=($('#wtitle')?.value||'webtoon').replace(/[\\/:*?"<>|]/g,'_'),blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const data={format:'rough-project',version:1,savedAt:new Date().toISOString(),title:workTitle(),scenes:SCENES.length,local,images};
+  const base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_'),blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   download(`${base}-${new Date().toISOString().slice(0,10)}.rough.json`,URL.createObjectURL(blob));
   toast(`작업 파일을 저장했어요 · 씬 ${SCENES.length}개 · 이미지 ${images.length}장 · ${(blob.size/1048576).toFixed(1)}MB`,3500)}
 function loadProjectPick(){const f=document.createElement('input');f.type='file';f.accept='.json,application/json';f.onchange=()=>f.files[0]&&loadProject(f.files[0]);f.click()}
@@ -692,7 +698,7 @@ async function loadProject(file){let d;try{d=JSON.parse(await file.text())}catch
 let snapAt=0;
 const epId=()=>window.RoughEpisodes?.cur?.id||'';
 function autoSnapshot(force,label){const now=Date.now();if(!force&&now-snapAt<600000)return Promise.resolve();snapAt=now;
-  const o={id:'snap:'+now,kind:'snap',at:now,ep:epId(),label:label||'',title:$('#wtitle')?.value||'',scenes:JSON.stringify(SCENES)};
+  const o={id:'snap:'+now,kind:'snap',at:now,ep:epId(),label:label||'',title:workTitle(),scenes:JSON.stringify(SCENES)};
   return idb.put(o).then(async()=>{const snaps=(await idb.all()).filter(r=>r.kind==='snap'&&(r.ep||'')===o.ep).sort((a,b)=>b.at-a.at);for(const r of snaps.slice(30))idb.del(r.id)})}
 const snapSum=j=>{try{const a=JSON.parse(j);return `씬 ${a.length}개 · 컷 ${a.reduce((n,sc)=>n+sc.cuts.filter(c=>c.trim()).length,0)}개`}catch(_){return''}};
 // 다른 원고를 잠깐 그려 보기: 지금 원고를 건드리지 않게 씬 목록을 바꿔 끼웠다가 되돌림
@@ -782,7 +788,7 @@ async function exportSlices(o,st){st('이미지 만드는 중');await loadPageMa
     for(const x of lay){if(x.y+x.h<y0&&x.t+LABEL<y0)continue;if(x.t>y0+hh)break;
       if(LABEL){g.fillStyle='#8a8f98';g.font=`600 ${Math.round(15*o.w/W)}px Pretendard, sans-serif`;g.textAlign='center';g.fillText(sceneLabel(SCENES[x.i],x.i),o.w/2,x.t-y0+LABEL*0.6)}
       g.drawImage(x.im,0,x.y-y0,o.w,x.h)}};
-  const files=[],ext=o.fmt==='png'?'png':'jpg',type=o.fmt==='png'?'image/png':'image/jpeg',base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
+  const files=[],ext=o.fmt==='png'?'png':'jpg',type=o.fmt==='png'?'image/png':'image/jpeg',base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
   let y0=0,n=0,hard=0;
   while(y0<total){let hh=Math.min(o.h,total-y0);const c=document.createElement('canvas');c.width=o.w;c.height=hh;const g=c.getContext('2d');paint(g,y0,hh);
     if(o.smart&&y0+hh<total){const data=g.getImageData(0,0,o.w,hh).data,lo=Math.floor(hh*0.4);let cut=-1;

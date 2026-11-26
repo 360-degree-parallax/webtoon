@@ -145,8 +145,8 @@ rd.innerHTML=`<div class="rd-bar"><b id="rdtitle"></b><div class="seg3" id="rdw"
 document.body.appendChild(rd);let lastFocus=null;
 function openRead(){if(!inEdit())return;lastFocus=document.activeElement;
   const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);return ps.length?sceneArt(i,ps,`r${i}_`,false).svg:''}).filter(Boolean);
-  $('#rdscroll').innerHTML=`<div class="rd-head">${esc($('#wtitle').value||'제목 없음')}</div>${parts.join('')}<div class="rd-end">끝 · 씬 ${parts.length}개</div>`;
-  $('#rdtitle').textContent=($('#wtitle')?.value||'').trim()||'읽기 모드';rd.hidden=false;document.body.style.overflow='hidden';$('#rdscroll').scrollTop=0;$('#rdscroll').focus()}
+  $('#rdscroll').innerHTML=`<div class="rd-head">${esc(workTitle())}</div>${parts.join('')}<div class="rd-end">끝 · 씬 ${parts.length}개</div>`;
+  $('#rdtitle').textContent=workTitle()||'읽기 모드';rd.hidden=false;document.body.style.overflow='hidden';$('#rdscroll').scrollTop=0;$('#rdscroll').focus()}
 function closeRead(){if(rd.hidden)return;rd.hidden=true;document.body.style.overflow='';$('#rdscroll').innerHTML='';lastFocus?.focus?.()}
 $('#wread').addEventListener('click',openRead);$('#rdclose').addEventListener('click',closeRead);
 rd.addEventListener('click',e=>{if(e.target===rd)closeRead();const b=e.target.closest('[data-w]');if(b){rd.style.setProperty('--rdw',b.dataset.w+'px');rd.querySelectorAll('[data-w]').forEach(x=>x.setAttribute('aria-pressed',x===b))}});
