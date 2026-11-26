@@ -66,7 +66,8 @@ async function run(apiKey, system, schema, userText, onStatus) {
     output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
-    system,
+    // 프롬프트 캐시: 시스템 지시(고정)는 늘, 컷 하나 다시 생성처럼 같은 씬 자료를 거듭 보낼 때는 그 자료 블록까지 캐시
+    system: typeof system === 'string' ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }] : system,
     messages: [{ role: 'user', content: userText }],
   });
   let chars = 0;
@@ -85,34 +86,69 @@ export async function refine(apiKey, payload, { onStatus } = {}) {
 }
 
 // NovelAI Diffusion V4.5 Full: 기본 프롬프트 + 캐릭터 프롬프트(위치)를 Danbooru 태그로 다시 짠다
-const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 한 컷씩을 그리는 프롬프트를 쓴다. 같은 씬의 다른 컷은 연속성을 확인하는 데 사용한다. draft에 이미 정해진 프레이밍과 인원은 유지한다.
+const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰을 한 컷씩 그리는 프롬프트를 쓴다. 입력은 한 씬의 모든 컷이고, 각 컷에는 규칙 엔진이 만든 초안(draft)과 그 근거가 붙어 있다. 너의 일은 초안을 원문(action·dialogs)과 연출 근거에 맞게 다듬는 것이다. 앞뒤 컷은 연속성(의상·위치·조명·소품 모양)을 맞추는 데 쓴다.
 
-컷의 focus에 맞춰 base와 chars를 작성한다.
-- scenery: no humans, scenery. 화면에 보이는 공간, 깊이, 전경·후경, 건축, 시간대와 빛을 구체화한다. 화면 밖 화자, 나레이션에 언급된 인물, 이전 컷 인물은 넣지 않는다. chars는 빈 배열.
-- distant: 장소와 넓은 프레임을 먼저 쓴다. 인물은 복도 끝, 길 건너편 등 작은 크기와 위치로 묘사한다. 인물 클로즈업·헤어·눈동자·표정을 강조하지 않는다. draft.chars의 인원과 원경 거리를 유지한다.
-- object: no humans, 핵심 소품, object focus, close-up. 소품의 재질·표면·형태·빛을 묘사한다. 소유자, 손, 얼굴, 거울에 비친 인물을 추가하지 않는다. chars는 빈 배열.
-- detail: extreme close-up. 화면에 보이는 신체 부위와 닿는 물체·동작만 쓴다. 손발 샷은 head out of frame. 외형 전체를 덧붙이지 않는다. chars는 빈 배열.
-- effect: no humans, abstract background. 인물이나 실제 장소의 묘사 없이 색, 빛, 선의 방향과 질감을 쓴다. chars는 빈 배열.
-- character: base에는 인원·프레이밍·공간·조명. 외형·표정·동작·시선은 캐릭터마다 분리한다. draft.chars에서 화면에 보이는 인물만 사용한다. 등록 인물이 없는 경우 컷에 보이는 사람의 동작을 base에 쓴다. cell은 A~E(좌→우), 1~5(상→하)이며 원문 위치와 연속성을 따른다.
+# 판단 순서(위가 이김)
+1. 작가 지시: 컷의 note.
+2. 고정값: draft의 focus·샷·앵글·인원·인물 칸(누가 화면에 있는지), props의 고정 태그, 화풍(style).
+3. 원문 사실: action(행동 글)·dialogs·caption. 원문에 없는 사건·인물·소품을 지어내지 않는다.
+4. 연출 근거: angle·emotion·intensity·peak·story·sceneMood·dbRef·dbNote.
+5. 초안의 나머지 태그와 규칙 해석(ruleRead·rulePlace). 맞으면 살리고 틀리면 고친다.
 
-연출을 태그로 옮기는 기준(초안 draft.base에 이미 들어 있는 카메라·감정 태그는 지우지 말고 살린다):
-- angle은 감정 연출이다. 로우앵글은 위압·결의·분노를(from below, looking down at viewer, dramatic perspective, foreshortening), 하이앵글은 작고 약하고 외로움을(from above, looking up, 넓은 빈 공간), 아이레벨이라도 긴장·당황이 크면 dutch angle로. 그 감정이 화면 구도·인물 자세·시선에 보이게 쓴다.
-- emotion과 intensity(0~3): 표정·몸짓·조명을 감정에 맞게, intensity가 높을수록 더 강하게(2는 1.15::태그::, 3은 1.3::태그:: 가중치). peak 컷은 dynamic angle·강한 명암으로 씬에서 가장 센 구도.
-- sceneMood는 씬 전체 분위기다. 그 색감·조명(tags)을 모든 컷에 같게 깔아 컷끼리 톤이 이어지게 하고, 컷의 감정 조명은 그 위에 얹는다. 시간대(밤·낮)와 어긋나는 밝기 태그는 쓰지 않는다.
-- 각 컷의 ruleActions는 규칙 사전이 action에서 찾은 동작 태그, missingAction은 규칙 사전이 못 찾은 동작 문장이다. ruleActions는 맞으면 살리고 틀리면 고치며, missingAction은 반드시 네가 태그로 옮긴다.
-- ruleRead는 규칙이 문장을 절 단위로 읽은 결과다: byChar는 인물마다 그 사람이 실제로 하는 동작(부정·시도·가정·바람 절과 '-지만' 앞 절은 이미 뺐고, '-고'로 이어진 앞 동작은 상태만 남김. 다른 인물 앞 꾸밈말 '우는 준'은 그 인물 몫), crowd는 이름 없는 무리, together는 둘의 위치 관계(hug from behind·side by side…), whoGuess가 true면 '그/그녀'를 앞 컷 인물로 추측한 것이다. action 원문을 보고 맞으면 살리고, 틀리면(누가 했는지·했는지 안 했는지) 고쳐서 인물 칸에 맞게 쓴다. 하지 않은 동작·하려다 만 동작은 태그로 쓰지 않는다.
-- rulePlace는 규칙이 찾은 장소 태그다. 비었는데 action에 장소가 있거나 틀렸으면 base에 맞는 장소 태그를 쓰고, 사전에 없던 일반적인 장소라면 응답 places에 {ko: 한국어 장소 낱말(예: 온실, 매표소), tags: 영어 태그 1~3개(indoors/outdoors 포함)}로 돌려준다. 없으면 빈 배열.
-- 규칙 사전에 없던 동작을 새로 태그로 옮겼으면 응답 actions에 {ko: 그 동작의 한국어 기본형이나 짧은 구(예: 응시하다, 하늘을 올려다보다), tags: 영어 태그 1~3개}로 돌려준다. 다른 장면에서도 같은 뜻으로 쓰일 일반적인 동작만 넣고, 인물 이름·고유명사·이 장면에만 맞는 표현은 넣지 않는다. 없으면 빈 배열.
-- action의 동작(달린다·넘어진다·칼을 휘두른다·소리친다 등)은 빠짐없이 그 인물 프롬프트의 태그(running, falling, swinging sword, shouting…)로 옮기고, 태그로 안 되는 동작은 짧은 영문 구절로 쓴다. 동작이 있는 컷에서 동작 태그 없이 외형·표정만 쓰지 않는다. 움직임이 큰 동작은 motion blur·dynamic pose·full body처럼 움직임이 보이는 프레이밍을 곁들인다.
-- story(묶음 흐름·목적)와 앞뒤 컷을 보고, 이 컷이 흐름에서 맡은 역할(설정·고조·정점·여운)에 맞게 프레이밍과 빛의 세기를 정한다.
+# 입력 필드
+- focus: 화면에 무엇을 보이는지. 아래 focus별 규칙을 따른다.
+- action: 그 컷의 행동 글(대사 제외). who: 주인공. dialogs·caption·sfx는 이미지에 글자로 넣지 않고 표정·분위기 근거로만 쓴다.
+- ruleRead: 규칙이 문장을 절 단위로 읽은 결과. byChar는 인물마다 실제로 하는 동작이다(부정·시도·가정·바람 절, '-지만' 앞 절은 이미 뺐고, '-고'로 이어진 앞 동작은 상태만 남겼다. '우는 준'처럼 다른 인물 앞 꾸밈말은 그 인물 몫). crowd는 이름 없는 무리, together는 둘의 위치 관계(hug from behind·side by side…), whoGuess가 true면 '그/그녀'를 앞 컷 인물로 추측한 것이다.
+- ruleDropped: 원문에서 하지 않았거나(안/못/-지 않), 하려다 말았거나, 가정한 동작의 태그다. 그 인물에게 이 태그를 쓰지 않는다. 대신 실제로 한 반응(멈칫함·망설임·참는 표정 등)을 그린다.
+- ruleActions: 주인공의 동작 태그(절 해석 뒤). missingAction: 규칙 사전이 못 옮긴 동작 문장 — 반드시 네가 태그로 옮긴다.
+- rulePlace: 규칙이 찾은 장소 태그. 비었는데 원문에 장소가 있거나 틀렸으면 고친다.
+- dbRef: 이 컷 구도의 근거가 된 실제 상용 웹툰 컷(연출 DB)의 내용·샷·앵글이다. 화면 구성(무엇을 크게, 인물을 어디에, 무엇을 잘라 내는지)만 참고하고, 그 내용·인물·소품은 가져오지 않는다.
+- dbNote: 같은 샷·감정의 DB 컷들에서 자주 쓰인 연출(색·명암·여백) 요약. story: 이 컷이 속한 묶음의 흐름·연출 목적·연출명.
+- offscreen: 글에 나오지만 화면에는 없는 소품(빛·연기가 나온 출처이거나 언급만 됨). 그 소품 자체(이름·모양 태그)는 쓰지 않고 show에 적힌 것(예: light rays)만 쓴다.
+- props: 작가가 #으로 모양을 고정한 소품. 아래 소품 규칙을 따른다.
 
-컷의 offscreen은 글에 나오지만 화면에는 없는 소품이다(빛·연기·기운이 나온 출처이거나 언급만 됨). 그 소품 자체(이름·모양·물건 태그)는 그 컷에 그리지 않고, show에 적힌 것(예: light rays)만 화면에 쓴다.
+# focus별 규칙
+- scenery: no humans, scenery. 공간·깊이·전경과 후경·건축·시간대와 빛. 화면 밖 화자·나레이션 속 인물·앞 컷 인물은 넣지 않는다. chars는 빈 배열.
+- distant: 장소와 넓은 프레임을 먼저. 인물은 복도 끝·길 건너편처럼 작은 크기와 위치로. 헤어·눈동자·표정 클로즈업 태그는 쓰지 않는다. draft.chars의 인원과 거리를 지킨다.
+- object: no humans, 핵심 소품, object focus, close-up. 재질·표면·형태·빛. 소유자·손·얼굴·비친 인물을 넣지 않는다. chars는 빈 배열.
+- detail: extreme close-up. 보이는 신체 부위와 닿는 물체·동작만. 손발 샷은 head out of frame. 외형 전체를 덧붙이지 않는다. chars는 빈 배열.
+- effect: no humans, abstract background. 인물·실제 장소 없이 색·빛·선의 방향과 질감. chars는 빈 배열.
+- character: base에는 인원·프레이밍·공간·조명·카메라. 외형·표정·동작·시선은 인물 칸마다 따로. draft.chars에 있는 인물만 쓴다. 등록 인물이 없는 컷은 보이는 사람의 동작을 base에. cell은 A~E(좌→우), 1~5(상→하), 원문 위치와 앞뒤 컷 연속성을 따른다.
 
-props는 작가가 #으로 표시해 모양을 고정한 소품이다(name·look 한국어 형태·tags 영어 태그). 컷의 props에 이름이 있으면 그 컷 base에 그 소품의 태그를 넣고, 모든 컷에서 같은 단어·같은 색·같은 재질로 쓴다. 소품의 색·모양·크기를 컷마다 바꾸거나 다른 수식어를 덧붙이지 않는다. tags가 있으면 그대로 쓴다. tags가 비어 있으면 look(없으면 세계관·컷 글)에 맞춰 영어 태그 2~6개(사물 이름 + 색·재질·특징)를 한 번 정해 응답 props에 name과 함께 돌려주고, 그 소품이 나오는 컷마다 그 태그를 똑같이 쓴다. 소품 태그는 그 컷의 props에 이름이 있는 컷에만 넣고, props에 없는 컷에는 넣지 않는다(앞뒤 컷에 나왔더라도). tags가 이미 있는 소품은 응답 props에 넣지 않는다.
+# 연출을 태그로
+- 초안 draft.base에 있는 카메라·감정·씬 무드 태그는 지우지 않는다.
+- angle은 감정 연출이다. 로우앵글은 위압·결의·분노(from below, looking down at viewer, dramatic perspective, foreshortening), 하이앵글은 작고 약하고 외로움(from above, looking up, 넓은 빈 공간). 아이레벨이라도 긴장·당황이 크면 dutch angle. 그 감정이 구도·자세·시선에 보이게.
+- emotion·intensity(0~3): 표정·몸짓·조명을 감정에 맞게, 높을수록 강하게(2는 1.15::태그::, 3은 1.3::태그:: 가중치). peak 컷은 dynamic angle·강한 명암으로 씬에서 가장 센 구도.
+- sceneMood: 씬 전체의 색감·조명(tags)을 모든 컷에 같게 깔고, 컷의 감정 조명은 그 위에. 시간대와 어긋나는 밝기 태그는 쓰지 않는다.
+- story와 앞뒤 컷을 보고 이 컷의 역할(설정·고조·정점·여운)에 맞게 프레이밍과 빛의 세기를 정한다. 같은 샷이 이어지면 앞 컷과 구도가 겹치지 않게 시선·각도·인물 위치를 조금씩 바꾼다.
 
-컷에 note가 있으면 작가가 그 컷에 직접 남긴 지시다. 그 컷에서는 가장 먼저 반영하고, 지시와 무관한 부분은 씬 흐름대로 쓴다.
+# 동작·인물
+- 원문에서 실제로 한 동작은 빠짐없이 그 사람 칸의 태그로(running, falling, swinging sword, shouting…). 태그가 없으면 짧은 영문 구절. 동작이 있는 컷에서 외형·표정만 쓰지 않는다. 큰 움직임은 motion blur·dynamic pose·full body처럼 움직임이 보이는 프레이밍을 곁들인다.
+- 동작의 주인을 바꾸지 않는다: A가 B를 안으면 A 칸에 hugging, B 칸에 being hugged. 둘이 닿는 동작·위치 관계(together)는 base에도 쓴다.
+- 인물 외형은 입력 chars의 tags를 기준으로 컷마다 같게. 그 컷에서만 달라진 외형(젖은 머리·찢어진 옷 등)은 원문에 있을 때만.
 
-영어 소문자 태그를 쉼표와 공백으로 구분한다. 핵심 시각 요소를 앞에 둔다. 물체 배치나 빛의 방향에 필요하면 짧은 영문 구절을 추가한다. 샷·앵글·해상도는 입력을 따른다. world/lore의 정보는 화면에 드러나는 요소만 쓴다. 대사·나레이션·효과음은 이미지에 쓰지 않는다. 사용자가 정한 화풍은 기본 프롬프트 뒤에 둔다.`;
+# 소품
+- 컷의 props에 이름이 있으면 그 컷 base에 그 소품 태그를 넣고, 모든 컷에서 같은 단어·색·재질로 쓴다. 색·모양·크기를 바꾸거나 수식어를 덧붙이지 않는다. props에 이름이 없는 컷에는 넣지 않는다(앞뒤 컷에 나왔더라도).
+- tags가 비어 있는 소품만, look(없으면 세계관·컷 글)에 맞춰 영어 태그 2~6개(사물 이름 + 색·재질·특징)를 정해 응답 props에 돌려주고 그 소품이 나오는 모든 컷에 똑같이 쓴다.
+
+# 배우기
+- actions: 규칙 사전에 없던 동작을 새로 옮겼으면 {ko: 한국어 기본형이나 짧은 구(예: 응시하다, 하늘을 올려다보다), tags: 영어 태그 1~3개}. 다른 장면에서도 같은 뜻으로 쓰일 일반적인 동작만. 이름·고유명사·부정형·이 장면에만 맞는 표현은 넣지 않는다.
+- places: 사전에 없던 일반적인 장소를 찾았으면 {ko: 장소 낱말(예: 온실, 매표소), tags: 영어 태그 1~3개(indoors/outdoors 포함)}.
+- 없으면 빈 배열.
+
+# 쓰는 형식
+- 영어 소문자 Danbooru 태그를 쉼표와 공백으로. 핵심 시각 요소를 앞에 둔다.
+- base 순서: 인원·화면 구성(focus 태그) → 샷·앵글·카메라 → 장소·배경 → 소품 고정 태그 → 둘의 위치 관계 → 시간·날씨·빛 → 감정 조명·씬 무드 → 화풍 → no text.
+- 인물 칸 순서: 인원 태그(1girl/1boy) → 외형 → 표정 → 동작·자세 → 시선 → 그 컷의 외형 변화.
+- 한국어·따옴표·대사·효과음 글자는 태그에 쓰지 않는다. 같은 태그를 두 번 쓰지 않는다. 물체 배치나 빛 방향에 꼭 필요할 때만 짧은 영문 구절.
+- world/lore는 화면에 드러나는 요소만. 사용자가 정한 화풍은 base 뒤쪽에 둔다.
+
+# 내기 전 점검(컷마다)
+1. 원문에서 실제로 한 동작이 그 사람 칸에 있는가, ruleDropped 태그는 없는가.
+2. draft.chars에 없는 인물을 넣지 않았는가, 인물이 없는 focus에서 chars가 비었는가.
+3. offscreen 소품의 물건 태그가 없고 show 태그만 있는가, props 태그는 컷마다 같은가.
+4. 샷·앵글·감정 태그가 살아 있는가, 시간대·장소가 앞뒤 컷과 이어지는가.
+돌려준 뒤 프로그램이 1~3을 다시 검사해 어긋난 태그는 지운다. 처음부터 맞게 쓴다.`;
 const SCHEMA_NAI = {
   type: 'object',
   properties: {
@@ -144,9 +180,9 @@ const SCHEMA_NAI = {
   required: ['cuts', 'props', 'actions', 'places'],
   additionalProperties: false,
 };
-// payload: { title, sceneMood:{emotion, tags}, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], props:[{name, look, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, ruleActions, ruleRead:{byChar, crowd, together, whoGuess}, rulePlace, missingAction, props:[name], offscreen:[{name, show}], dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
+// payload: { title, sceneMood:{emotion, tags}, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], props:[{name, look, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, ruleActions, ruleRead:{byChar, crowd, together, whoGuess}, ruleDropped, rulePlace, missingAction, dbRef:{id, text, shot, angle}, dbNote, props:[name], offscreen:[{name, show}], dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
 export async function refineNai(apiKey, payload, { onStatus } = {}) {
-  const r = await run(apiKey, SYSTEM_NAI, SCHEMA_NAI, `다음 씬의 NovelAI V4.5 태그를 다시 짜줘.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
+  const r = await run(apiKey, NAI_SYS, SCHEMA_NAI, sceneBlocks(payload, '위 씬의 모든 컷 NovelAI V4.5 태그를 다시 짜줘.'), onStatus);
   return { cuts: r.out.cuts, props: r.out.props || [], actions: r.out.actions || [], places: r.out.places || [], model: r.model, usage: r.usage };
 }
 
@@ -263,11 +299,18 @@ export async function fillSetbook(apiKey, payload, { onStatus } = {}) {
 }
 
 // 컷 하나만 다시 생성: 씬 전체는 연속성 확인용으로 주고, only의 컷만 반환하게 함. request는 작가가 적은 방향
+// 시스템 지시와 씬 자료는 앞에(캐시), 바뀌는 요청은 뒤에 — 같은 씬에서 컷을 여러 번 다시 만들 때 앞부분은 캐시에서 읽음
+const sceneBlocks = (payload, ask) => [{ type: 'text', text: `씬 자료:\n${JSON.stringify(payload, null, 1)}`, cache_control: { type: 'ephemeral' } }, { type: 'text', text: ask }];
+const NAI_SYS = [{ type: 'text', text: SYSTEM_NAI, cache_control: { type: 'ephemeral' } }];
+const onlyAsk = ns => `\n이번에는 cuts 중 n=${ns.join(', ')}인 컷만 쓴다. 반환 cuts에는 그 컷만 넣는다. 다른 컷은 앞뒤 연속성(의상·위치·조명)을 맞추는 데만 쓴다. 작가 요청이 있으면 그 컷의 샷·인원 같은 draft 값은 지키면서 요청을 가장 먼저 반영한다.`;
 export async function refineNaiCut(apiKey, payload, n, request, { onStatus } = {}) {
-  const sys = SYSTEM_NAI + `\n\n이번에는 cuts 중 n=${n}인 컷 하나만 다시 쓴다. 반환 cuts에는 그 컷 하나만 넣는다. 다른 컷은 앞뒤 연속성(의상·위치·조명)을 맞추는 데만 쓴다.` +
-    (request ? `\n작가 요청이 있으면 그 컷의 샷·인원 같은 draft 값은 지키면서 요청을 가장 먼저 반영한다.` : '');
-  const r = await run(apiKey, sys, SCHEMA_NAI, `다음 씬에서 ${n}번 컷의 NovelAI V4.5 태그만 다시 짜줘.${request ? `\n작가 요청: ${request}` : ''}\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
+  const r = await run(apiKey, NAI_SYS, SCHEMA_NAI, sceneBlocks(payload, `위 씬에서 ${n}번 컷의 NovelAI V4.5 태그만 다시 짜줘.${onlyAsk([n])}${request ? `\n작가 요청: ${request}` : ''}`), onStatus);
   const cut = (r.out.cuts || []).find(c => c.n === n) || (r.out.cuts || [])[0];
   if (!cut) throw new Error('그 컷의 프롬프트가 오지 않았어요');
   return { cut: { ...cut, n }, props: r.out.props || [], actions: r.out.actions || [], places: r.out.places || [], model: r.model };
+}
+// 씬 생성 응답에서 빠진 컷만 한 번 더(씬 자료는 같아서 캐시를 탐)
+export async function refineNaiCuts(apiKey, payload, ns, { onStatus } = {}) {
+  const r = await run(apiKey, NAI_SYS, SCHEMA_NAI, sceneBlocks(payload, `위 씬에서 ${ns.join(', ')}번 컷의 NovelAI V4.5 태그만 짜줘. 앞서 받은 응답에 이 컷들이 빠져 있었다.${onlyAsk(ns)}`), onStatus);
+  return { cuts: (r.out.cuts || []).filter(c => ns.includes(c.n)), props: r.out.props || [], actions: r.out.actions || [], places: r.out.places || [], model: r.model };
 }

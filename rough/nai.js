@@ -581,9 +581,45 @@
       mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h),
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
-      props: propsOn.map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '', forced: !!x.forced })), propsOff: propsOff.map(x => ({ name: x.name, why: x.why, emit: x.emit || [] })), place, layerCast, missAct, spatial: RA.spatial, crowd: cast.length ? [] : RA.crowd,
-      read: { per: RA.per, crowd: RA.crowd, spatial: RA.spatial, body: RA.bodyFocus, whoGuess: !!p.whoGuess },  // 규칙이 읽은 것(Claude에 넘겨 확인·보정)
+      props: propsOn.map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '', forced: !!x.forced })), propsOff: propsOff.map(x => ({ name: x.name, why: x.why, emit: x.emit || [], tags: x.tags || '' })), place, layerCast, missAct, who: main?.name || p.who || '', spatial: RA.spatial, crowd: cast.length ? [] : RA.crowd,
+      read: { per: RA.per, crowd: RA.crowd, spatial: RA.spatial, body: RA.bodyFocus, whoGuess: !!p.whoGuess, dropped: RA.dropped.filter(d => d.why !== 'seq').map(d => ({ who: d.who, why: d.why, tags: d.tags })) },  // 규칙이 읽은 것(Claude에 넘겨 확인·보정)
     };
+  }
+
+  // Claude 결과 점검·보정: 규칙이 확실히 아는 것과 어긋나는 부분만 고치고, 고친 것을 적어 돌려줌(작가가 카드에서 봄)
+  //   - 글이 안 했다고 한 동작(부정·시도·가정·대조)이 그 인물 칸에 들어감 → 뺌
+  //   - 화면 밖 소품 자체의 태그가 들어감 → 뺌(나온 빛·연기 태그는 둠)
+  //   - 인물이 없는 컷(풍경·소품·효과·신체 부위)에 인물 칸이 옴 → 비움 / 인물 컷 base에 no humans → 뺌
+  //   - 컷에 없는 인물 칸 → 뺌 · 한글·따옴표·긴 문장이 태그 자리에 → 뺌 · 같은 태그 두 번 → 한 번
+  const WHY_KO = { neg: '안 한 동작', try: '하려다 만 동작', cond: '가정한 동작', con: '앞 절 동작' };
+  function audit(draft, result) {
+    if (!result || typeof result.base !== 'string') return { result, fixes: result ? ['base가 비어 초안을 씀'] : ['응답에 이 컷이 없어 초안을 씀'] };
+    const fixes = [], low = t => tagName(t).toLowerCase(), note = m => { if (!fixes.includes(m)) fixes.push(m); };
+    const bad = t => { const n = tagName(t); return /[가-힣"“”]/.test(n) || n.length > 60; };
+    const emit = new Set(((draft.propsOff || []).flatMap(x => x.emit || [])).map(t => String(t).toLowerCase()));
+    const onProp = new Set((draft.props || []).flatMap(x => splitTags(x.tags || '')).map(low));
+    const offTag = new Map(); (draft.propsOff || []).forEach(x => splitTags(x.tags || '').slice(0, 1).map(low).filter(t => !emit.has(t) && !onProp.has(t)).forEach(t => offTag.set(t, x.name)));  // 물건 이름 태그만(색·재질 낱말은 다른 데도 쓰여서 둠)
+    const clean = (tags, where) => { const seen = new Set(), out = [];
+      for (const t of tags) { const k = low(t); if (!k) continue;
+        if (bad(t)) { note(`${where}: 태그가 아닌 글 뺌`); continue; }
+        if (offTag.has(k)) { note(`${where}: 화면 밖 ${offTag.get(k)} 뺌`); continue; }
+        if (seen.has(k)) { note(`${where}: 같은 태그 한 번만`); continue; }
+        seen.add(k); out.push(t); }
+      return out; };
+    let base = clean(splitTags(result.base), '기본');
+    const noHuman = ['scenery', 'object', 'effect', 'detail'].includes(draft.mode);
+    if (draft.mode === 'character' && base.some(t => low(t) === 'no humans')) { base = base.filter(t => low(t) !== 'no humans'); note('기본: 인물 컷인데 no humans → 뺌'); }
+    const names = new Set((draft.chars || []).map(c => c.name)), drop = {};
+    ((draft.read || {}).dropped || []).forEach(d => d.tags.forEach(t => (drop[d.who] ||= new Map()).set(String(t).toLowerCase(), WHY_KO[d.why] || '안 한 동작')));
+    let chars = Array.isArray(result.chars) ? result.chars : [];
+    if (noHuman && chars.length) { chars = []; note('인물이 안 나오는 컷이라 인물 칸 비움'); }
+    chars = chars.filter(c => { if (names.has(c.name)) return true; note(`컷에 없는 인물 ${c.name} 칸 뺌`); return false; }).map(c => {
+      const dm = drop[c.name] || new Map();
+      const tags = clean(splitTags(c.prompt || ''), c.name).filter(t => { const w = dm.get(low(t)); if (w) { note(`${c.name}: ${w} ${tagName(t)} 뺌`); return false; } return true; });
+      return { ...c, prompt: joinTags(tags) }; });
+    const dmMain = drop[draft.who] || drop[''];
+    if (dmMain && !chars.length) base = base.filter(t => { const w = dmMain.get(low(t)); if (w) { note(`기본: ${w} ${tagName(t)} 뺌`); return false; } return true; });
+    return { result: { ...result, base: joinTags(base), chars }, fixes };
   }
 
   function refine(draft, result) {
@@ -698,5 +734,5 @@
   const SHOT_ALL = new Set(Object.values(SHOT).flat().concat(['wide shot', 'very wide shot']).map(t => t.toLowerCase()));
   // 칸 이름(A1~E5) → 좌표
   const cellPos = cell => { const c = COLS.indexOf(String(cell)[0]), r = +String(cell).slice(1) - 1; return c < 0 || !(r >= 0 && r < 5) ? null : pos(+(0.1 + c * 0.2).toFixed(1), +(0.1 + r * 0.2).toFixed(1)); };
-  Object.assign(N, { poseTags: t => tagsOf(String(t || ''), POSE), interactTags: t => tagsOf(String(t || ''), INTERACT), cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
+  Object.assign(N, { audit, poseTags: t => tagsOf(String(t || ''), POSE), interactTags: t => tagsOf(String(t || ''), INTERACT), cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughNAI = {}));

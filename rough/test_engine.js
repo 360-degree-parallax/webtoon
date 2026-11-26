@@ -100,7 +100,16 @@ console.log(`소품 화면 판단 ${(pa * 100).toFixed(1)}% · 확인용 ${(ph *
 // 씬 스크립트 컷으로 컷 글 해석 → 컷 프롬프트까지(tools/eval_props.js --script와 같은 판단)
 const sr = require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, '..', 'tools', 'eval_props.js'), '--script', '--min', '0.95'], { encoding: 'utf8' });
 console.log((sr.stdout.match(/^\[.*$/gm) || []).join('\n'));
+// Claude 결과 점검·보정(NAI.audit): 안 한 동작·화면 밖 소품·없는 인물·한글 태그·중복·인물 없는 컷의 인물 칸
+const auditOk = (() => { const NA = require('./nai.js'), chars = [{ name: '명경', body: 'male' }, { name: '준', body: 'female' }];
+  const mk = (act, props = []) => { const p = { act, actText: act, who: '명경', shot: '중경', ang: '아이레벨', emo: '평온', i: 1, h: 1, vng: 'I' }; return NA.cut(p, 0, [p], { chars, props: () => props }); };
+  const o = mk('명경이 달리지 않고 준을 바라본다. 회중시계에서 빛줄기가 쏟아져 준을 덮친다.', [{ name: '회중시계', tags: 'pocket watch, gold' }]);
+  const r = NA.audit(o, { n: 1, base: '2people, pocket watch, light rays, "그만해", 2people', chars: [{ name: '명경', cell: 'B3', prompt: '1boy, running, looking at another' }, { name: '에드가', cell: 'C3', prompt: '1boy' }] });
+  const s = NA.audit(mk('텅 빈 복도.'), { base: 'no humans, hallway', chars: [{ name: '명경', cell: 'C3', prompt: '1boy' }] });
+  const ok = r.result.base === '2people, light rays' && r.result.chars.length === 1 && !/running/.test(r.result.chars[0].prompt) && /looking at another/.test(r.result.chars[0].prompt)
+    && s.result.chars.length === 0 && NA.audit(o, null).fixes.length === 1 && NA.audit(o, { base: 'x', chars: [] }).fixes.length === 0;
+  console.log(`Claude 결과 보정 ${ok ? 'O' : 'X'} · ${r.fixes.length}건(${r.fixes.join(' / ')})`); return ok; })();
 // 동작·인물 해석(부정·시도·대조·누가·대명사·무리·위치·장소·외형): 시험 세트 + 확인용 세트
 const ar = ['', '--holdout'].map(f => require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, '..', 'tools', 'eval_actions.js'), ...(f ? [f] : []), '--min', '0.9'], { encoding: 'utf8' }));
 console.log('동작 해석 ' + ar.map((r, k) => (k ? '확인용 ' : '') + ((r.stdout.match(/정확도 [\d.]+%/) || ['?'])[0])).join(' · '));
-process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 && sr.status === 0 && ar.every(r => r.status === 0) ? 0 : 1);
+process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 && sr.status === 0 && ar.every(r => r.status === 0) && auditOk ? 0 : 1);

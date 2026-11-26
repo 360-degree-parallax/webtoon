@@ -208,6 +208,21 @@ test('콘티: 컷 하나 상세 수정(샷·감정) · 이 컷만 프롬프트 �
   await p.click('#conti [data-ctauto="1"]'); await p.waitForTimeout(400);
   assert(await ev(() => state.panels[1].shot !== '디테일' || !Object.keys(state.panels[1].lock).length), '엔진 값으로 되돌림');
 });
+test('컷 프롬프트 생성: DB 근거 전송 · 빠진 컷 다시 받기 · 자동 보정 표시', async ({p, ev}) => {
+  await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
+    "export async function refineNai(k,pl){window._pl=pl;return {cuts:pl.cuts.slice(1).map(c=>({n:c.n,base:'AI base, \\\"대사\\\", AI base',chars:[]})),props:[],actions:[],places:[],model:'test'}}" +
+    "export async function refineNaiCuts(k,pl,ns){window._retry=ns;return {cuts:ns.map(n=>({n,base:'AI retry',chars:[]})),props:[],actions:[],places:[],model:'test'}}export function explain(e){return String(e)}"}));
+  await ev(() => { setKey('sk-test', 'session'); showView('write'); CUTS.splice(0, CUTS.length, '@준이 복도를 달린다.', '@준이 멈춘다.', '@준 "왜?"'); saveScenes(); renderCuts(); cutChanged(); });
+  await p.waitForTimeout(700); await ev(() => showView('layout')); await p.waitForTimeout(600);
+  await p.click('#conti [data-act=nairefine]'); await p.click('#refinedlg [data-r=go]'); await p.waitForTimeout(1500);
+  const pl = await ev(() => window._pl);
+  assert(pl && pl.cuts.every(c => 'dbRef' in c && 'ruleDropped' in c), 'DB 근거·규칙 해석이 같이 감');
+  assert(pl.cuts.some(c => c.dbRef && c.dbRef.id && typeof c.dbRef.text === 'string'), 'DB 원본 컷 내용');
+  assert(JSON.stringify(await ev(() => window._retry)) === '[1]', '빠진 1번 컷만 다시 받음');
+  assert(await ev(() => naiCuts().every(x => x.o.ai)), '모든 컷이 Claude 결과');
+  assert(await ev(() => !!document.querySelector('#conti .tag.fix')), '자동 보정 표시');
+  assert(await ev(() => !/대사/.test(naiCuts()[1].o.base) && naiCuts()[1].o.base.split('AI base').length === 2), '한글·중복 태그를 뺌');
+});
 test('#소품: 처음 적은 형태로 세계관에 고정 → 콘티 모든 컷에 같은 태그', async ({p, ev}) => {
   await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
     "export async function refineNai(k,pl){window._pl=pl;return {cuts:pl.cuts.map(c=>({n:c.n,base:'AI base',chars:[]})),props:[{name:'회중시계',tags:'gold pocket watch, rose engraving'}],model:'test'}}export function explain(e){return String(e)}"}));
