@@ -231,9 +231,35 @@
   const COLS = ['A', 'B', 'C', 'D', 'E'];
   const pos = (x, y) => ({ x, y, cell: `${COLS[Math.round((x - 0.1) / 0.2)]}${Math.round((y - 0.1) / 0.2) + 1}` });
 
+  // 소품이 화면에 보이는지 — 같은 컷 글에 여러 번 나오면 한 번이라도 보이면 보임
+  //   출처(source): '조마경에서 쏟아진 빛줄기', '조마경의 빛' → 소품은 안 보이고 나온 빛·연기·기운만(EMIT)
+  //   언급(absent): '조마경을 떠올린다', '조마경 이야기' → 안 보임
+  const EMIT = [[['빛줄기', '광선', '빛기둥', '빛살'], ['light rays', 'beam of light']], [['빛', '광채', '섬광', '광휘'], ['glowing light', 'light particles']],
+    [['연기', '안개', '김이'], ['smoke']], [['불꽃', '불길', '화염', '불티'], ['fire', 'sparks']], [['기운', '마력', '힘이', '에너지', '오라'], ['aura', 'magic']],
+    [['물줄기', '물이', '물방울'], ['water splash']], [['꽃잎'], ['petals']], [['소리', '울림', '목소리'], []]];
+  const EMIT_V = /(나온|나오|나와|쏟아|뿜어|뿜는|뿜은|흘러|새어|번지|번진|번져|퍼지|퍼진|퍼져|뻗어|뻗은|뻗는|솟구|솟아|일어|피어|터져|터진|번쩍|비친|비추|비쳐|쏘아|발한|발하|빛나)/;
+  function propPresence(act, name) {
+    let at = act.indexOf(name), seen = false, out = null;
+    while (at >= 0) {
+      seen = true; const rest = act.slice(at + name.length, at + name.length + 28); let r = { on: true };
+      const src = /^(에서|으로부터|로부터|에게서|의)\s*/.exec(rest);
+      if (src) { const tail = rest.slice(src[0].length), em = EMIT.find(([ws]) => ws.some(w => tail.includes(w)));
+        if (em && (src[1] === '의' ? em[0].some(w => tail.startsWith(w)) : EMIT_V.test(tail))) r = { on: false, why: 'source', emit: em[1] }; }
+      if (r.on && /^(을|를|이|가|에 대한|에 관한)?\s*(떠올|생각|기억|그리워|그리운|찾아야|찾으러|찾아 헤|잃어버|잃은|이야기|얘기|언급|소문)/.test(rest)) r = { on: false, why: 'absent', emit: [] };
+      if (r.on) return r; if (!out || (!out.emit?.length && r.emit?.length)) out = r;
+      at = act.indexOf(name, at + name.length);
+    }
+    return seen ? out : { on: true };
+  }
   function cut(p, i, panels, ctx) {
     const { chars = [], style = '', tags = {}, refs = {} } = ctx;
-    const action = actionOf(p);
+    // 소품 보이기: 컷에서 직접 정한 값(ctx.propVis: 'show'|'hide'|'auto')이 먼저, 없으면 글에서 추론. 안 보이는 소품은 이름을 지운 글로 판정(물건 태그도 안 붙게)
+    const rawAct = actionOf(p);
+    const propAll = (ctx.props?.(p) || []).map(x => { const v = ctx.propVis?.(p, x.name) || 'auto';
+      return { ...x, ...(v === 'hide' ? { on: false, why: 'hidden', emit: [] } : v === 'show' ? { on: true, forced: true } : propPresence(rawAct, x.name)) }; });
+    const propsOn = propAll.filter(x => x.on), propsOff = propAll.filter(x => !x.on);
+    const emitTags = uniq(propsOff.flatMap(x => x.emit || []));
+    const action = propsOff.reduce((a, x) => a.split(x.name).join(' '), rawAct).replace(/\s{2,}/g, ' ');
     const onScreen = action.split(/(?<=[.!?。])\s+|[;；]/).filter(part => !OFFSCREEN.test(part)).join(' ');
     const dialogs = p.dialogs || [];
     const speaking = dialogs.filter(d => !OFFSCREEN.test(d.note || '') && !(d.fx || []).includes('전화')).map(d => d.who);
@@ -277,11 +303,11 @@
       character: [...countTags(cast), !cast.length && 'person', ...(SHOT[p.shot] || SHOT['중경']), ...place, ...objects],
     }[mode];
     // #소품(고정): 설정집 물건의 태그를 그대로, 화면 구도 태그 바로 뒤에(컷마다 같은 모양). 효과 배경 컷에는 안 넣음
-    const props = mode === 'effect' ? [] : (ctx.props?.(p) || []).filter(x => x.tags);
+    const props = mode === 'effect' ? [] : propsOn.filter(x => x.tags);
     // 카메라: 앵글 태그 + 앵글×감정(인물이 없으면 시선 태그는 뺌) + 정점 컷은 역동적 구도
     const feel = mode === 'effect' ? [] : [...((ANG_FEEL[p.ang] || {})[p.emo] || (ANG_FEEL[p.ang] || {})._ || [])].filter(t => (hasPerson || !/looking/.test(t)) && (p.ang !== '아이레벨' || (p.i ?? 1) >= 2));
     const cam = mode === 'effect' ? [] : [...(ANG[p.ang] || []), ...feel, peak && 'dynamic angle'];
-    const frameTags = [...frame, ...cam, ...props.flatMap(x => splitTags(x.tags))].filter(Boolean);
+    const frameTags = [...frame, ...cam, ...props.flatMap(x => splitTags(x.tags)), ...emitTags].filter(Boolean);
     const sm = ctx.sceneMood || '평온', night = light.includes('night') || DARK_MOOD.has(sm);
     const base = joinTags([
       ...frameTags, ...(mode === 'effect' ? [] : tagsOf(action, SURFACE)), ...light,
@@ -321,7 +347,7 @@
       mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h),
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
-      props: (ctx.props?.(p) || []).map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '' })), place, layerCast, missAct,
+      props: propsOn.map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '', forced: !!x.forced })), propsOff: propsOff.map(x => ({ name: x.name, why: x.why, emit: x.emit || [] })), place, layerCast, missAct,
     };
   }
 
@@ -381,7 +407,7 @@
     const cast = o.layerCast || o.chars, n = Math.max(1, cast.length);
     // 소품마다 어디에 넣을지: ctx.attach(name) = 'auto'|'bg'|'layer'|'char:이름'
     const attachOf = x => {
-      const want = ctx.attach?.(x.name) || 'auto';
+      let want = ctx.attach?.(x.name) || 'auto'; if (want === 'show' || want === 'hide') want = 'auto';
       if (want !== 'auto') { const nm = want.startsWith('char:') ? want.slice(5) : ''; return want.startsWith('char:') ? (cast.some(c => c.name === nm) ? { to: 'char', name: nm } : { to: 'bg' }) : { to: want }; }
       const at = act.indexOf(x.name);
       if (!cast.length || at < 0 || !HOLD.test(act.slice(at + x.name.length))) return { to: 'bg', auto: true };
@@ -432,10 +458,10 @@
     const propL = propA.map((x, k) => ({ kind: 'prop', label: `소품 ${x.name}`, name: x.name, key: x.name, at: x.at, sep: x.at.to === 'layer',
       prompt: joinTags(['no humans', 'still life', 'object focus', ...tagsFor(x), ...CUTOUT, ...style, 'no text']), size: size(1), needsTags: !x.tags,
       x: focus ? 50 : 30 + (k % 3) * 20, y: focus ? 55 : 78, scale: focus ? 70 : 22 }));
-    return { bg, chars, group, props: propL };
+    return { bg, chars, group, props: propL, propsOff: o.propsOff || [] };
   }
   const SHOT_ALL = new Set(Object.values(SHOT).flat().concat(['wide shot', 'very wide shot']).map(t => t.toLowerCase()));
   // 칸 이름(A1~E5) → 좌표
   const cellPos = cell => { const c = COLS.indexOf(String(cell)[0]), r = +String(cell).slice(1) - 1; return c < 0 || !(r >= 0 && r < 5) ? null : pos(+(0.1 + c * 0.2).toFixed(1), +(0.1 + r * 0.2).toFixed(1)); };
-  Object.assign(N, { cut, refine, layers, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
+  Object.assign(N, { cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughNAI = {}));

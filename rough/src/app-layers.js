@@ -19,7 +19,7 @@ function setLayerMode(on){LAYER_MODE=!!on;try{localStorage.setItem('rough-layer-
   toast(on?'요소별 레이어로 뽑아요 · 편집·씬 미리보기도 레이어 그림으로 보여요':'컷 한 장으로 뽑아요 · 편집·씬 미리보기도 한 컷 그림으로 보여요(레이어 그림은 그대로 남아 있어요)',2600)}
 // 장면 하나의 컷마다 레이어 설계(지금 씬은 Claude가 다듬은 프롬프트, 다른 씬은 규칙 초안)
 function layerPlan(si){const cur=si===SCUR,ps=cur?state.panels:panelsOf(si);if(!ps.length)return[];
-  const L=cur?naiCuts():(()=>{const chars=naiChars(),ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n]},worldTags:WORLD.tags||'',sceneMood:sceneMoodOf(si,ps),loreTags:p=>loreHits(p.act||'').filter(e=>e.cat!=='item').flatMap(e=>loreTagList(e)),props:propsFor};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))})();
+  const L=cur?naiCuts():(()=>{const chars=naiChars(),ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n]},worldTags:WORLD.tags||'',sceneMood:sceneMoodOf(si,ps),propVis:propVisOf(si),loreTags:p=>loreHits(p.act||'').filter(e=>e.cat!=='item').flatMap(e=>loreTagList(e)),props:propsFor};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))})();
   const eds=SCENES[si].pageEdits||[];
   return L.map(({p,i,o})=>{const slot=cutSlot(p,i);return{p,i,slot,...NAI.layers(o,p,{style:NAISTYLE,i,attach:nm=>(eds[slot]?.propAttach||{})[nm]||'auto'})}})}
 // 인물은 자세 키(pose)가 같으면 어느 씬·컷이든 같은 그림. 자세 키가 없던 예전 그림은 그 컷에서만
@@ -86,7 +86,7 @@ function layerDel(i,kind,key){const L=layerPlan(SCUR)[i];if(!L)return;const sid=
 // 소품 넣는 곳 바꾸기(컷마다)
 function setPropAttach(i,name,v){const L=layerPlan(SCUR)[i];if(!L)return;const E=SCENES[SCUR].pageEdits||=[],ed=E[L.slot]||=({});
   const m=ed.propAttach||={};if(!v||v==='auto')delete m[name];else m[name]=v;if(!Object.keys(m).length)delete ed.propAttach;saveScenes();syncLayers(SCUR);renderConti();
-  toast(`${i+1}번 컷 소품 「${name}」: ${v==='layer'?'따로 레이어로 뽑아요':v==='bg'?'배경 프롬프트에 넣어요':v?.startsWith('char:')?v.slice(5)+' 레이어에 넣어요':'자동으로 정해요(들고 있으면 인물, 아니면 배경)'}`,2400)}
+  toast(`${i+1}번 컷 소품 「${name}」: ${v==='layer'?'따로 레이어로 뽑아요':v==='hide'?'화면 밖 — 소품은 빼고 나온 효과만':v==='bg'?'배경 프롬프트에 넣어요':v?.startsWith('char:')?v.slice(5)+' 레이어에 넣어요':'자동으로 정해요(들고 있으면 인물, 아니면 배경)'}`,2400)}
 // 콘티 카드: 겹친 미리보기 + 레이어 줄(그림 칸 · 프롬프트 복사)
 function layerPreview(L,o){const sid=SCENES[SCUR].id,bg=IMG.lybg[lybId(sid,L.i)],ed=(SCENES[SCUR].pageEdits||[])[L.slot],ov=(ed?.overlays||[]).filter(v=>IMG.overlay[v.asset]);
   return `<div class="ly-prev" style="aspect-ratio:${o.size.w}/${o.size.h}">${bg?`<img class="ly-bg" src="${bg.src}" alt="">`:'<span class="ly-empty">배경 없음</span>'}${ov.map(v=>`<img class="ly-ov" src="${IMG.overlay[v.asset].src}" alt="" style="left:${v.x??50}%;top:${v.y??50}%;width:${v.scale??100}%">`).join('')}</div>`}
@@ -99,10 +99,10 @@ function layerRows(L,o,dim){const sid=SCENES[SCUR].id,bg=IMG.lybg[lybId(sid,L.i)
     return other.length?`<select class="ly-pick" data-lypick="${L.i}" aria-label="${esc(x.label)}의 다른 컷 그림 쓰기"><option value="">다른 컷 그림 쓰기…</option>${other.map((a,n)=>`<option value="${esc(a.id)}">${esc(x.kind==='group'?x.names.join('·'):x.name)} 그림 ${n+1}${a.layer.slot!=null?` (${a.layer.scene===sid?'이 씬 ':''}${a.layer.slot+1}번 컷)`:''}</option>`).join('')}</select>`:''};
   const att=x=>{const v=((SCENES[SCUR].pageEdits||[])[L.slot]?.propAttach||{})[x.name]||'auto',now=x.at.to==='char'?`${x.at.name} 레이어에 녹여 넣어요`:x.at.to==='bg'?'배경에 녹여 넣어요':'따로 레이어';
     return `<div class="ly-row ly-prop" data-ly="prop" data-key="${esc(x.key)}">${x.sep?slotB(x,layerAsset('prop',x.key)):`<div class="ly-slot ly-melt" aria-hidden="true">◆</div>`}<div class="ly-main"><div class="ly-gh">${esc(x.label)} <small>${esc(now)}${x.needsTags?' · 태그는 컷 프롬프트 생성 때 정해져요':''}</small>
-      <select class="ly-att" data-lyatt="${L.i}" aria-label="소품 ${esc(x.name)} 넣는 곳"><option value="auto"${v==='auto'?' selected':''}>자동</option>${L.chars.map(c=>`<option value="char:${esc(c.name)}"${v==='char:'+c.name?' selected':''}>${esc(c.name)}에게</option>`).join('')}<option value="bg"${v==='bg'?' selected':''}>배경에</option><option value="layer"${v==='layer'?' selected':''}>따로 레이어</option></select></div>${x.sep?ctBlk(head(x,'모든 컷에 같은 그림'),x.prompt,dim):''}</div></div>`};
+      <select class="ly-att" data-lyatt="${L.i}" aria-label="소품 ${esc(x.name)} 넣는 곳"><option value="auto"${v==='auto'?' selected':''}>자동</option>${L.chars.map(c=>`<option value="char:${esc(c.name)}"${v==='char:'+c.name?' selected':''}>${esc(c.name)}에게</option>`).join('')}<option value="bg"${v==='bg'?' selected':''}>배경에</option><option value="layer"${v==='layer'?' selected':''}>따로 레이어</option><option value="hide">화면 밖(효과만)</option></select></div>${x.sep?ctBlk(head(x,'모든 컷에 같은 그림'),x.prompt,dim):''}</div></div>`};
   const ga=L.group&&charOf(L,L.group,sid);
   return `<div class="ct-layers"><div class="ct-ph"><span>요소별 레이어</span><small>위에서부터 아래 레이어 · 편집에서 위치·크기를 옮겨요</small></div>
-    ${L.props.map(att).join('')}
+    ${L.props.map(att).join('')}${(L.propsOff||[]).map(x=>`<div class="ly-row ly-prop" data-ly="prop" data-key="${esc(x.name)}"><div class="ly-slot ly-melt off" aria-hidden="true">◇</div><div class="ly-main"><div class="ly-gh">소품 ${esc(x.name)} <small>화면 밖${x.emit.length?' · '+esc(x.emit.join(', '))+'만':''}</small><button type="button" class="link" data-propvis="${L.i}" data-name="${esc(x.name)}">화면에 보이게</button></div></div></div>`).join('')}
     ${L.group?row('group',L.group,ga,`${L.group.interact.length?esc(L.group.interact.join(', '))+' · ':''}${poseShare(L.group)>1?`같은 자세 ${poseShare(L.group)}컷이 같이 씀 · `:''}넣으면 이 컷은 개별 인물 대신 이 그림`,pickOther(L.group)):''}
     ${L.chars.map(x=>{const k=poseShare(x);return row('char',x,charOf(L,x,sid),`${ga&&L.group.names.includes(x.key)?'함께 그림을 쓰는 중 · ':''}${x.holds.length?'◆'+esc(x.holds.join('·'))+' 듦 · ':''}${k>1?`같은 자세 ${k}컷이 같이 씀 · `:''}위치 ${x.x}·${x.y} · 폭 ${x.scale}%`,pickOther(x))}).join('')}
     ${row('bg',L.bg,bg,L.bg.shared?`같은 장소 ${share}컷이 같이 씀`:'이 컷만')}</div>`}

@@ -375,6 +375,19 @@ test('프롬프트에 동작: 달리기·칼 뽑기·무릎 꿇기 → 태그, �
   assert(/kneeling/.test(c[2][0]) && /shouting/.test(c[2][0]), '무릎 꿇고 소리친다 → kneeling, shouting');
   assert(c[3][1] && await ev(() => !!document.querySelector('#conti .ccard[data-ct="3"] .ct-miss')), '사전에 없는 동작은 카드에 알림');
 });
+test('소품이 빛·연기의 출처로만 나오면 화면 밖(효과만) · 칩으로 직접 바꾸기', async ({p, ev}) => {
+  await ev(() => { showView('write'); CUTS.splice(0, CUTS.length, '@준이 #조마경(둥근 청동 거울)을 들어 비춘다.', '#조마경에서 쏟아진 빛줄기가 @준의 등을 덮친다.', '@준이 #조마경을 떠올린다.'); saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(700);
+  await ev(() => { LORE.find(x => x.name === '조마경').tags = 'bronze mirror, round mirror'; showView('layout'); }); await p.waitForTimeout(500);
+  const c = await ev(() => naiCuts().map(({o}) => [o.base, (o.props || []).map(x => x.name).join(), (o.propsOff || []).map(x => x.why).join()]));
+  assert(/bronze mirror/.test(c[0][0]) && c[0][1] === '조마경', '들고 비추면 보임');
+  assert(!/mirror/.test(c[1][0]) && /light rays/.test(c[1][0]) && c[1][2] === 'source', '빛줄기의 출처면 거울은 빼고 빛만');
+  assert(!/mirror/.test(c[2][0]) && c[2][2] === 'absent', '떠올리기만 하면 안 보임');
+  assert(await ev(() => naiPayload().cuts[1].offscreen[0].name === '조마경' && !naiPayload().cuts[1].props.length), 'Claude에 화면 밖 소품 전달');
+  await p.click('#conti .ccard[data-ct="1"] [data-propvis]'); await p.waitForTimeout(300);
+  assert(await ev(() => /bronze mirror/.test(naiCuts()[1].o.base)), '칩을 누르면 화면에 보이게');
+  await p.click('#conti .ccard[data-ct="1"] [data-propvis]'); await p.waitForTimeout(300);
+  assert(await ev(() => !/mirror/.test(naiCuts()[1].o.base) && !SCENES[SCUR].pageEdits[1]?.propAttach), '다시 누르면 자동(글에서 판단)으로');
+});
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
   await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);
