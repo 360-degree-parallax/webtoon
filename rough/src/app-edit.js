@@ -30,8 +30,8 @@ const TITLE_ELS=()=>['#gtitle','#wtitle'].map(q=>$(q)).filter(Boolean);
 function workTitleAuto(){return DEF_TITLE}
 function workTitle(){return ($('#gtitle')?.value||$('#wtitle')?.value||'').trim()||DEF_TITLE}
 // 상단 입력칸은 글자 수만큼 폭을 맞춤
-function fitTitle(el){el.style.width=Math.min(360,Math.max(80,(el.value||el.placeholder).length*15+24))+'px'}
-function syncWorkTitle(src){TITLE_ELS().forEach(el=>{if(src&&el!==src&&el.value!==src.value)el.value=src.value;el.placeholder=DEF_TITLE;el.title='작품 제목 · 눌러서 고쳐요(저장 이름·내보내기 파일 이름에도 쓰여요)'});const g=$('#gtitle');if(g)fitTitle(g)}
+function fitTitle(el){el.style.width=Math.min(380,Math.max(90,(el.value||el.placeholder).length*17+28))+'px'}
+function syncWorkTitle(src){TITLE_ELS().forEach(el=>{if(src&&el!==src&&el.value!==src.value)el.value=src.value;el.placeholder=DEF_TITLE;el.title='작품 제목 · 눌러서 고쳐요(저장 이름·내보내기 파일 이름에도 쓰여요)'});const g=$('#gtitle');if(g)fitTitle(g);document.title=workTitle()}
 TITLE_ELS().forEach(el=>{el.addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}syncWorkTitle(e.target)});
   el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});el.addEventListener('blur',e=>{if(!e.target.value.trim()){e.target.value=DEF_TITLE;try{localStorage.setItem('rough-work-title',DEF_TITLE)}catch(_){}syncWorkTitle(e.target)}})});
 syncWorkTitle();

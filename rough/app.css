@@ -33,7 +33,7 @@ svg.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .wordmark{font-size:19px;font-weight:800;letter-spacing:-.01em}
 .wordmark span{font-weight:500;color:var(--t2);font-size:14px;margin-left:10px}
 /* 상단 작품 제목: 로고 옆에서 바로 고침 */
-.gtitle{margin-left:12px;min-width:80px;height:34px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:none;color:var(--t1);font:inherit;font-size:15px;font-weight:600;outline:none;text-overflow:ellipsis}
+.gtitle{margin-left:-8px;font-size:17px!important;font-weight:800!important;min-width:80px;height:34px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:none;color:var(--t1);font:inherit;font-size:15px;font-weight:600;outline:none;text-overflow:ellipsis}
 .gtitle:hover{border-color:var(--line2)}.gtitle:focus{border-color:var(--blue,#2d71f7);background:var(--bg)}
 .gnb .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .ib{width:40px;height:40px;border-radius:8px;display:grid;place-items:center}
