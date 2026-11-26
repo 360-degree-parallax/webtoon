@@ -9,7 +9,7 @@
   --old: 예전 방식(모델 1위와 사람 라벨의 확률 차이가 큰 순)
   --work HM[,SL]: 그 작품 컷만 큐에(새 작품 판정)
   --full: 특징을 줄이지 않음(느림)
-사용: python3 tools/ml/make_review_queue.py [--shot 300] [--emo 150] [--role 150] [--keep] [--old] [--work HM]
+사용: python3 tools/ml/make_review_queue.py [--shot 300] [--emo 150] [--role 150] [--angle 0] [--int 0] [--keep] [--old] [--work HM]
 --keep: 지금 큐의 항목(이미 판정한 컷 포함)은 그대로 두고 모자란 만큼 새로 채움(브라우저에 남은 판정 결과가 그대로 맞물림)
 항목마다 앞뒤 컷·다른 DB 값을, meta.examples에 라벨마다 대표 컷 3개를 넣어 판정 화면에서 보여 줌
 필요: tools/ml/cache/img-clip.npz, img-dino.npz, text-e5base.npz (embed_image.py·embed_text.py)
@@ -19,7 +19,7 @@ from sklearn.linear_model import LogisticRegression
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); import weights as WT  # 사람이 확인한 라벨: 학습 가중치↑, 큐에서는 뺌
 ROOT = pathlib.Path(__file__).resolve().parents[2]; C = ROOT / 'tools' / 'ml' / 'cache'
 A = sys.argv[1:]
-N = {k: int(A[A.index('--' + k) + 1]) if '--' + k in A else v for k, v in (('shot', 300), ('emo', 150), ('role', 150), ('angle', 0))}
+N = {k: int(A[A.index('--' + k) + 1]) if '--' + k in A else v for k, v in (('shot', 300), ('emo', 150), ('role', 150), ('angle', 0), ('int', 0))}
 def load(n):
     """특징을 PCA 128차원으로 줄여 불러옴(라벨을 안 쓰는 변환. 2,300차원 그대로면 큐 한 번에 1시간 가까이 걸림)"""
     z = np.load(C / n); X = z['X'].astype(np.float32)
@@ -40,7 +40,7 @@ if (ROOT / 'rough' / 'db' / 'cut-meta.json').exists():
     sys.path.insert(0, str(ROOT / 'tools' / 'meta')); _argv = sys.argv; sys.argv = sys.argv[:1]; import eval_meta as EMT; sys.argv = _argv
     META = {i: EMT.Xm[k] * .35 for k, i in enumerate(EMT.ids)}; M['meta'] = META
 CM = json.loads((ROOT / 'rough' / 'db' / 'cut-meta.json').read_text())['cuts'] if META else {}
-TASKS = [('angle', '앵글', ['clip', 'dino', 'text'] + (['meta'] if META else [])), ('shot', '샷', ['clip', 'dino', 'text'] + (['meta'] if META else [])), ('emo', '감정', ['clip', 'text']), ('role', '역할', ['clip', 'dino', 'text'])]
+TASKS = [('angle', '앵글', ['clip', 'dino', 'text'] + (['meta'] if META else [])), ('shot', '샷', ['clip', 'dino', 'text'] + (['meta'] if META else [])), ('emo', '감정', ['clip', 'text']), ('role', '역할', ['clip', 'dino', 'text']), ('int', '강도', ['clip', 'text'])]
 KEEP = '--keep' in A; OLD = '--old' in A
 ONLY = set(A[A.index('--work') + 1].split(',')) if '--work' in A else None
 oldq = json.loads((ROOT / 'rough' / 'db' / 'review-queue.json').read_text()) if KEEP and (ROOT / 'rough' / 'db' / 'review-queue.json').exists() else {'items': []}
@@ -65,7 +65,7 @@ def enrich(it):
 examples = {}
 items = []
 for key, col, feats in TASKS:
-    ids = sorted(i for i in M['clip'] if all(i in M[f] for f in feats) and i in row)
+    ids = sorted(i for i in M['clip'] if all(i in M[f] for f in feats) and i in row and row[i][I(col)] not in (None, '', '—'))
     X = np.hstack([np.stack([M[f][i] for i in ids]) for f in feats]); y = np.array([str(row[i][I(col)]) for i in ids])
     work = np.array([i[:2] for i in ids]); classes = sorted(set(y)); P = np.zeros((len(ids), len(classes))); sw = WT.sample_weights(ids, col, y)
     if key == 'angle': cnt = collections.Counter(y); sw = sw * np.array([len(y) / (len(cnt) * cnt[c]) for c in y]) ** .5
@@ -108,7 +108,7 @@ for key, col, feats in TASKS:
     for gap, k, i in cand[:max(0, N[key] - len(keep))]:
         order = list(np.argsort(-P[k])); opts = [classes[j] for j in order[:4]]
         if y[k] not in opts: opts = opts[:3] + [y[k]]; opts.sort(key=lambda L: -P[k, classes.index(L)])
-        items.append({'id': f'{key}:{i}', 'cut': i, 'field': col, 'col': 'HIJKLMNOPQ'[[*'샷 앵글 역할 감정'.split()].index(col)] if col in ('샷', '앵글', '역할', '감정') else '',
+        items.append({'id': f'{key}:{i}', 'cut': i, 'field': col, 'col': 'HIJKLMNOPQ'[[*'샷 앵글 역할 감정 강도'.split()].index(col)] if col in ('샷', '앵글', '역할', '감정', '강도') else '',
                       'current': y[k], 'options': [{'label': L, 'p': round(float(P[k, classes.index(L)]), 2)} for L in opts],
                       'file': files.get(i, ''), 'text': str(row[i][I('내용')] or ''), 'work': row[i][I('작품')], 'gap': round(float(gap), 2), 'new': KEEP})
         enrich(items[-1])
