@@ -222,6 +222,28 @@ export async function inferChars(apiKey, payload, { onStatus } = {}) {
   return { chars: r.out.chars || [], model: r.model };
 }
 
+// 설정집 빈 칸 채우기: 채워진 캐릭터·세계관·설정 항목과 구성안·씬 글을 근거로 비어 있는 칸만 제안
+const FILL_SYSTEM = `너는 웹툰 설정집 정리 담당이다. 입력은 작품의 설정집(캐릭터·세계관 개요·설정 항목)과 이번 화 구성안 요약, 씬 컷 글이다. 각 칸이 빈 문자열이면 비어 있는 칸이다.
+할 일: 비어 있는 칸만 채울 값을 제안한다. 이미 채워진 칸은 근거로만 쓰고 고쳐 쓰지 않는다(돌려줄 때 그 칸은 빈 문자열).
+근거 순서: 1) 이미 채워진 설정집 내용 2) 씬 컷 글과 구성안에 나온 사실 3) 세계관의 시대·장르·분위기에 어울리는 추론. 서로 모순되게 지어내지 않고, 근거가 약한 큰 비밀·과거사는 만들지 않는다.
+캐릭터
+- tags: NovelAI V4.5 외형 태그. 영어 소문자 Danbooru 태그를 쉼표로 10~18개. 1girl·1boy 같은 인원 태그, 표정·자세·장소·조명은 넣지 않는다. 머리·눈·나이대·체형·늘 입는 옷·장신구·고정 특징만. 다른 인물과 헷갈리지 않게.
+- look: 특징 글(한국어 3~5문장). 역할, 성격, 말투, 버릇, 관계, 태그로 못 담는 외형 특징.
+- aliases: 글에서 이 인물을 부르는 다른 호칭(도련님, 에드 등)만 쉼표로. 없으면 빈 문자열.
+세계관 개요(world): name·genre·era·tone은 짧게, summary는 2~3문장, detail은 이야기에 필요한 규칙·사회·장소를 5~10문장, tags는 영어 이미지 태그 6~12개(배경·시대·분위기).
+설정 항목(lore): 이미 있는 항목의 빈 keys(컷 글에 나올 법한 호칭을 쉼표로)·desc(한두 문장)·tags(영어 이미지 태그 몇 개)만. 새 항목은 만들지 않는다.
+입력에 있는 캐릭터·항목만, 같은 이름으로 돌려준다.`;
+const FILL_SCHEMA = { type: 'object', properties: {
+  chars: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, aliases: { type: 'string' }, tags: { type: 'string' }, look: { type: 'string' } }, required: ['name', 'aliases', 'tags', 'look'], additionalProperties: false } },
+  world: { type: 'object', properties: { name: { type: 'string' }, genre: { type: 'string' }, era: { type: 'string' }, tone: { type: 'string' }, summary: { type: 'string' }, detail: { type: 'string' }, tags: { type: 'string' } }, required: ['name', 'genre', 'era', 'tone', 'summary', 'detail', 'tags'], additionalProperties: false },
+  lore: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, keys: { type: 'string' }, desc: { type: 'string' }, tags: { type: 'string' } }, required: ['name', 'keys', 'desc', 'tags'], additionalProperties: false } },
+}, required: ['chars', 'world', 'lore'], additionalProperties: false };
+// payload: { chars:[{name, gender, aliases, tags, look}], world:{…}|null, lore:[{name, category, keys, desc, tags}], plan, scenes:[{title, cuts:[…]}] }
+export async function fillSetbook(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, FILL_SYSTEM, FILL_SCHEMA, `설정집의 비어 있는 칸을 채울 값을 제안해줘.\n\n${JSON.stringify(payload, null, 1)}`, s => onStatus?.(s.replace('씬을 읽는', '설정집을 읽는')));
+  return { ...r.out, model: r.model };
+}
+
 // 컷 하나만 다시 생성: 씬 전체는 연속성 확인용으로 주고, only의 컷만 반환하게 함. request는 작가가 적은 방향
 export async function refineNaiCut(apiKey, payload, n, request, { onStatus } = {}) {
   const sys = SYSTEM_NAI + `\n\n이번에는 cuts 중 n=${n}인 컷 하나만 다시 쓴다. 반환 cuts에는 그 컷 하나만 넣는다. 다른 컷은 앞뒤 연속성(의상·위치·조명)을 맞추는 데만 쓴다.` +

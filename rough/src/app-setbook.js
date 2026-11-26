@@ -266,3 +266,41 @@ async function wlibImport(file){try{const d=JSON.parse(await file.text());if(d.t
     if(ev==='drop'){const el=rowOf(e);const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!f||!el)return;attach(f,el.dataset.wk==='world'?{kind:'world',key:'cover'}:{kind:'lore',key:LORE[+el.dataset.li].id})}});
   $('#wlibq').addEventListener('input',e=>{WLIBQ=e.target.value;renderWlib()});
   $('#wlibfile').addEventListener('change',e=>{const f=e.target.files[0];if(f)wlibImport(f);e.target.value=''});}
+
+// ---------- 설정집 빈 칸 채우기 ----------
+// 채워진 캐릭터·세계관·설정 항목 + 구성안 + 씬 글을 근거로 Claude가 빈 칸만 제안 → 고른 것만 넣음(채워진 칸은 건드리지 않음)
+let FILL_BUSY=false;
+function fillPayload(){const plan=planBrief();
+  const scenes=SCENES.map(sc=>({title:sc.title||'',cuts:(sc.cuts||[]).filter(c=>String(c).trim()).map(c=>String(c).slice(0,300))}));
+  let budget=14000;for(const sc of scenes){sc.cuts=sc.cuts.filter(c=>(budget-=c.length)>0)}
+  return{chars:CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),gender:c.body,aliases:c.aliases||'',tags:NAITAGS[c.name.trim()]??'',look:c.look||''})),
+    world:WORLD.off?null:Object.fromEntries(WF.map(f=>[f,WORLD[f]||''])),
+    lore:LORE.map(e=>({name:e.name||'',category:LORE_CAT[e.cat]?.[0]||e.cat||'',keys:e.keys||'',desc:e.desc||'',tags:e.tags||''})).filter(e=>e.name),
+    plan:plan&&{prompt:plan.prompt,cards:plan.cards.map(({n,title,purpose})=>({n,title,purpose}))},scenes}}
+const FILL_LABEL={aliases:'다른 호칭',tags:'외형 태그',look:'특징',name:'이름',genre:'장르',era:'시대',tone:'분위기',summary:'요약',detail:'자세한 설정',keys:'키워드',desc:'설명'};
+async function fillSetbook(){if(FILL_BUSY)return;if(!AIKEY){openKey(fillSetbook);return}
+  const empty=fillPayload();const holes=empty.chars.some(c=>!c.tags||!c.look)||(empty.world&&WF.some(f=>!empty.world[f]))||empty.lore.some(e=>!e.keys||!e.desc||!e.tags);
+  if(!holes){toast('비어 있는 칸이 없어요');return}
+  FILL_BUSY=true;fillBtns();let mod;
+  try{mod=await import('./claude.js');const r=await mod.fillSetbook(AIKEY,empty,{onStatus:t=>fillBtns(t)});const rows=[];
+    for(const x of r.chars||[]){const c=CHARS.find(c=>c.name.trim()===String(x.name).trim());if(!c)continue;const n=c.name.trim();
+      if(!String(c.aliases||'').trim()&&x.aliases?.trim())rows.push({who:n,f:'aliases',v:x.aliases.trim(),put:v=>{c.aliases=v}});
+      if(NAITAGS[n]==null&&x.tags?.trim())rows.push({who:n,f:'tags',v:x.tags.trim(),put:v=>{NAITAGS[n]=v;ARTGEN.chars[n]=v}});
+      if(!String(c.look||'').trim()&&x.look?.trim())rows.push({who:n,f:'look',v:x.look.trim(),put:v=>{c.look=v}})}
+    if(r.world&&!WORLD.off)for(const f of WF){const v=String(r.world[f]||'').trim();if(v&&!String(WORLD[f]||'').trim())rows.push({who:'세계관',f,v,put:v=>{WORLD[f]=v}})}
+    for(const x of r.lore||[]){const e=LORE.find(e=>(e.name||'').trim()===String(x.name).trim());if(!e)continue;
+      for(const f of ['keys','desc','tags']){const v=String(x[f]||'').trim();if(v&&!String(e[f]||'').trim())rows.push({who:'설정 · '+e.name,f,v,put:v=>{e[f]=v}})}}
+    if(!rows.length){toast('채울 값을 찾지 못했어요');return}fillDialog(rows)}
+  catch(err){console.warn(err?.status||err);toast('빈 칸을 채우지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요'),3000);if(err?.status===401){setKey('',null);openKey(fillSetbook)}}
+  finally{FILL_BUSY=false;fillBtns()}}
+function fillBtns(t){document.querySelectorAll('[data-act="sbfill"]').forEach(b=>{b.disabled=FILL_BUSY;b.textContent=FILL_BUSY?(t&&/쓰는 중/.test(t)?t.replace('Claude가 ',''):'채우는 중…'):'빈 칸 채우기'})}
+function fillDialog(rows){let d=$('#filldlg');if(!d){d=document.createElement('dialog');d.id='filldlg';d.className='keydlg artdlg filldlg';document.body.appendChild(d)}
+  d.innerHTML=`<h3>설정집 빈 칸 채우기</h3><p>채워진 설정과 구성·씬 글을 근거로 비어 있던 칸만 제안했어요. 고친 뒤 체크한 것만 넣어요.</p>
+  <div class="artcmp">${rows.map((x,n)=>`<label class="artrow fillrow"><input type="checkbox" data-n="${n}" checked><b>${esc(x.who)} · ${FILL_LABEL[x.f]||x.f}</b><textarea data-fv="${n}" rows="${x.v.length>80?3:1}" spellcheck="false">${esc(x.v)}</textarea></label>`).join('')}</div>
+  <div class="btnrow"><button class="btn" data-r="no">취소</button><button class="btn dark" data-r="go">넣기</button></div>`;
+  d.onclick=e=>{if(e.target.closest('textarea'))return;const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;
+    if(k==='go'){let n=0;d.querySelectorAll('input[data-n]:checked').forEach(i=>{const x=rows[+i.dataset.n],v=d.querySelector(`[data-fv="${i.dataset.n}"]`).value.trim();if(v){x.put(v);n++}});
+      saveChars();saveNaiTags();saveWorld();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}
+      if(VIEW==='chars')renderChars();if(VIEW==='world')renderWorld();try{compute(false)}catch(_){}toast(n?`설정집 빈 칸 ${n}개를 채웠어요`:'넣은 것이 없어요')}
+    d.close()};d.showModal()}
+document.addEventListener('click',e=>{if(e.target.closest('[data-act="sbfill"]'))fillSetbook()});

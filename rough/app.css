@@ -1417,3 +1417,8 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 /* 설정집 카드: 글에서 외형 추론(낮은 위계) */
 .ce-foot .ce-infer{font-size:12.5px;color:var(--t3);margin-left:10px}.ce-foot .ce-infer.busy{color:var(--blue,#2d71f7)}
 .ce-foot button.ce-infer:hover{color:var(--t1);text-decoration:underline;text-underline-offset:3px}
+
+/* 설정집 빈 칸 채우기 */
+.sh .sbfill{margin-left:auto;flex:none}
+.filldlg .fillrow{grid-template-columns:auto minmax(0,1fr);align-items:start}.filldlg .fillrow b{grid-column:2}.filldlg .fillrow textarea{grid-column:2;width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--line2);border-radius:8px;font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;background:var(--bg);color:var(--t1)}
+.filldlg .fillrow textarea{min-height:0!important;height:auto;max-height:220px;field-sizing:content}
