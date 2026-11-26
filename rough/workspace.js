@@ -777,6 +777,10 @@ function deletePart(key,what){const g=groupBy(key);if(g&&isLocked(g,'cut')){flas
     if(what==='bg'){delete st.transition;delete st.transMid;delete st.transStop;delete st.background;delete st.bgImage;delete st.bgImageOp;msg='이 컷 배경을 지웠어요'}
     else if(what.startsWith('line:')){const kd=what.slice(5);if(st.materialLines){delete st.materialLines[kd];if(!Object.keys(st.materialLines).length)delete st.materialLines}msg=(kd==='speed'?'속도선':'집중선')+'을 지웠어요'}
     else if(what.startsWith('ov:')){const n=+what.slice(3);st.overlays?.splice(n,1);if(st.overlays&&!st.overlays.length)delete st.overlays;msg='이미지 소재를 뺐어요'}});
+  // 씬 글에 {속도선 …}·{배경 …}으로 적힌 것이면 글에서도 그 지시를 지움(안 그러면 다시 그려짐)
+  if(what.startsWith('line:')||what==='bg'){const [si,slot]=key.split(':').map(Number),sc=SCENES[si],words=what==='bg'?['배경','전환','배경색']:[what.slice(5)==='speed'?'속도선':'집중선'];
+    if(sc&&typeof sc.cuts[slot]==='string'){const next=sc.cuts[slot].split('\n').map(l=>l.replace(/\{([^{}\n]*)\}/g,(m,inner)=>{const ts=inner.split(/[,，·\/]/).map(x=>x.trim()).filter(Boolean).filter(x=>!words.includes(x.split(/\s+/)[0]));return ts.length?`{${ts.join(', ')}}`:''}).replace(/[ \t]{2,}/g,' ').replace(/\s+$/,'')).join('\n');
+      if(next!==sc.cuts[slot]){sc.cuts[slot]=next;if(si===SCUR)CUTS=sc.cuts;if(typeof refreshText==='function')refreshText(si)}}}
   window.layerPart={key,what:'frame'};saveScenes();renderWebtoon();const ng=groupBy(key);if(ng)selectPageCut(ng);editTree();flash(msg+' · Ctrl+Z로 되돌리기')}
 // 레이어 패널의 '그림' 줄을 고르고 Delete: 컷은 두고 넣은 그림만 뺌(Ctrl+Z로 되돌림). 레퍼런스만 있으면 지울 것이 없음
 function deleteArt(key){const [si,slot]=key.split(':').map(Number),g=groupBy(key);if(g&&isLocked(g,'cut')){flash('잠긴 컷이에요');return}
