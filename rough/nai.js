@@ -301,9 +301,12 @@
       prompt: joinTags([...bgTags.filter(keep), 'no text']), size: o.size, shared: !effect && !!place };
     const [sc, ratio] = LAYER_SHOT[p.shot] || LAYER_SHOT.중경;
     const n = Math.max(1, o.chars.length);
-    const chars = o.chars.map((c, k) => ({ kind: 'char', label: `인물 ${c.name}`, name: c.name, key: c.name,
-      prompt: joinTags([...splitTags(c.prompt).filter(t => !/^(far away)$/i.test(tagName(t))), ...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || [], ...CUTOUT, ...style, 'no text']),
-      size: size(ratio), x: Math.round(c.pos.x * 100), y: Math.round(c.pos.y * 100), scale: Math.round(Math.min(95, sc * 100 * (n > 1 ? 0.75 : 1))) }));
+    // 자세 키: 화풍·흰 배경을 뺀 인물 태그(외형·표정·자세·프레이밍·앵글)를 정렬해 이음 → 같으면 같은 그림을 여러 컷·씬이 같이 씀
+    const poseOf = (name, tags) => name + '|' + [...new Set(tags.map(t => tagName(t).toLowerCase()).filter(t => t && !CUTOUT.includes(t) && t !== 'no text' && !style.some(x => tagName(x).toLowerCase() === t)))].sort().join(',');
+    const chars = o.chars.map((c, k) => { const body = [...splitTags(c.prompt).filter(t => !/^(far away)$/i.test(tagName(t))), ...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || []];
+      return { kind: 'char', label: `인물 ${c.name}`, name: c.name, key: c.name, pose: poseOf(c.name, body),
+      prompt: joinTags([...body, ...CUTOUT, ...style, 'no text']),
+      size: size(ratio), x: Math.round(c.pos.x * 100), y: Math.round(c.pos.y * 100), scale: Math.round(Math.min(95, sc * 100 * (n > 1 ? 0.75 : 1))) }; });
     const focus = ['object', 'detail'].includes(o.mode);
     const propL = props.filter(x => x.tags || x.look).map((x, k) => ({ kind: 'prop', label: `소품 ${x.name}`, name: x.name, key: x.name,
       prompt: joinTags(['no humans', 'still life', 'object focus', ...splitTags(x.tags), ...CUTOUT, ...style, 'no text']), size: size(1), needsTags: !x.tags,

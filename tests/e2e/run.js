@@ -220,7 +220,7 @@ test('#소품: 처음 적은 형태로 세계관에 고정 → 콘티 모든 컷
 });
 test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은 그림이 편집 레이어로', async ({p, ev}) => {
   await ev(() => { showView('write');
-    CUTS.splice(0, CUTS.length, '@에드가가 복도에서 #회중시계(금색)를 꺼낸다.', '@에드가가 복도 끝을 바라본다.', '@준 "누구세요?"');
+    CUTS.splice(0, CUTS.length, '@에드가가 복도 의자에 앉아 #회중시계(금색)를 꺼낸다.', '@에드가가 복도 끝을 바라본다.', '@준 "누구세요?"', '@에드가가 복도 끝을 바라본다.');
     saveScenes(); renderCuts(); cutChanged(); });
   await p.waitForTimeout(600);
   await ev(() => { LORE.find(x => x.name === '회중시계').tags = 'gold pocket watch'; showView('layout'); }); await p.waitForTimeout(500);
@@ -236,13 +236,20 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   await ev(`(async()=>{await layerPut(await ${mk},0,'char','에드가');await layerPut(await ${mk},0,'prop','회중시계');await layerPut(await ${mk},0,'bg','')})()`);
   await p.waitForTimeout(400);
   const r = await ev(async () => { const sid = SCENES[SCUR].id, LP = layerPlan(SCUR), ed = SCENES[SCUR].pageEdits[LP[0].slot];
-    const a = layerAsset('char', '에드가', sid, LP[0].slot), im = await loadImg(a.src), c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const a = charOf(LP[0], LP[0].chars[0], sid), im = await loadImg(a.src), c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
     return { ov: (ed.overlays || []).map(v => v.layer + ':' + v.key), corner: g.getImageData(2, 2, 1, 1).data[3], mid: g.getImageData(40, 50, 1, 1).data[3],
       bg: !!IMG.cut[cutId(sid, 0)]?.layerBg || IMG.cut[cutId(sid, 0)]?.layerBg === '', same: LP[0].bg.key === LP[1].bg.key, bg1: !!IMG.cut[cutId(sid, 1)] }; });
   assert(r.ov.includes('char:에드가') && r.ov.includes('prop:회중시계'), '컷 소재에 인물·소품 레이어');
   assert(r.corner === 0 && r.mid === 255, '흰 배경만 투명');
   assert(r.bg && (!r.same || r.bg1), '배경 등록 · 같은 장소 컷은 같은 배경');
   assert(await ev(() => document.querySelectorAll('#conti .ccard[data-ct="0"] .ly-prev img').length === 3), '미리보기에 세 레이어');
+  // 같은 자세(1·4번 컷)는 인물 그림 하나를 같이 씀, 다른 자세 컷은 '다른 컷 그림 쓰기'로 고를 수 있음
+  await ev(`(async()=>{await layerPut(await ${mk},1,'char','에드가')})()`); await p.waitForTimeout(300);
+  const sh = await ev(() => { const LP = layerPlan(SCUR), ov = k => (SCENES[SCUR].pageEdits[LP[k].slot]?.overlays || []).find(v => v.layer === 'char' && v.key === '에드가')?.asset;
+    return { same: LP[1].chars[0].pose === LP[3].chars[0].pose, diff: LP[0].chars[0].pose !== LP[1].chars[0].pose, a1: ov(1), a3: ov(3), a0: ov(0) }; });
+  assert(sh.same && sh.a1 && sh.a1 === sh.a3, '같은 자세 컷은 같은 인물 그림');
+  assert(sh.diff && sh.a0 !== sh.a1, '다른 자세는 따로');
+  assert(await ev(() => !!document.querySelector('#conti .ccard[data-ct="0"] [data-lypick]')), '다른 컷 그림 고르기');
   await ev(() => showView('webtoon')); await p.waitForTimeout(1200);
   assert(await ev(() => !!document.querySelector('[data-overlay-layer="char"][data-label^="인물 에드가"]') && !!document.querySelector('[data-overlay-layer="prop"]')), '편집 화면에 레이어로 그려짐');
   await ev(() => setLayerMode(false));
