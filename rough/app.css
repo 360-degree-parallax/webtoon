@@ -1450,3 +1450,4 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 /* 편집: 레이어(이미지 소재) 고르기·끌기 */
 .ov-pick{cursor:move}.ov-pick.on image{outline:2px solid #2d71f7;outline-offset:-2px}
 .ov-pick.on{filter:drop-shadow(0 0 2px #2d71f7) drop-shadow(0 0 1px #2d71f7)}
+.ct-miss{display:inline-block;font-size:11px;color:#b45309;background:rgba(245,158,11,.12);border-radius:6px;padding:1px 6px;margin:2px 0}

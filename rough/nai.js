@@ -24,7 +24,34 @@
     [['손을 뻗', '내민', '건네'], ['reaching out']], [['입을 가리', '입을 감싸'], ['covering mouth']], [['웃'], ['smile']], [['울며', '울고', '울었', '운다', '눈물'], ['tears']],
     [['붉어', '빨개'], ['blush']], [['앉'], ['sitting']], [['서 있', '선 채'], ['standing']], [['코피'], ['nosebleed']], [['총'], ['holding gun', 'rifle']],
     [['단추', '소매'], ['sleeve', 'button']], [['촛불을 들', '촛대를 들'], ['holding candle']], [['계단을 오'], ['walking up stairs']],
+    // 동작(활용형까지): 달린다·달려·달린·달렸… 어간이 바뀌는 것은 따로 적음
+    [['달리', '달려', '달린', '달렸', '뛰어가', '뛰어간', '뛰어온', '뛰어오', '질주', '내달'], ['running', 'motion blur']],
+    [['뛰어오르', '뛰어올라', '뛰어오른', '점프', '도약', '뛰어내'], ['jumping']], [['넘어지', '넘어진', '넘어져', '고꾸라'], ['falling', 'tripping']],
+    [['쓰러지', '쓰러진', '쓰러져'], ['lying on the ground']], [['누워', '누운', '눕', '드러누'], ['lying']], [['엎드'], ['on stomach']],
+    [['무릎을 꿇', '무릎 꿇', '무릎을 꿇은'], ['kneeling']], [['웅크', '쪼그려', '쭈그려', '쪼그리', '쭈그리'], ['squatting', 'curled up']],
+    [['기어가', '기어간', '기어오'], ['crawling']], [['매달'], ['hanging']], [['기어오르', '기어올라', '올라타', '올라탄'], ['climbing']],
+    [['숨어', '숨은', '숨는', '숨었'], ['hiding']], [['날아', '날고', '날았', '날개를 펼'], ['flying']], [['헤엄', '수영'], ['swimming']],
+    [['춤'], ['dancing']], [['손을 흔들', '손을 흔든'], ['waving']], [['가리키', '가리킨', '가리켰'], ['pointing']],
+    [['고개를 숙여 인사', '절을', '인사를 하', '꾸벅'], ['bowing']], [['팔짱'], ['crossed arms']], [['주먹을 쥐', '주먹을 쥔', '주먹을 꽉'], ['clenched hands']],
+    [['머리를 감싸', '머리를 쥐어', '머리를 움켜'], ['head in hands']], [['턱을 괴', '턱을 괸'], ['hand on own chin']], [['벽에 기대', '벽에 기댄'], ['leaning against wall']],
+    [['소리치', '소리친', '소리쳤', '외치', '외친', '외쳤', '고함', '버럭'], ['shouting', 'open mouth']], [['비명'], ['screaming']], [['속삭'], ['whispering']],
+    [['노려', '째려', '쏘아보', '쏘아본'], ['glaring']], [['눈을 감', '눈 감', '눈을 지그시'], ['closed eyes']], [['한숨'], ['sigh']],
+    [['잠들', '잠든', '자고 있', '졸고', '졸린'], ['sleeping']], [['책을 읽', '책을 펼'], ['reading', 'holding book']], [['편지를 쓰', '글을 쓰', '적는다', '적고'], ['writing']],
+    [['마시', '마신', '마셨', '들이켜'], ['drinking']], [['먹는', '먹고', '먹었', '먹는다', '베어 물'], ['eating']],
+    [['칼을 뽑', '검을 뽑', '칼을 빼', '검을 빼'], ['unsheathing', 'holding sword']], [['칼을 휘', '검을 휘', '베어', '베었', '벤다'], ['swinging sword', 'holding sword']],
+    [['칼을 겨', '검을 겨', '칼끝'], ['holding sword', 'pointing sword']], [['활을 당', '활시위'], ['drawing bow', 'holding bow']], [['총을 겨', '총구'], ['aiming', 'holding gun']],
+    [['주먹을 날', '주먹질', '때린', '때리', '후려'], ['punching', 'fighting']], [['발로 차', '걷어차'], ['kicking']], [['싸우', '싸운', '격투', '맞붙'], ['fighting']],
+    [['막아', '막는', '방패'], ['blocking']], [['돌아서', '등을 돌', '등지고'], ['back turned', 'from behind']], [['일어서', '일어선', '일어나', '일어난'], ['standing up']],
+    [['머리를 쓸어', '머리를 넘기', '머리카락을 쓸'], ['hand in own hair']], [['문을 열', '문을 연', '문을 밀'], ['opening door']], [['창문을 열', '창을 열'], ['opening window']],
+    [['우산'], ['holding umbrella']], [['휴대폰', '핸드폰', '스마트폰', '전화를 받', '통화'], ['holding phone']], [['담배'], ['smoking']], [['운전'], ['driving']],
+    [['몸을 떨', '떨고', '떨린다', '덜덜'], ['trembling']], [['헐떡', '숨을 몰아', '숨이 차'], ['panting', 'heavy breathing']], [['피를 흘', '피투성', '피가 흐'], ['blood']],
+    [['휘날', '바람에 날', '머리카락이 날'], ['wind', 'floating hair']], [['젖은', '젖어', '비를 맞'], ['wet']], [['손을 뻗어 잡', '붙잡으려'], ['reaching']],
+    [['고개를 갸웃', '갸우뚱'], ['head tilt']], [['뒷걸음', '물러서', '물러선'], ['stepping back']], [['다가서', '다가선', '다가와', '다가온다'], ['walking towards viewer']],
+    [['응시', '뚫어지게', '빤히'], ['staring']], [['먼 곳을', '먼 산', '하늘을 바라', '하늘을 본'], ['looking afar']],
+    [['돌진', '달려든', '달려들'], ['charging', 'dynamic pose']], [['도망', '달아나', '달아난'], ['running away', 'motion blur']],
   ];
+  // 사람 동작으로 보이는 한국어 어미(동작 태그를 못 찾았을 때 알림용)
+  const VERBISH = /(다|고|며|면서|는|은|ㄴ다|하며|한다)[.!?…]*$|[가-힣](는다|ㄴ다|었다|았다|였다|한다|된다|진다)/;
   const PLACE = [
     [['복도'], ['indoors', 'hallway']], [['저택'], ['mansion']], [['정원'], ['outdoors', 'garden']], [['숲', '풀밭'], ['outdoors', 'forest']],
     [['교실'], ['indoors', 'classroom']], [['부엌'], ['indoors', 'kitchen']], [['계단'], ['stairs']], [['창가', '창밖', '창문'], ['window']], [['무대', '극장'], ['stage', 'theater']],
@@ -286,13 +313,15 @@
       return { name: c.name, pos: drawn && !far ? drawn.pos : pos(x, n < 3 ? 0.5 : 0.7),
         prompt: joinTags([...countTags([c]), ...appearance, ...(isMain ? weigh(EXPR[p.emo] || [], p.i ?? 1) : []), ...(isMain ? tagsOf(onScreen, POSE) : []), ...(mode === 'detail' ? body : [])]) };
     });
+    // 인물이 나오는데 동작 태그를 하나도 못 찾으면 알림(사전에 없는 동작 — 컷 프롬프트 생성(Claude)으로 채우거나 컷 글을 고쳐 달라고)
+    const missAct = !!main && !far && ['character', 'detail'].includes(mode) && !tagsOf(onScreen, POSE).length && VERBISH.test(onScreen.trim()) ? onScreen.trim().slice(0, 40) : '';
     const charRef = mode === 'character' && main && refs.char?.(main.name) ? main.name : null;
     const strength = ['detail', 'object'].includes(mode) ? 0.72 : NO_HUMANS.has(mode) || far ? 0.62 : peak ? 0.7 : 0.66;
     return {
       mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h),
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
-      props: (ctx.props?.(p) || []).map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '' })), place, layerCast,
+      props: (ctx.props?.(p) || []).map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '' })), place, layerCast, missAct,
     };
   }
 
@@ -314,7 +343,7 @@
       const identity = splitTags(c.prompt).filter(tag => COUNT_TAG.test(tag));
       return { ...c, prompt: joinTags([...identity, ...splitTags(next.prompt).filter(tag => !COUNT_TAG.test(tagName(tag)) && !/^no humans$/i.test(tagName(tag)))]) };
     });
-    return { ...draft, base, chars, layerCast, ai: true };
+    return { ...draft, base, chars, layerCast, ai: true, missAct: '' };
   }
   function text(o, i, total, head) {
     const L = [`[컷 ${i + 1} / ${total}] ${head || ''}`.trim(),

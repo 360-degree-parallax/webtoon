@@ -99,6 +99,7 @@ const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 한 컷�
 - angle은 감정 연출이다. 로우앵글은 위압·결의·분노를(from below, looking down at viewer, dramatic perspective, foreshortening), 하이앵글은 작고 약하고 외로움을(from above, looking up, 넓은 빈 공간), 아이레벨이라도 긴장·당황이 크면 dutch angle로. 그 감정이 화면 구도·인물 자세·시선에 보이게 쓴다.
 - emotion과 intensity(0~3): 표정·몸짓·조명을 감정에 맞게, intensity가 높을수록 더 강하게(2는 1.15::태그::, 3은 1.3::태그:: 가중치). peak 컷은 dynamic angle·강한 명암으로 씬에서 가장 센 구도.
 - sceneMood는 씬 전체 분위기다. 그 색감·조명(tags)을 모든 컷에 같게 깔아 컷끼리 톤이 이어지게 하고, 컷의 감정 조명은 그 위에 얹는다. 시간대(밤·낮)와 어긋나는 밝기 태그는 쓰지 않는다.
+- action의 동작(달린다·넘어진다·칼을 휘두른다·소리친다 등)은 빠짐없이 그 인물 프롬프트의 태그(running, falling, swinging sword, shouting…)로 옮기고, 태그로 안 되는 동작은 짧은 영문 구절로 쓴다. 동작이 있는 컷에서 동작 태그 없이 외형·표정만 쓰지 않는다. 움직임이 큰 동작은 motion blur·dynamic pose·full body처럼 움직임이 보이는 프레이밍을 곁들인다.
 - story(묶음 흐름·목적)와 앞뒤 컷을 보고, 이 컷이 흐름에서 맡은 역할(설정·고조·정점·여운)에 맞게 프레이밍과 빛의 세기를 정한다.
 
 props는 작가가 #으로 표시해 모양을 고정한 소품이다(name·look 한국어 형태·tags 영어 태그). 컷의 props에 이름이 있으면 그 컷 base에 그 소품의 태그를 넣고, 모든 컷에서 같은 단어·같은 색·같은 재질로 쓴다. 소품의 색·모양·크기를 컷마다 바꾸거나 다른 수식어를 덧붙이지 않는다. tags가 있으면 그대로 쓴다. tags가 비어 있으면 look(없으면 세계관·컷 글)에 맞춰 영어 태그 2~6개(사물 이름 + 색·재질·특징)를 한 번 정해 응답 props에 name과 함께 돌려주고, 그 소품이 나오는 컷마다 그 태그를 똑같이 쓴다. 소품 태그는 그 컷의 props에 이름이 있는 컷에만 넣고, props에 없는 컷에는 넣지 않는다(앞뒤 컷에 나왔더라도). tags가 이미 있는 소품은 응답 props에 넣지 않는다.

@@ -366,6 +366,15 @@ test('프롬프트에 앵글×감정 · 감정 강도 가중치 · 씬 무드', 
   const strong = await ev(() => state.panels[1].i >= 2 ? /1\.(15|3)::/.test(naiCuts()[1].o.chars.map(x => x.prompt).join(' ')) : true);
   assert(strong, '강한 감정은 표정 가중치');
 });
+test('프롬프트에 동작: 달리기·칼 뽑기·무릎 꿇기 → 태그, 모르는 동작은 알림', async ({p, ev}) => {
+  await ev(() => { showView('write'); CUTS.splice(0, CUTS.length, '@에드가가 나무 사이를 달린다. {전경}', '@에드가가 칼을 뽑아 든다.', '@준이 무릎을 꿇고 소리친다.', '@준이 조용히 숨을 고른다.'); saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(700);
+  await ev(() => showView('layout')); await p.waitForTimeout(500);
+  const c = await ev(() => naiCuts().map(({o}) => [o.chars.map(x => x.prompt).join(' | ') + ' ' + (o.layerCast || []).map(x => x.prompt).join(' | '), o.missAct]));
+  assert(/\brunning\b/.test(c[0][0]), '달린다 → running');
+  assert(/unsheathing|holding sword/.test(c[1][0]), '칼을 뽑는다 → unsheathing');
+  assert(/kneeling/.test(c[2][0]) && /shouting/.test(c[2][0]), '무릎 꿇고 소리친다 → kneeling, shouting');
+  assert(c[3][1] && await ev(() => !!document.querySelector('#conti .ccard[data-ct="3"] .ct-miss')), '사전에 없는 동작은 카드에 알림');
+});
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
   await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);

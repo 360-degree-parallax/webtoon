@@ -56,7 +56,7 @@ node tests/e2e/run.js
 ```bash
 node rough/test_engine.js
 ```
-e2e는 Playwright로 정적 서버를 직접 띄워 28개 시나리오를 돕니다. GitHub Actions: `e2e.yml`(rough·tests 변경 때), `db-check.yml`(DB·도구 변경 때).
+e2e는 Playwright로 정적 서버를 직접 띄워 29개 시나리오를 돕니다. GitHub Actions: `e2e.yml`(rough·tests 변경 때), `db-check.yml`(DB·도구 변경 때).
 
 ## 연출 DB
 
