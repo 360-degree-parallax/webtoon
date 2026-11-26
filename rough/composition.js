@@ -101,14 +101,16 @@ export async function generateComposition(request, config, previous, onStatus) {
   return {summary:plan.summary,cards};
 }
 
-export async function regenerateCard(request,config,draft,current,scope,onStatus) {
+export async function regenerateCard(request,config,draft,current,scope,onStatus,ask='') {
   if(current.locked)fail('잠긴 카드는 먼저 잠금을 풀어 주세요.');
   const mode=config.mode;
   if(scope==='code'&&(mode!=='marketing'||!current.withHTML))fail('HTML 코드가 지정된 섹션만 다시 만들 수 있어요.');
   const plan=draft.cards.map(card=>({...card,html:card.withHTML}));
   const schema=scope==='code'?codeSchema:mode==='webtoon'?webtoonSchema:marketingSchema;
-  const result=await request(system+'\n'+steps[scope==='code'?'code':mode],schema,
-    {config,plan:{summary:draft.summary,cards:plan},previous:current,expand:[current.n]},onStatus);
+  // ask: 사용자가 다시 생성할 때 적은 방향. 있으면 다른 조건(컷 수·잠긴 흐름)은 지키면서 그 방향을 가장 먼저 반영
+  const how=ask?'\nrequest가 있으면 사용자가 이 카드를 다시 만들며 적은 방향이다. 설계의 컷 수·형식·앞뒤 흐름은 지키면서 그 방향을 가장 먼저 반영하고, previous와 눈에 띄게 다르게 쓴다.':'';
+  const result=await request(system+'\n'+steps[scope==='code'?'code':mode]+how,schema,
+    {config,plan:{summary:draft.summary,cards:plan},previous:current,expand:[current.n],...(ask?{request:ask}:{})},onStatus);
   const [fresh]=checkCards(result.out,plan.filter(card=>card.n===current.n),mode,scope);
   return {...current,...fresh,id:current.id,locked:false};
 }

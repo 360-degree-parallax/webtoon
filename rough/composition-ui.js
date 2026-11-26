@@ -166,20 +166,29 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
       applyLock(article,card);
     }
   }
-  async function generate(card=null,scope='card'){
+  // 다시 생성: 어떻게 바꿀지 적는 칸을 카드 머리 아래에 엶(비워 두면 그냥 다시). 마지막에 적은 말은 카드에 남겨 다음에 채워 둠
+  function askRegen(article,card,scope){
+    let box=article.querySelector('.pc-ask');if(box){box.querySelector('textarea').focus();return}
+    box=document.createElement('div');box.className='pc-ask';box.dataset.scope=scope;
+    box.innerHTML='<label><span>'+(scope==='code'?'HTML을 어떻게 다시 만들까요?':'어떻게 다시 만들까요?')+'</span>'+
+      '<textarea rows="2" placeholder="'+(scope==='code'?'예: 버튼을 더 크게, 모바일에서 한 줄로':'예: 대사를 줄이고 마지막 컷을 반전으로 · 비워 두면 그냥 다시 만들어요')+'">'+localText(card.ask||'')+'</textarea></label>'+
+      '<div class="pc-ask-act"><small>Enter 다시 생성 · Shift+Enter 줄바꿈 · Esc 닫기</small><span class="grow"></span>'+
+      '<button type="button" class="btn" data-do="regen-cancel">취소</button><button type="button" class="btn dark" data-do="regen-go">다시 생성</button></div>';
+    article.querySelector('.pc-h').after(box);const t=box.querySelector('textarea');t.focus();t.setSelectionRange(t.value.length,t.value.length)}
+  async function generate(card=null,scope='card',ask=''){
     if(busy)return;
     takeSettings();persist();
     let options;
     try{options=config()}catch(error){updateStatus(error.message);return}
     const key=getKey();
-    if(!key){requestKey(()=>generate(card,scope));return}
+    if(!key){requestKey(()=>generate(card,scope,ask));return}
     const row=current(),draft=row.draft;
     setBusy(true);updateStatus('Claude에 연결하는 중');
     try{
       const call=(system,schema,payload,progress)=>request(key,system,schema,payload,progress);
       if(card){
         const effective={...options,behavior:draft.behavior||options.behavior};
-        const result=await regenerateCard(call,effective,draft,card,scope,updateStatus);
+        const result=await regenerateCard(call,effective,draft,card,scope,updateStatus,ask);
         draft.cards=draft.cards.map(item=>item.id===card.id?result:item);
       }else{
         const result=await generateComposition(call,options,draft?.cards||[],updateStatus);
@@ -202,6 +211,9 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
   // 컷 보기 → 누르면 글칸으로, 벗어나면 다시 보기 모양
   function editCut(li){if(busy||li.closest('.locked'))return;const v=li.querySelector('.pcut-view'),t=li.querySelector('textarea');v.hidden=true;t.hidden=false;t.style.height='auto';t.style.height=t.scrollHeight+'px';t.focus();t.setSelectionRange(t.value.length,t.value.length)}
   output.addEventListener('click',event=>{const v=event.target.closest('.pcut-view');if(v)editCut(v.closest('.pcut'))});
+  output.addEventListener('keydown',event=>{const a=event.target.closest('.pc-ask textarea');if(!a)return;
+    if(event.key==='Escape'){event.preventDefault();a.closest('.pc-ask').remove();return}
+    if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();a.closest('.pc-ask').querySelector('[data-do="regen-go"]').click()}});
   output.addEventListener('keydown',event=>{const v=event.target.closest('.pcut-view');if(v&&(event.key==='Enter'||event.key===' ')){event.preventDefault();editCut(v.closest('.pcut'))}
     if(event.target.matches('.pcut textarea')&&event.key==='Escape')event.target.blur()});
   output.addEventListener('focusout',event=>{const t=event.target;if(!t.matches?.('.pcut textarea'))return;const li=t.closest('.pcut');li.querySelector('.pcut-view').innerHTML=cutView(t.value);t.hidden=true;li.querySelector('.pcut-view').hidden=false});
@@ -225,7 +237,9 @@ export function mountComposition(root,{getKey,requestKey,addScenes,getStory,requ
     const card=draft?.cards.find(row=>row.n===Number(article?.dataset.card));
     if(!card)return;
     if(doWhat==='lock'){card.locked=!card.locked;applyLock(article,card);persist();return}
-    if(doWhat==='regen'||doWhat==='regen-code'){generate(card,doWhat==='regen-code'?'code':'card');return}
+    if(doWhat==='regen'||doWhat==='regen-code'){askRegen(article,card,doWhat==='regen-code'?'code':'card');return}
+    if(doWhat==='regen-go'){const box=article.querySelector('.pc-ask'),t=box.querySelector('textarea').value.trim();card.ask=t;box.remove();generate(card,box.dataset.scope,t);return}
+    if(doWhat==='regen-cancel'){article.querySelector('.pc-ask')?.remove();return}
     if(doWhat==='preview'||doWhat==='code'){
       const preview=doWhat==='preview';
       article.querySelector('iframe').hidden=!preview;

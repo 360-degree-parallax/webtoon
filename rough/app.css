@@ -1361,3 +1361,10 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .rst:hover,.rst:focus-visible{opacity:1;color:var(--t1);text-decoration:underline;text-underline-offset:3px}
 .rst.undo{opacity:1;color:var(--t2);text-decoration:underline;text-underline-offset:3px}
 .scenes .rstrow{justify-content:center;margin-top:14px}
+/* 구성 카드 다시 생성: 어떻게 바꿀지 적는 칸 */
+#v-plan .pc-ask{margin-top:12px;padding:12px;border-radius:12px;background:var(--surface);display:grid;gap:8px}
+#v-plan .pc-ask label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--t2)}
+#v-plan .pc-ask textarea{width:100%;resize:vertical;min-height:52px;padding:8px 10px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:14px;font-weight:400;background:var(--bg);color:var(--t1)}
+#v-plan .pc-ask-act{display:flex;align-items:center;gap:6px}#v-plan .pc-ask-act small{font-size:11px;color:var(--t3)}
+#v-plan .pc-ask-act .btn{min-height:32px;padding:0 12px;font-size:13px;border-radius:10px}
+#v-plan .pc-ask-act .grow{flex:1}

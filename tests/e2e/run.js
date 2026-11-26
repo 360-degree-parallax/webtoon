@@ -118,6 +118,20 @@ test('초기화: 캐릭터·세계관·구성·씬 → 되돌리기', async ({p,
   await p.reload(); await p.waitForTimeout(2200);
   assert((await ev(() => JSON.stringify(SCENES.map(s => s.cuts)))) === before, '되돌린 씬이 저장돼 있음');
 });
+test('구성: 다시 생성 → 방향 입력 칸 · Esc 닫기 · 적은 말 남음', async ({p, ev}) => {
+  await ev(() => { const card = n => ({id: 'c' + n, n, title: n + '번 씬', cutCount: 2, cuts: ['컷 하나', '컷 둘'], locked: false, role: '', turn: '', ending: ''});
+    localStorage.setItem('rough-composition-v1', JSON.stringify({mode: 'webtoon', webtoon: {form: {}, draft: {summary: '요약', cards: [card(1), card(2)]}}, marketing: {form: {}, draft: null}})); });
+  await p.reload(); await p.waitForTimeout(2200); await ev(() => showView('plan')); await p.waitForTimeout(1500);
+  await p.click('#pc-1 [data-do=regen]'); await p.waitForTimeout(200);
+  assert(await ev(() => !!document.querySelector('#pc-1 .pc-ask textarea') && document.activeElement.matches('.pc-ask textarea')), '입력 칸이 열리고 커서가 감');
+  await p.keyboard.press('Escape'); assert(await ev(() => !document.querySelector('.pc-ask')), 'Esc로 닫힘');
+  await p.click('#pc-1 [data-do=regen]'); await p.keyboard.type('대사를 줄이고 반전으로'); await p.keyboard.press('Enter'); await p.waitForTimeout(400);
+  assert(await ev(() => !document.querySelector('.pc-ask')), 'Enter로 보냄');
+  assert(await ev(() => JSON.parse(localStorage.getItem('rough-composition-v1')).webtoon.draft.cards[0].ask === '대사를 줄이고 반전으로'), '적은 말이 카드에 저장');
+  await ev(() => document.querySelector('#keydlg, dialog[open]')?.close?.());
+  await p.click('#pc-1 [data-do=regen]'); await p.waitForTimeout(200);
+  assert((await p.inputValue('#pc-1 .pc-ask textarea')) === '대사를 줄이고 반전으로', '다음에 열면 채워져 있음');
+});
 test('다크 모드: 시스템 다크에서 data-scheme=dark', async ({b, url}) => {
   const p = await b.newPage({colorScheme: 'dark'}); await p.goto(url); await p.waitForTimeout(1200);
   assert(await p.evaluate(() => document.documentElement.dataset.scheme === 'dark'), 'data-scheme');
