@@ -1368,3 +1368,8 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 #v-plan .pc-ask-act{display:flex;align-items:center;gap:6px}#v-plan .pc-ask-act small{font-size:11px;color:var(--t3)}
 #v-plan .pc-ask-act .btn{min-height:32px;padding:0 12px;font-size:13px;border-radius:10px}
 #v-plan .pc-ask-act .grow{flex:1}
+/* 컷 프롬프트 생성 상태 */
+.tpill.busy{cursor:progress;filter:none;opacity:.9}.tpill .spin{display:inline-block;width:13px;height:13px;margin-right:7px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:tspin .8s linear infinite}
+@keyframes tspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.tpill .spin{animation-duration:2.4s}}
+.ct-naist{margin:6px 0 0;font-size:13px;color:var(--tg7,var(--t2));min-height:0}.ct-naist:empty{display:none}.ct-naist.err{color:var(--warn,#b45309)}

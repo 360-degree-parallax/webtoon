@@ -2273,7 +2273,12 @@ function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)retur
 function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return L;
   const byCut=new Map(ai.cuts.map(c=>[c.n,c]));
   return L.map(x=>({...x,o:NAI.refine(x.o,byCut.get(x.i+1))}))}
-let naiBusy=false;
+let naiBusy=false,NAI_MSG='',NAI_ERR=false,NAI_DONE=0;
+// 컷 프롬프트 생성 상태: 콘티 머리의 버튼·상태 글자에 바로 보임(생성 중 → 생성 완료 4초 → 원래대로). 실패하면 빨간 글자로 이유
+function naiBtnSync(){const done=!naiBusy&&NAI_DONE&&Date.now()-NAI_DONE<4000;
+  document.querySelectorAll('[data-act="nairefine"]').forEach(b=>{b.disabled=naiBusy;b.classList.toggle('busy',naiBusy);b.classList.toggle('done',!!done);b.setAttribute('aria-busy',naiBusy?'true':'false');
+    b.innerHTML=naiBusy?'<i class="spin" aria-hidden="true"></i>생성 중…':done?'✓ 생성 완료':'컷 프롬프트 생성'});
+  document.querySelectorAll('.ct-naist').forEach(x=>{x.textContent=NAI_MSG;x.classList.toggle('err',NAI_ERR)})}
 // 작화 설정 값의 출처: 자동(외형 규칙)·생성(Claude)·직접(작가가 고침)
 var ARTGEN;try{ARTGEN=JSON.parse(localStorage.getItem('rough-art-gen')||'{}')}catch(_){ARTGEN={}}ARTGEN.chars||={};
 function artSrc(name,v){if(NAITAGS[name]==null)return '자동';if(ARTGEN.chars[name]===v)return '생성';return ''}
@@ -2298,11 +2303,11 @@ function artCompare(r,chars){let d=$('#artdlg');if(!d){d=document.createElement(
       saveNaiTags();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}$('#naistyle').value=NAISTYLE;renderNai();toast(n?`작화 프롬프트 ${n}개를 바꿨어요 · 컷 프롬프트 생성을 다시 누르면 컷에도 반영돼요`:'바꾼 것이 없어요',2600)}
     d.close()};d.showModal()}
 async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}
-  if(!AIKEY){openKey(naiRefine);return}const st=t=>$('#naist').textContent=t;naiBusy=true;$('#naibtn').disabled=true;const sid=SCENES[SCUR].id,payload=naiPayload();
+  if(!AIKEY){openKey(naiRefine);return}const st=t=>{$('#naist').textContent=t;NAI_MSG=t;naiBtnSync()};naiBusy=true;NAI_ERR=false;NAI_DONE=0;$('#naibtn').disabled=true;st('Claude에 보내는 중… 컷이 많으면 1분 안팎 걸려요');const sid=SCENES[SCUR].id,payload=naiPayload();
   let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,payload,{onStatus:st});
     AIN[sid]={sig:sigOf(payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
-    NAIVIEW='ai';st(`컷 프롬프트를 만들었어요 · ${r.model}`);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
-  catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';st(m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false}}
+    NAIVIEW='ai';naiBusy=false;NAI_DONE=Date.now();st(`컷 ${r.cuts?.length||''}개 프롬프트를 만들었어요 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);setTimeout(naiBtnSync,4100);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
+  catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';naiBusy=false;NAI_ERR=true;st('생성하지 못했어요 · '+m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false;naiBtnSync()}}
 $('#naiview').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;NAIVIEW=b.dataset.v;renderNai()});
 // 전체 복사: 기본 프롬프트와 캐릭터 프롬프트만, 각 줄 끝에 쉼표, 빈 줄로 구분
 // 같은 태그가 두 번 들어가면(예: 1girl, 1girl) 한 번만
@@ -2339,7 +2344,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
   // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
-  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">현재 초안을 표시 중이에요 · 컷 프롬프트를 다시 생성할 수 있어요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
@@ -2512,3 +2517,5 @@ Promise.all([
   if(!confirm(R.ask))return;const v=R.snap();
   try{R.apply()}catch(err){console.warn(err);toast('초기화하지 못했어요');return}
   toast(R.done,2400);b.textContent='되돌리기';b.classList.add('undo');LAST[k]={v,t:setTimeout(back,8000)}})}
+// 콘티를 다시 그려도 컷 프롬프트 생성 상태(생성 중·완료·오류)가 유지되게
+{const _rc=renderConti;renderConti=function(...a){const r=_rc(...a);naiBtnSync();return r}}

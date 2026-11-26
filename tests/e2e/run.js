@@ -118,6 +118,23 @@ test('콘티 NovelAI: 화면에 보이는 대상을 컷마다 다르게 구성',
     return output.base.includes('stone floor') && !/1boy|portrait|black hair/.test(output.base) && !output.chars.length;
   }), 'Claude 결과에도 배경 컷 초점 유지');
 });
+test('콘티: 컷 프롬프트 생성 중·완료가 버튼에 보임', async ({p, ev}) => {
+  // claude.js를 가짜로 바꿔 응답을 늦춤(실제 API 키 없이)
+  let release; const gate = new Promise(r => release = r); let fail = false;
+  await p.route('**/claude.js', async route => { await gate; route.fulfill({contentType: 'text/javascript', body: fail
+    ? "export async function refineNai(){const e=new Error('x');e.status=500;throw e}export function explain(){return '서버 오류'}"
+    : "export async function refineNai(k,p,{onStatus}){onStatus&&onStatus('Claude가 쓰는 중');return {cuts:p.cuts?p.cuts.map(()=>({p:'test'})):[],model:'test'}}export function explain(){return 'x'}"}); });
+  await ev(() => { setKey('sk-test', 'session'); showView('layout'); }); await p.waitForTimeout(800);
+  await p.click('#conti [data-act=nairefine]'); await p.click('#refinedlg [data-r=go]'); await p.waitForTimeout(200);
+  assert((await p.textContent('#conti [data-act=nairefine]')).includes('생성 중'), '생성 중 표시');
+  assert(await p.isDisabled('#conti [data-act=nairefine]'), '생성 중에는 버튼 잠김');
+  assert((await p.textContent('#conti .ct-naist')).length > 0, '진행 글자');
+  release(); await p.waitForTimeout(500);
+  assert((await p.textContent('#conti [data-act=nairefine]')).includes('생성 완료'), '생성 완료 표시');
+  assert((await p.textContent('#conti .ct-naist')).includes('만들었어요'), '완료 글자');
+  await p.waitForTimeout(4300);
+  assert((await p.textContent('#conti [data-act=nairefine]')).trim() === '컷 프롬프트 생성', '4초 뒤 원래대로');
+});
 test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   await p.click('#gReview'); await p.waitForTimeout(1500);
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');
