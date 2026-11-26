@@ -1161,6 +1161,12 @@ function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.
       const nw=(b.props||[]).filter(x=>!propOf(x.name));if(nw.length)out.push(`<span class="newchar"><small>새 소품</small>${nw.map(x=>`<button type="button" data-propadd="${i}" title="세계관 물건에 「${esc(x.name)}」 고정${x.look?' — '+esc(x.look):''}">+ ◆${esc(x.name)}</button>`).join('')}</span>`);
       propClash(CUTS[i]).forEach(x=>out.push(`<span class="propclash" title="설정집 형태로 고정돼요. 바꾸려면 세계관 페이지에서 고쳐 주세요">◆ ${esc(x.name)}: 적은 형태와 설정집이 달라요 — 설정집 「${esc(x.e.desc.slice(0,40))}」</span>`))}
     {const un=unknownNames([CUTS[i]]);if(un.length)out.push(`<span class="newchar"><small>설정집에 없음</small>${un.map(n=>`<button type="button" data-sug="${esc(n)}" title="설정집 캐릭터에 「${esc(n)}」 추가">+ ${esc(n)}</button>`).join('')}</span>`)}
+    // 쓰는 중 알림: 그/그녀를 누구로 읽었는지 · 동작은 있는데 누가 하는지 모름 · 한 컷에 동작 2개(앞 동작은 그림에서 빠짐 → 컷 나누기)
+    const NR=window.RoughNAI;if(NR&&NR.readAction&&(b.actText||'').trim()){const t=b.actText.trim(),names=engineChars().map(c=>c.name).filter(Boolean),ra=NR.readAction(t,names,b.who||'');
+      if(b.whoGuess)out.push(`<span class="readhint" title="'그·그녀'를 앞 컷에 나온 인물로 읽었어요 · 다른 사람이면 @이름으로 적어 주세요"><small>그·그녀</small>→ ${esc(b.who)}</span>`);
+      else if(!b.who&&names.length&&NR.poseTags(t).length&&!ra.crowd.length)out.push(`<span class="readhint warn" title="동작은 읽었는데 누가 하는지 몰라요 · @이름으로 적으면 그 인물 프롬프트에 들어가요"><small>누가?</small>@이름을 붙여 주세요</span>`);
+      const sq=ra.dropped.find(d=>d.why==='seq'&&d.last&&/고$/.test(d.word));
+      if(sq)out.push(`<span class="readhint"><small>동작 2개</small>「${esc(sq.word)}」 앞 동작은 그림에서 빠져요 <button type="button" data-cutsplit="${i}" data-w="${esc(sq.word)}" title="「${esc(sq.word)}」 뒤에서 컷을 둘로 나눠요 · Ctrl+Z로 되돌리기">컷 나누기</button></span>`)}
     // 효과음 추천: 효과음이 없는 컷에만, 눌러서 바로 넣기(sfx-rec.js)
     if(window.RoughSfxRec&&!(b.sfx||[]).length){const emo=(state.panels||[]).find(p=>String(p.key||'').startsWith('#'+i+':'))?.emo;
       const rs=RoughSfxRec.recommend(CUTS[i],emo,3);if(rs.length)out.push(`<span class="sfxrec"><small>효과음</small>${rs.map(r=>`<button type="button" data-sfxadd="${esc(r.word)}" data-i="${i}" title="${esc(r.why)} 때문에 추천 · ${esc(r.cat)}">+ ${esc(r.word)}</button>`).join('')}</span>`)}
@@ -1204,6 +1210,14 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-act]')?.da
 function addSfx(i,w){const ta=document.querySelector(`#cutlist li[data-i="${i}"] .cutin`);if(!ta)return;ta.value=ta.value.replace(/\s*$/,'')+`\n-${w}-`;ta.dispatchEvent(new Event('input',{bubbles:true}));toast(`효과음 「${w}」을 넣었어요`)}
 $('#cutlist').addEventListener('mousedown',e=>{if(e.target.closest('[data-sfxadd]'))e.preventDefault()});
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-sfxadd]');if(!b)return;addSfx(+b.dataset.i,b.dataset.sfxadd)});
+// 컷 나누기(쓰는 중 알림): 「…고」 뒤에서 둘로 — 앞 컷은 '…다.'로 끝내고, 뒤 컷은 같은 인물(@이름)로 시작, 그 뒤 줄(대사 등)은 뒤 컷으로
+function splitCutAt(i,w){const lines=String(CUTS[i]||'').split('\n'),k=lines.findIndex(l=>l.includes(w+' '));if(k<0)return;
+  const L=lines[k],at=L.indexOf(w+' '),head=L.slice(0,at)+w.replace(/고$/,'다.'),rest=L.slice(at+w.length+1).trim(),who=(head.match(/@[^\s"“.,!?{}()]+/)||[''])[0].replace(/(이|가|은|는|도)$/,'');
+  const a=[...lines.slice(0,k),head].join('\n'),b2=[(who&&!/^@/.test(rest)?who+' ':'')+rest,...lines.slice(k+1)].join('\n');
+  if(typeof edRecord==='function'){edRecord();edLast=0}
+  const n=CUTS.length;remapCuts(SCUR,()=>{cutEdits().splice(i+1,0,null);CUTS[i]=a;CUTS.splice(i+1,0,b2);return moveMap(n,x=>x>i?x+1:x)});renderCuts();cutChanged();toast('컷을 둘로 나눴어요 · Ctrl+Z로 되돌리기',2000)}
+$('#cutlist').addEventListener('mousedown',e=>{if(e.target.closest('[data-cutsplit]'))e.preventDefault()});
+$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cutsplit]');if(b)splitCutAt(+b.dataset.cutsplit,b.dataset.w)});
 // 효과음 고르기 창: 이 컷 추천 + 분류별 전체(615개) + 빈 효과음
 function sfxPicker(btn,ta){let pop=$('#sfxpick');if(!pop){pop=document.createElement('div');pop.id='sfxpick';pop.className='sfxpick';document.body.appendChild(pop);
     document.addEventListener('mousedown',e=>{if(!pop.hidden&&!pop.contains(e.target)&&!e.target.closest('[data-ins="sfx"]'))pop.hidden=true});
@@ -2462,19 +2476,20 @@ function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.t
 var LEARNED=[];try{LEARNED=JSON.parse(localStorage.getItem('rough-learned-actions')||'[]')}catch(_){LEARNED=[]}
 // 도구 내장 배운 동작(rough/learned-actions.json, tools/merge_learned.py로 합쳐 커밋) + 이 브라우저에서 배운 것(같은 낱말은 브라우저 것이 이김)
 var LEARNED_BUILTIN=[];var LEARN_SKIP=[];  // 검사에서 걸러 낸 배운 동작(이 창에서만 보여 줌)
-const applyLearned=()=>{const m=new Map();[...LEARNED_BUILTIN,...LEARNED].forEach(x=>m.set(x.ko,x));NAI.useLearned([...m.values()].map(x=>[[x.ko],String(x.tags).split(',').map(t=>t.trim()).filter(Boolean)]))};applyLearned();
+const applyLearned=()=>{const m=new Map();[...LEARNED_BUILTIN,...LEARNED].forEach(x=>m.set((x.kind==='place'?'@':'')+x.ko,x));NAI.useLearned([...m.values()].map(x=>[[x.ko],String(x.tags).split(',').map(t=>t.trim()).filter(Boolean),x.kind==='place'?'place':'']))};applyLearned();
 fetch('learned-actions.json').then(r=>r.ok?r.json():null).then(d=>{if(d?.type==='rough-actions'&&Array.isArray(d.items)){LEARNED_BUILTIN=d.items.filter(x=>x&&x.ko&&x.tags);applyLearned();if(VIEW==='layout')renderNai()}}).catch(()=>{});
-function learnActions(list,force){let n=0;for(const a of list||[]){const ko=String(a.ko||'').trim().slice(0,30),tags=String(a.tags||'').trim().slice(0,120);
-    if(!ko||!tags||ko.length<2||/[A-Za-z]/.test(ko)||(!force&&NAI.poseTags(ko).length))continue;
-    const chk=NAI.checkLearned?NAI.checkLearned(ko,tags):{ok:true};if(!chk.ok){LEARN_SKIP=[{ko,tags,why:chk.why.join(' · ')},...LEARN_SKIP.filter(x=>x.ko!==ko)].slice(0,30);continue}const i=LEARNED.findIndex(x=>x.ko===ko);if(i>=0)LEARNED[i]={ko,tags,at:Date.now()};else{LEARNED.push({ko,tags,at:Date.now()});n++}}
+function learnActions(list,force){let n=0;for(const a of list||[]){const ko=String(a.ko||'').trim().slice(0,30),tags=String(a.tags||'').trim().slice(0,120),kind=a.kind==='place'?'place':'';
+    if(!ko||!tags||ko.length<2||/[A-Za-z]/.test(ko)||(!force&&!kind&&NAI.poseTags(ko).length))continue;
+    const chk=NAI.checkLearned?NAI.checkLearned(ko,tags,kind):{ok:true};if(!chk.ok){LEARN_SKIP=[{ko,tags,why:chk.why.join(' · ')},...LEARN_SKIP.filter(x=>x.ko!==ko)].slice(0,30);continue}
+    const it=kind?{ko,tags,kind,at:Date.now()}:{ko,tags,at:Date.now()};const i=LEARNED.findIndex(x=>x.ko===ko&&(x.kind||'')===kind);if(i>=0)LEARNED[i]=it;else{LEARNED.push(it);n++}}
   if(n||force){try{localStorage.setItem('rough-learned-actions',JSON.stringify(LEARNED.slice(-500)))}catch(_){}applyLearned()}return n}
-function learnedExport(){const items=LEARNED.map(({ko,tags})=>({ko,tags}));if(!items.length){toast('이 브라우저에서 배운 동작이 없어요');return}
+function learnedExport(){const items=LEARNED.map(({ko,tags,kind})=>kind?{ko,tags,kind}:{ko,tags});if(!items.length){toast('이 브라우저에서 배운 동작이 없어요');return}
   download('rough-actions.json',URL.createObjectURL(new Blob([JSON.stringify({type:'rough-actions',version:1,exported:new Date().toISOString(),items},null,1)],{type:'application/json'})));toast(`배운 동작 ${items.length}개를 파일로 내보냈어요`)}
 async function learnedImport(file){try{const d=JSON.parse(await file.text());if(d.type!=='rough-actions'||!Array.isArray(d.items))throw new Error('배운 동작 파일이 아니에요');
   const before=LEARNED.length;learnActions(d.items,true);toast(`배운 동작을 가져왔어요 · 새로 ${LEARNED.length-before}개 (같은 낱말은 파일 것으로)`);return true}catch(e){toast('가져오지 못했어요: '+e.message);return false}}
 function openLearned(){let d=$('#learndlg');if(!d){d=document.createElement('dialog');d.id='learndlg';d.className='keydlg';document.body.appendChild(d)}
   const draw=()=>{d.innerHTML=`<h3>배운 동작 ${LEARNED.length}개</h3><p class="hint">컷 프롬프트 생성 때 Claude가 규칙 사전에 없던 동작을 태그로 옮기면 여기 쌓이고, 다음부터 규칙 초안이 바로 써요(활용형까지).</p>
-    <ul class="learnl">${LEARNED.slice().reverse().map(x=>`<li><b>${esc(x.ko)}</b> → <code>${esc(x.tags)}</code><button class="link" data-learndel="${esc(x.ko)}">지우기</button></li>`).join('')||'<li class="empty">이 브라우저에서 배운 동작이 아직 없어요</li>'}</ul>
+    <ul class="learnl">${LEARNED.slice().reverse().map(x=>`<li><b>${esc(x.ko)}</b>${x.kind==='place'?' <small>장소</small>':''} → <code>${esc(x.tags)}</code><button class="link" data-learndel="${esc(x.ko)}">지우기</button></li>`).join('')||'<li class="empty">이 브라우저에서 배운 동작이 아직 없어요</li>'}</ul>
     ${LEARN_SKIP.length?`<details class="learnb"><summary>걸러 낸 동작 ${LEARN_SKIP.length}개</summary><ul class="learnl">${LEARN_SKIP.map(x=>`<li><b>${esc(x.ko)}</b> → <code>${esc(x.tags)}</code> <small>${esc(x.why)}</small></li>`).join('')}</ul></details>`:''}
     ${LEARNED_BUILTIN.length?`<details class="learnb"><summary>도구에 내장된 동작 ${LEARNED_BUILTIN.length}개</summary><ul class="learnl">${LEARNED_BUILTIN.map(x=>`<li><b>${esc(x.ko)}</b> → <code>${esc(x.tags)}</code></li>`).join('')}</ul></details>`:''}
     <p class="hint">따로 보관: 파일로 내보내 다른 브라우저·기기에서 가져오기 · 도구에 넣기: 내보낸 파일을 <code>python3 tools/merge_learned.py 파일.json</code>으로 <code>rough/learned-actions.json</code>에 합쳐 커밋하면 모든 브라우저가 기본으로 써요 · 상단 「저장」 보관함과 작품 파일에도 함께 들어가요</p>
@@ -2504,7 +2519,7 @@ let NAIVIEW='ai',AIN={};try{AIN=JSON.parse(localStorage.getItem('rough-ai-nai')|
 function naiPayload(){const L=naiRuleCuts(),chars=naiChars();
   const sceneText=L.map(({p})=>[p.act,p.caption,...(p.dialogs||[]).map(d=>d.text)].join(' ')).join(' ');
   return{format:2,title:SCENES[SCUR].title||'',sceneMood:{emotion:sceneMoodOf(SCUR),tags:(NAI.SCENE_MOOD[sceneMoodOf(SCUR)]||[]).join(', ')},world:worldBrief(),lore:loreHits(sceneText).map(e=>({name:e.name,category:LORE_CAT[e.cat]?.[0]||e.cat,keywords:e.keys||'',description:(e.desc||'').slice(0,600),tags:loreTagList(e).join(', ')})),props:(()=>{const m=new Map();L.forEach(({p,o})=>propsFor(p).filter(x=>(o.props||[]).some(v=>v.name===x.name)).forEach(x=>m.set(x.name,{name:x.name,look:x.look,tags:x.tags})));return[...m.values()]})(),style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
-    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,ruleActions:NAI.poseTags(p.act).join(', '),missingAction:o.missAct||'',props:(o.props||[]).map(x=>x.name),offscreen:(o.propsOff||[]).map(x=>({name:x.name,show:x.emit.join(', ')||'없음'})),
+    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,ruleActions:((o.read&&o.read.per[p.who])||NAI.poseTags(p.act)).join(', '),ruleRead:o.read?{byChar:Object.fromEntries(Object.entries(o.read.per).map(([k,v])=>[k,v.join(', ')])),crowd:o.read.crowd.join(', '),together:o.read.spatial.join(', '),whoGuess:o.read.whoGuess}:null,rulePlace:(o.place||[]).join(', '),missingAction:o.missAct||'',props:(o.props||[]).map(x=>x.name),offscreen:(o.propsOff||[]).map(x=>({name:x.name,show:x.emit.join(', ')||'없음'})),
       dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${narrLabel(a.narr)} · ${a.goal}`:'',draft:{base:o.base,chars:o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}}})}}
 function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(naiPayload())}}
 function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return stripForeignProps(L);
@@ -2548,7 +2563,7 @@ function setCtNote(i,v){const sid=SCENES[SCUR].id,m=CTNOTE[sid]||={};if(v.trim()
 const withNotes=pl=>({...pl,cuts:pl.cuts.map(c=>{const n=ctNote(c.n-1).trim();return n?{...c,note:n}:c})});
 async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}if(ensureProps(CUTS).added.length)compute(false);
   if(!AIKEY){openKey(naiRefine);return}const st=t=>{$('#naist').textContent=t;NAI_MSG=t;naiBtnSync()};naiBusy=true;NAI_ERR=false;NAI_DONE=0;$('#naibtn').disabled=true;st('Claude에 보내는 중… 컷이 많으면 1분 안팎 걸려요');const sid=SCENES[SCUR].id,payload=naiPayload();
-  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});const np=savePropTags(r.props),nl=learnActions(r.actions);if(nl)setTimeout(()=>toast(`새 동작 ${nl}개를 배웠어요 · 다음부터 규칙 초안에도 들어가요`,2400),2800);
+  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});const np=savePropTags(r.props),nl=learnActions([...(r.actions||[]),...(r.places||[]).map(x=>({...x,kind:'place'}))]);if(nl)setTimeout(()=>toast(`새 동작 ${nl}개를 배웠어요 · 다음부터 규칙 초안에도 들어가요`,2400),2800);
     AIN[sid]={sig:sigOf(np?naiPayload():payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';naiBusy=false;NAI_DONE=Date.now();st(`컷 ${r.cuts?.length||''}개 프롬프트를 만들었어요 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);setTimeout(naiBtnSync,4100);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';naiBusy=false;NAI_ERR=true;st('생성하지 못했어요 · '+m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false;naiBtnSync()}}
@@ -2869,7 +2884,7 @@ function savePropTags(list){let n=0;for(const x of list||[]){const e=propOf(x.na
 async function contiRegenCut(i,req){if(CT_BUSY.has(i))return;if(!AIKEY){openKey(()=>contiRegenCut(i,req));return}
   setCtNote(i,req);CT_BUSY.add(i);CT_MSG[i]='Claude에 보내는 중…';renderConti();const sid=SCENES[SCUR].id,payload=naiPayload();
   let mod;try{mod=await import('./claude.js');const r=await mod.refineNaiCut(AIKEY,payload,i+1,req,{onStatus:t=>{CT_MSG[i]=t;const x=$('#conti')?.querySelector(`.ct-edit[data-i="${i}"] .ct-edst`);if(x)x.textContent=t}});
-    const wasFresh=prev0=>prev0&&!ainFor()?.stale,prev=AIN[sid],fresh=wasFresh(prev);savePropTags(r.props);learnActions(r.actions);
+    const wasFresh=prev0=>prev0&&!ainFor()?.stale,prev=AIN[sid],fresh=wasFresh(prev);savePropTags(r.props);learnActions([...(r.actions||[]),...(r.places||[]).map(x=>({...x,kind:'place'}))]);
     const cuts=(fresh?prev.cuts:[]).filter(c=>c.n!==i+1).concat([r.cut]);
     AIN[sid]={sig:sigOf(naiPayload()),cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';CT_MSG[i]=`✓ ${i+1}번 컷 프롬프트를 새로 만들었어요`;toast(CT_MSG[i],2200)}

@@ -59,6 +59,20 @@ test('효과음 추천 칩 → 컷에 넣기', async ({p, ev}) => {
   await p.click(`#cutlist li[data-i="${li}"] [data-sfxadd]`); await p.waitForTimeout(500);
   assert((await ev(i => CUTS[i], +li)).includes(`-${w}-`), '효과음이 글에 들어감');
 });
+test('쓰는 중 알림: 동작 2개 → 컷 나누기 · 그녀 → 누구', async ({p, ev}) => {
+  await ev(() => showView('write')); await p.waitForTimeout(500);
+  const n0 = await ev(() => CUTS.length);
+  await ev(() => { const t = document.querySelector('#cutlist li[data-i="1"] .cutin'); t.value = '@나눔이가 문을 열고 방 안으로 들어선다.\n"다녀왔어."'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  await p.waitForTimeout(900);
+  assert(await ev(() => !!document.querySelector('#cutlist li[data-i="1"] [data-cutsplit]')), '동작 2개 알림');
+  await p.click('#cutlist li[data-i="1"] [data-cutsplit]'); await p.waitForTimeout(700);
+  assert((await ev(() => CUTS.length)) === n0 + 1, '컷이 하나 늘어남');
+  const [a, b] = await ev(() => [CUTS[1], CUTS[2]]);
+  assert(a === '@나눔이가 문을 열다.' && b.startsWith('@나눔이 방 안으로 들어선다.') && b.includes('다녀왔어'), '앞 컷은 …다., 뒤 컷은 같은 인물+대사: ' + JSON.stringify([a, b]));
+  await ev(() => { const t = document.querySelector('#cutlist li[data-i="2"] .cutin'); t.value = '그는 창가에 선다.'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  await p.waitForTimeout(900);
+  assert(await ev(() => /나눔이/.test(document.querySelector('#cutlist li[data-i="2"] .readhint')?.textContent || '')), '그 → 앞 컷 인물로 읽음 알림');
+});
 test('설정집에 없는 인물 → 추가', async ({p, ev}) => {
   await ev(() => showView('write')); await p.waitForTimeout(500);
   const ta = await p.$('#cutlist li[data-i="1"] .cutin'); await ta.click(); await p.keyboard.press('End'); await p.keyboard.type(' @테스트인물은 웃는다.'); await p.waitForTimeout(900);

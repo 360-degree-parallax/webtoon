@@ -128,17 +128,22 @@
   { const ex = ([ws, t]) => [[...new Set(ws.flatMap(forms))], t]; POSE.splice(0, POSE.length, ...POSE.map(ex), ...POSE_BASE.map(ex)); }  // 처음 목록도 기본형(…다)이면 펼침
   // Claude가 컷 프롬프트를 만들며 새로 옮긴 동작(배운 동작) — 앱이 N.useLearned([[한국어 낱말들], [태그들]])로 넣음
   let LEARNED_N = 0;
-  N.useLearned = list => { POSE.splice(POSE.length - LEARNED_N, LEARNED_N); const L = (list || []).filter(x => Array.isArray(x) && x[0]?.length && x[1]?.length).map(([ws, t]) => [[...new Set(ws.flatMap(forms))], t]); POSE.push(...L); LEARNED_N = L.length; };
+  // 셋째 값이 'place'면 장소 사전(PLACE)에 — Claude가 컷 글에서 새로 찾은 장소
+  let LEARNED_P = 0;
+  N.useLearned = list => { POSE.splice(POSE.length - LEARNED_N, LEARNED_N); PLACE.splice(PLACE.length - LEARNED_P, LEARNED_P);
+    const ok = (list || []).filter(x => Array.isArray(x) && x[0]?.length && x[1]?.length);
+    const L = ok.filter(x => x[2] !== 'place').map(([ws, t]) => [[...new Set(ws.flatMap(forms))], t]), P = ok.filter(x => x[2] === 'place').map(([ws, t]) => [ws, t]);
+    POSE.push(...L); LEARNED_N = L.length; PLACE.push(...P); LEARNED_P = P.length; };
   N.forms = forms;
   // 배운 동작 검사: 너무 흔한 낱말·부정/바람이 섞인 말·기존 사전과 어긋나는 태그·태그 꼴이 아닌 것은 걸러 냄 → { ok, why: [...] }
   const GENERIC = new Set(['하다', '있다', '없다', '되다', '보다', '가다', '오다', '나다', '주다', '말하다', '생각하다', '느끼다', '알다', '모르다', '같다', '싶다', '않다', '이다', '그러다', '이러다', '시작하다', '계속하다']);
-  N.checkLearned = (ko, tags) => {
+  N.checkLearned = (ko, tags, kind) => {
     ko = String(ko || '').trim(); const ts = String(tags || '').split(',').map(t => t.trim()).filter(Boolean), why = [];
     if (ko.replace(/\s/g, '').length < 2) why.push('너무 짧음');
     if (GENERIC.has(ko) || GENERIC.has(ko.replace(/^\S+\s+/, '')) && ko.split(/\s+/).length === 1) why.push('흔한 낱말');
     if (/지\s*(않|못|말)|(^|\s)(안|못)\s|싶|려\s*하|면$/.test(ko)) why.push('부정·바람·시도가 섞임');
     if (!ts.length || ts.some(t => /[가-힣]/.test(t) || !/^[\w\s'().:-]+$/.test(t))) why.push('태그 꼴이 아님');
-    const built = POSE.slice(0, POSE.length - LEARNED_N), had = tagsOf(ko, built);
+    const built = kind === 'place' ? PLACE.slice(0, PLACE.length - LEARNED_P) : POSE.slice(0, POSE.length - LEARNED_N), had = tagsOf(ko, built);
     if (had.length && !had.some(t => ts.includes(t))) why.push(`사전과 어긋남(${had.join(', ')})`);
     return { ok: !why.length, why };
   };
@@ -181,7 +186,7 @@
     const nameOf = w => { const n = names.filter(Boolean).sort((a, b) => b.length - a.length).find(n => w.startsWith(n)); if (!n) return null; const r = w.slice(n.length).replace(/[.,!?…]+$/, ''); return r === '' || PARTS.includes(r) || /^(이|가|은|는|을|를|에게|의|과|와|도)$/.test(r) ? [n, r] : null; };
     // 이름 자리는 가려서 사전을 봄('두나를'의 '나를'이 나르다로 잡히지 않게)
     const NM = names.filter(Boolean).sort((a, b) => b.length - a.length), mask = s => NM.reduce((a, n) => a.split(n).join('○'), s);
-    let lastWho = who, gaze = false;
+    let lastWho = who, gaze = false; const dropped = [];
     for (const sent of sents) {
       if (/(텐데|더라면|었다면|았다면|였다면|을지도|ㄹ지도|면 좋을|면 좋겠)/.test(sent)) continue;  // 가정·바람 문장은 통째로
       const ws = sent.trim().split(/\s+/).filter(Boolean); if (!ws.length) continue;
@@ -210,6 +215,8 @@
         const s0 = subj || lastWho || who;
         const neg = /지\s*(않|못|말)|(^|\s)(안|못)\s/.test(rest);
         let ts = tagsOf(rest, POSE);
+        const why = neg ? 'neg' : c.kind === 'try' ? 'try' : c.kind === 'cond' ? 'cond' : ci <= conAt ? 'con' : c.kind === 'seq' ? 'seq' : '';
+        if (why && ts.some(x => !STATE.test(x))) dropped.push({ who: s0, word: c.ws[c.ws.length - 1].replace(/[.,!?…]+$/, ''), why, tags: ts.filter(x => !STATE.test(x)), last: ci === cl.length - 2 && tagsOf(mask(cl[ci + 1].ws.join(' ')), POSE).some(x => !STATE.test(x)) });
         if (neg || c.kind === 'try' || c.kind === 'cond' || ci <= conAt) ts = [];           // 부정·시도·가정·대조의 앞 절은 버림
         else if (c.kind === 'seq') ts = ts.filter(x => STATE.test(x));                          // 이어지는 앞 동작은 상태만 남김
         if (STRONG.test(rest) && ts.length) ts = [...ts.filter(x => x !== 'motion blur'), 'dynamic pose'];
@@ -229,7 +236,7 @@
       .reduce((a, n) => a.replace(new RegExp('(' + n + ')(께서|에게|한테|의|을|를|이|가|은|는|와|과|도)?\\s', 'g'), ''), tx);
     const crowd = tagsOf(tx, CROWD), spatial = tagsOf(bare, SPATIAL);
     const strong = STRONG.test(tx) ? ['dynamic pose'] : [];
-    return { per, bodyFocus, crowd, spatial, strong, gaze, of: n => per[n] || [], any: () => Object.values(per).flat() };
+    return { per, bodyFocus, crowd, spatial, strong, gaze, dropped, of: n => per[n] || [], any: () => Object.values(per).flat() };
   }
   N.readAction = readAction;
   const VERBISH = /(다|고|며|면서|는|은|ㄴ다|하며|한다)[.!?…]*$|[가-힣](는다|ㄴ다|었다|았다|였다|한다|된다|진다)/;
@@ -575,6 +582,7 @@
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
       props: propsOn.map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '', forced: !!x.forced })), propsOff: propsOff.map(x => ({ name: x.name, why: x.why, emit: x.emit || [] })), place, layerCast, missAct, spatial: RA.spatial, crowd: cast.length ? [] : RA.crowd,
+      read: { per: RA.per, crowd: RA.crowd, spatial: RA.spatial, body: RA.bodyFocus, whoGuess: !!p.whoGuess },  // 규칙이 읽은 것(Claude에 넘겨 확인·보정)
     };
   }
 

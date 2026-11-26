@@ -118,6 +118,12 @@ function renderParse(){const bs=RE.parseCuts(CUTS,engineChars());const by={};bs.
       const nw=(b.props||[]).filter(x=>!propOf(x.name));if(nw.length)out.push(`<span class="newchar"><small>새 소품</small>${nw.map(x=>`<button type="button" data-propadd="${i}" title="세계관 물건에 「${esc(x.name)}」 고정${x.look?' — '+esc(x.look):''}">+ ◆${esc(x.name)}</button>`).join('')}</span>`);
       propClash(CUTS[i]).forEach(x=>out.push(`<span class="propclash" title="설정집 형태로 고정돼요. 바꾸려면 세계관 페이지에서 고쳐 주세요">◆ ${esc(x.name)}: 적은 형태와 설정집이 달라요 — 설정집 「${esc(x.e.desc.slice(0,40))}」</span>`))}
     {const un=unknownNames([CUTS[i]]);if(un.length)out.push(`<span class="newchar"><small>설정집에 없음</small>${un.map(n=>`<button type="button" data-sug="${esc(n)}" title="설정집 캐릭터에 「${esc(n)}」 추가">+ ${esc(n)}</button>`).join('')}</span>`)}
+    // 쓰는 중 알림: 그/그녀를 누구로 읽었는지 · 동작은 있는데 누가 하는지 모름 · 한 컷에 동작 2개(앞 동작은 그림에서 빠짐 → 컷 나누기)
+    const NR=window.RoughNAI;if(NR&&NR.readAction&&(b.actText||'').trim()){const t=b.actText.trim(),names=engineChars().map(c=>c.name).filter(Boolean),ra=NR.readAction(t,names,b.who||'');
+      if(b.whoGuess)out.push(`<span class="readhint" title="'그·그녀'를 앞 컷에 나온 인물로 읽었어요 · 다른 사람이면 @이름으로 적어 주세요"><small>그·그녀</small>→ ${esc(b.who)}</span>`);
+      else if(!b.who&&names.length&&NR.poseTags(t).length&&!ra.crowd.length)out.push(`<span class="readhint warn" title="동작은 읽었는데 누가 하는지 몰라요 · @이름으로 적으면 그 인물 프롬프트에 들어가요"><small>누가?</small>@이름을 붙여 주세요</span>`);
+      const sq=ra.dropped.find(d=>d.why==='seq'&&d.last&&/고$/.test(d.word));
+      if(sq)out.push(`<span class="readhint"><small>동작 2개</small>「${esc(sq.word)}」 앞 동작은 그림에서 빠져요 <button type="button" data-cutsplit="${i}" data-w="${esc(sq.word)}" title="「${esc(sq.word)}」 뒤에서 컷을 둘로 나눠요 · Ctrl+Z로 되돌리기">컷 나누기</button></span>`)}
     // 효과음 추천: 효과음이 없는 컷에만, 눌러서 바로 넣기(sfx-rec.js)
     if(window.RoughSfxRec&&!(b.sfx||[]).length){const emo=(state.panels||[]).find(p=>String(p.key||'').startsWith('#'+i+':'))?.emo;
       const rs=RoughSfxRec.recommend(CUTS[i],emo,3);if(rs.length)out.push(`<span class="sfxrec"><small>효과음</small>${rs.map(r=>`<button type="button" data-sfxadd="${esc(r.word)}" data-i="${i}" title="${esc(r.why)} 때문에 추천 · ${esc(r.cat)}">+ ${esc(r.word)}</button>`).join('')}</span>`)}
@@ -161,6 +167,14 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-act]')?.da
 function addSfx(i,w){const ta=document.querySelector(`#cutlist li[data-i="${i}"] .cutin`);if(!ta)return;ta.value=ta.value.replace(/\s*$/,'')+`\n-${w}-`;ta.dispatchEvent(new Event('input',{bubbles:true}));toast(`효과음 「${w}」을 넣었어요`)}
 $('#cutlist').addEventListener('mousedown',e=>{if(e.target.closest('[data-sfxadd]'))e.preventDefault()});
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-sfxadd]');if(!b)return;addSfx(+b.dataset.i,b.dataset.sfxadd)});
+// 컷 나누기(쓰는 중 알림): 「…고」 뒤에서 둘로 — 앞 컷은 '…다.'로 끝내고, 뒤 컷은 같은 인물(@이름)로 시작, 그 뒤 줄(대사 등)은 뒤 컷으로
+function splitCutAt(i,w){const lines=String(CUTS[i]||'').split('\n'),k=lines.findIndex(l=>l.includes(w+' '));if(k<0)return;
+  const L=lines[k],at=L.indexOf(w+' '),head=L.slice(0,at)+w.replace(/고$/,'다.'),rest=L.slice(at+w.length+1).trim(),who=(head.match(/@[^\s"“.,!?{}()]+/)||[''])[0].replace(/(이|가|은|는|도)$/,'');
+  const a=[...lines.slice(0,k),head].join('\n'),b2=[(who&&!/^@/.test(rest)?who+' ':'')+rest,...lines.slice(k+1)].join('\n');
+  if(typeof edRecord==='function'){edRecord();edLast=0}
+  const n=CUTS.length;remapCuts(SCUR,()=>{cutEdits().splice(i+1,0,null);CUTS[i]=a;CUTS.splice(i+1,0,b2);return moveMap(n,x=>x>i?x+1:x)});renderCuts();cutChanged();toast('컷을 둘로 나눴어요 · Ctrl+Z로 되돌리기',2000)}
+$('#cutlist').addEventListener('mousedown',e=>{if(e.target.closest('[data-cutsplit]'))e.preventDefault()});
+$('#cutlist').addEventListener('click',e=>{const b=e.target.closest('[data-cutsplit]');if(b)splitCutAt(+b.dataset.cutsplit,b.dataset.w)});
 // 효과음 고르기 창: 이 컷 추천 + 분류별 전체(615개) + 빈 효과음
 function sfxPicker(btn,ta){let pop=$('#sfxpick');if(!pop){pop=document.createElement('div');pop.id='sfxpick';pop.className='sfxpick';document.body.appendChild(pop);
     document.addEventListener('mousedown',e=>{if(!pop.hidden&&!pop.contains(e.target)&&!e.target.closest('[data-ins="sfx"]'))pop.hidden=true});

@@ -1458,3 +1458,7 @@ button.ct-prop{border:0;cursor:pointer;font:inherit;font-size:11px}.ct-prop.off{
 .learnl{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.learnl li{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line,#eee);font-size:13px}.learnl code{font-size:12px;color:#7c3aed}.learnl .link{margin-left:auto}
 .learnb summary{cursor:pointer;font-size:13px;color:var(--t2,#555);margin:6px 0}
 #learndlg .acts{display:flex;gap:6px;align-items:center}#learndlg .grow{flex:1}
+/* 쓰는 중 알림(그·그녀 → 누구 · 누가? · 동작 2개 → 컷 나누기) */
+.cutparse .readhint small{font-size:11px;color:var(--t3);margin-right:2px}
+.cutparse .readhint.warn small{color:var(--warn,#b45309)}
+.cutparse .readhint button{height:22px;padding:0 8px;border-radius:999px;border:1px dashed var(--line2);font-size:12px;color:var(--accent-ink);background:transparent}
