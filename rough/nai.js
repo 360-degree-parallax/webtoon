@@ -31,7 +31,7 @@
     [['무릎을 꿇', '무릎 꿇', '무릎을 꿇은'], ['kneeling']], [['웅크', '쪼그려', '쭈그려', '쪼그리', '쭈그리'], ['squatting', 'curled up']],
     [['기어가', '기어간', '기어오'], ['crawling']], [['매달'], ['hanging']], [['기어오르', '기어올라', '올라타', '올라탄'], ['climbing']],
     [['숨어', '숨은', '숨는', '숨었'], ['hiding']], [['날아', '날고', '날았', '날개를 펼'], ['flying']], [['헤엄', '수영'], ['swimming']],
-    [['춤'], ['dancing']], [['손을 흔들', '손을 흔든'], ['waving']], [['가리키', '가리킨', '가리켰'], ['pointing']],
+    [['§춤', '§춤을', '§춤추', '§춤춘', '§춤을 추'], ['dancing']], [['입을 막', '입을 틀어막', '입을 가리', '입을 가린', '입을 가렸'], ['hand over own mouth']], [['귀를 막', '귀를 가리', '귀를 가린'], ['covering ears']], [['손을 흔들', '손을 흔든'], ['waving']], [['가리키', '가리킨', '가리켰'], ['pointing']],
     [['고개를 숙여 인사', '절을', '인사를 하', '꾸벅'], ['bowing']], [['팔짱'], ['crossed arms']], [['주먹을 쥐', '주먹을 쥔', '주먹을 꽉'], ['clenched hands']],
     [['머리를 감싸', '머리를 쥐어', '머리를 움켜'], ['head in hands']], [['턱을 괴', '턱을 괸'], ['hand on own chin']], [['벽에 기대', '벽에 기댄'], ['leaning against wall']],
     [['소리치', '소리친', '소리쳤', '외치', '외친', '외쳤', '고함', '버럭'], ['shouting', 'open mouth']], [['비명'], ['screaming']], [['속삭'], ['whispering']],
@@ -41,7 +41,7 @@
     [['칼을 뽑', '검을 뽑', '칼을 빼', '검을 빼'], ['unsheathing', 'holding sword']], [['칼을 휘', '검을 휘', '베어', '베었', '벤다'], ['swinging sword', 'holding sword']],
     [['칼을 겨', '검을 겨', '칼끝'], ['holding sword', 'pointing sword']], [['활을 당', '활시위'], ['drawing bow', 'holding bow']], [['총을 겨', '총구'], ['aiming', 'holding gun']],
     [['주먹을 날', '주먹질', '때린', '때리', '후려'], ['punching', 'fighting']], [['발로 차', '걷어차'], ['kicking']], [['싸우', '싸운', '격투', '맞붙'], ['fighting']],
-    [['막아', '막는', '방패'], ['blocking']], [['돌아서', '등을 돌', '등지고'], ['back turned', 'from behind']], [['일어서', '일어선', '일어나', '일어난'], ['standing up']],
+    [['§막아서', '§막아선', '§막는다', '§막았', '방패'], ['blocking']], [['돌아서', '등을 돌', '등지고'], ['back turned', 'from behind']], [['일어서', '일어선', '일어나', '일어난'], ['standing up']],
     [['머리를 쓸어', '머리를 넘기', '머리카락을 쓸'], ['hand in own hair']], [['문을 열', '문을 연', '문을 밀'], ['opening door']], [['창문을 열', '창을 열'], ['opening window']],
     [['우산'], ['holding umbrella']], [['휴대폰', '핸드폰', '스마트폰', '전화를 받', '통화'], ['holding phone']], [['담배'], ['smoking']], [['운전'], ['driving']],
     [['몸을 떨', '떨고', '떨린다', '덜덜'], ['trembling']], [['헐떡', '숨을 몰아', '숨이 차'], ['panting', 'heavy breathing']], [['피를 흘', '피투성', '피가 흐'], ['blood']],
@@ -76,7 +76,7 @@
     [['서다', '멈춰 서다', '우뚝 서다'], ['standing']], [['안다', '안아 주다', '안아주다', '껴안다', '끌어안다', '부둥켜안다', '품에 안다'], ['hug']], [['얼굴을 묻다', '품에 얼굴을'], ['face in another\'s chest']], [['떠나다', '나가다', '나서다', '들어서다', '들어오다'], ['walking']],
     [['다가오다', '다가가다'], ['walking towards']], [['손을 내밀다', '내밀다'], ['reaching out']], [['떨어지다', '추락하다'], ['falling']], [['수군대다', '수군거리다'], ['whispering', 'crowd']],
     [['눈을 맞추다', '시선을 맞추다', '눈이 마주치다', '마주하다', '마주 보다'], ['eye contact', 'face-to-face']], [['손을 맞잡다', '맞잡다'], ['holding hands']], [['안기다', '품에 안기다'], ['hug', 'being hugged']],
-    [['손을 흔들다'], ['waving']], [['막다', '가로막다'], ['blocking', 'outstretched arm']], [['내려다보다'], ['looking down']], [['올려다보다', '우러러보다'], ['looking up']],
+    [['손을 흔들다'], ['waving']], [['가로막다', '막아서다', '길을 막다', '앞을 막다', '문을 막다', '손으로 막다', '팔로 막다'], ['blocking', 'outstretched arm']], [['내려다보다'], ['looking down']], [['올려다보다', '우러러보다'], ['looking up']],
     [['쓰다듬다'], ['petting', 'headpat']], [['내려놓다'], ['putting down']], [['이름을 부르다', '외쳐 부르다', '불러 세우다'], ['calling out', 'open mouth']], [['문이 열리다'], ['open door']], [['문이 닫히다'], ['closed door']],
     [['손을 모으다', '두 손을 모으다'], ['own hands together']], [['움켜쥐다', '꽉 쥐다', '부여잡다'], ['clenched hand', 'grabbing']], [['따지다', '쏘아붙이다', '대들다'], ['arguing', 'open mouth', 'angry']],
     [['멍하다', '멍하니'], ['blank stare']], [['손가락질하다'], ['pointing at another']], [['인사하다', '고개 숙이다'], ['bowing']], [['맞닿다', '이마를 맞대다'], ['forehead-to-forehead']],
@@ -176,7 +176,7 @@
     let tx = ' ' + String(text || '').replace(/[“”"]/g, ' ') + ' ';
     const extra = {}, put = (n, ts) => { if (!n) return; (extra[n] ||= []).push(...ts); };
     // 앞서 걸러 낼 것: 바람(-고 싶다)·시도(-려 하다)·가정 문장(…텐데/…더라면)
-    tx = tx.replace(/(가슴|심장|맥박|맥)(이|은|도)?\s*(\S+\s)?\S*(뛰|뛴)\S*/g, ' heartbeat ').replace(/\S+고\s+싶\S*/g, ' ').replace(/\S+(으려|려)\s*(한다|했다|하다|하지만|했지만|든다|했던)\S*/g, ' ');
+    tx = tx.replace(/(입|귀|코|눈)(을|를)\s*(꾹\s*|급히\s*)?(틀어)?막\S*/g, m => ' ' + (m[0] === '입' ? '입을 가린다' : m[0] === '귀' ? '귀를 가린다' : '얼굴을 가린다') + ' ').replace(/(가슴|심장|맥박|맥)(이|은|도)?\s*(\S+\s)?\S*(뛰|뛴)\S*/g, ' heartbeat ').replace(/\S+고\s+싶\S*/g, ' ').replace(/\S+(으려|려)\s*(한다|했다|하다|하지만|했지만|든다|했던)\S*/g, ' ');
     // 참음: '눈물을 꾹 참는다' → 참는 표정
     const sup = (re, ts) => { tx = tx.replace(re, () => { put('@who', ts); return ' '; }); };
     sup(/(눈물|울음)(을|를|이)?\s*(꾹\s*|애써\s*|겨우\s*)?(참|삼키|삼킨|삼켰|억누르|억누른|억눌|감추|감춘|감췄|훔치|훔친|훔쳤)\S*/g, ['teary eyes', 'holding back tears']);
@@ -213,7 +213,7 @@
         // 꾸밈말을 뺀 서술 부분
         const rest = mask(c.ws.filter((_, i) => !owned.has(i)).join(' '));
         const s0 = subj || lastWho || who;
-        const neg = /지\s*(않|못|말)|(^|\s)(안|못)\s/.test(rest);
+        const neg = /지\s*(않|못|말)/.test(rest) || /(^|\s)(안|못)\s+\S*(다|요|죠|고|며|어|아|여|해|했|았|었|는|던|ㄴ)[.,!?…]*(\s|$)/.test(rest);
         let ts = tagsOf(rest, POSE);
         const why = neg ? 'neg' : c.kind === 'try' ? 'try' : c.kind === 'cond' ? 'cond' : ci <= conAt ? 'con' : c.kind === 'seq' ? 'seq' : '';
         if (why && ts.some(x => !STATE.test(x))) dropped.push({ who: s0, word: c.ws[c.ws.length - 1].replace(/[.,!?…]+$/, ''), why, tags: ts.filter(x => !STATE.test(x)), last: ci === cl.length - 2 && tagsOf(mask(cl[ci + 1].ws.join(' ')), POSE).some(x => !STATE.test(x)) });
@@ -630,7 +630,7 @@
     [['입맞', '키스', '입술을 포'], ['kiss']], [['마주', '서로 바라', '눈을 맞', '눈이 마주'], ['face-to-face', 'eye contact']], [['어깨에 손', '어깨를 잡', '어깨에 얹'], ["hand on another's shoulder"]],
     [['건네', '내민', '건넨'], ['giving', 'reaching out']], [['밀쳐', '밀친', '밀어'], ['pushing']], [['끌어당', '잡아당'], ['pulling']], [['기대', '기댄'], ['leaning on person']],
     [['업고', '업힌', '업어'], ['piggyback']], [['안아 들', '안아들', '공주님'], ['princess carry']], [['등을 맞', '등을 기'], ['back-to-back']], [['볼을 쓰', '머리를 쓰다'], ['headpat']],
-    [['벽에 밀', '벽치기', '벽에 손'], ['kabedon']], [['멱살'], ['grabbing collar']], [['춤'], ['dancing together']],
+    [['벽에 밀', '벽치기', '벽에 손'], ['kabedon']], [['멱살'], ['grabbing collar']], [['§춤', '§춤을', '§춤추', '§춤춘', '§춤을 추'], ['dancing together']],
   ];
   // 소품을 인물이 다루는 동사(소품 이름 바로 뒤 몇 글자 안에서): 있으면 그 인물 레이어에 녹임
   //   활용형까지(꺼내다→꺼낸·꺼냈, 들다→든, 쥐다→쥔 …)
