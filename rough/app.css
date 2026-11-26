@@ -1370,3 +1370,13 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .ct-note textarea{width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px;line-height:1.55;resize:vertical;min-height:60px}
 .ct-nrow{display:flex;align-items:center;gap:10px;margin-top:8px}.ct-nrow .tpill{margin-left:auto}.ct-nst{color:var(--t3);font-size:12.5px}
 .ct-applied{font-style:normal;font-weight:600;font-size:12px;margin-left:6px;padding:2px 8px;border-radius:10px;background:#e7f3ea;color:#1d4a2a}
+
+/* 콘티: 컷 머리의 샷·앵글·감정 고르기(바꾸면 씬 글 {…}로 적힘) */
+.ct-dirs{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.ct-dir{font:inherit;font-size:12.5px;padding:3px 22px 3px 9px;border:1px solid var(--line2);border-radius:14px;background:var(--bg);color:var(--t2);cursor:pointer;max-width:150px}
+.ct-dir.set{border-color:var(--blue,#2d71f7);color:var(--blue,#2d71f7);font-weight:600;background:color-mix(in srgb,var(--blue,#2d71f7) 8%,var(--bg))}
+.ct-nst.warn{color:#b45309;font-weight:600}
+.ct-nrow .tpill.hot{background:var(--blue,#2d71f7);color:#fff}
+#conti .ct-dir{width:auto;flex:none;height:26px;line-height:1;appearance:auto}
+#conti .ct-dirs>span{color:var(--t3)}
+#conti .ct-beat small.ct-dirs{display:flex;margin-top:6px}
