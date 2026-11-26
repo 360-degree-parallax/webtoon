@@ -94,9 +94,9 @@ function naiPayload(){const L=naiRuleCuts(),chars=naiChars();
     cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,props:propsFor(p).map(x=>x.name),
       dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${narrLabel(a.narr)} · ${a.goal}`:'',draft:{base:o.base,chars:o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}}})}}
 function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(naiPayload())}}
-function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return L;
+function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return stripForeignProps(L);
   const byCut=new Map(ai.cuts.map(c=>[c.n,c]));
-  return L.map(x=>({...x,o:NAI.refine(x.o,byCut.get(x.i+1))}))}
+  return stripForeignProps(L.map(x=>({...x,o:NAI.refine(x.o,byCut.get(x.i+1))})))}
 const CT_EDIT=new Set(),CT_BUSY=new Set();
 const CT_EMOS=['평온','개그','설렘','기쁨','다정','당황','의아','놀람','긴장','냉담','분노','쓸쓸','회상','결의'];
 let naiBusy=false,NAI_MSG='',NAI_ERR=false,NAI_DONE=0;

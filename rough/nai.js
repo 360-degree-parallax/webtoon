@@ -248,13 +248,22 @@
       ]);
       return { name: c.name, prompt, pos: pos(x, y), ref: !far && !!refs.char?.(c.name) };
     });
+    // 레이어용 인물: 화면 구도(소품·손 중심 컷이라 인물 칸이 비는 경우 포함)와 상관없이 컷에 보이는 인물마다 하나
+    const layerCast = mode === 'effect' ? [] : visible.slice(0, 6).map((c, n) => {
+      const look = String(tags[c.name] || '').trim() || lookTags(c.look).join(', ');
+      const appearance = splitTags(look).filter(tag => !COUNT_TAG.test(tagName(tag)) && tag !== 'no humans');
+      const isMain = c === main, drawn = charP.find(x => x.name === c.name);
+      const k = Math.min(visible.length, 6), x = k === 1 ? 0.5 : [0.3, 0.7, 0.5, 0.3, 0.7, 0.5][n];
+      return { name: c.name, pos: drawn && !far ? drawn.pos : pos(x, n < 3 ? 0.5 : 0.7),
+        prompt: joinTags([...countTags([c]), ...appearance, ...(isMain ? EXPR[p.emo] || [] : []), ...(isMain ? tagsOf(onScreen, POSE) : []), ...(mode === 'detail' ? body : [])]) };
+    });
     const charRef = mode === 'character' && main && refs.char?.(main.name) ? main.name : null;
     const strength = ['detail', 'object'].includes(mode) ? 0.72 : NO_HUMANS.has(mode) || far ? 0.62 : peak ? 0.7 : 0.66;
     return {
       mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h),
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
-      props: (ctx.props?.(p) || []).map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '' })), place,
+      props: (ctx.props?.(p) || []).map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '' })), place, layerCast,
     };
   }
 
@@ -269,7 +278,14 @@
       return { ...c, prompt: joinTags([...identity, ...description]), pos: cellPos(next.cell) || c.pos };
     });
     const base = joinTags([...draft.frameTags, ...additions, ...splitTags(draft.base)]);
-    return { ...draft, base, chars, ai: true };
+    // 레이어용 인물에도 Claude가 다듬은 인물 묘사를 씀(인원 태그는 초안 것)
+    const layerCast = (draft.layerCast || []).map(c => {
+      const next = result.chars?.find(item => item.name === c.name);
+      if (!next?.prompt?.trim()) return c;
+      const identity = splitTags(c.prompt).filter(tag => COUNT_TAG.test(tag));
+      return { ...c, prompt: joinTags([...identity, ...splitTags(next.prompt).filter(tag => !COUNT_TAG.test(tagName(tag)) && !/^no humans$/i.test(tagName(tag)))]) };
+    });
+    return { ...draft, base, chars, layerCast, ai: true };
   }
   function text(o, i, total, head) {
     const L = [`[컷 ${i + 1} / ${total}] ${head || ''}`.trim(),
@@ -293,17 +309,18 @@
     const style = splitTags(ctx.style || ''), props = o.props || [];
     const propTags = new Set(props.flatMap(x => splitTags(x.tags)).map(t => t.toLowerCase()));
     tagsOf(props.map(x => x.name).join(' '), OBJECT).forEach(t => propTags.add(String(t).toLowerCase()));  // 소품 이름에서 나온 물건 태그(회중시계→clock)도 배경에서 뺌
-    const keep = t => !propTags.has(tagName(t).toLowerCase()) && t !== 'negative space' && t !== 'no text';
+    const heads = props.map(x => { const w = String(splitTags(x.tags)[0] || '').toLowerCase().trim().split(/\s+/); return w.length >= 3 ? w.slice(-2).join(' ') : w.length === 2 ? w[1] : w[0] || ''; }).filter(h => h.length >= 4);
+    const keep = t => !propTags.has(tagName(t).toLowerCase()) && !heads.some(h => tagName(t).toLowerCase().includes(h)) && t !== 'negative space' && t !== 'no text';
     const effect = o.mode === 'effect';
     const bgTags = effect ? splitTags(o.base) : ['no humans', 'scenery', ...sceneTags(splitTags(o.base), 'scenery').filter(t => !SHOT_ALL.has(tagName(t).toLowerCase()))];
     const place = (o.place || []).slice().sort().join('+');
     const bg = { kind: 'bg', label: '배경', key: effect || !place ? `cut${ctx.i ?? 0}` : `${place}|${p.ang || ''}`,
       prompt: joinTags([...bgTags.filter(keep), 'no text']), size: o.size, shared: !effect && !!place };
     const [sc, ratio] = LAYER_SHOT[p.shot] || LAYER_SHOT.중경;
-    const n = Math.max(1, o.chars.length);
+    const cast = o.layerCast || o.chars, n = Math.max(1, cast.length);
     // 자세 키: 화풍·흰 배경을 뺀 인물 태그(외형·표정·자세·프레이밍·앵글)를 정렬해 이음 → 같으면 같은 그림을 여러 컷·씬이 같이 씀
     const poseOf = (name, tags) => name + '|' + [...new Set(tags.map(t => tagName(t).toLowerCase()).filter(t => t && !CUTOUT.includes(t) && t !== 'no text' && !style.some(x => tagName(x).toLowerCase() === t)))].sort().join(',');
-    const chars = o.chars.map((c, k) => { const body = [...splitTags(c.prompt).filter(t => !/^(far away)$/i.test(tagName(t))), ...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || []];
+    const chars = cast.map((c, k) => { const body = [...splitTags(c.prompt).filter(t => !/^(far away)$/i.test(tagName(t))), ...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || []];
       return { kind: 'char', label: `인물 ${c.name}`, name: c.name, key: c.name, pose: poseOf(c.name, body),
       prompt: joinTags([...body, ...CUTOUT, ...style, 'no text']),
       size: size(ratio), x: Math.round(c.pos.x * 100), y: Math.round(c.pos.y * 100), scale: Math.round(Math.min(95, sc * 100 * (n > 1 ? 0.75 : 1))) }; });

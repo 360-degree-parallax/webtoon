@@ -22,6 +22,9 @@ function syncLayers(si){const sc=SCENES[si];if(!sc)return 0;const plan=layerPlan
   for(const L of plan){const id=cutId(sc.id,L.i),cur=IMG.cut[id];
     if(L.bg.shared&&(!cur||cur.layerBg)){const src=layerBgOf(si,L.bg.key);if(src&&(!cur||cur.src!==src.src||cur.layerBg!==L.bg.key)){const o={...src,id,idx:L.i,sig:L.p.key};IMG.cut[id]=o;idb.put(o);n++}}
     const want=[...L.chars.map(x=>[x,charOf(L,x,sc.id)]),...L.props.map(x=>[x,layerAsset('prop',x.key)])].filter(([,a])=>a);
+    // 이 컷 글에 더는 없는 소품·인물 레이어는 뺌(예전에 잘못 붙은 소품 포함). 직접 넣은 소재(layer 없음)는 그대로
+    const ok=new Set([...L.chars.map(x=>'char:'+x.key),...L.props.map(x=>'prop:'+x.key)]),cur0=sc.pageEdits[L.slot]?.overlays;
+    if(cur0?.some(v=>v.layer&&!ok.has(v.layer+':'+v.key))){sc.pageEdits[L.slot].overlays=cur0.filter(v=>!v.layer||ok.has(v.layer+':'+v.key));n++}
     if(!want.length)continue;const ed=sc.pageEdits[L.slot]||={},ov=ed.overlays||=[];
     for(const [x,a] of want){const has=ov.find(v=>v.layer===x.kind&&v.key===x.key);
       if(has){if(has.asset!==a.id){has.asset=a.id;n++}}else{ov.push({asset:a.id,layer:x.kind,key:x.key,x:x.x,y:x.y,scale:x.scale});n++}}}

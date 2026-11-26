@@ -274,6 +274,23 @@ test('회차마다 등장인물 따로 · 설정한 인물은 보관함에 자�
   await p.click(`#libgrid [data-libuse="${kai}"]`); await p.waitForTimeout(400);
   assert(await ev(() => CHARS.some(c => c.name === '카이' && c.look === '흑발, 안경')), '보관함에서 이 회차로 불러오기');
 });
+test('레이어: 소품은 나온 컷에만 · 소품 중심 컷에도 인물 레이어', async ({p, ev}) => {
+  await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
+    "export async function refineNai(k,pl){return {cuts:pl.cuts.map(c=>({n:c.n,base:'gold pocket watch, golden pocket watch with chain, indoors',chars:[]})),props:[],model:'test'}}export function explain(e){return String(e)}"}));
+  await ev(() => { setKey('sk-test', 'session'); showView('write');
+    CUTS.splice(0, CUTS.length, '@준이 #회중시계(금색)를 꺼낸다. {디테일}', '@준이 창가로 다가간다.', '@에드가가 책상 앞에 선다.');
+    saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(700);
+  await ev(() => { LORE.find(x => x.name === '회중시계').tags = 'gold pocket watch'; LORE.push({id: 'lbook', name: '책', cat: 'item', keys: '', desc: '낡은 책', tags: 'old book'}); showView('layout'); }); await p.waitForTimeout(500);
+  await p.click('#conti [data-act=nairefine]'); await p.click('#refinedlg [data-r=go]'); await p.waitForTimeout(1200);
+  await ev(() => setLayerMode(true)); await p.waitForTimeout(500);
+  const r = await ev(() => layerPlan(SCUR).map(L => ({props: L.props.map(x => x.name), chars: L.chars.map(c => c.name), bg: L.bg.prompt, base: naiCuts()[L.i].o.base})));
+  assert(r[0].chars.includes('준'), '소품 중심(디테일) 컷에도 인물 레이어');
+  assert(r[0].props.join() === '회중시계' && !r[1].props.length && !r[2].props.length, '소품은 #으로 적은 컷에만(책상≠책)');
+  assert(!/pocket watch/.test(r[1].base) && !/pocket watch/.test(r[2].base) && !/pocket watch/.test(r[1].bg), 'Claude가 옮겨 적은 소품 태그도 다른 컷에서 뺌');
+  await ev(() => { const LP = layerPlan(SCUR), ed = SCENES[SCUR].pageEdits[LP[2].slot] ||= {}; ed.overlays = [{asset: 'overlay:x', layer: 'prop', key: '회중시계'}, {asset: 'overlay:mine'}]; syncLayers(SCUR); });
+  assert(await ev(() => { const ov = SCENES[SCUR].pageEdits[layerPlan(SCUR)[2].slot].overlays; return ov.length === 1 && !ov[0].layer; }), '컷에 없는 소품 레이어는 빼고 직접 넣은 소재는 둠');
+  await ev(() => setLayerMode(false));
+});
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
   await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);

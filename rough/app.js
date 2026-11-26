@@ -882,9 +882,19 @@ function ensureProps(texts,{withLookOnly=false,quiet=false}={}){syncPropNames();
   if(added.length||filled.length){saveWorld();if(typeof VIEW!=='undefined'&&VIEW==='world')renderWorld();renderWorldSum();
     if(!quiet)toast(`소품 ${[...added,...filled].map(e=>'◆'+e.name).join(' ')}의 형태를 세계관 물건에 고정했어요`,2600)}
   return{added,filled}}
-// 컷 하나에 나오는 고정 소품: #표시한 것 + 글에 이름이 나오는 세계관 물건
+// 컷 하나에 나오는 고정 소품: #표시한 것 + 글에 세계관 물건 '이름'이 낱말로 나온 것(키워드·부분 일치는 안 씀 — '책'이 '책상'에 붙거나 흔한 키워드로 엉뚱한 컷에 소품이 들어가지 않게)
+const PROP_JOSA='(?:은|는|이|가|을|를|의|에|도|만|과|와|로|으로|에서|에게|랑|이랑|까지|처럼)?';
+function nameHit(text,name){return new RegExp('(^|[^가-힣A-Za-z0-9])'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+PROP_JOSA+'(?![가-힣A-Za-z0-9])').test(text)}
 function propsFor(p){const out=[],seen=new Set(),put=e=>{if(!e||seen.has(e.id))return;seen.add(e.id);out.push({name:e.name,look:String(e.desc||'').trim(),tags:loreTagList(e).join(', '),img:!!IMG.lore[e.id],id:e.id})};
-  (p.props||[]).forEach(x=>put(propOf(x.name)));loreHits([p.act,p.caption].join(' ')).filter(e=>e.cat==='item').forEach(put);return out}
+  (p.props||[]).forEach(x=>put(propOf(x.name)));const t=[p.act,p.caption].join(' ');LORE.filter(e=>e.cat==='item'&&e.name&&nameHit(t,e.name)).forEach(put);return out}
+// 컷에 없는 소품의 태그는 그 컷 프롬프트에서 뺌(Claude가 앞뒤 컷 소품을 옮겨 적어도). 정확히 같은 태그 + 소품의 첫 태그(사물 이름)를 품은 태그
+// 소품 첫 태그의 사물 이름 부분: 세 낱말 이상이면 끝 두 낱말(gold pocket watch→pocket watch), 두 낱말이면 끝 낱말(old book→book)
+function propHead(t){const w=String(t||'').toLowerCase().trim().split(/\s+/);return w.length>=3?w.slice(-2).join(' '):w.length===2?w[1]:w[0]||''}
+function stripForeignProps(L){const items=LORE.filter(e=>e.cat==='item'&&e.name&&loreTagList(e).length);if(!items.length)return L;
+  return L.map(x=>{const mine=new Set((x.o.props||[]).map(v=>v.name)),bad=items.filter(e=>!mine.has(e.name));if(!bad.length)return x;
+    const exact=new Set(bad.flatMap(e=>loreTagList(e).map(t=>t.toLowerCase()))),heads=bad.map(e=>propHead(loreTagList(e)[0])).filter(h=>h.length>=4);
+    const f=t=>String(t||'').split(',').map(v=>v.trim()).filter(v=>v&&!exact.has(v.toLowerCase())&&!heads.some(h=>v.toLowerCase().includes(h))).join(', ');
+    return{...x,o:{...x.o,base:f(x.o.base),chars:x.o.chars.map(c=>({...c,prompt:f(c.prompt)})),layerCast:(x.o.layerCast||[]).map(c=>({...c,prompt:f(c.prompt)}))}}})}
 // 컷 글에 적은 형태가 설정집과 다르면 알려 줌(설정집 형태가 이김)
 function propClash(t){return RE.props(t).map(x=>({...x,e:propOf(x.name)})).filter(x=>x.look&&x.e&&String(x.e.desc||'').trim()&&x.e.desc.trim()!==x.look)}
 function worldBrief(){const w=WORLD;return{name:w.name||'',genre:w.genre||'',era:w.era||'',tone:w.tone||'',summary:w.summary||'',detail:(w.detail||'').slice(0,1500),tags:w.tags||''}}
@@ -2451,9 +2461,9 @@ function naiPayload(){const L=naiRuleCuts(),chars=naiChars();
     cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,props:propsFor(p).map(x=>x.name),
       dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${narrLabel(a.narr)} · ${a.goal}`:'',draft:{base:o.base,chars:o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}}})}}
 function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(naiPayload())}}
-function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return L;
+function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return stripForeignProps(L);
   const byCut=new Map(ai.cuts.map(c=>[c.n,c]));
-  return L.map(x=>({...x,o:NAI.refine(x.o,byCut.get(x.i+1))}))}
+  return stripForeignProps(L.map(x=>({...x,o:NAI.refine(x.o,byCut.get(x.i+1))})))}
 const CT_EDIT=new Set(),CT_BUSY=new Set();
 const CT_EMOS=['평온','개그','설렘','기쁨','다정','당황','의아','놀람','긴장','냉담','분노','쓸쓸','회상','결의'];
 let naiBusy=false,NAI_MSG='',NAI_ERR=false,NAI_DONE=0;
@@ -2842,6 +2852,9 @@ function syncLayers(si){const sc=SCENES[si];if(!sc)return 0;const plan=layerPlan
   for(const L of plan){const id=cutId(sc.id,L.i),cur=IMG.cut[id];
     if(L.bg.shared&&(!cur||cur.layerBg)){const src=layerBgOf(si,L.bg.key);if(src&&(!cur||cur.src!==src.src||cur.layerBg!==L.bg.key)){const o={...src,id,idx:L.i,sig:L.p.key};IMG.cut[id]=o;idb.put(o);n++}}
     const want=[...L.chars.map(x=>[x,charOf(L,x,sc.id)]),...L.props.map(x=>[x,layerAsset('prop',x.key)])].filter(([,a])=>a);
+    // 이 컷 글에 더는 없는 소품·인물 레이어는 뺌(예전에 잘못 붙은 소품 포함). 직접 넣은 소재(layer 없음)는 그대로
+    const ok=new Set([...L.chars.map(x=>'char:'+x.key),...L.props.map(x=>'prop:'+x.key)]),cur0=sc.pageEdits[L.slot]?.overlays;
+    if(cur0?.some(v=>v.layer&&!ok.has(v.layer+':'+v.key))){sc.pageEdits[L.slot].overlays=cur0.filter(v=>!v.layer||ok.has(v.layer+':'+v.key));n++}
     if(!want.length)continue;const ed=sc.pageEdits[L.slot]||={},ov=ed.overlays||=[];
     for(const [x,a] of want){const has=ov.find(v=>v.layer===x.kind&&v.key===x.key);
       if(has){if(has.asset!==a.id){has.asset=a.id;n++}}else{ov.push({asset:a.id,layer:x.kind,key:x.key,x:x.x,y:x.y,scale:x.scale});n++}}}
