@@ -2353,7 +2353,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
       <span class="ct-keys" title="J·K 다음·이전 컷 · C 지금 컷 프롬프트 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기"><span><kbd>J</kbd><kbd>K</kbd>이동</span><span><kbd>C</kbd>복사</span><span><kbd>Ctrl</kbd><kbd>V</kbd>붙여 넣기</span></span></nav>`;
   el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
     return `<article class="ccard${CT_COPIED.has(i)?' copied':''}${i===CT_CUR?' cur':''}" data-ct="${i}"${CT_EMPTY&&im?' hidden':''}>
-      <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}</header>
+      <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}<button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
       <div class="ct-body">
         <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><span class="ct-swap" aria-hidden="true">그림 바꾸기</span><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>${CT_COPIED.has(i)?'Ctrl+V로 붙여 넣기':'끌어다 놓아도 돼요'}</small></span>`}</div></div>
         <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="tpill${CT_COPIED.has(i)?' done':''}" data-act="ncopyall" data-i="${i}">${CT_COPIED.has(i)?'✓ 복사했어요':'프롬프트 복사'}</button></div>
@@ -2363,6 +2363,7 @@ function ctGo(i,smooth=true){const L=state.panels.length;if(!L)return;i=Math.max
   $('#conti').querySelectorAll('.ccard').forEach(c=>c.classList.toggle('cur',+c.dataset.ct===i));$('#conti').querySelectorAll('.ct-dot').forEach(d=>d.classList.toggle('cur',+d.dataset.ctgo===i));
   const c=$('#conti').querySelector(`.ccard[data-ct="${i}"]`);if(c&&!c.hidden)c.scrollIntoView({block:'start',behavior:smooth?'smooth':'auto'})}
 {const el=$('#conti');
+  el.addEventListener('click',e=>{const x=e.target.closest('[data-ctdel]');if(x){e.stopPropagation();contiDelete(+x.dataset.ctdel);return}});
   el.addEventListener('click',e=>{const d=e.target.closest('[data-ctgo]');if(d){if(CT_EMPTY&&$('#conti').querySelector(`.ccard[data-ct="${d.dataset.ctgo}"]`)?.hidden){CT_EMPTY=false;renderConti()}ctGo(+d.dataset.ctgo);return}
     const c=e.target.closest('.ccard');if(c){CT_CUR=+c.dataset.ct;el.querySelectorAll('.ct-dot').forEach(x=>x.classList.toggle('cur',+x.dataset.ctgo===CT_CUR));el.querySelectorAll('.ccard').forEach(x=>x.classList.toggle('cur',x===c))}
     const a=e.target.closest('[data-act="ncopyall"]');if(a){const i=+a.dataset.i;CT_COPIED.add(i);CT_CUR=i;target={kind:'cut',key:String(i)};setTimeout(renderConti,0);toast(`${i+1}번 컷 프롬프트를 복사했어요 · 생성한 그림을 Ctrl+V로 붙여 넣으면 이 컷에 들어가요`,2600)}});
@@ -2519,3 +2520,15 @@ Promise.all([
   toast(R.done,2400);b.textContent='되돌리기';b.classList.add('undo');LAST[k]={v,t:setTimeout(back,8000)}})}
 // 콘티를 다시 그려도 컷 프롬프트 생성 상태(생성 중·완료·오류)가 유지되게
 {const _rc=renderConti;renderConti=function(...a){const r=_rc(...a);naiBtnSync();return r}}
+
+// 콘티에서 컷 지우기: 씬 화면(cutAct)·편집 화면(deleteCut)과 같은 경로(remapCuts)를 써서 그림·편집값이 같이 따라가고,
+// 원고(SCENES)를 바꾸므로 씬·편집 화면에도 그대로 반영. 실행 취소 기록에 남아 Ctrl+Z로 되돌림
+function contiDelete(i){const p=state.panels[i];if(!p)return;const slot=cutSlot(p,i);
+  if(CUTS.length<=1){toast('씬의 마지막 컷은 지울 수 없어요');return}
+  const same=state.panels.filter((q,k)=>cutSlot(q,k)===slot).length;
+  const txt=String(CUTS[slot]||'').split('\n')[0].slice(0,40);
+  if(!confirm(`${i+1}번 컷을 지울까요?${same>1?`\n같은 글에서 나온 컷 ${same}개가 함께 지워져요.`:''}\n「${txt}」\n씬·편집 화면에서도 지워져요. Ctrl+Z로 되돌릴 수 있어요.`))return;
+  const n=CUTS.length,edits=cutEdits();
+  remapCuts(SCUR,()=>{CUTS.splice(slot,1);edits.splice(slot,1);return moveMap(n,x=>x===slot?-1:x>slot?x-1:x)});
+  saveCuts();compute(false);CT_CUR=Math.min(i,Math.max(0,state.panels.length-1));CT_COPIED.clear();renderConti();
+  toast(`${i+1}번 컷을 지웠어요 · 씬·편집에도 반영돼요 · Ctrl+Z로 되돌리기`,2600)}

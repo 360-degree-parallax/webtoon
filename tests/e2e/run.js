@@ -135,6 +135,22 @@ test('콘티: 컷 프롬프트 생성 중·완료가 버튼에 보임', async ({
   await p.waitForTimeout(4300);
   assert((await p.textContent('#conti [data-act=nairefine]')).trim() === '컷 프롬프트 생성', '4초 뒤 원래대로');
 });
+test('콘티: 컷 지우기 → 씬·편집에 반영 · Ctrl+Z', async ({p, ev}) => {
+  await ev(() => showView('layout')); await p.waitForTimeout(800);
+  const before = await ev(() => SCENES[SCUR].cuts.slice()); const n = await ev(() => state.panels.length);
+  const slot = await ev(() => cutSlot(state.panels[1], 1));
+  await p.click('#conti .ccard[data-ct="1"] [data-ctdel]'); await p.waitForTimeout(500);
+  const after = await ev(() => SCENES[SCUR].cuts.slice());
+  assert(after.length === before.length - 1 && !after.includes(before[slot]), '원고에서 그 컷이 빠짐');
+  assert((await ev(() => document.querySelectorAll('#conti .ccard').length)) < n, '콘티 카드가 줄어듦');
+  await p.click('.topnav [data-view=write]'); await p.waitForTimeout(500);
+  assert((await ev(() => document.querySelectorAll('#cutlist li').length)) === after.length, '씬 화면 컷 수 반영');
+  await ev(() => showView('webtoon')); await p.waitForTimeout(1200);
+  assert((await ev(() => SCENES[SCUR].cuts.length)) === after.length, '편집 화면도 같은 원고');
+  await ev(() => showView('layout')); await p.waitForTimeout(500);
+  await p.keyboard.press('Control+z'); await p.waitForTimeout(600);
+  assert(JSON.stringify(await ev(() => SCENES[SCUR].cuts)) === JSON.stringify(before), 'Ctrl+Z로 되돌림');
+});
 test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   await p.click('#gReview'); await p.waitForTimeout(1500);
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');
