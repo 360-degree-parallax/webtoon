@@ -109,7 +109,15 @@ const auditOk = (() => { const NA = require('./nai.js'), chars = [{ name: '명�
   const ok = r.result.base === '2people, light rays' && r.result.chars.length === 1 && !/running/.test(r.result.chars[0].prompt) && /looking at another/.test(r.result.chars[0].prompt)
     && s.result.chars.length === 0 && NA.audit(o, null).fixes.length === 1 && NA.audit(o, { base: 'x', chars: [] }).fixes.length === 0;
   console.log(`Claude 결과 보정 ${ok ? 'O' : 'X'} · ${r.fixes.length}건(${r.fixes.join(' / ')})`); return ok; })();
+// 샷 크기별 인물 칸: 인원 태그는 기본 프롬프트에만(인물 칸은 boy/girl), 넓은 샷은 얼굴 세부를 빼고 짧게, 중경은 신발 빼기, 제외 태그
+const shotOk = (() => { const NA = require('./nai.js'), chars = [{ name: '명경', body: 'male' }], tags = { 명경: '1boy, black hair, short hair, red eyes, sharp eyes, tall, black coat, silver earrings, scar on cheek, white shirt, black pants, boots, gloves' };
+  const run = (shot, act) => { const p = { act, actText: act, who: '명경', shot, ang: '아이레벨', emo: '평온', i: 1, h: 1, vng: 'I' }; return NA.cut(p, 0, [p], { chars, tags }); };
+  const w = run('전경', '명경이 복도를 걷는다.'), m = run('중경', '명경이 창가에 선다.'), c = run('클로즈업', '명경이 웃는다.');
+  const cp = o => o.chars[0].prompt, cnt = t => t.split(', ').filter(x => x === '1boy').length;
+  const ok = cnt(w.base) === 1 && cnt(cp(w)) === 0 && /^boy, /.test(cp(w)) && !/red eyes|earrings|scar/.test(cp(w)) && /wide shot/.test(w.base) && /close-up/.test(w.uc)
+    && !/boots/.test(cp(m)) && /cowboy shot/.test(m.base) && !/pants|boots/.test(cp(c)) && /red eyes/.test(cp(c)) && !c.uc;
+  console.log(`샷별 인물 칸 ${ok ? 'O' : 'X'} · 전경 외형 ${cp(w).split(', ').length - 1}개 · 중경 ${cp(m).split(', ').length - 1}개`); return ok; })();
 // 동작·인물 해석(부정·시도·대조·누가·대명사·무리·위치·장소·외형): 시험 세트 + 확인용 세트
 const ar = ['', '--holdout'].map(f => require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, '..', 'tools', 'eval_actions.js'), ...(f ? [f] : []), '--min', '0.9'], { encoding: 'utf8' }));
 console.log('동작 해석 ' + ar.map((r, k) => (k ? '확인용 ' : '') + ((r.stdout.match(/정확도 [\d.]+%/) || ['?'])[0])).join(' · '));
-process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 && sr.status === 0 && ar.every(r => r.status === 0) && auditOk ? 0 : 1);
+process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 && sr.status === 0 && ar.every(r => r.status === 0) && auditOk && shotOk ? 0 : 1);

@@ -4,7 +4,7 @@
 (function (N) {
   'use strict';
   const SHOT = {
-    설정: ['very wide shot'], 전경: ['wide shot'], 전신: ['full body'], 중경: ['upper body'],
+    설정: ['1.2::very wide shot::'], 전경: ['1.15::wide shot::', 'full body'], 전신: ['full body'], 중경: ['cowboy shot'],  // 인물 컷이 클로즈업으로 당겨지지 않게 넓은 샷은 가중치
     클로즈업: ['portrait', 'close-up', 'face focus'], 디테일: ['close-up'], '효과 배경': ['abstract background'],
     // 연출 DB에 있는 샷 값(화면 인서트 52컷, SD 27컷)
     '화면 인서트': ['close-up', 'screen'], SD: ['chibi', 'super deformed', 'simple background'],
@@ -338,7 +338,7 @@
   const HAIRC = [[['금발'], 'blonde hair'], [['은발'], 'silver hair'], [['흑발', '검은 머리', '까만 머리'], 'black hair'], [['갈색 머리', '밤색 머리', '갈발'], 'brown hair'], [['빨간 머리', '붉은 머리', '적발'], 'red hair'], [['분홍 머리'], 'pink hair'], [['백발', '흰 머리'], 'white hair'], [['회색 머리'], 'grey hair']];
   const HAIRS = [[['짧은 머리', '짧은 금발', '숏컷'], 'short hair'], [['긴 머리', '장발'], 'long hair'], [['단발'], 'bob cut'], [['하나로 묶', '포니테일', '묶은 머리'], 'ponytail'], [['땋은', '땋아'], 'braid'], [['올림머리', '틀어 올린'], 'hair bun'], [['앞머리'], 'bangs']];
   const EYES = { 초록: 'green eyes', 녹색: 'green eyes', 갈색: 'brown eyes', 파란: 'blue eyes', 푸른: 'blue eyes', 붉은: 'red eyes', 빨간: 'red eyes', 검은: 'black eyes', 금색: 'yellow eyes', 노란: 'yellow eyes', 회색: 'grey eyes', 보라: 'purple eyes' };
-  const CLOTH = [[['연미복'], 'tailcoat'], [['집사'], 'butler'], [['하인'], 'butler'], [['하녀', '메이드'], 'maid'], [['앞치마'], 'apron'], [['장갑'], 'gloves'], [['드레스'], 'dress'], [['정장'], 'suit'],
+  const CLOTH = [[['연미복'], 'tailcoat'], [['집사'], 'butler'], [['하인'], 'butler'], [['하녀', '메이드'], 'maid'], [['앞치마'], 'apron'], [['장갑'], 'gloves'], [['드레스'], 'dress'], [['원피스'], 'dress'], [['교복'], 'school uniform'], [['코트'], 'coat'], [['셔츠'], 'shirt'], [['정장'], 'suit'],
     [['교복'], 'school uniform'], [['셔츠'], 'shirt'], [['코트'], 'coat'], [['안경'], 'glasses'], [['리본'], 'hair ribbon'], [['넥타이'], 'necktie'], [['조끼'], 'vest'], [['망토'], 'cape'], [['모자'], 'hat'], [['귀족'], 'aristocrat']];
   // '§'로 시작하는 낱말은 낱말 첫머리에서만(한 글자 동사: '§우는'은 '우는 아이'에만, '배우는'에는 안 걸림)
   //   한 글자(§든·§운)는 앞뒤 모두 낱말 경계
@@ -358,6 +358,8 @@
   function lookTags(look) {
     const s = String(look || ''); const out = [];
     HAIRC.forEach(([ws, t]) => { if (has(s, ws)) out.push(t); });
+    // '갈색 긴 머리'처럼 색과 머리 사이에 길이·모양 말이 낀 것
+    if (!out.some(t => / hair$/.test(t) && !/^(long|short|medium)/.test(t))) for (const m of s.matchAll(/(\S+)\s(?:(?:긴|짧은|곱슬|웨이브|묶은|땋은|풀어헤친|허리까지 오는)\s)?(?:단발머리|단발|장발|생머리|곱슬머리|포니테일|머리카락|머리칼|머리)/g)) { const c = Object.keys(COLOR).find(k => m[1].startsWith(k)); if (c) { out.push(`${COLOR[c] === 'yellow' ? 'blonde' : COLOR[c]} hair`); break; } }
     HAIRS.forEach(([ws, t]) => { if (has(s, ws)) out.push(t); });
     for (const m of s.matchAll(/(\S+?)\s?눈/g)) { const c = Object.keys(EYES).find(k => m[1].startsWith(k)); if (c) out.push(EYES[c]); }
     CLOTH.forEach(([ws, t]) => { const w = ws.find(x => s.includes(x)); if (!w) return; const m = s.match(new RegExp(`(\\S+)\\s${w}`)); const c = m && Object.keys(COLOR).find(k => m[1].startsWith(k)); out.push(c ? `${COLOR[c]} ${t}` : t); });
@@ -405,9 +407,24 @@
     return objects.length && !localPlace.length ? 'object' : 'scenery';
   }
   const NO_HUMANS = new Set(['scenery', 'object', 'effect']);
-  const COUNT_TAG = /^(?:\d+\s*(?:girls?|boys?|others?|people)|multiple (?:girls|boys|others|people)|solo)$/i;
+  const COUNT_TAG = /^(?:\d+\s*(?:girls?|boys?|others?|people)|multiple (?:girls|boys|others|people)|solo|boy|girl|other)$/i;  // boy·girl: 여러 인물 칸의 인물 표시(숫자는 기본 프롬프트에만)
   const SUBJECT_TAG = /^(?:portrait|(?:face|eye|hands?|feet) focus|(?:upper|lower|full) body|cowboy shot|looking at viewer|pov(?: hands)?|person|people|man|woman|character|(?:distant |small )?(?:figure|silhouette|human figure)|crowd|(?:\w+ )*(?:hair|eyes|face)|smile|open mouth|(?:standing|sitting|walking))$/i;
   const CLOSE_TAG = /^(?:portrait|close-up|face focus|eye focus|upper body|cowboy shot|full body|looking at viewer|pov)$/i;
+  // 샷 크기에 따라 인물 외형 태그를 줄임: 넓은 샷에 눈·흉터·귀걸이 같은 얼굴 세부와 긴 외형 목록이 있으면 모델이 얼굴로 당겨 클로즈업이 됨
+  const FACE_FINE = /(^(?!closed|half-closed|teary|wide)[\w-]+ eyes$|eyelashes|eyebrows|pupils|makeup|lipstick|freckles|\bmole\b|\bscars?\b|earrings?|piercing|\bfangs?\b|eyeliner|eyeshadow|eyepatch)/i;
+  const LOWER_WEAR = /(pants|trousers|skirt|shorts|boots|shoes|sneakers|heels|loafers|socks|stockings|thighhighs|pantyhose|legwear|sandals)$/i;
+  const FEET_WEAR = /(boots|shoes|sneakers|heels|loafers|socks|sandals)$/i;
+  const LOOK_CAP = { 설정: 4, 전경: 6, 전신: 8, 중경: 9, 클로즈업: 10, 디테일: 6 };
+  function trimLook(tags, shot) {
+    const n = t => tagName(t).toLowerCase();
+    let out = tags;
+    if (shot === '설정' || shot === '전경') out = out.filter(t => !FACE_FINE.test(n(t)) && !/^(tall|short|petite)$/.test(n(t)));
+    else if (shot === '중경') out = out.filter(t => !FEET_WEAR.test(n(t)));
+    else if (shot === '클로즈업') out = out.filter(t => !LOWER_WEAR.test(n(t)) && !/^(tall|short|petite)$/.test(n(t)));
+    return out.slice(0, LOOK_CAP[shot] || 10);
+  }
+  // 넓은 샷 인물 컷의 제외 태그(NovelAI Undesired Content에 넣음)
+  const UC_SHOT = { 설정: 'close-up, portrait, face focus, upper body, cowboy shot', 전경: 'close-up, portrait, face focus, upper body', 전신: 'close-up, portrait, face focus, cropped legs', 중경: 'close-up, portrait, face focus' };
   const tagName = tag => tag.replace(/^[{\[]+|[}\]]+$/g, '').replace(/^-?[\d.]+::|::$/g, '').trim();
   function sceneTags(items, mode) {
     return items.filter(item => {
@@ -553,13 +570,13 @@
     ]);
     const charP = cast.map((c, n) => {
       const look = String(tags[c.name] || '').trim() || lookTags(c.look).join(', ');
-      const appearance = splitTags(look).filter(tag => !COUNT_TAG.test(tagName(tag))
-        && tag !== 'no humans' && (!far || !/hair|eyes?|face|portrait|close-up|looking at viewer/i.test(tag)));
+      const appearance = trimLook(splitTags(look).filter(tag => !COUNT_TAG.test(tagName(tag))
+        && tag !== 'no humans' && (!far || !/hair|eyes?|face|portrait|close-up|looking at viewer/i.test(tag))), far ? '설정' : p.shot);
       const actionTags = actOf(c).filter(tag => !far || /walk|stand|sitting/.test(tag));
       const x = cast.length === 1 ? 0.5 : [0.3, 0.7, 0.5, 0.3, 0.7, 0.5][n];
       const y = n < 3 ? (far ? 0.7 : 0.5) : (far ? 0.9 : 0.7);
       const prompt = joinTags([
-        ...countTags([c]), far && 'far away', ...appearance,
+        c.body === 'male' ? 'boy' : c.body === 'female' ? 'girl' : 'other', far && 'far away', ...appearance,
         ...(!far && n === 0 ? weigh(EXPR[p.emo] || [], p.i ?? 1) : []), ...actionTags,
       ]);
       return { name: c.name, prompt, pos: pos(x, y), ref: !far && !!refs.char?.(c.name) };
@@ -578,10 +595,10 @@
     const charRef = mode === 'character' && main && refs.char?.(main.name) ? main.name : null;
     const strength = ['detail', 'object'].includes(mode) ? 0.72 : NO_HUMANS.has(mode) || far ? 0.62 : peak ? 0.7 : 0.66;
     return {
-      mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h),
+      mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h), uc: ['character', 'distant'].includes(mode) ? (UC_SHOT[far ? '설정' : p.shot] || '') : '',
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
-      props: propsOn.map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '', forced: !!x.forced })), propsOff: propsOff.map(x => ({ name: x.name, why: x.why, emit: x.emit || [], tags: x.tags || '' })), place, layerCast, missAct, who: main?.name || p.who || '', spatial: RA.spatial, crowd: cast.length ? [] : RA.crowd,
+      props: propsOn.map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '', forced: !!x.forced })), propsOff: propsOff.map(x => ({ name: x.name, why: x.why, emit: x.emit || [], tags: x.tags || '' })), place, layerCast, missAct, who: main?.name || p.who || '', shot: p.shot, spatial: RA.spatial, crowd: cast.length ? [] : RA.crowd,
       read: { per: RA.per, crowd: RA.crowd, spatial: RA.spatial, body: RA.bodyFocus, whoGuess: !!p.whoGuess, dropped: RA.dropped.filter(d => d.why !== 'seq').map(d => ({ who: d.who, why: d.why, tags: d.tags })) },  // 규칙이 읽은 것(Claude에 넘겨 확인·보정)
     };
   }
@@ -630,7 +647,10 @@
       if (!next?.prompt?.trim() || draft.mode === 'distant') return c;
       const identity = splitTags(c.prompt).filter(tag => COUNT_TAG.test(tag));
       const description = splitTags(next.prompt).filter(tag => !COUNT_TAG.test(tagName(tag)) && !/^no humans$/i.test(tagName(tag)));
-      return { ...c, prompt: joinTags([...identity, ...description]), pos: cellPos(next.cell) || c.pos };
+      // 샷에 안 보이는 외형(넓은 샷의 얼굴 세부, 클로즈업의 하의·신발)은 Claude가 넣어도 뺌, 너무 길면 앞쪽 20개만
+      const shot = draft.shot, nm = t => tagName(t).toLowerCase();
+      const fit = description.filter(t => !((shot === '설정' || shot === '전경') && FACE_FINE.test(nm(t))) && !(shot === '중경' && FEET_WEAR.test(nm(t))) && !(shot === '클로즈업' && LOWER_WEAR.test(nm(t)))).slice(0, 20);
+      return { ...c, prompt: joinTags([...identity, ...fit]), pos: cellPos(next.cell) || c.pos };
     });
     const base = joinTags([...draft.frameTags, ...additions, ...splitTags(draft.base)]);
     // 레이어용 인물에도 Claude가 다듬은 인물 묘사를 씀(인원 태그는 초안 것)
