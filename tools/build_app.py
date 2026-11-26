@@ -4,7 +4,7 @@
 """
 import sys, pathlib
 R = pathlib.Path(__file__).resolve().parents[1] / 'rough'
-PARTS = ['app-core', 'app-setbook', 'app-scene', 'app-edit', 'app-edit2', 'app-views']
+PARTS = ['app-core', 'app-setbook', 'app-scene', 'app-edit', 'app-edit2', 'app-views', 'app-layers']
 HEAD = '// 자동 생성: tools/build_app.py — 고치지 말고 rough/src/의 조각을 고친 뒤 다시 만드세요\n// ' + ' → '.join(f'src/{p}.js' for p in PARTS) + '\n'
 out = HEAD + ''.join((R / 'src' / f'{p}.js').read_text() for p in PARTS)
 if '--check' in sys.argv:

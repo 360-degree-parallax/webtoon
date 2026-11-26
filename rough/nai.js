@@ -254,7 +254,7 @@
       mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h),
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
-      props: (ctx.props?.(p) || []).map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '' })),
+      props: (ctx.props?.(p) || []).map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '' })), place,
     };
   }
 
@@ -283,7 +283,35 @@
     ].filter(Boolean);
     return L.join('\n\n');
   }
+  // 요소별 레이어: 한 컷을 배경 · 인물마다 · 소품마다 따로 뽑아 겹침(편집에서 레이어로 고정·이동)
+  //   배경: 사람·소품 없이 장소만(컷 크기). 같은 씬에서 장소가 같으면 같은 배경을 여러 컷이 같이 씀(key)
+  //   인물: 흰 단색 배경에 그 인물 하나(나중에 배경을 지워 겹침). 외형 태그는 컷 프롬프트와 같음
+  //   소품: 흰 배경에 물건 하나. 설정집 태그 그대로 → 한 장을 모든 컷이 같이 씀
+  const CUTOUT = ['simple background', 'white background'];
+  const LAYER_SHOT = { 설정: [0.18, 1.8], 전경: [0.26, 1.75], 전신: [0.42, 1.7], 중경: [0.62, 1.25], 클로즈업: [0.95, 1], 디테일: [0.8, 1], SD: [0.45, 1.2] };
+  function layers(o, p, ctx = {}) {
+    const style = splitTags(ctx.style || ''), props = o.props || [];
+    const propTags = new Set(props.flatMap(x => splitTags(x.tags)).map(t => t.toLowerCase()));
+    tagsOf(props.map(x => x.name).join(' '), OBJECT).forEach(t => propTags.add(String(t).toLowerCase()));  // 소품 이름에서 나온 물건 태그(회중시계→clock)도 배경에서 뺌
+    const keep = t => !propTags.has(tagName(t).toLowerCase()) && t !== 'negative space' && t !== 'no text';
+    const effect = o.mode === 'effect';
+    const bgTags = effect ? splitTags(o.base) : ['no humans', 'scenery', ...sceneTags(splitTags(o.base), 'scenery').filter(t => !SHOT_ALL.has(tagName(t).toLowerCase()))];
+    const place = (o.place || []).slice().sort().join('+');
+    const bg = { kind: 'bg', label: '배경', key: effect || !place ? `cut${ctx.i ?? 0}` : `${place}|${p.ang || ''}`,
+      prompt: joinTags([...bgTags.filter(keep), 'no text']), size: o.size, shared: !effect && !!place };
+    const [sc, ratio] = LAYER_SHOT[p.shot] || LAYER_SHOT.중경;
+    const n = Math.max(1, o.chars.length);
+    const chars = o.chars.map((c, k) => ({ kind: 'char', label: `인물 ${c.name}`, name: c.name, key: c.name,
+      prompt: joinTags([...splitTags(c.prompt).filter(t => !/^(far away)$/i.test(tagName(t))), ...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || [], ...CUTOUT, ...style, 'no text']),
+      size: size(ratio), x: Math.round(c.pos.x * 100), y: Math.round(c.pos.y * 100), scale: Math.round(Math.min(95, sc * 100 * (n > 1 ? 0.75 : 1))) }));
+    const focus = ['object', 'detail'].includes(o.mode);
+    const propL = props.filter(x => x.tags || x.look).map((x, k) => ({ kind: 'prop', label: `소품 ${x.name}`, name: x.name, key: x.name,
+      prompt: joinTags(['no humans', 'still life', 'object focus', ...splitTags(x.tags), ...CUTOUT, ...style, 'no text']), size: size(1), needsTags: !x.tags,
+      x: focus ? 50 : 30 + (k % 3) * 20, y: focus ? 55 : 78, scale: focus ? 70 : 22 }));
+    return { bg, chars, props: propL };
+  }
+  const SHOT_ALL = new Set(Object.values(SHOT).flat().concat(['wide shot', 'very wide shot']).map(t => t.toLowerCase()));
   // 칸 이름(A1~E5) → 좌표
   const cellPos = cell => { const c = COLS.indexOf(String(cell)[0]), r = +String(cell).slice(1) - 1; return c < 0 || !(r >= 0 && r < 5) ? null : pos(+(0.1 + c * 0.2).toFixed(1), +(0.1 + r * 0.2).toFixed(1)); };
-  Object.assign(N, { cut, refine, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
+  Object.assign(N, { cut, refine, layers, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughNAI = {}));

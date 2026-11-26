@@ -218,6 +218,35 @@ test('#소품: 처음 적은 형태로 세계관에 고정 → 콘티 모든 컷
   assert(r[2] === false, '태그 저장 뒤에도 생성 결과가 최신');
   assert(await ev(() => document.querySelectorAll('#conti .ct-prop').length >= 2), '콘티 카드에 고정 소품 표시');
 });
+test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은 그림이 편집 레이어로', async ({p, ev}) => {
+  await ev(() => { showView('write');
+    CUTS.splice(0, CUTS.length, '@에드가가 복도에서 #회중시계(금색)를 꺼낸다.', '@에드가가 복도 끝을 바라본다.', '@준 "누구세요?"');
+    saveScenes(); renderCuts(); cutChanged(); });
+  await p.waitForTimeout(600);
+  await ev(() => { LORE.find(x => x.name === '회중시계').tags = 'gold pocket watch'; showView('layout'); }); await p.waitForTimeout(500);
+  await p.click('#conti [data-layermode]'); await p.waitForTimeout(400);
+  const rows = await ev(() => [...document.querySelectorAll('#conti .ccard[data-ct="0"] .ly-row')].map(r => [r.dataset.ly, r.dataset.key, r.querySelector('pre').textContent]));
+  assert(rows.map(r => r[0]).join() === 'prop,char,bg', '소품·인물·배경 줄');
+  const bg = rows[2][2], ch = rows[1][2], pr = rows[0][2];
+  assert(bg.startsWith('no humans, scenery') && !/1boy|gold pocket watch|clock/.test(bg), '배경: 사람·소품 없이');
+  assert(ch.includes('white background') && !/hallway/.test(ch), '인물: 흰 배경에 인물만');
+  assert(pr.includes('gold pocket watch') && pr.includes('white background'), '소품: 설정집 태그 그대로');
+  // 흰 바탕에 빨간 네모 그림을 만들어 넣기
+  const mk = `(async()=>{const c=document.createElement('canvas');c.width=80;c.height=100;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,80,100);g.fillStyle='#c00';g.fillRect(20,20,40,60);const b=await new Promise(r=>c.toBlob(r,'image/png'));return new File([b],'x.png',{type:'image/png'})})()`;
+  await ev(`(async()=>{await layerPut(await ${mk},0,'char','에드가');await layerPut(await ${mk},0,'prop','회중시계');await layerPut(await ${mk},0,'bg','')})()`);
+  await p.waitForTimeout(400);
+  const r = await ev(async () => { const sid = SCENES[SCUR].id, LP = layerPlan(SCUR), ed = SCENES[SCUR].pageEdits[LP[0].slot];
+    const a = layerAsset('char', '에드가', sid, LP[0].slot), im = await loadImg(a.src), c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    return { ov: (ed.overlays || []).map(v => v.layer + ':' + v.key), corner: g.getImageData(2, 2, 1, 1).data[3], mid: g.getImageData(40, 50, 1, 1).data[3],
+      bg: !!IMG.cut[cutId(sid, 0)]?.layerBg || IMG.cut[cutId(sid, 0)]?.layerBg === '', same: LP[0].bg.key === LP[1].bg.key, bg1: !!IMG.cut[cutId(sid, 1)] }; });
+  assert(r.ov.includes('char:에드가') && r.ov.includes('prop:회중시계'), '컷 소재에 인물·소품 레이어');
+  assert(r.corner === 0 && r.mid === 255, '흰 배경만 투명');
+  assert(r.bg && (!r.same || r.bg1), '배경 등록 · 같은 장소 컷은 같은 배경');
+  assert(await ev(() => document.querySelectorAll('#conti .ccard[data-ct="0"] .ly-prev img').length === 3), '미리보기에 세 레이어');
+  await ev(() => showView('webtoon')); await p.waitForTimeout(1200);
+  assert(await ev(() => !!document.querySelector('[data-overlay-layer="char"][data-label^="인물 에드가"]') && !!document.querySelector('[data-overlay-layer="prop"]')), '편집 화면에 레이어로 그려짐');
+  await ev(() => setLayerMode(false));
+});
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
   await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);

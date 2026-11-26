@@ -1,5 +1,5 @@
 // 자동 생성: tools/build_app.py — 고치지 말고 rough/src/의 조각을 고친 뒤 다시 만드세요
-// src/app-core.js → src/app-setbook.js → src/app-scene.js → src/app-edit.js → src/app-edit2.js → src/app-views.js
+// src/app-core.js → src/app-setbook.js → src/app-scene.js → src/app-edit.js → src/app-edit2.js → src/app-views.js → src/app-layers.js
 // 러프 툴 본체 1/6 — 공통: 계산·읽기·표·메뉴·그리기·식자·참고 이미지·프롬프트 내보내기
 // 원본 조각: tools/build_app.py가 6개를 순서대로 이어 rough/app.js를 만듦(사이트는 app.js 하나를 실음 — 조각끼리 불러올 때 서로 부르는 곳이 많아 따로 싣지 않음)
 // UX 시안(docs/ux-brief-plan.md): 기본은 채택안 C(컷 우선). ?ux=A(예전 화면) · B(문구 정리)는 사람 확인이 끝날 때까지 비교용으로 남김
@@ -530,7 +530,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     const overlay=clean?{defs:'',art:''}:RoughImageMaterials.overlaysSVG(edit?.overlays,IMG.overlay,`${pre}${i}`,bounds,size,W);
     defs+=mask+overlay.defs;
     const frameFill=mask||blank?'fill="none" pointer-events="all"':'fill="#fff"';
-    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g data-cut-art="" clip-path="url(#${pre}${i})"${mask?` mask="url(#${maskId})"`: ''}><g data-art=""${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>${overlay.art}`+
+    o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g data-cut-art="" clip-path="url(#${pre}${i})"${mask?` mask="url(#${maskId})"`: ''}><g data-art=""${im?.layerBg!=null&&im?.layerBg!==undefined&&'layerBg' in im?' data-layer-bg=""':''}${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>${overlay.art}`+
       (nums?`<circle cx="${bx+22}" cy="${y+22}" r="16" fill="${on?'#2d71f7':'#222'}"/><text x="${bx+22}" y="${y+28}" font-size="17" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text>`:'')+
       (c?`<rect x="${bx+12}" y="${y+h-50}" width="${40+p.who.length*24}" height="36" rx="18" fill="#fff" stroke="${c.color}" stroke-width="3"/><circle cx="${bx+32}" cy="${y+h-32}" r="7" fill="${c.color}"/><text x="${bx+46}" y="${y+h-24}" font-size="22" font-weight="700" fill="#222">${esc(p.who)}</text>`:'')+
       (!clean&&edit?.materialLines?`<g clip-path="url(#${pre}${i})" pointer-events="none">${Object.values(edit.materialLines).map(effect=>window.RoughMaterials.lineEffect(effect,{x:bx,y,w:bw,h},rngL((p.key||p.act)+effect.kind))).join('')}</g>`:'')+
@@ -2349,7 +2349,8 @@ function showView(v){if(v==='nai')v='layout';
   if(v==='setbook'){try{v=localStorage.getItem('rough-setbook-sub')||'chars'}catch(_){v='chars'}}if(v==='chars'||v==='world'){try{localStorage.setItem('rough-setbook-sub',v)}catch(_){}}  // 작화는 콘티에 합침(예전 주소·저장된 화면 호환)
   if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='write';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v||(b.dataset.view==='setbook'&&(v==='chars'||v==='world'))));
   ['chars','world','plan','write','layout','nai','webtoon','db'].forEach(k=>$('#v-'+k).hidden=k!==v);
-  if(v==='write'||v==='layout'){try{ensureProps(SCENES.flatMap(s=>s.cuts||[]))}catch(_){}}  // 구성에서 넘어온 씬의 #소품도 세계관에 고정
+  if(v==='write'||v==='layout'){try{ensureProps(SCENES.flatMap(s=>s.cuts||[]))}catch(_){}}
+  if(v==='webtoon'&&LAYER_MODE){try{SCENES.forEach((_,si)=>syncLayers(si))}catch(e){console.warn('레이어 맞추기',e)}}  // 소품 그림은 모든 씬에 같은 한 장  // 구성에서 넘어온 씬의 #소품도 세계관에 고정
   if(v==='chars'){renderChars();renderLib()}if(v==='world')renderWorld();
   // 숨겨진 채 그려진 컷 글 칸은 높이가 0으로 잡혀 글이 안 보임 → 보일 때 다시 맞춤
   // 편집·콘티에서 바꾼 내용(지운 식자·컷·씬, 제목)을 씬 화면에 다시 반영 — 화면끼리 같은 원고를 봄
@@ -2509,27 +2510,29 @@ function ctClearCopied(){CT_COPIED.clear();if(target&&target.kind==='cut')target
 function ctBlk(title,txt,dim){const tags=String(txt||'').split(/,\s*/);
   const html=tags.map((t,k)=>{const sep=k<tags.length-1?', ':'';return dim&&dim.has(t.trim().toLowerCase())?`<span class="ct-dim">${esc(t)}${sep}</span>`:esc(t)+sep}).join('');
   return `<div class="nf"><header><h4>${title}</h4><button class="btn" data-act="ncopy">복사</button></header><pre>${html}</pre></div>`}
+var LAYER_MODE=false;try{LAYER_MODE=localStorage.getItem('rough-layer-mode')==='1'}catch(_){}
 function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,sc=SCENES[SCUR];
   if(!ps.length){el.innerHTML='<p class="empty">씬 단계에서 컷을 적어주세요.</p>';return}
   const L=naiCuts(),done=cutCount(SCUR,ps),ai=ainFor(),dim=new Set(String(NAISTYLE||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
   // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
-  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label><label class="ct-fit ct-lymode" title="컷 한 장 대신 배경·인물·소품 프롬프트를 따로 만들고, 넣은 그림을 레이어로 겹쳐요 · 배경은 같은 장소 컷끼리, 소품은 모든 컷이 한 장을 같이 써서 모양이 고정돼요"><input type="checkbox" data-layermode${LAYER_MODE?' checked':''}> 요소별 레이어로 뽑기</label>${LAYER_MODE?`<label class="ct-fit" title="인물·소품 그림의 흰 배경을 지워 겹쳐요 · 투명 PNG를 넣을 때는 꺼도 돼요"><input type="checkbox" data-layercut${LAYER_CUT?' checked':''}> 흰 배경 지우기</label>`:''}</div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">현재 초안을 표시 중이에요 · 컷 프롬프트를 다시 생성할 수 있어요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
     <nav class="ct-nav" aria-label="컷 이동"><div class="ct-dots">${L.map(({i})=>`<button type="button" class="ct-dot${has[i]?' on':''}${i===CT_CUR?' cur':''}" data-ctgo="${i}" title="${i+1}번 컷 · ${has[i]?'그림 있음':'그림 없음'}">${has[i]?'✓':i+1}</button>`).join('')}</div>
       <label class="ct-filter"><span>빈 컷만</span><input type="checkbox" role="switch" data-ctempty${CT_EMPTY?' checked':''}><i aria-hidden="true"></i></label>
       <span class="ct-keys" title="J·K 다음·이전 컷 · C 지금 컷 프롬프트 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기"><span><kbd>J</kbd><kbd>K</kbd>이동</span><span><kbd>C</kbd>복사</span><span><kbd>Ctrl</kbd><kbd>V</kbd>붙여 넣기</span></span></nav>`;
+  const LP=LAYER_MODE?layerPlan(SCUR):null;
   el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
     return `<article class="ccard${CT_COPIED.has(i)?' copied':''}${i===CT_CUR?' cur':''}" data-ct="${i}"${CT_EMPTY&&im?' hidden':''}>
       <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p>${(o.props||[]).length?`<span class="ct-props">${o.props.map(x=>`<i class="ct-prop${x.tags?'':' notag'}" title="고정 소품 · ${esc(x.look||'형태 미정')}${x.tags?' · '+esc(x.tags):' · 태그는 컷 프롬프트 생성 때 Claude가 한 번 정해 고정해요'}">◆${esc(x.name)}</i>`).join('')}</span>`:''}<small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}<button type="button" class="ct-edbtn" data-ctedit="${i}" aria-expanded="${CT_EDIT.has(i)}" title="이 컷의 구도·감정·길이를 고치고 프롬프트를 이 컷만 다시 만들어요">${CT_EDIT.has(i)?'수정 닫기':'이 컷 수정'+(ctNote(i).trim()||['shot','ang','emo','h'].some(f=>p.dir&&p.dir[f]!=null)?' •':'')}</button><button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
       ${CT_EDIT.has(i)?ctEditor(p,i):''}
       <div class="ct-body">
-        <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><span class="ct-swap" aria-hidden="true">그림 바꾸기</span><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>${CT_COPIED.has(i)?'Ctrl+V로 붙여 넣기':'끌어다 놓아도 돼요'}</small></span>`}</div></div>
+        ${LP?`<div class="ct-art">${layerPreview(LP[i],o)}</div>${layerRows(LP[i],o,dim)}`:`<div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><span class="ct-swap" aria-hidden="true">그림 바꾸기</span><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>${CT_COPIED.has(i)?'Ctrl+V로 붙여 넣기':'끌어다 놓아도 돼요'}</small></span>`}</div></div>
         <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="tpill${CT_COPIED.has(i)?' done':''}" data-act="ncopyall" data-i="${i}">${CT_COPIED.has(i)?'✓ 복사했어요':'프롬프트 복사'}</button></div>
-          ${ctBlk('기본 프롬프트',o.base,dim)}${o.chars.map((c,n)=>ctBlk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,c.prompt,dim)).join('')}</div>
+          ${ctBlk('기본 프롬프트',o.base,dim)}${o.chars.map((c,n)=>ctBlk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,c.prompt,dim)).join('')}</div>`}
       </div></article>`}).join('')+(CT_EMPTY&&done===ps.length?'<p class="empty ct-alldone">모든 컷에 그림이 있어요</p>':'')}
 // 콘티에서 샷·앵글·감정 바꾸기: 컷 글의 {…} 연출 지시로 적음 → 씬 글·판정·러프·프롬프트·편집이 모두 같은 값을 봄
 const CT_DIR={shot:['샷'],ang:['앵글'],emo:['감정'],h:['길이']};
@@ -2798,3 +2801,76 @@ async function contiRegenCut(i,req){if(CT_BUSY.has(i))return;if(!AIKEY){openKey(
 function setFitRatio(on){FIT_RATIO=!!on;try{localStorage.setItem('rough-fit-ratio',on?'1':'0')}catch(_){}SA_CACHE?.clear?.();if(VIEW==='layout')renderConti();if(VIEW==='webtoon')renderWebtoon();render?.();
   toast(on?'그림을 넣은 컷도 컷 비율로 맞춰요 · 그림은 칸에 꽉 채워 잘려요(편집에서 끌어 위치 조정)':'그림을 넣은 컷은 그림 비율대로 칸 높이를 정해요',2600)}
 function setCutFit(slot,v,si=SCUR){const sc=SCENES[si];if(!sc)return;const e=sc.pageEdits||(sc.pageEdits=[]);if(v){(e[slot]||(e[slot]={})).fit=v}else if(e[slot])delete e[slot].fit;saveScenes();SA_CACHE?.clear?.()}
+
+// ---------- 요소별 레이어: 컷 하나를 배경 · 인물마다 · 소품마다 따로 뽑아 겹침 ----------
+// 프롬프트는 RoughNAI.layers. 배경은 컷 그림 자리(IMG.cut, layerBg=같이 쓰는 키), 인물·소품은 흰 배경을 지운 PNG를
+// 편집 이미지 소재(pageEdits[slot].overlays, layer·key 표시)로 겹쳐 편집에서 레이어로 옮기고 PSD에서도 레이어 하나씩.
+//   고정: 배경은 같은 씬·같은 장소·같은 앵글 컷이 한 장을 같이 씀, 소품은 한 장을 모든 씬이 같이 씀, 인물은 컷마다(자세가 달라서)
+var LAYER_CUT=true;try{LAYER_CUT=localStorage.getItem('rough-layer-cutout')!=='0'}catch(_){}
+function setLayerMode(on){LAYER_MODE=!!on;try{localStorage.setItem('rough-layer-mode',on?'1':'0')}catch(_){}if(on)syncLayers(SCUR);renderConti();
+  toast(on?'요소별 레이어로 뽑아요 · 배경·인물·소품 프롬프트를 따로 복사해 만든 그림을 각 칸에 넣어 주세요':'컷 한 장으로 뽑아요',2600)}
+// 장면 하나의 컷마다 레이어 설계(지금 씬은 Claude가 다듬은 프롬프트, 다른 씬은 규칙 초안)
+function layerPlan(si){const cur=si===SCUR,ps=cur?state.panels:panelsOf(si);if(!ps.length)return[];
+  const L=cur?naiCuts():(()=>{const chars=naiChars(),ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n]},worldTags:WORLD.tags||'',loreTags:p=>loreHits(p.act||'').filter(e=>e.cat!=='item').flatMap(e=>loreTagList(e)),props:propsFor};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))})();
+  return L.map(({p,i,o})=>({p,i,slot:cutSlot(p,i),...NAI.layers(o,p,{style:NAISTYLE,i})}))}
+const layerAsset=(kind,key,sid,slot)=>Object.values(IMG.overlay).find(a=>a.layer&&a.layer.kind===kind&&a.layer.key===key&&(kind==='prop'||(a.layer.scene===sid&&a.layer.slot===slot)));
+const layerBgOf=(si,key)=>Object.values(IMG.cut).find(r=>r.scene===SCENES[si].id&&r.layerBg===key);
+// 등록한 레이어 그림을 컷에 맞춰 둠: 같은 키 배경을 빈 컷에 복사, 인물·소품 소재를 컷 소재 목록에 추가(이미 있으면 그림만 바꿈, 위치·크기는 그대로)
+function syncLayers(si){const sc=SCENES[si];if(!sc)return 0;const plan=layerPlan(si);let n=0;sc.pageEdits||=[];
+  for(const L of plan){const id=cutId(sc.id,L.i),cur=IMG.cut[id];
+    if(L.bg.shared&&(!cur||cur.layerBg)){const src=layerBgOf(si,L.bg.key);if(src&&(!cur||cur.src!==src.src||cur.layerBg!==L.bg.key)){const o={...src,id,idx:L.i,sig:L.p.key};IMG.cut[id]=o;idb.put(o);n++}}
+    const want=[...L.chars.map(x=>[x,layerAsset('char',x.key,sc.id,L.slot)]),...L.props.map(x=>[x,layerAsset('prop',x.key)])].filter(([,a])=>a);
+    if(!want.length)continue;const ed=sc.pageEdits[L.slot]||={},ov=ed.overlays||=[];
+    for(const [x,a] of want){const has=ov.find(v=>v.layer===x.kind&&v.key===x.key);
+      if(has){if(has.asset!==a.id){has.asset=a.id;n++}}else{ov.push({asset:a.id,layer:x.kind,key:x.key,x:x.x,y:x.y,scale:x.scale});n++}}}
+  if(n)saveScenes();return n}
+// 흰 배경 지우기: 테두리에서 이어진 밝고 채도 낮은 픽셀만 투명하게(인물 안의 흰 옷·눈 흰자는 테두리와 이어지지 않으면 남음), 경계는 반투명으로 부드럽게
+function whiteCutout(d,w,h){const px=d.data,seen=new Uint8Array(w*h),isW=k=>{const r=px[k*4],g=px[k*4+1],b=px[k*4+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);return mn>=228&&mx-mn<=22};
+  const st=[];for(let x=0;x<w;x++){st.push(x,(h-1)*w+x)}for(let y=0;y<h;y++){st.push(y*w,y*w+w-1)}
+  while(st.length){const k=st.pop();if(seen[k]||!isW(k))continue;seen[k]=1;px[k*4+3]=0;const x=k%w,y=(k-x)/w;
+    if(x>0)st.push(k-1);if(x<w-1)st.push(k+1);if(y>0)st.push(k-w);if(y<h-1)st.push(k+w)}
+  for(let k=0;k<w*h;k++){if(seen[k])continue;const x=k%w,y=(k-x)/w;let e=0;
+    if(x>0&&seen[k-1])e++;if(x<w-1&&seen[k+1])e++;if(y>0&&seen[k-w])e++;if(y<h-1&&seen[k+w])e++;
+    if(e){const r=px[k*4],g=px[k*4+1],b=px[k*4+2],l=Math.min(r,g,b);px[k*4+3]=Math.min(px[k*4+3],l>200?Math.round(255*(1-(l-200)/55)*.9+20):255-e*25)}}
+  return d}
+async function layerPNG(file,label,cut){const url=URL.createObjectURL(file);try{const im=await loadImg(url);const k=Math.min(1,1536/Math.max(im.naturalWidth,im.naturalHeight));
+  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));const g=c.getContext('2d');g.drawImage(im,0,0,c.width,c.height);
+  if(cut)g.putImageData(whiteCutout(g.getImageData(0,0,c.width,c.height),c.width,c.height),0,0);
+  return{id:'overlay:'+(crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2)),kind:'overlay',name:label,src:c.toDataURL('image/png'),w:c.width,h:c.height}}finally{URL.revokeObjectURL(url)}}
+// 레이어 그림 넣기: kind bg|char|prop, i=지금 씬 컷 번호
+async function layerPut(file,i,kind,key){if(!file||!file.type.startsWith('image/'))return;const L=layerPlan(SCUR)[i];if(!L)return;const sid=SCENES[SCUR].id;
+  if(kind==='bg'){const im=await shrink(file,1380);const o={id:cutId(sid,i),kind:'cutimg',scene:sid,idx:i,sig:L.p.key,src:im.src,w:im.w,h:im.h,layerBg:L.bg.shared?L.bg.key:''};IMG.cut[o.id]=o;await idb.put(o);
+    // 같은 키(같은 장소·앵글)로 이미 배경을 같이 쓰던 컷도 새 배경으로
+    if(L.bg.shared)for(const r of Object.values(IMG.cut))if(r.scene===sid&&r.layerBg===L.bg.key&&r.id!==o.id){r.src=o.src;r.w=o.w;r.h=o.h;idb.put(r)}}
+  else{const x=(kind==='char'?L.chars:L.props).find(v=>v.key===key);if(!x)return;const old=layerAsset(kind,key,sid,L.slot);
+    const a=await layerPNG(file,x.label+(kind==='char'?` · ${i+1}컷`:''),LAYER_CUT);a.layer=kind==='prop'?{kind,key}:{kind,key,scene:sid,slot:L.slot};
+    IMG.overlay[a.id]=a;await idb.put(a);if(old){delete IMG.overlay[old.id];idb.del(old.id)}}
+  const n=syncLayers(SCUR);if(kind==='prop')SCENES.forEach((_,si)=>{if(si!==SCUR)syncLayers(si)});
+  renderConti();if(typeof rerenderCuts==='function')rerenderCuts();
+  toast(kind==='bg'?`배경을 넣었어요${L.bg.shared?` · 같은 장소 컷 ${layerPlan(SCUR).filter(x=>x.bg.shared&&x.bg.key===L.bg.key).length}개가 같이 써요`:''}`:kind==='prop'?`소품 「${key}」 그림을 넣었어요 · 이 소품이 나오는 모든 컷에 같은 그림이 들어가요`:`${i+1}번 컷 인물 「${key}」 레이어를 넣었어요${LAYER_CUT?' · 흰 배경을 지웠어요':''}`,2600)}
+function layerDel(i,kind,key){const L=layerPlan(SCUR)[i];if(!L)return;const sid=SCENES[SCUR].id;
+  if(kind==='bg'){const r=IMG.cut[cutId(sid,i)];if(r)for(const x of Object.values(IMG.cut))if(x.id===r.id||(r.layerBg&&x.scene===sid&&x.layerBg===r.layerBg)){delete IMG.cut[x.id];idb.del(x.id)}}
+  else{const a=layerAsset(kind,key,sid,L.slot);if(a){delete IMG.overlay[a.id];idb.del(a.id)}
+    SCENES.forEach(sc=>(sc.pageEdits||[]).forEach(ed=>{if(ed?.overlays)ed.overlays=ed.overlays.filter(v=>!(v.layer===kind&&v.key===key&&(!a||v.asset===a.id)))}));saveScenes()}
+  renderConti();if(typeof rerenderCuts==='function')rerenderCuts()}
+// 콘티 카드: 겹친 미리보기 + 레이어 줄(그림 칸 · 프롬프트 복사)
+function layerPreview(L,o){const sid=SCENES[SCUR].id,bg=IMG.cut[cutId(sid,L.i)],ed=(SCENES[SCUR].pageEdits||[])[L.slot],ov=(ed?.overlays||[]).filter(v=>IMG.overlay[v.asset]);
+  return `<div class="ly-prev" style="aspect-ratio:${o.size.w}/${o.size.h}">${bg?`<img class="ly-bg" src="${bg.src}" alt="">`:'<span class="ly-empty">배경 없음</span>'}${ov.map(v=>`<img class="ly-ov" src="${IMG.overlay[v.asset].src}" alt="" style="left:${v.x??50}%;top:${v.y??50}%;width:${v.scale??100}%">`).join('')}</div>`}
+function layerRows(L,o,dim){const sid=SCENES[SCUR].id,bg=IMG.cut[cutId(sid,L.i)],share=L.bg.shared?layerPlan(SCUR).filter(x=>x.bg.shared&&x.bg.key===L.bg.key).length:1;
+  const row=(kind,x,im,meta)=>`<div class="ly-row" data-ly="${kind}" data-key="${esc(x.key)}"><div class="drop ly-slot${im?' has':''}" tabindex="0" role="button" data-lyslot="${L.i}" aria-label="${esc(x.label)} 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt=""><button class="x" data-lydel="${L.i}" aria-label="${esc(x.label)} 그림 빼기">×</button>`:'<span>+</span>'}</div>
+    <div class="ly-main">${ctBlk(`${esc(x.label)} <small>${x.size.w}×${x.size.h}${meta?' · '+meta:''}</small>`,x.prompt,dim)}</div></div>`;
+  return `<div class="ct-layers"><div class="ct-ph"><span>요소별 레이어</span><small>위에서부터 아래 레이어 · 편집에서 위치·크기를 옮겨요</small></div>
+    ${L.props.map(x=>row('prop',x,layerAsset('prop',x.key),`모든 컷에 같은 그림${x.needsTags?' · 태그는 컷 프롬프트 생성 때 정해져요':''}`)).join('')}
+    ${L.chars.map(x=>row('char',x,layerAsset('char',x.key,sid,L.slot),`위치 ${x.x}·${x.y} · 폭 ${x.scale}%`)).join('')}
+    ${row('bg',L.bg,bg,L.bg.shared?`같은 장소 ${share}컷이 같이 씀`:'이 컷만')}</div>`}
+{const el=$('#conti');let pick=null;const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.hidden=true;document.body.appendChild(fi);
+  const who=e=>{const r=e.target.closest('.ly-row');return r?[+r.querySelector('[data-lyslot]').dataset.lyslot,r.dataset.ly,r.dataset.key]:null};
+  el.addEventListener('click',e=>{if(e.target.closest('[data-layermode]')||e.target.closest('[data-layercut]'))return;
+    const d=e.target.closest('[data-lydel]');if(d){e.stopPropagation();const w=who(e);if(w)layerDel(...w);return}
+    const s=e.target.closest('[data-lyslot]');if(s){e.stopPropagation();pick=who(e);fi.click()}});
+  el.addEventListener('keydown',e=>{const s=e.target.closest?.('[data-lyslot]');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();pick=who(e);fi.click()}});
+  fi.addEventListener('change',()=>{const f=fi.files[0];fi.value='';if(f&&pick)layerPut(f,...pick)});
+  el.addEventListener('dragover',e=>{if(e.target.closest('[data-lyslot]'))e.preventDefault()});
+  el.addEventListener('drop',e=>{const s=e.target.closest('[data-lyslot]');if(!s)return;e.preventDefault();e.stopPropagation();const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));const w=who(e);if(f&&w)layerPut(f,...w)},true);
+  el.addEventListener('change',e=>{if(e.target.matches('[data-layermode]'))setLayerMode(e.target.checked);
+    if(e.target.matches('[data-layercut]')){LAYER_CUT=e.target.checked;try{localStorage.setItem('rough-layer-cutout',LAYER_CUT?'1':'0')}catch(_){}toast(LAYER_CUT?'인물·소품 그림의 흰 배경을 지워서 넣어요':'인물·소품 그림을 그대로 넣어요 · 투명 PNG를 쓸 때')}})}

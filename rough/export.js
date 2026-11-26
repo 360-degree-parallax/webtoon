@@ -95,7 +95,7 @@ async function buildSVG(st){const ms=await models(st);if(!ms.length)return null;
       kids.forEach(e=>{if(e.matches('clipPath')){defs.appendChild(e);return}
         if(e.matches('polygon,rect'))setId(e,`컷${pad(c.n)}_칸`,used);
         else if(e.matches('[data-cut-art]'))setId(e,`컷${pad(c.n)}_그림`,used);
-        else if(e.matches('[data-overlay]'))setId(e,`컷${pad(c.n)}_소재${Number(e.dataset.overlay)+1}`,used);
+        else if(e.matches('[data-overlay]'))setId(e,`컷${pad(c.n)}_`+(e.dataset.overlayLayer&&e.dataset.label?e.dataset.label.replace(/ · \d+컷$/,'').replace(/\s+/g,'_'):`소재${Number(e.dataset.overlay)+1}`),used);
         else if(!e.matches('g[data-layer]'))setId(e,`컷${pad(c.n)}_효과`,used);
         if(e.matches('g[data-layer]')){setId(e,`컷${pad(c.n)}_`+letterName({kind:e.getAttribute('data-layer'),text:e.getAttribute('data-text')},++ln),used);e.removeAttribute('data-layer');e.removeAttribute('data-text')}});
       g.querySelectorAll('clipPath').forEach(cp=>defs.appendChild(cp));
@@ -144,11 +144,11 @@ async function scenePSD(m,ag){const layer=(name,r,extra={})=>r?{name,canvas:r.ca
   children.push(layer('배경',await raster(m,`<rect width="${m.W}" height="${m.H}" fill="#fff"/>`+m.bgs.map(b=>b.outerHTML).join(''),{trim:false})));
   for(const c of m.cuts){const kids=[];
     if(c.frame)kids.push(layer('칸',await raster(m,c.frame.outerHTML)));
-    if(c.art)kids.push(await imageLayer(m,'그림',c.art,c.art,{x:0,y:0,w:m.W,h:m.H}));
+    if(c.art)kids.push(await imageLayer(m,c.art.querySelector('[data-layer-bg]')?'배경':'그림',c.art,c.art,{x:0,y:0,w:m.W,h:m.H}));
     for(const [i,overlay] of c.overlays.entries()){
       const subject=overlay.firstElementChild, img=subject.querySelector('image');
       const bounds={x:+img.getAttribute('x'),y:+img.getAttribute('y'),w:+img.getAttribute('width'),h:+img.getAttribute('height')};
-      kids.push(await imageLayer(m,`이미지 소재 ${i+1}`,overlay,subject,bounds));
+      kids.push(await imageLayer(m,overlay.dataset.overlayLayer&&overlay.dataset.label?overlay.dataset.label.replace(/ · \d+컷$/,''):`이미지 소재 ${i+1}`,overlay,subject,bounds));
     }
     if(c.other.length)kids.push(layer('효과·기타',await raster(m,c.other.map(e=>e.outerHTML).join(''))));
     let n=0;for(const L of c.letters){const name=`${L.kind}${++n} ${short(L.text)}`,texts=[...L.el.querySelectorAll('text')];
