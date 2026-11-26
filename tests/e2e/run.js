@@ -168,6 +168,15 @@ test('구성안 → 설정집 제안 창 → 고른 대로 추가', async ({p, e
   await p.reload(); await p.waitForTimeout(2000);
   assert(await ev(() => CHARS.some(c => c.name === '하녀1')), '저장됨');
 });
+test('콘티: 컷 비율 기준(작품별) 바꾸면 칸 길이가 따라감', async ({p, ev}) => {
+  await ev(() => showView('layout')); await p.waitForTimeout(1500);
+  const med = async () => ev(() => { const h = state.panels.map(c => c.h).sort((a, b) => a - b); return h[Math.floor(h.length / 2)]; });
+  await p.selectOption('#conti [data-ratioref]', '이두나!'); await p.waitForTimeout(400); const a = await med();
+  await p.selectOption('#conti [data-ratioref]', '호수의 백조'); await p.waitForTimeout(400); const b = await med();
+  assert(a < b, `넓은 작품(${a}) < 세로 긴 작품(${b})`);
+  await p.reload(); await p.waitForTimeout(2500); await ev(() => showView('layout')); await p.waitForTimeout(800);
+  assert((await p.inputValue('#conti [data-ratioref]')) === '호수의 백조', '고른 기준이 남음');
+});
 test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   await p.click('#gReview'); await p.waitForTimeout(1500);
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');

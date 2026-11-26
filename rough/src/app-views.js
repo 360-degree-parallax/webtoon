@@ -164,7 +164,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
   // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
-  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">현재 초안을 표시 중이에요 · 컷 프롬프트를 다시 생성할 수 있어요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
@@ -300,7 +300,7 @@ Promise.all([
   compute(true);if(VIEW==='webtoon')refreshPageMaterials()}).catch(()=>{$('#reading').innerHTML='<p class="empty">패턴을 불러오지 못했어요. python3 rough/serve.py 로 열어주세요.</p>'});
 // 학습 모델 7개(합계 약 4MB): 첫 화면이 뜬 뒤(load + 한가할 때) 중요한 순서로 하나씩 불러와 붙임.
 // 붙을 때마다 다시 계산하지 않고 잠깐 모았다가 한 번만 계산. 못 불러오면 규칙 판정 그대로
-{const Q=[['shot-model.js',()=>window.RoughShot?.shot&&RE.useShotModel(window.RoughShot)],
+{const Q=[['ratio-profiles.js',()=>applyRatio()],['shot-model.js',()=>window.RoughShot?.shot&&RE.useShotModel(window.RoughShot)],
   ['feel-model.js',()=>window.RoughFeel?.vocab&&RE.useFeelModel(window.RoughFeel)],
   ['angle-model.js',()=>window.RoughAngle?.ang&&RE.useAngleModel(window.RoughAngle)],
   ['layout-model.js',()=>window.RoughLayoutModel?.h&&RE.useLayoutModel(window.RoughLayoutModel)],
@@ -382,3 +382,16 @@ function entityDialog(items){let d=$('#entdlg');if(!d){d=document.createElement(
       if(nc||nl){try{compute(false)}catch(_){}toast([nc&&`캐릭터 ${nc}명`,nl&&`세계관 항목 ${nl}개`].filter(Boolean).join(' · ')+'를 설정집에 추가했어요',2600)}}
     d.close()};
   d.showModal()}
+
+// ---------- 컷 비율 기준(상용 웹툰 실측) ----------
+// rough/ratio-profiles.js: 연출 DB 9작품의 그림 상자 높이/폭(샷별 10·50·90%). 기본은 전체 평균, 작품을 고르면 그 작품 비율로, '엔진 그대로'는 끔
+function ratioRef(){try{return localStorage.getItem('rough-ratio-ref')||'__all'}catch(_){return '__all'}}
+function applyRatio(){const R=window.RoughRatio;if(!R)return false;const k=ratioRef();
+  if(k==='off'){RE.useRatio(null);return true}const P=R[k]||R.__all;RE.useRatio(P,k==='__all'||!R[k]?'상용 평균':k);return true}
+function ratioOptions(){const R=window.RoughRatio||{},k=ratioRef(),o=(v,l)=>`<option value="${esc(v)}"${v===k?' selected':''}>${esc(l)}</option>`;
+  return o('__all','상용 웹툰 평균 (9작품)')+Object.keys(R).filter(w=>w!=='__all').sort().map(w=>o(w,`${w} 비율 (중앙 ${R[w].all[1]})`)).join('')+o('off','엔진 그대로')}
+function ratioNote(){const R=window.RoughRatio,k=ratioRef();if(!R)return '';if(k==='off')return '엔진이 정한 길이를 그대로 써요';const P=R[k]||R.__all;
+  return `세로/가로 중앙 ${P.all[1]} · 보통 ${P.all[0]}~${P.all[2]} · 샷마다 그 작품 실측에 맞춰요`}
+document.addEventListener('change',e=>{const s=e.target.closest('[data-ratioref]');if(!s)return;try{localStorage.setItem('rough-ratio-ref',s.value)}catch(_){}
+  applyRatio();compute(false);if(VIEW==='layout'){renderNai();renderConti()}const R=window.RoughRatio;
+  toast(s.value==='off'?'컷 길이를 엔진 그대로 써요':`컷 비율을 ${s.value==='__all'?'상용 웹툰 평균':s.value}에 맞췄어요 · 편집 화면에도 반영돼요`,2400)});

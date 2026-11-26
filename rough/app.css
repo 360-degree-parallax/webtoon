@@ -1383,3 +1383,6 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .entdlg .enth{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.entdlg .enth b{font-size:15px}.entdlg .enth small{font-size:12px;color:var(--t3)}
 .entdlg .entr,.entdlg .entd{margin:0;font-size:13px;color:var(--t2)}.entdlg .entd{color:var(--t3)}
 .entdlg .entc{justify-self:start}
+#conti .ct-ratio{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;font-size:13px;color:var(--t2)}
+#conti .ct-ratio select{margin-left:6px;height:30px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);color:var(--t1);font:inherit;font-size:13px;padding:0 6px}
+#conti .ct-ratio small{font-size:12px;color:var(--t3)}

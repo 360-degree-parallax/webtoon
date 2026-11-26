@@ -515,6 +515,9 @@
   function rawH(an, k) { const M = E._lay.h, f = layFeats(an, k); let z = M.b; for (const key in f) if (M.w[key]) z += M.w[key] * f[key]; return M.log ? Math.exp(z) : z; }
   // 묶음 전체가 실제 연재작보다 길쭉하게 예측되면(자세한 글·대사가 많은 글) 중앙값을 DB 상위권(1.25) 안으로 눌러 맞춤. 컷끼리의 길고 짧음은 그대로
   function predictH(an, k) { if (an._hK == null) { const hs = an.beats.map((_, j) => rawH(an, j)).sort((a, b) => a - b), med = hs[Math.floor(hs.length / 2)] || 1; an._hK = med > 1.25 ? 1.25 / med : 1; } return rawH(an, k) * an._hK; }
+  // 묶음 안 엔진 칸 길이의 중앙값(비율 기준 맞출 때 '이 묶음에서 보통 길이'로 씀)
+  function bundleMed(an) { if (an._hMed == null) { const hs = an.beats.map((_, j) => E._lay ? predictH(an, j) : 1).sort((a, b) => a - b); an._hMed = hs[Math.floor(hs.length / 2)] || 1; } return an._hMed; }
+  function useRatio(P, label) { E.RATIO = P && (P.all || P.shot) ? { ...P, label } : null; return !!E.RATIO; }
   // ---------- 7. 컷 배치 ----------
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   function layout(an, p) {
@@ -575,6 +578,9 @@
       let gap = (0.35 * (pc.gap ?? 0.3) + 0.65 * base) * tf; why.gap.unshift(`${tag} · 패턴 여백 ${(pc.gap ?? 0.3).toFixed(2)} 섞음${tf !== 1 ? ` · 템포 ${an.tempo}` : ''}`);
       const band = { 붙임: [0.06, 0.12], 보통: [0.13, 0.32], 쉼: [0.33, 0.64], '큰 쉼': [0.65, 1.2] }[tag];
       gap = +clamp(gap, band[0], band[1]).toFixed(2);
+      // 상용 웹툰 컷 비율 맞추기: 고른 기준(작품 또는 전체)의 그 샷 중앙값 둘레로. 엔진이 정한 길고 짧음은 0.7승으로 살리고, 그 샷의 10~90% 범위 안으로
+      if (E.RATIO) { const P = E.RATIO, sp = (P.shot && P.shot[shot]) || P.all, med = bundleMed(an);
+        if (sp) { const h0 = h; h = +clamp(sp[1] * Math.pow(h / med, 0.7), Math.max(0.3, sp[0]), Math.min(2.6, sp[2])).toFixed(2); why.h.push(`컷 비율 기준 · ${P.label || '상용 평균'} ${shot} 중앙 ${sp[1]} (엔진 ${h0})`); } }
       const pre = { shot, ang, h, gap };  // 글 지시·취향을 넣기 전 엔진 값(취향 학습 기록용)
       // 작가 취향(직접 고친 기록에서): 엔진이 X라 할 때 늘 Y로 고쳤으면 Y로. 글에 적은 값이 있으면 그게 우선
       const D = b.dir || {}, PF = E.PREFS;
@@ -625,5 +631,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, useRefText, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { useRatio, RATIO: null, SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, useRefText, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));
