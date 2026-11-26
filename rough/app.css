@@ -1397,3 +1397,10 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 #conti .ct-edreq textarea{width:100%;resize:vertical;min-height:48px;padding:8px 10px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:13px;background:var(--bg);color:var(--t1)}
 #conti .ct-edact{display:flex;align-items:center;gap:8px}#conti .ct-edact .grow{flex:1}#conti .ct-edst{font-size:12px;color:var(--t3)}
 #conti .ct-edact .tpill{height:34px;font-size:14px;padding:0 14px}
+/* 상단 저장·초기화 */
+.hdrst{align-self:center;margin-right:2px}
+.draftdlg{max-width:560px;width:calc(100vw - 32px)}.draftdlg .drnew{display:flex;gap:8px;margin:10px 0}.draftdlg .drnew input{flex:1;height:38px;padding:0 10px;border:1px solid var(--line2);border-radius:10px;font:inherit;background:var(--bg);color:var(--t1)}
+.draftdlg .drh{margin:14px 0 6px;font-size:14px}.draftdlg .drh small{color:var(--t3);font-weight:400}
+.draftdlg .drl{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:50vh;overflow:auto}
+.draftdlg .drl li{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line2);border-radius:10px}.draftdlg .drl li>div{flex:1;min-width:0;display:grid}
+.draftdlg .drl small{font-size:12px;color:var(--t3)}.draftdlg .drl .empty{color:var(--t3);justify-content:center}

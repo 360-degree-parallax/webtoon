@@ -194,6 +194,20 @@ test('콘티: 컷 하나 상세 수정(샷·감정) · 이 컷만 프롬프트 �
   await p.click('#conti [data-ctauto="1"]'); await p.waitForTimeout(400);
   assert(await ev(() => state.panels[1].shot !== '디테일' || !Object.keys(state.panels[1].lock).length), '엔진 값으로 되돌림');
 });
+test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
+  const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
+  await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);
+  assert((await ev(() => [...document.querySelectorAll('#draftdlg .drl li b')].map(b => b.textContent))).includes('테스트 저장'), '보관함에 생김');
+  await p.click('#draftdlg [data-dr=x]');
+  await p.click('#wreset'); await p.waitForTimeout(2500);
+  assert(await ev(() => SCENES.length === 1 && SCENES[0].cuts.join('') === '' && CHARS.length === 0), '초기화됨');
+  await p.click('#wdraft'); await p.waitForTimeout(400);
+  const names = await ev(() => [...document.querySelectorAll('#draftdlg .drl li b')].map(b => b.textContent));
+  assert(names.some(n => n.startsWith('초기화 전')), '초기화 전 자동 보관');
+  await ev(() => [...document.querySelectorAll('#draftdlg .drl li')].find(li => li.querySelector('b').textContent === '테스트 저장').querySelector('[data-dr=load]').click());
+  await p.waitForTimeout(2800);
+  assert((await ev(() => JSON.stringify(SCENES.map(s => s.cuts)))) === before, '불러오면 원래 원고');
+});
 test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   await p.click('#gReview'); await p.waitForTimeout(1500);
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');

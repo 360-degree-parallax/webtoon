@@ -671,7 +671,7 @@ const PJ_SKIP=new Set(['rough-ai-key']);
 async function saveProject(){const local={};for(let k=0;k<localStorage.length;k++){const key=localStorage.key(k);if(key.startsWith('rough-')&&!PJ_SKIP.has(key))local[key]=localStorage.getItem(key)}
   flushScenes();local['rough-scenes']=JSON.stringify(SCENES);local['rough-scene-cur']=String(SCUR);  // 기본 저장 공간이 차서 IndexedDB에만 있어도 빠지지 않게
   for(const r of (await idb.allDocs()))if(r.json&&r.id.startsWith('doc:rough-ep:')&&local[r.id.slice(4)]==null)local[r.id.slice(4)]=r.json;
-  const images=(await idb.all()).filter(r=>!String(r.id).startsWith('snap:'));
+  const images=(await idb.all()).filter(r=>!/^(snap|save):/.test(String(r.id)));
   const data={format:'rough-project',version:1,savedAt:new Date().toISOString(),title:$('#wtitle')?.value||'',scenes:SCENES.length,local,images};
   const base=($('#wtitle')?.value||'webtoon').replace(/[\\/:*?"<>|]/g,'_'),blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   download(`${base}-${new Date().toISOString().slice(0,10)}.rough.json`,URL.createObjectURL(blob));
@@ -684,7 +684,7 @@ async function loadProject(file){let d;try{d=JSON.parse(await file.text())}catch
   try{const keep=localStorage.getItem('rough-ai-key');const old=[];for(let k=0;k<localStorage.length;k++){const key=localStorage.key(k);if(key.startsWith('rough-')&&!PJ_SKIP.has(key))old.push(key)}
     old.forEach(k=>localStorage.removeItem(k));for(const [k,v] of Object.entries(d.local))if(k.startsWith('rough-')&&!PJ_SKIP.has(k))localStorage.setItem(k,v);if(keep)localStorage.setItem('rough-ai-key',keep)}
   catch(e){saveFail(e,'작업 파일');return}
-  for(const r of await idb.all())if(!String(r.id).startsWith('snap:'))await idb.del(r.id);
+  for(const r of await idb.all())if(!/^(snap|save):/.test(String(r.id)))await idb.del(r.id);
   for(const r of d.images||[])if(r&&r.id)await idb.put(r);
   toast('불러왔어요. 화면을 다시 열어요');setTimeout(()=>location.reload(),600)}
 // 이전 버전: 원고(씬·편집값)를 10분에 한 번 IndexedDB에 남김(회차마다 최근 30개). 이미지는 그대로 두고 원고만 되돌림
@@ -795,3 +795,39 @@ async function exportSlices(o,st){st('이미지 만드는 중');await loadPageMa
     files.push({name:`${base}_${String(++n).padStart(3,'0')}.${ext}`,data:new Uint8Array(await (await new Promise(r=>c.toBlob(r,type,o.q/100))).arrayBuffer())});y0+=hh;st(`${n}장째 · ${Math.round(y0/total*100)}%`)}
   const z=await RoughExport._zip(files);download(`${base}-연재용-${o.w}x${o.h}.zip`,URL.createObjectURL(z));
   st(`${n}장으로 나눠 저장했어요 · 전체 ${o.w}×${total}px${hard?` · 한 장 높이보다 긴 컷이라 그림 위에서 자른 곳 ${hard}군데`:''}`);return{n,total,hard,names:files.map(f=>f.name)}}
+
+// ---------- 저장(임시 보관함)·초기화 ----------
+// 저장: 지금 작업(씬·편집값·캐릭터·세계관·구성·작업 제목 등 rough-* 값)을 이름 붙여 이 브라우저에 보관. 그림 파일은 그대로 두고 가리키는 값만
+// 불러오기 전·초기화 전에는 지금 상태를 자동으로 한 칸 보관해 되돌릴 수 있게
+function workLocal(){flushScenes();const local={};for(let k=0;k<localStorage.length;k++){const key=localStorage.key(k);if(key.startsWith('rough-')&&!PJ_SKIP.has(key)&&!/^rough-(theme|coach|view)$/.test(key))local[key]=localStorage.getItem(key)}
+  local['rough-scenes']=JSON.stringify(SCENES);local['rough-scene-cur']=String(SCUR);return local}
+async function saveDraft(name){const now=Date.now(),title=$('#wtitle')?.value||'';
+  const o={id:'save:'+now,kind:'save',at:now,name:name||`${title||'작업'} · ${new Date(now).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}`,title,sum:snapSum(JSON.stringify(SCENES))+` · 인물 ${CHARS.length}명`,local:workLocal()};
+  await idb.put(o);return o}
+async function loadDraft(r){if(!confirm(`「${r.name}」을(를) 불러올까요?\n지금 작업은 '불러오기 전'으로 보관함에 남겨 둬요.`))return;
+  await saveDraft('불러오기 전 · 자동 보관');window.ROUGH_NOSAVE=true;
+  for(const d of await idb.allDocs())await idb.del(d.id);  // IndexedDB에 남은 원고 사본이 다시 덮지 않게
+  const keep=localStorage.getItem('rough-ai-key'),old=[];for(let k=0;k<localStorage.length;k++){const key=localStorage.key(k);if(key.startsWith('rough-')&&!PJ_SKIP.has(key)&&!/^rough-(theme|coach|view)$/.test(key))old.push(key)}
+  old.forEach(k=>localStorage.removeItem(k));for(const [k,v] of Object.entries(r.local||{}))localStorage.setItem(k,v);if(keep)localStorage.setItem('rough-ai-key',keep);
+  toast('불러왔어요. 화면을 다시 열어요');setTimeout(()=>location.reload(),500)}
+async function openDrafts(){let d=$('#draftdlg');if(!d){d=document.createElement('dialog');d.id='draftdlg';d.className='keydlg draftdlg';document.body.appendChild(d)}
+  const list=(await idb.all()).filter(r=>r.kind==='save').sort((a,b)=>b.at-a.at);
+  d.innerHTML=`<h3>저장</h3><p>지금 작업을 이 브라우저 보관함에 저장해요. 씬·편집값·캐릭터·세계관·구성까지 함께. 다른 기기로 옮길 땐 내보내기의 '작업 파일 저장'.</p>
+    <div class="drnew"><input id="drname" placeholder="이름 (비우면 날짜로)" aria-label="저장 이름"><button class="btn dark" data-dr="save">지금 저장</button></div>
+    <h4 class="drh">보관함 <small>${list.length}개</small></h4>
+    <ol class="drl">${list.length?list.map(r=>`<li><div><b>${esc(r.name)}</b><small>${new Date(r.at).toLocaleString('ko-KR')} · ${esc(r.sum||'')}</small></div><button class="btn" data-dr="load" data-id="${r.id}">불러오기</button><button class="link" data-dr="del" data-id="${r.id}">삭제</button></li>`).join(''):'<li class="empty">아직 저장한 작업이 없어요</li>'}</ol>
+    <div class="acts"><button class="btn" data-dr="x">닫기</button></div>`;
+  d.onclick=async e=>{const b=e.target.closest('[data-dr]');if(!b)return;const k=b.dataset.dr,r=list.find(x=>x.id===b.dataset.id);
+    if(k==='x'){d.close();return}
+    if(k==='save'){const o=await saveDraft($('#drname').value.trim());toast(`「${o.name}」 저장했어요`);openDrafts();return}
+    if(k==='load'&&r){d.close();loadDraft(r);return}
+    if(k==='del'&&r){if(!confirm(`「${r.name}」을(를) 보관함에서 지울까요?`))return;await idb.del(r.id);openDrafts()}};
+  if(!d.open)d.showModal();setTimeout(()=>$('#drname')?.focus(),0)}
+async function resetAll(){if(!confirm('작업 전체를 처음 상태로 비울까요?\n씬·편집값·캐릭터·세계관·구성이 모두 비워져요. 지금 상태는 저장 보관함에 \'초기화 전\'으로 남겨 둬요.'))return;
+  await saveDraft('초기화 전 · 자동 보관');window.ROUGH_NOSAVE=true;
+  for(const d of await idb.allDocs())await idb.del(d.id);
+  try{localStorage.setItem('rough-scenes',JSON.stringify([{id:'s'+Date.now(),title:'씬 1',cuts:[''],pageEdits:[]}]));localStorage.setItem('rough-scene-cur','0');
+    localStorage.setItem('rough-chars','[]');localStorage.setItem('rough-world',JSON.stringify({name:'',genre:'',era:'',tone:'',summary:'',detail:'',tags:''}));localStorage.setItem('rough-lore','[]');
+    ['rough-composition-v1','rough-ai-nai','rough-work-title','rough-art-gen','rough-nai-tags'].forEach(k=>localStorage.removeItem(k))}catch(e){saveFail(e,'초기화');return}
+  toast('처음 상태로 비웠어요. 화면을 다시 열어요 · 저장 보관함에서 되돌릴 수 있어요',2400);setTimeout(()=>location.reload(),600)}
+$('#wdraft')?.addEventListener('click',openDrafts);$('#wreset')?.addEventListener('click',resetAll);
