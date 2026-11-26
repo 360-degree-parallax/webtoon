@@ -1447,3 +1447,6 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .lcard .lep{color:#2d71f7}
 .ly-gh{font-size:12px;font-weight:600;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px}.ly-gh small{font-weight:400;color:var(--t3,#8a909a)}
 .ly-row[data-ly=group] .ly-gh{color:#7c3aed}.ly-melt{border-style:dotted;color:#a16207;cursor:default}.ly-att{font-size:12px}
+/* 편집: 레이어(이미지 소재) 고르기·끌기 */
+.ov-pick{cursor:move}.ov-pick.on image{outline:2px solid #2d71f7;outline-offset:-2px}
+.ov-pick.on{filter:drop-shadow(0 0 2px #2d71f7) drop-shadow(0 0 1px #2d71f7)}

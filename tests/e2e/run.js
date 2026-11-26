@@ -257,7 +257,23 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   assert(sh.same && sh.a1 && sh.a1 === sh.a3, '같은 자세 컷은 같은 인물 그림');
   assert(sh.diff && sh.a0 !== sh.a1, '다른 자세는 따로');
   assert(await ev(() => !!document.querySelector('#conti .ccard[data-ct="0"] [data-lypick]')), '다른 컷 그림 고르기');
+  // 기본 크기: 그림 비율·칸 높이에 맞춤(인물은 샷별 높이, 칸 아래에 붙임)
+  const fit = await ev(() => { const L = layerPlan(SCUR)[1], v = SCENES[SCUR].pageEdits[L.slot].overlays.find(o => o.layer === 'char'), a = IMG.overlay[v.asset];
+    const hf = {설정: .38, 전경: .55, 전신: .92, 중경: .96, 클로즈업: 1, 디테일: .9}[L.p.shot] ?? .9; return [v.auto, v.scale, Math.round(Math.min(140, hf * L.p.h * a.w / a.h * 100))]; });
+  assert(fit[0] && Math.abs(fit[1] - Math.max(8, fit[2])) <= 1, '인물 레이어 크기가 그림 비율·칸 높이에 맞음');
   await ev(() => showView('webtoon')); await p.waitForTimeout(1200);
+  // 편집: 레이어를 눌러 고르고 끌어서 옮김
+  await ev(() => { if (!pageEditing) document.querySelector('#wedit').click(); }); await p.waitForTimeout(600);
+  const ovSel = '[data-overlay-layer="char"]';
+  await p.locator(ovSel).first().scrollIntoViewIfNeeded(); await p.waitForTimeout(300);
+  const bb = await p.locator(ovSel + ' image').first().boundingBox();
+  const before = await ev(sel => { const g = document.querySelector(sel), grp = g.closest('[data-slot-index]'); return {key: pageKey(grp), i: +g.dataset.overlay}; }, ovSel);
+  const x0 = await ev(b => pageSettings(true, b.key).overlays[b.i].x, before);
+  await p.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2); await p.mouse.down(); await p.mouse.move(bb.x + bb.width / 2 + 40, bb.y + bb.height / 2, {steps: 5}); await p.mouse.up(); await p.waitForTimeout(500);
+  const after = await ev(b => { const L = pageSettings(true, b.key).overlays[b.i]; return [L.x, L.auto, window.RoughOverlayPanel.index, pageSelection]; }, before);
+  assert(after[0] > x0 && !after[1], '끌어서 옮기면 위치가 바뀌고 자동 크기 표시가 빠짐');
+  assert(after[2] === before.i && after[3] === before.key, '누른 레이어가 이미지 패널에서 골라짐');
+  assert(await ev(() => !document.querySelector('[data-layercut]')), '흰색 자동 투명 선택창 없음');
   assert(await ev(() => !!document.querySelector('[data-overlay-layer="char"][data-label^="인물 에드가"]') && !!document.querySelector('[data-overlay-layer="prop"]')), '편집 화면에 레이어로 그려짐');
   await ev(() => setLayerMode(false));
 });

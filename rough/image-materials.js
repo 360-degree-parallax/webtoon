@@ -40,7 +40,7 @@ window.RoughImageMaterials = (() => {
       defs += mask;
       if (layer.spill) defs += `<clipPath id="${key}-bounds" data-overlay-overflow="${id}"><rect ${rect({x: 0, y: box.y, w: pageWidth, h: box.h + gap})}/></clipPath>`;
       const label = String(asset.name || '').replace(/[&<>"]/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[ch]));
-      art += `<g data-overlay="${index}"${layer.layer ? ` data-overlay-layer="${layer.layer}"` : ''}${label ? ` data-label="${label}"` : ''} clip-path="${url(layer.spill ? key + '-bounds' : id)}" pointer-events="none"><g transform="rotate(${number(layer.angle, 0, -180, 180)} ${cx} ${cy})" opacity="${number(layer.opacity, 100, 0, 100) / 100}"${mask ? ` mask="${url(key + '-mask')}"` : ''}><image href="${asset.src}" ${rect(bounds)}/></g></g>`;
+      art += `<g data-overlay="${index}"${layer.layer ? ` data-overlay-layer="${layer.layer}"` : ''}${label ? ` data-label="${label}"` : ''} clip-path="${url(layer.spill ? key + '-bounds' : id)}" class="ov-pick" data-ov-box="${[bounds.x, bounds.y, bounds.w, bounds.h, box.w, box.h].map(v => Math.round(v * 10) / 10).join(',')}"><g transform="rotate(${number(layer.angle, 0, -180, 180)} ${cx} ${cy})" opacity="${number(layer.opacity, 100, 0, 100) / 100}"${mask ? ` mask="${url(key + '-mask')}"` : ''}><image href="${asset.src}" ${rect(bounds)}/></g></g>`;
     }
     return {defs, art};
   }

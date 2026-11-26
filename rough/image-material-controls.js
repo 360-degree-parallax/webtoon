@@ -124,12 +124,14 @@
     if (typeof value === 'number' && !Number.isFinite(value)) { refresh(); return; }
     update(settings => {
       const layer = settings.overlays?.[index];
-      if (property) { if (layer) layer[property] = value; return; }
+      if (property) { if (layer) { layer[property] = value; delete layer.auto; } return; }
       const subject = layer || settings;
       const field = layer ? 'mask' : 'artMask';
       if (maskProperty === 'kind' && !value) delete subject[field];
       else subject[field] = {...maskDefaults, ...subject[field], [maskProperty]: value};
     });
   });
+  // 편집 화면에서 레이어(이미지 소재)를 눌러 고르면 이 패널도 그 레이어로
+  window.RoughOverlayPanel = {select(i) { index = Number(i); refresh(); }, get index() { return index; }, refresh};
   refresh();
 })();

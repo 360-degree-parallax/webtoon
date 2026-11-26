@@ -2546,7 +2546,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
   // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
-  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label><label class="ct-fit" title="씬 전체에 같은 색감·조명을 깔아요 · 자동은 컷 감정(강도 가중)에서 정해요"><span>씬 무드</span> <select data-scenemood aria-label="씬 무드"><option value=""${sc.mood?'':' selected'}>자동 · ${esc(NAI.sceneMood(ps))}</option>${Object.keys(NAI.SCENE_MOOD).map(k=>`<option value="${k}"${sc.mood===k?' selected':''}>${k}</option>`).join('')}</select></label><label class="ct-fit ct-lymode" title="컷 한 장 대신 배경·인물·소품 프롬프트를 따로 만들고, 넣은 그림을 레이어로 겹쳐요 · 배경은 같은 장소 컷끼리, 소품은 모든 컷이 한 장을 같이 써서 모양이 고정돼요"><input type="checkbox" data-layermode${LAYER_MODE?' checked':''}> 요소별 레이어로 뽑기</label>${LAYER_MODE?`<label class="ct-fit" title="인물·함께·소품 그림의 흰 배경과, 인물 사이·팔 사이 같은 완전 흰색 빈틈을 투명하게 해서 겹쳐요(눈 하이라이트 같은 작은 흰 점은 남김) · 투명 PNG를 넣을 때는 꺼도 돼요"><input type="checkbox" data-layercut${LAYER_CUT?' checked':''}> 흰색 자동 투명</label>`:''}</div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label><label class="ct-fit" title="씬 전체에 같은 색감·조명을 깔아요 · 자동은 컷 감정(강도 가중)에서 정해요"><span>씬 무드</span> <select data-scenemood aria-label="씬 무드"><option value=""${sc.mood?'':' selected'}>자동 · ${esc(NAI.sceneMood(ps))}</option>${Object.keys(NAI.SCENE_MOOD).map(k=>`<option value="${k}"${sc.mood===k?' selected':''}>${k}</option>`).join('')}</select></label><label class="ct-fit ct-lymode" title="컷 한 장 대신 배경·인물·소품 프롬프트를 따로 만들고, 넣은 그림을 레이어로 겹쳐요 · 배경은 같은 장소 컷끼리, 소품은 모든 컷이 한 장을 같이 써서 모양이 고정돼요"><input type="checkbox" data-layermode${LAYER_MODE?' checked':''}> 요소별 레이어로 뽑기</label></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">현재 초안을 표시 중이에요 · 컷 프롬프트를 다시 생성할 수 있어요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
@@ -2839,7 +2839,14 @@ function setCutFit(slot,v,si=SCUR){const sc=SCENES[si];if(!sc)return;const e=sc.
 //   고정: 배경은 같은 씬·같은 장소·앵글 컷끼리, 인물·함께는 같은 자세면 씬·컷을 넘어 한 장, 따로 고른 소품은 모든 씬이 한 장
 //   소품은 기본으로 녹여 넣음(든 인물 레이어 또는 배경). 컷마다 pageEdits[slot].propAttach[이름] = 'auto'|'bg'|'layer'|'char:이름'
 //   함께 레이어에 그림을 넣으면 그 컷에서는 함께 그림을 쓰고 그 인물들의 개별 레이어는 뺌
-var LAYER_CUT=true;try{LAYER_CUT=localStorage.getItem('rough-layer-cutout')!=='0'}catch(_){}
+// 인물·함께·소품 그림은 늘 흰색 자동 투명(배경 레이어는 그대로)
+const LAYER_CUT=true;
+// 레이어 기본 크기: 그림 비율과 칸 높이(컷 세로/가로 = p.h)로 폭(%)을 정함. 인물·함께는 샷별로 칸 높이의 몇 %를 차지하고 칸 아래에 붙임(클로즈업·디테일은 가운데)
+const LAYER_HF={설정:.38,전경:.55,전신:.92,중경:.96,클로즈업:1,디테일:.9,SD:.7,'화면 인서트':.8,'효과 배경':.9};
+function fitLayer(x,a,L){if(!a?.w||!a?.h)return{x:x.x,y:x.y,scale:x.scale};const r=L.p.h||1;
+  if(x.kind==='prop'){const hf=Math.min(.9,(x.scale/100)*(a.h/a.w)/r);return{x:x.x,y:x.y,scale:Math.round(Math.min(140,hf*r*(a.w/a.h)*100))}}
+  const hf=LAYER_HF[L.p.shot]??.9,mid=L.p.shot==='클로즈업'||L.p.shot==='디테일';
+  return{x:x.x,y:Math.round(mid?50:100-hf*50),scale:Math.max(8,Math.round(Math.min(140,hf*r*(a.w/a.h)*100)))}}
 function setLayerMode(on){LAYER_MODE=!!on;try{localStorage.setItem('rough-layer-mode',on?'1':'0')}catch(_){}if(on)syncLayers(SCUR);renderConti();
   toast(on?'요소별 레이어로 뽑아요 · 배경·인물·소품 프롬프트를 따로 복사해 만든 그림을 각 칸에 넣어 주세요':'컷 한 장으로 뽑아요',2600)}
 // 장면 하나의 컷마다 레이어 설계(지금 씬은 Claude가 다듬은 프롬프트, 다른 씬은 규칙 초안)
@@ -2866,7 +2873,8 @@ function syncLayers(si){const sc=SCENES[si];if(!sc)return 0;const plan=layerPlan
     if(cur0?.some(v=>v.layer&&!ok.has(v.layer+':'+v.key))){sc.pageEdits[L.slot].overlays=cur0.filter(v=>!v.layer||ok.has(v.layer+':'+v.key));n++}
     if(!want.length)continue;const ed=sc.pageEdits[L.slot]||={},ov=ed.overlays||=[];
     for(const [x,a] of want){const has=ov.find(v=>v.layer===x.kind&&v.key===x.key);
-      if(has){if(has.asset!==a.id){has.asset=a.id;n++}}else{ov.push({asset:a.id,layer:x.kind,key:x.key,x:x.x,y:x.y,scale:x.scale});n++}}}
+      // 새로 놓을 때·자동 크기 그대로인데 그림이 바뀌면 그림 비율에 맞춰 크기·위치를 다시. 편집에서 옮기거나 키운 레이어(auto 없음)는 그대로
+      if(has){if(has.asset!==a.id){has.asset=a.id;if(has.auto)Object.assign(has,fitLayer(x,a,L));n++}}else{ov.push({asset:a.id,layer:x.kind,key:x.key,...fitLayer(x,a,L),auto:1});n++}}}
   if(n)saveScenes();return n}
 // 흰 배경 지우기(인물·함께·소품 레이어, 배경 레이어는 그대로)
 //   1) 테두리에서 이어진 밝고 채도 낮은 픽셀(거의 흰색) → 투명
@@ -2943,7 +2951,28 @@ function layerRows(L,o,dim){const sid=SCENES[SCUR].id,bg=IMG.cut[cutId(sid,L.i)]
   el.addEventListener('change',e=>{const s=e.target.closest('[data-lypick]');if(!s||!s.value)return;const w=who(e),src=IMG.overlay[s.value];if(!w||!src)return;layerReuse(w[0],w[1],w[2],src)});
   el.addEventListener('change',e=>{const s=e.target.closest('[data-lyatt]');if(!s)return;const r=s.closest('.ly-row');setPropAttach(+s.dataset.lyatt,r.dataset.key,s.value)});
   el.addEventListener('change',e=>{if(e.target.matches('[data-layermode]'))setLayerMode(e.target.checked);
-    if(e.target.matches('[data-layercut]')){LAYER_CUT=e.target.checked;try{localStorage.setItem('rough-layer-cutout',LAYER_CUT?'1':'0')}catch(_){}toast(LAYER_CUT?'인물·소품 그림의 흰 배경과 완전 흰색 빈틈을 투명하게 넣어요':'인물·소품 그림을 그대로 넣어요 · 투명 PNG를 쓸 때')}})}
+  })}
+// 편집 화면: 레이어(이미지 소재)를 눌러 고르고 끌어서 옮김. 고르면 오른쪽 이미지 패널도 그 레이어(크기·회전·투명도)
+{let drag=null;
+  pageReader.addEventListener('pointerdown',e=>{if(!pageEditing||e.button!==0||materialMode)return;const ov=e.target.closest('[data-overlay]');if(!ov)return;
+    const group=ov.closest('[data-slot-index]');if(!group)return;e.preventDefault();e.stopPropagation();
+    selectPageCut(group);selectLetter(null);const i=+ov.dataset.overlay;window.RoughOverlayPanel?.select(i);
+    pageReader.querySelectorAll('.ov-pick.on').forEach(x=>x.classList.remove('on'));ov.classList.add('on');
+    const [,,,,bw,bh]=(ov.dataset.ovBox||'').split(',').map(Number),svg=ov.ownerSVGElement,st=pageSettings(true,pageKey(group)),L=st.overlays?.[i];if(!L||!bw||!bh)return;
+    drag={id:e.pointerId,ov,svg,key:pageKey(group),i,start:pagePoint(svg,e),x0:L.x??50,y0:L.y??50,bw,bh,inner:ov.firstElementChild,tf:ov.firstElementChild.getAttribute('transform')||'',moved:false};
+    pageReader.setPointerCapture(e.pointerId)},true);
+  pageReader.addEventListener('pointermove',e=>{if(drag?.id!==e.pointerId)return;const pt=pagePoint(drag.svg,e),dx=pt.x-drag.start.x,dy=pt.y-drag.start.y;
+    if(Math.abs(dx)+Math.abs(dy)>2)drag.moved=true;drag.inner.setAttribute('transform',`translate(${dx} ${dy}) ${drag.tf}`);drag.dx=dx;drag.dy=dy},true);
+  const end=e=>{if(drag?.id!==e.pointerId)return;const d=drag;drag=null;try{pageReader.releasePointerCapture(e.pointerId)}catch(_){}
+    if(!d.moved){window.RoughOverlayPanel?.refresh();return}
+    const st=pageSettings(true,d.key),L=st.overlays?.[d.i];if(!L)return;
+    L.x=Math.round((d.x0+d.dx/d.bw*100)*10)/10;L.y=Math.round((d.y0+d.dy/d.bh*100)*10)/10;delete L.auto;saveScenes();renderWebtoon();
+    const g=pageReader.querySelector(`section[data-page-scene="${d.key.split(':')[0]}"] [data-slot-index="${d.key.split(':')[1]}"] [data-overlay="${d.i}"]`);g?.classList.add('on');window.RoughOverlayPanel?.select(d.i)};
+  pageReader.addEventListener('pointerup',end,true);pageReader.addEventListener('pointercancel',end,true);
+  // 고른 레이어 크기: Alt+휠
+  pageReader.addEventListener('wheel',e=>{if(!pageEditing||!e.altKey)return;const ov=e.target.closest('[data-overlay]');if(!ov)return;const group=ov.closest('[data-slot-index]');if(!group)return;e.preventDefault();
+    const st=pageSettings(true,pageKey(group)),L=st.overlays?.[+ov.dataset.overlay];if(!L)return;L.scale=Math.max(5,Math.min(300,Math.round((L.scale??100)*(e.deltaY<0?1.05:1/1.05))));delete L.auto;saveScenes();renderWebtoon();
+    selectPageCut(pageReader.querySelector(`section[data-page-scene="${pageKey(group).split(':')[0]}"] [data-slot-index="${pageKey(group).split(':')[1]}"]`)||group);window.RoughOverlayPanel?.select(+ov.dataset.overlay)},{passive:false})}
 
 async function layerReuse(i,kind,key,src){const L=layerPlan(SCUR)[i],x=L&&layerItem(L,kind,key);if(!x)return;const sid=SCENES[SCUR].id,old=charOf(L,x,sid);
   const a={...src,id:'overlay:'+(crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2)),layer:{kind,key,pose:x.pose,scene:sid,slot:L.slot}};
