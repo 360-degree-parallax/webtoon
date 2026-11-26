@@ -400,14 +400,14 @@ test('소품이 빛·연기의 출처로만 나오면 화면 밖(효과만) · �
 });
 test('배운 동작: Claude가 옮긴 새 동작을 규칙 사전에 쌓음 · 자동 생성', async ({p, ev}) => {
   await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
-    "export async function refineNai(k,pl){window._calls=(window._calls||0)+1;window._pl=pl;return {cuts:pl.cuts.map(c=>({n:c.n,base:'AI',chars:[]})),props:[],actions:[{ko:'팔을 벌리다',tags:'spread arms'},{ko:'Edgar',tags:'x'}],model:'test'}}export function explain(e){return String(e)}"}));
-  await ev(() => { setKey('sk-test', 'session'); showView('write'); CUTS.splice(0, CUTS.length, '@준이 팔을 벌린다.', '@준이 달린다.'); saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(700);
+    "export async function refineNai(k,pl){window._calls=(window._calls||0)+1;window._pl=pl;return {cuts:pl.cuts.map(c=>({n:c.n,base:'AI',chars:[]})),props:[],actions:[{ko:'하늘을 우러르다',tags:'looking up at sky'},{ko:'Edgar',tags:'x'}],model:'test'}}export function explain(e){return String(e)}"}));
+  await ev(() => { setKey('sk-test', 'session'); showView('write'); CUTS.splice(0, CUTS.length, '@준이 하늘을 우러른다.', '@준이 달린다.'); saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(700);
   await ev(() => showView('layout')); await p.waitForTimeout(500);
   assert(await ev(() => !!naiCuts()[0].o.missAct && naiPayload().cuts[0].missingAction && /running/.test(naiPayload().cuts[1].ruleActions)), 'Claude에 규칙이 찾은 동작·못 찾은 동작 전달');
   await p.click('#conti [data-act=nairefine]'); await p.click('#refinedlg [data-r=go]'); await p.waitForTimeout(1200);
-  const L = await ev(() => [LEARNED.map(x => x.ko), NAI.poseTags('리나가 팔을 벌린 채 웃는다')]);
-  assert(L[0].includes('팔을 벌리다') && !L[0].includes('Edgar'), '새 동작만 배움(영문·고유명사 거름)');
-  assert(L[1].includes('spread arms'), '배운 동작은 활용형까지 규칙 사전에');
+  const L = await ev(() => [LEARNED.map(x => x.ko), NAI.poseTags('리나가 하늘을 우러른 채 웃는다')]);
+  assert(L[0].includes('하늘을 우러르다') && !L[0].includes('Edgar'), '새 동작만 배움(영문·고유명사 거름)');
+  assert(L[1].includes('looking up at sky'), '배운 동작은 활용형까지 규칙 사전에');
   assert(await ev(() => document.querySelector('#conti [data-act="learned"]').textContent.includes('1')), '배운 동작 수 표시');
   // 자동 생성: 켜고 씬 글을 바꾸면 콘티에서 한 번 자동으로
   const c0 = await ev(() => window._calls);
@@ -420,11 +420,11 @@ test('배운 동작: Claude가 옮긴 새 동작을 규칙 사전에 쌓음 · �
   await p.click('#conti [data-act="learned"]'); await p.waitForSelector('#learndlg[open]');
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#learndlg [data-r=exp]')]);
   const file = await dl.path(); const txt = require('fs').readFileSync(file, 'utf8');
-  assert(JSON.parse(txt).type === 'rough-actions' && txt.includes('팔을 벌리다'), '배운 동작 파일로 내보내기');
-  await p.click('#learndlg [data-learndel="팔을 벌리다"]'); await p.waitForTimeout(200);
-  assert(await ev(() => !LEARNED.length && !NAI.poseTags('팔을 벌린다').includes('spread arms')), '지우면 규칙 사전에서도 빠짐');
+  assert(JSON.parse(txt).type === 'rough-actions' && txt.includes('하늘을 우러르다'), '배운 동작 파일로 내보내기');
+  await p.click('#learndlg [data-learndel="하늘을 우러르다"]'); await p.waitForTimeout(200);
+  assert(await ev(() => !LEARNED.length && !NAI.poseTags('하늘을 우러른다').includes('looking up at sky')), '지우면 규칙 사전에서도 빠짐');
   await p.setInputFiles('#learndlg [data-r=imp]', file); await p.waitForTimeout(400);
-  assert(await ev(() => LEARNED.some(x => x.ko === '팔을 벌리다') && NAI.poseTags('팔을 벌린다').includes('spread arms')), '파일에서 가져오기');
+  assert(await ev(() => LEARNED.some(x => x.ko === '하늘을 우러르다') && NAI.poseTags('하늘을 우러른다').includes('looking up at sky')), '파일에서 가져오기');
   assert(await ev(() => !!document.querySelector('#learndlg .hint code')), '도구에 넣는 방법 안내');
 });
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
