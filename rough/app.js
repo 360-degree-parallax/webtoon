@@ -527,7 +527,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     const bounds={x:bx,y,w:bw,h};
     const base=defaultPageGap(p),size=edit?.gap??base;
     const maskId=`${pre}${i}-art-mask`,mask=RoughImageMaterials.maskSVG(edit?.artMask,maskId,bounds);
-    const overlay=clean?{defs:'',art:''}:RoughImageMaterials.overlaysSVG(edit?.overlays,IMG.overlay,`${pre}${i}`,bounds,size,W);
+    const overlay=clean?{defs:'',art:''}:RoughImageMaterials.overlaysSVG((edit?.overlays||[]).map(v=>v&&v.layer&&!layerOn()?null:v),IMG.overlay,`${pre}${i}`,bounds,size,W);
     defs+=mask+overlay.defs;
     const frameFill=mask||blank?'fill="none" pointer-events="all"':'fill="#fff"';
     o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g data-cut-art="" clip-path="url(#${pre}${i})"${mask?` mask="url(#${maskId})"`: ''}><g data-art=""${im?.layerBg!=null&&im?.layerBg!==undefined&&'layerBg' in im?' data-layer-bg=""':''}${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>${overlay.art}`+
@@ -566,7 +566,7 @@ function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false
 
 
 // ---------- reference images (캐릭터·장면) ----------
-const IMG={char:{},scene:[],cut:{},lib:{},lore:{},world:null,wlib:{},bg:{},overlay:{}};let target=null,showUnder=true;
+const IMG={char:{},scene:[],cut:{},lybg:{},lib:{},lore:{},world:null,wlib:{},bg:{},overlay:{}};let target=null,showUnder=true;
 const idb=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('rough-refs',1);r.onupgradeneeded=()=>r.result.createObjectStore('refs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('refs',mode);const st=t.objectStore('refs');const out=fn(st);t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
   return{getDoc:id=>tx('readonly',st=>st.get(id)).catch(()=>null),putDoc:o=>tx('readwrite',st=>st.put(o)).catch(()=>{}),all:()=>tx('readonly',st=>st.getAll()).then(r=>r.filter(x=>x.kind!=='doc')).catch(()=>[]),allDocs:()=>tx('readonly',st=>st.getAll()).then(r=>r.filter(x=>x.kind==='doc')).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).then(r=>{saveOk();return r}).catch(e=>{saveFail(e,'이미지')}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
@@ -630,7 +630,10 @@ slotsEl.forEach(el=>{
 document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(VIEW==='layout'&&!(target&&target.kind==='cut')&&CT_CUR>=0)target={kind:'cut',key:String(CT_CUR)};if(VIEW==='layout'&&!(target&&target.kind==='cut')){toast('그림을 넣을 컷의 \'전체 복사\'를 먼저 누르거나 컷을 골라 주세요');return}if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
 try{showUnder=localStorage.getItem('rough-under')!=='0'}catch(_){}$('#under').setAttribute('aria-pressed',showUnder);
 $('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);try{localStorage.setItem('rough-under',showUnder?'1':'0')}catch(_){}render()};
-idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='bgimg')IMG.bg[r.id]=r;else if(r.kind==='overlay')IMG.overlay[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render();if(VIEW==='webtoon')renderWebtoon();seedDefaultImages()});
+idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='layerbg')IMG.lybg[r.id]=r;
+  // 예전에 레이어 배경을 한 컷 그림 자리에 넣었던 것은 레이어 배경 자리로 옮김(한 컷 그림과 따로)
+  else if(r.kind==='cutimg'&&'layerBg' in r){const o={...r,id:r.id.replace(/^cut:/,'lyb:'),kind:'layerbg'};IMG.lybg[o.id]=o;idb.put(o);idb.del(r.id)}
+  else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='bgimg')IMG.bg[r.id]=r;else if(r.kind==='overlay')IMG.overlay[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render();if(VIEW==='webtoon')renderWebtoon();seedDefaultImages()});
 
 // ---------- prompt export ----------
 const RP=window.RoughPrompt;
@@ -655,22 +658,26 @@ $('#keyform').addEventListener('submit',async e=>{e.preventDefault();const i=$('
   const keep=document.querySelector('#keyform [name=keep]:checked').value;setKey(k,keep);closeKey();toast(keep==='session'?'키를 연결했어요 (탭을 닫으면 지워져요)':'키를 연결했어요');if(keyThen){const f=keyThen;keyThen=null;f()}});
 function cutHead(p,i){return `${i+1}. ${p.who?p.who+' · ':''}${p.shot}·${p.ang}·${p.emo} ${p.i}${p.vng==='P'?' · 하이라이트':''}`}
 // 컷 이미지: 씬 id + 컷 순서로 저장, 글이 바뀌면 sig로 표시
-const cutId=(sid,i)=>`cut:${sid}:${i}`;
-function cutImg(si,i,p){const r=IMG.cut[cutId(SCENES[si].id,i)];if(!r)return null;return{...r,stale:!!(p&&r.sig!==p.key)}}
+const cutId=(sid,i)=>`cut:${sid}:${i}`,lybId=(sid,i)=>`lyb:${sid}:${i}`;
+// 컷 그림: 요소별 레이어로 뽑기를 켜면 레이어 배경(IMG.lybg), 끄면 한 컷 그림(IMG.cut) — 편집·씬 미리보기·콘티가 모두 이걸 봄
+const layerOn=()=>typeof LAYER_MODE!=='undefined'&&!!LAYER_MODE;
+function cutImg(si,i,p){const r=(layerOn()?IMG.lybg:IMG.cut)[(layerOn()?lybId:cutId)(SCENES[si].id,i)];if(!r)return null;return{...r,stale:!!(p&&r.sig!==p.key)}}
 // 컷 이미지는 패널 번호로, 컷 글·편집값은 컷 순번으로 저장돼 있음.
 // 컷을 옮기거나 끼우거나 지우는 작업(mutate)은 {옛 순번: 새 순번(지우면 -1)} 표를 돌려주고,
 // 여기서 등록 이미지를 같은 컷의 새 패널 번호로 옮김. 글이 그대로면 '글이 바뀜'도 안 붙음
 function panelsOf(si){const out=[];RE.analyzeCuts(SCENES[si].cuts,engineChars()).forEach(a=>{const r=RE.rank(a,PATS,1)[0];if(r)RE.layout(a,r.p).forEach(c=>out.push(c))});return out}
+// 한 컷 그림(IMG.cut)과 요소별 레이어 배경(IMG.lybg)을 같은 규칙으로 옮김
 function remapCuts(si,mutate){const sc=SCENES[si];
   const before=si===SCUR&&state.panels.length?state.panels:panelsOf(si),recs=[],seen={};
-  before.forEach((p,n)=>{const s=cutSlot(p,n),o=(seen[s]=(seen[s]||0)+1)-1,r=IMG.cut[cutId(sc.id,n)];if(r)recs.push({r,s,o,fresh:r.sig===p.key})});
+  const STORES=[[IMG.cut,cutId],[IMG.lybg,lybId]];
+  before.forEach((p,n)=>{const s=cutSlot(p,n),o=(seen[s]=(seen[s]||0)+1)-1;STORES.forEach(([M,idf],k)=>{const r=M[idf(sc.id,n)];if(r)recs.push({r,s,o,k,fresh:r.sig===p.key})})});
   const map=mutate();if(!map||!recs.length)return;
   const after=panelsOf(si),bySlot={};after.forEach((p,n)=>(bySlot[cutSlot(p,n)]??=[]).push(n));
-  const moved=[],used=new Set();let lost=0;
-  for(const x of recs){const ns=map[x.s]??x.s;if(ns<0)continue;const l=bySlot[ns]||[];const t=[l[x.o],...l].find(v=>v!=null&&!used.has(v));
-    if(t==null){lost++;continue}used.add(t);moved.push({...x.r,id:cutId(sc.id,t),idx:t,sig:x.fresh?after[t].key:x.r.sig})}
-  for(const x of recs){delete IMG.cut[x.r.id];idb.del(x.r.id)}
-  for(const o of moved){IMG.cut[o.id]=o;idb.put(o)}
+  const moved=[],used=[new Set(),new Set()];let lost=0;
+  for(const x of recs){const ns=map[x.s]??x.s;if(ns<0)continue;const l=bySlot[ns]||[];const t=[l[x.o],...l].find(v=>v!=null&&!used[x.k].has(v));
+    if(t==null){if(x.k===0)lost++;continue}used[x.k].add(t);moved.push([x.k,{...x.r,id:STORES[x.k][1](sc.id,t),idx:t,sig:x.fresh?after[t].key:x.r.sig}])}
+  for(const x of recs){delete STORES[x.k][0][x.r.id];idb.del(x.r.id)}
+  for(const [k,o] of moved){STORES[k][0][o.id]=o;idb.put(o)}
   if(lost)toast(`이미지 ${lost}장은 이어 붙일 컷이 없어 뺐어요`,3000)}
 const moveMap=(n,f)=>Object.fromEntries([...Array(n).keys()].map(k=>[k,f(k)]));
 function cutCount(si,ps){return ps.filter((p,i)=>cutImg(si,i,p)).length}
@@ -2834,7 +2841,7 @@ function setFitRatio(on){FIT_RATIO=!!on;try{localStorage.setItem('rough-fit-rati
 function setCutFit(slot,v,si=SCUR){const sc=SCENES[si];if(!sc)return;const e=sc.pageEdits||(sc.pageEdits=[]);if(v){(e[slot]||(e[slot]={})).fit=v}else if(e[slot])delete e[slot].fit;saveScenes();SA_CACHE?.clear?.()}
 
 // ---------- 요소별 레이어: 컷 하나를 배경 · 인물마다 · 함께 나오는 장면으로 따로 뽑아 겹침 ----------
-// 프롬프트는 RoughNAI.layers. 배경은 컷 그림 자리(IMG.cut, layerBg=같이 쓰는 키), 인물·함께·(따로 고른)소품은 흰 배경을 지운 PNG를
+// 프롬프트는 RoughNAI.layers. 배경은 레이어 배경 자리(IMG.lybg, layerBg=같이 쓰는 키 — 한 컷 그림 IMG.cut과 따로), 인물·함께·(따로 고른)소품은 흰 배경을 지운 PNG를
 // 편집 이미지 소재(pageEdits[slot].overlays, layer·key 표시)로 겹쳐 편집에서 레이어로 옮기고 PSD에서도 레이어 하나씩.
 //   고정: 배경은 같은 씬·같은 장소·앵글 컷끼리, 인물·함께는 같은 자세면 씬·컷을 넘어 한 장, 따로 고른 소품은 모든 씬이 한 장
 //   소품은 기본으로 녹여 넣음(든 인물 레이어 또는 배경). 컷마다 pageEdits[slot].propAttach[이름] = 'auto'|'bg'|'layer'|'char:이름'
@@ -2847,8 +2854,10 @@ function fitLayer(x,a,L){if(!a?.w||!a?.h)return{x:x.x,y:x.y,scale:x.scale};const
   if(x.kind==='prop'){const hf=Math.min(.9,(x.scale/100)*(a.h/a.w)/r);return{x:x.x,y:x.y,scale:Math.round(Math.min(140,hf*r*(a.w/a.h)*100))}}
   const hf=LAYER_HF[L.p.shot]??.9,mid=L.p.shot==='클로즈업'||L.p.shot==='디테일';
   return{x:x.x,y:Math.round(mid?50:100-hf*50),scale:Math.max(8,Math.round(Math.min(140,hf*r*(a.w/a.h)*100)))}}
-function setLayerMode(on){LAYER_MODE=!!on;try{localStorage.setItem('rough-layer-mode',on?'1':'0')}catch(_){}if(on)syncLayers(SCUR);renderConti();
-  toast(on?'요소별 레이어로 뽑아요 · 배경·인물·소품 프롬프트를 따로 복사해 만든 그림을 각 칸에 넣어 주세요':'컷 한 장으로 뽑아요',2600)}
+function setLayerMode(on){LAYER_MODE=!!on;try{localStorage.setItem('rough-layer-mode',on?'1':'0')}catch(_){}if(on)SCENES.forEach((_,si)=>syncLayers(si));renderConti();
+  // 편집·씬 미리보기도 바로 바꿈(켜면 레이어 배경+인물·소품 레이어, 끄면 한 컷 그림)
+  try{SA_CACHE?.clear?.()}catch(_){}if(typeof rerenderCuts==='function')rerenderCuts();if(typeof render==='function')render();if(VIEW==='webtoon')renderWebtoon();window.RoughOverlayPanel?.refresh?.();
+  toast(on?'요소별 레이어로 뽑아요 · 편집·씬 미리보기도 레이어 그림으로 보여요':'컷 한 장으로 뽑아요 · 편집·씬 미리보기도 한 컷 그림으로 보여요(레이어 그림은 그대로 남아 있어요)',2600)}
 // 장면 하나의 컷마다 레이어 설계(지금 씬은 Claude가 다듬은 프롬프트, 다른 씬은 규칙 초안)
 function layerPlan(si){const cur=si===SCUR,ps=cur?state.panels:panelsOf(si);if(!ps.length)return[];
   const L=cur?naiCuts():(()=>{const chars=naiChars(),ctx={chars,style:NAISTYLE,tags:NAITAGS,refs:{char:n=>!!IMG.char[n]},worldTags:WORLD.tags||'',sceneMood:sceneMoodOf(si,ps),loreTags:p=>loreHits(p.act||'').filter(e=>e.cat!=='item').flatMap(e=>loreTagList(e)),props:propsFor};return ps.map((p,i)=>({p,i,o:NAI.cut(p,i,ps,ctx)}))})();
@@ -2861,11 +2870,11 @@ const charOf=(L,x,sid)=>layerAsset(x.kind,x.key,sid,L.slot,x.pose);
 const layerItem=(L,kind,key)=>kind==='group'?(L.group&&L.group.key===key?L.group:null):(kind==='char'?L.chars:L.props).find(v=>v.key===key);
 // 이 씬에서 같은 자세 인물 그림을 같이 쓰는 컷 수
 const poseShare=x=>layerPlan(SCUR).filter(L=>x.kind==='group'?L.group?.pose===x.pose:L.chars.some(c=>c.pose===x.pose)).length;
-const layerBgOf=(si,key)=>Object.values(IMG.cut).find(r=>r.scene===SCENES[si].id&&r.layerBg===key);
+const layerBgOf=(si,key)=>Object.values(IMG.lybg).find(r=>r.scene===SCENES[si].id&&r.layerBg===key);
 // 등록한 레이어 그림을 컷에 맞춰 둠: 같은 키 배경을 빈 컷에 복사, 인물·소품 소재를 컷 소재 목록에 추가(이미 있으면 그림만 바꿈, 위치·크기는 그대로)
 function syncLayers(si){const sc=SCENES[si];if(!sc)return 0;const plan=layerPlan(si);let n=0;sc.pageEdits||=[];
-  for(const L of plan){const id=cutId(sc.id,L.i),cur=IMG.cut[id];
-    if(L.bg.shared&&(!cur||cur.layerBg)){const src=layerBgOf(si,L.bg.key);if(src&&(!cur||cur.src!==src.src||cur.layerBg!==L.bg.key)){const o={...src,id,idx:L.i,sig:L.p.key};IMG.cut[id]=o;idb.put(o);n++}}
+  for(const L of plan){const id=lybId(sc.id,L.i),cur=IMG.lybg[id];
+    if(L.bg.shared&&(!cur||cur.layerBg)){const src=layerBgOf(si,L.bg.key);if(src&&(!cur||cur.src!==src.src||cur.layerBg!==L.bg.key)){const o={...src,id,idx:L.i,sig:L.p.key};IMG.lybg[id]=o;idb.put(o);n++}}
     const ga=L.group&&charOf(L,L.group,sc.id),covered=new Set(ga?L.group.names:[]),chars=L.chars.filter(x=>!covered.has(x.key)),seps=L.props.filter(x=>x.sep);
     const want=[...(ga?[[L.group,ga]]:[]),...chars.map(x=>[x,charOf(L,x,sc.id)]),...seps.map(x=>[x,layerAsset('prop',x.key)])].filter(([,a])=>a);
     // 이 컷에 맞지 않는 레이어는 뺌(글에서 사라진 인물·소품, 녹여 넣기로 바꾼 소품, 함께 그림이 대신하는 개별 인물). 직접 넣은 소재(layer 없음)는 그대로
@@ -2901,9 +2910,9 @@ async function layerPNG(file,label,cut){const url=URL.createObjectURL(file);try{
   return{id:'overlay:'+(crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2)),kind:'overlay',name:label,src:c.toDataURL('image/png'),w:c.width,h:c.height}}finally{URL.revokeObjectURL(url)}}
 // 레이어 그림 넣기: kind bg|char|prop, i=지금 씬 컷 번호
 async function layerPut(file,i,kind,key){if(!file||!file.type.startsWith('image/'))return;const L=layerPlan(SCUR)[i];if(!L)return;const sid=SCENES[SCUR].id;
-  if(kind==='bg'){const im=await shrink(file,1380);const o={id:cutId(sid,i),kind:'cutimg',scene:sid,idx:i,sig:L.p.key,src:im.src,w:im.w,h:im.h,layerBg:L.bg.shared?L.bg.key:''};IMG.cut[o.id]=o;await idb.put(o);
+  if(kind==='bg'){const im=await shrink(file,1380);const o={id:lybId(sid,i),kind:'layerbg',scene:sid,idx:i,sig:L.p.key,src:im.src,w:im.w,h:im.h,layerBg:L.bg.shared?L.bg.key:''};IMG.lybg[o.id]=o;await idb.put(o);
     // 같은 키(같은 장소·앵글)로 이미 배경을 같이 쓰던 컷도 새 배경으로
-    if(L.bg.shared)for(const r of Object.values(IMG.cut))if(r.scene===sid&&r.layerBg===L.bg.key&&r.id!==o.id){r.src=o.src;r.w=o.w;r.h=o.h;idb.put(r)}}
+    if(L.bg.shared)for(const r of Object.values(IMG.lybg))if(r.scene===sid&&r.layerBg===L.bg.key&&r.id!==o.id){r.src=o.src;r.w=o.w;r.h=o.h;idb.put(r)}}
   else{const x=layerItem(L,kind,key);if(!x)return;const old=kind==='prop'?layerAsset(kind,key):charOf(L,x,sid);
     const a=await layerPNG(file,x.label,LAYER_CUT);a.layer=kind==='prop'?{kind,key}:{kind,key,pose:x.pose,scene:sid,slot:L.slot};
     IMG.overlay[a.id]=a;await idb.put(a);if(old){delete IMG.overlay[old.id];idb.del(old.id)}}
@@ -2911,7 +2920,7 @@ async function layerPut(file,i,kind,key){if(!file||!file.type.startsWith('image/
   renderConti();if(typeof rerenderCuts==='function')rerenderCuts();
   toast(kind==='bg'?`배경을 넣었어요${L.bg.shared?` · 같은 장소 컷 ${layerPlan(SCUR).filter(x=>x.bg.shared&&x.bg.key===L.bg.key).length}개가 같이 써요`:''}`:kind==='prop'?`소품 「${key}」 그림을 넣었어요 · 이 소품이 나오는 모든 컷에 같은 그림이 들어가요`:`${i+1}번 컷 ${kind==='group'?'함께':'인물'} 「${kind==='group'?L.group.names.join('·'):key}」 레이어를 넣었어요${(()=>{const x=layerItem(L,kind,key),k=x?poseShare(x):1;return k>1?` · 같은 자세 ${k}컷이 같이 써요`:''})()}${kind==='group'?' · 이 컷은 개별 인물 대신 함께 그림을 써요':''}${LAYER_CUT?' · 흰 배경을 지웠어요':''}`,2600)}
 function layerDel(i,kind,key){const L=layerPlan(SCUR)[i];if(!L)return;const sid=SCENES[SCUR].id;
-  if(kind==='bg'){const r=IMG.cut[cutId(sid,i)];if(r)for(const x of Object.values(IMG.cut))if(x.id===r.id||(r.layerBg&&x.scene===sid&&x.layerBg===r.layerBg)){delete IMG.cut[x.id];idb.del(x.id)}}
+  if(kind==='bg'){const r=IMG.lybg[lybId(sid,i)];if(r)for(const x of Object.values(IMG.lybg))if(x.id===r.id||(r.layerBg&&x.scene===sid&&x.layerBg===r.layerBg)){delete IMG.lybg[x.id];idb.del(x.id)}}
   else{const x=layerItem(L,kind,key),a=kind==='prop'?layerAsset(kind,key):(x&&charOf(L,x,sid));if(a){delete IMG.overlay[a.id];idb.del(a.id)}
     SCENES.forEach(sc=>(sc.pageEdits||[]).forEach(ed=>{if(ed?.overlays)ed.overlays=ed.overlays.filter(v=>!(v.layer===kind&&v.key===key&&(!a||v.asset===a.id)))}));saveScenes()}
   SCENES.forEach((_,si)=>syncLayers(si));renderConti();if(typeof rerenderCuts==='function')rerenderCuts()}
@@ -2920,9 +2929,9 @@ function setPropAttach(i,name,v){const L=layerPlan(SCUR)[i];if(!L)return;const E
   const m=ed.propAttach||={};if(!v||v==='auto')delete m[name];else m[name]=v;if(!Object.keys(m).length)delete ed.propAttach;saveScenes();syncLayers(SCUR);renderConti();
   toast(`${i+1}번 컷 소품 「${name}」: ${v==='layer'?'따로 레이어로 뽑아요':v==='bg'?'배경 프롬프트에 넣어요':v?.startsWith('char:')?v.slice(5)+' 레이어에 넣어요':'자동으로 정해요(들고 있으면 인물, 아니면 배경)'}`,2400)}
 // 콘티 카드: 겹친 미리보기 + 레이어 줄(그림 칸 · 프롬프트 복사)
-function layerPreview(L,o){const sid=SCENES[SCUR].id,bg=IMG.cut[cutId(sid,L.i)],ed=(SCENES[SCUR].pageEdits||[])[L.slot],ov=(ed?.overlays||[]).filter(v=>IMG.overlay[v.asset]);
+function layerPreview(L,o){const sid=SCENES[SCUR].id,bg=IMG.lybg[lybId(sid,L.i)],ed=(SCENES[SCUR].pageEdits||[])[L.slot],ov=(ed?.overlays||[]).filter(v=>IMG.overlay[v.asset]);
   return `<div class="ly-prev" style="aspect-ratio:${o.size.w}/${o.size.h}">${bg?`<img class="ly-bg" src="${bg.src}" alt="">`:'<span class="ly-empty">배경 없음</span>'}${ov.map(v=>`<img class="ly-ov" src="${IMG.overlay[v.asset].src}" alt="" style="left:${v.x??50}%;top:${v.y??50}%;width:${v.scale??100}%">`).join('')}</div>`}
-function layerRows(L,o,dim){const sid=SCENES[SCUR].id,bg=IMG.cut[cutId(sid,L.i)],share=L.bg.shared?layerPlan(SCUR).filter(x=>x.bg.shared&&x.bg.key===L.bg.key).length:1;
+function layerRows(L,o,dim){const sid=SCENES[SCUR].id,bg=IMG.lybg[lybId(sid,L.i)],share=L.bg.shared?layerPlan(SCUR).filter(x=>x.bg.shared&&x.bg.key===L.bg.key).length:1;
   const slotB=(x,im)=>`<div class="drop ly-slot${im?' has':''}" tabindex="0" role="button" data-lyslot="${L.i}" aria-label="${esc(x.label)} 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt=""><button class="x" data-lydel="${L.i}" aria-label="${esc(x.label)} 그림 빼기">×</button>`:'<span>+</span>'}</div>`;
   const head=(x,meta)=>`${esc(x.label)} <small>${x.size.w}×${x.size.h}${meta?' · '+meta:''}</small>`;
   const row=(kind,x,im,meta,extra='')=>`<div class="ly-row" data-ly="${kind}" data-key="${esc(x.key)}">${slotB(x,im)}

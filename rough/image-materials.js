@@ -28,6 +28,7 @@ window.RoughImageMaterials = (() => {
   function overlaysSVG(overlays, assets, id, box, gap, pageWidth) {
     let defs = '', art = '';
     for (const [index, layer] of (overlays || []).entries()) {
+      if (!layer) continue;  // 숨긴 레이어(요소별 레이어를 끈 한 컷 보기) — 번호는 그대로
       const asset = assets[layer.asset];
       if (!asset || !/^data:image\/png;base64,[a-z0-9+/=]+$/i.test(asset.src) || !(asset.w > 0 && asset.h > 0)) continue;
       const key = `${id}-overlay-${index}`;

@@ -245,7 +245,7 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   const r = await ev(async () => { const sid = SCENES[SCUR].id, LP = layerPlan(SCUR), ed = SCENES[SCUR].pageEdits[LP[0].slot];
     const a = charOf(LP[0], LP[0].chars[0], sid), im = await loadImg(a.src), c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
     return { ov: (ed.overlays || []).map(v => v.layer + ':' + v.key), corner: g.getImageData(2, 2, 1, 1).data[3], mid: g.getImageData(40, 50, 1, 1).data[3],
-      bg: !!IMG.cut[cutId(sid, 0)]?.layerBg || IMG.cut[cutId(sid, 0)]?.layerBg === '', same: LP[0].bg.key === LP[1].bg.key, bg1: !!IMG.cut[cutId(sid, 1)] }; });
+      bg: IMG.lybg[lybId(sid, 0)]?.layerBg != null, same: LP[0].bg.key === LP[1].bg.key, bg1: !!IMG.lybg[lybId(sid, 1)] }; });
   assert(r.ov.includes('char:에드가') && r.ov.includes('prop:회중시계'), '컷 소재에 인물·소품 레이어');
   assert(r.corner === 0 && r.mid === 255, '흰 배경만 투명');
   assert(r.bg && (!r.same || r.bg1), '배경 등록 · 같은 장소 컷은 같은 배경');
@@ -275,6 +275,15 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   assert(after[2] === before.i && after[3] === before.key, '누른 레이어가 이미지 패널에서 골라짐');
   assert(await ev(() => !document.querySelector('[data-layercut]')), '흰색 자동 투명 선택창 없음');
   assert(await ev(() => !!document.querySelector('[data-overlay-layer="char"][data-label^="인물 에드가"]') && !!document.querySelector('[data-overlay-layer="prop"]')), '편집 화면에 레이어로 그려짐');
+  // 레이어를 끄면 편집·씬 미리보기가 한 컷 그림으로(레이어 배경이 한 컷 그림을 덮어쓰지 않음)
+  const single = await ev(async () => { const c = document.createElement('canvas'); c.width = 60; c.height = 60; c.getContext('2d').fillStyle = '#0a0'; c.getContext('2d').fillRect(0, 0, 60, 60);
+    const b = await new Promise(r => c.toBlob(r, 'image/jpeg')); await attachCut(new File([b], 's.jpg', {type: 'image/jpeg'}), 0); return IMG.cut[cutId(SCENES[SCUR].id, 0)].src; });
+  await ev(() => setLayerMode(false)); await p.waitForTimeout(800);
+  const off = await ev(() => [document.querySelectorAll('[data-overlay-layer]').length, document.querySelectorAll('[data-layer-bg]').length, cutImg(SCUR, 0, state.panels[0])?.src]);
+  assert(off[0] === 0 && off[1] === 0 && off[2] === single, '끄면 레이어 없이 한 컷 그림');
+  await ev(() => setLayerMode(true)); await p.waitForTimeout(800);
+  const on = await ev(() => [document.querySelectorAll('[data-overlay-layer]').length, cutImg(SCUR, 0, state.panels[0])?.layerBg != null, IMG.cut[cutId(SCENES[SCUR].id, 0)].src]);
+  assert(on[0] > 0 && on[1] && on[2] === single, '켜면 레이어 배경·레이어로, 한 컷 그림은 그대로 보관');
   await ev(() => setLayerMode(false));
 });
 test('회차마다 등장인물 따로 · 설정한 인물은 보관함에 자동 → 다른 회차에서 불러오기', async ({p, ev}) => {

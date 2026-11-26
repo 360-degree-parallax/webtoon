@@ -29,7 +29,8 @@
     if (Object.hasOwn(IMG.overlay, previous)) library.value = previous;
     library.hidden = place.hidden = !assets.length;
     targetSelect.replaceChildren(new Option('컷 그림', '-1'),
-      ...layers.map((layer, i) => new Option(`${i + 1} · ${IMG.overlay[layer.asset]?.name || '소재 파일 없음'}`, i)));
+      ...layers.map((layer, i) => [layer, i]).filter(([layer]) => !layer.layer || (typeof LAYER_MODE !== 'undefined' && LAYER_MODE))
+        .map(([layer, i]) => new Option(`${i + 1} · ${IMG.overlay[layer.asset]?.name || '소재 파일 없음'}`, i)));
     targetSelect.value = index;
     const layer = layers[index];
     placement.hidden = !layer;

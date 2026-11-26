@@ -525,7 +525,7 @@ function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,
     const bounds={x:bx,y,w:bw,h};
     const base=defaultPageGap(p),size=edit?.gap??base;
     const maskId=`${pre}${i}-art-mask`,mask=RoughImageMaterials.maskSVG(edit?.artMask,maskId,bounds);
-    const overlay=clean?{defs:'',art:''}:RoughImageMaterials.overlaysSVG(edit?.overlays,IMG.overlay,`${pre}${i}`,bounds,size,W);
+    const overlay=clean?{defs:'',art:''}:RoughImageMaterials.overlaysSVG((edit?.overlays||[]).map(v=>v&&v.layer&&!layerOn()?null:v),IMG.overlay,`${pre}${i}`,bounds,size,W);
     defs+=mask+overlay.defs;
     const frameFill=mask||blank?'fill="none" pointer-events="all"':'fill="#fff"';
     o+=`<g data-p="${i}"${interactive?` data-slot-index="${slot}"`: ''}${fdata}>${poly?`<polygon${interactive?' class="page-frame"':''} points="${poly}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><polygon points="${poly}"/></clipPath>`:`<rect${interactive?' class="page-frame"':''} x="${bx}" y="${y}" width="${bw}" height="${h}" ${frameFill} ${stroke}/><clipPath id="${pre}${i}"><rect x="${bx}" y="${y}" width="${bw}" height="${h}"/></clipPath>`}<g data-cut-art="" clip-path="url(#${pre}${i})"${mask?` mask="url(#${maskId})"`: ''}><g data-art=""${im?.layerBg!=null&&im?.layerBg!==undefined&&'layerBg' in im?' data-layer-bg=""':''}${zoomTf(edit?.img,bx,y,bw,h)}>${art}</g></g>${overlay.art}`+
@@ -564,7 +564,7 @@ function render(){state.svg=renderSVG(state.panels,state.sel,'c',true,null,false
 
 
 // ---------- reference images (캐릭터·장면) ----------
-const IMG={char:{},scene:[],cut:{},lib:{},lore:{},world:null,wlib:{},bg:{},overlay:{}};let target=null,showUnder=true;
+const IMG={char:{},scene:[],cut:{},lybg:{},lib:{},lore:{},world:null,wlib:{},bg:{},overlay:{}};let target=null,showUnder=true;
 const idb=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('rough-refs',1);r.onupgradeneeded=()=>r.result.createObjectStore('refs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('refs',mode);const st=t.objectStore('refs');const out=fn(st);t.oncomplete=()=>res(out&&out.result);t.onerror=()=>rej(t.error)}));
   return{getDoc:id=>tx('readonly',st=>st.get(id)).catch(()=>null),putDoc:o=>tx('readwrite',st=>st.put(o)).catch(()=>{}),all:()=>tx('readonly',st=>st.getAll()).then(r=>r.filter(x=>x.kind!=='doc')).catch(()=>[]),allDocs:()=>tx('readonly',st=>st.getAll()).then(r=>r.filter(x=>x.kind==='doc')).catch(()=>[]),put:o=>tx('readwrite',st=>st.put(o)).then(r=>{saveOk();return r}).catch(e=>{saveFail(e,'이미지')}),del:id=>tx('readwrite',st=>st.delete(id)).catch(()=>{})}})();
@@ -628,7 +628,10 @@ slotsEl.forEach(el=>{
 document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(VIEW==='layout'&&!(target&&target.kind==='cut')&&CT_CUR>=0)target={kind:'cut',key:String(CT_CUR)};if(VIEW==='layout'&&!(target&&target.kind==='cut')){toast('그림을 넣을 컷의 \'전체 복사\'를 먼저 누르거나 컷을 골라 주세요');return}if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
 try{showUnder=localStorage.getItem('rough-under')!=='0'}catch(_){}$('#under').setAttribute('aria-pressed',showUnder);
 $('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);try{localStorage.setItem('rough-under',showUnder?'1':'0')}catch(_){}render()};
-idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='bgimg')IMG.bg[r.id]=r;else if(r.kind==='overlay')IMG.overlay[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render();if(VIEW==='webtoon')renderWebtoon();seedDefaultImages()});
+idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='layerbg')IMG.lybg[r.id]=r;
+  // 예전에 레이어 배경을 한 컷 그림 자리에 넣었던 것은 레이어 배경 자리로 옮김(한 컷 그림과 따로)
+  else if(r.kind==='cutimg'&&'layerBg' in r){const o={...r,id:r.id.replace(/^cut:/,'lyb:'),kind:'layerbg'};IMG.lybg[o.id]=o;idb.put(o);idb.del(r.id)}
+  else if(r.kind==='cutimg')IMG.cut[r.id]=r;else if(r.kind==='libimg')IMG.lib[r.libId]=r;else if(r.kind==='loreimg')IMG.lore[r.loreId]=r;else if(r.kind==='worldimg')IMG.world=r;else if(r.kind==='wlibimg')IMG.wlib[r.libId]=r;else if(r.kind==='bgimg')IMG.bg[r.id]=r;else if(r.kind==='overlay')IMG.overlay[r.id]=r;else if(r.kind==='scene'||!r.kind)IMG.scene.push(r)}IMG.scene.sort((a,b)=>a.id.localeCompare(b.id));renderSlots();render();if(VIEW==='webtoon')renderWebtoon();seedDefaultImages()});
 
 // ---------- prompt export ----------
 const RP=window.RoughPrompt;
@@ -653,22 +656,26 @@ $('#keyform').addEventListener('submit',async e=>{e.preventDefault();const i=$('
   const keep=document.querySelector('#keyform [name=keep]:checked').value;setKey(k,keep);closeKey();toast(keep==='session'?'키를 연결했어요 (탭을 닫으면 지워져요)':'키를 연결했어요');if(keyThen){const f=keyThen;keyThen=null;f()}});
 function cutHead(p,i){return `${i+1}. ${p.who?p.who+' · ':''}${p.shot}·${p.ang}·${p.emo} ${p.i}${p.vng==='P'?' · 하이라이트':''}`}
 // 컷 이미지: 씬 id + 컷 순서로 저장, 글이 바뀌면 sig로 표시
-const cutId=(sid,i)=>`cut:${sid}:${i}`;
-function cutImg(si,i,p){const r=IMG.cut[cutId(SCENES[si].id,i)];if(!r)return null;return{...r,stale:!!(p&&r.sig!==p.key)}}
+const cutId=(sid,i)=>`cut:${sid}:${i}`,lybId=(sid,i)=>`lyb:${sid}:${i}`;
+// 컷 그림: 요소별 레이어로 뽑기를 켜면 레이어 배경(IMG.lybg), 끄면 한 컷 그림(IMG.cut) — 편집·씬 미리보기·콘티가 모두 이걸 봄
+const layerOn=()=>typeof LAYER_MODE!=='undefined'&&!!LAYER_MODE;
+function cutImg(si,i,p){const r=(layerOn()?IMG.lybg:IMG.cut)[(layerOn()?lybId:cutId)(SCENES[si].id,i)];if(!r)return null;return{...r,stale:!!(p&&r.sig!==p.key)}}
 // 컷 이미지는 패널 번호로, 컷 글·편집값은 컷 순번으로 저장돼 있음.
 // 컷을 옮기거나 끼우거나 지우는 작업(mutate)은 {옛 순번: 새 순번(지우면 -1)} 표를 돌려주고,
 // 여기서 등록 이미지를 같은 컷의 새 패널 번호로 옮김. 글이 그대로면 '글이 바뀜'도 안 붙음
 function panelsOf(si){const out=[];RE.analyzeCuts(SCENES[si].cuts,engineChars()).forEach(a=>{const r=RE.rank(a,PATS,1)[0];if(r)RE.layout(a,r.p).forEach(c=>out.push(c))});return out}
+// 한 컷 그림(IMG.cut)과 요소별 레이어 배경(IMG.lybg)을 같은 규칙으로 옮김
 function remapCuts(si,mutate){const sc=SCENES[si];
   const before=si===SCUR&&state.panels.length?state.panels:panelsOf(si),recs=[],seen={};
-  before.forEach((p,n)=>{const s=cutSlot(p,n),o=(seen[s]=(seen[s]||0)+1)-1,r=IMG.cut[cutId(sc.id,n)];if(r)recs.push({r,s,o,fresh:r.sig===p.key})});
+  const STORES=[[IMG.cut,cutId],[IMG.lybg,lybId]];
+  before.forEach((p,n)=>{const s=cutSlot(p,n),o=(seen[s]=(seen[s]||0)+1)-1;STORES.forEach(([M,idf],k)=>{const r=M[idf(sc.id,n)];if(r)recs.push({r,s,o,k,fresh:r.sig===p.key})})});
   const map=mutate();if(!map||!recs.length)return;
   const after=panelsOf(si),bySlot={};after.forEach((p,n)=>(bySlot[cutSlot(p,n)]??=[]).push(n));
-  const moved=[],used=new Set();let lost=0;
-  for(const x of recs){const ns=map[x.s]??x.s;if(ns<0)continue;const l=bySlot[ns]||[];const t=[l[x.o],...l].find(v=>v!=null&&!used.has(v));
-    if(t==null){lost++;continue}used.add(t);moved.push({...x.r,id:cutId(sc.id,t),idx:t,sig:x.fresh?after[t].key:x.r.sig})}
-  for(const x of recs){delete IMG.cut[x.r.id];idb.del(x.r.id)}
-  for(const o of moved){IMG.cut[o.id]=o;idb.put(o)}
+  const moved=[],used=[new Set(),new Set()];let lost=0;
+  for(const x of recs){const ns=map[x.s]??x.s;if(ns<0)continue;const l=bySlot[ns]||[];const t=[l[x.o],...l].find(v=>v!=null&&!used[x.k].has(v));
+    if(t==null){if(x.k===0)lost++;continue}used[x.k].add(t);moved.push([x.k,{...x.r,id:STORES[x.k][1](sc.id,t),idx:t,sig:x.fresh?after[t].key:x.r.sig}])}
+  for(const x of recs){delete STORES[x.k][0][x.r.id];idb.del(x.r.id)}
+  for(const [k,o] of moved){STORES[k][0][o.id]=o;idb.put(o)}
   if(lost)toast(`이미지 ${lost}장은 이어 붙일 컷이 없어 뺐어요`,3000)}
 const moveMap=(n,f)=>Object.fromEntries([...Array(n).keys()].map(k=>[k,f(k)]));
 function cutCount(si,ps){return ps.filter((p,i)=>cutImg(si,i,p)).length}
