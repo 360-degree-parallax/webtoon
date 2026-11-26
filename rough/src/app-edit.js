@@ -37,7 +37,8 @@ function spStale(){SP_FRESH=null}
 function scenePanels(i){if(i===SCUR)return state.panels;const sc=SCENES[i];if(!sc)return [];
   if(SP_FRESH?.has(i)&&SP_CACHE.has(i))return SP_CACHE.get(i).v;if(!SP_FRESH){SP_FRESH=new Set();queueMicrotask(spStale)}SP_FRESH.add(i);
   const refs=Array.from(sc.pageEdits||[],e=>e?.ref||0);while(refs.length&&!refs.at(-1))refs.pop();  // 빈 칸이 늘기만 해도 다시 계산하던 것 막기
-  const ck=JSON.stringify([sc.cuts,refs,locks,engineChars(),REFS.length,PATS.length]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
+  // 컷 비율 기준(RE.RATIO)·작가 취향(RE.PREFS)도 키에 넣음: 콘티에서 비율을 바꾸면 다른 씬도 새로 계산(예전엔 지금 씬만 바뀌고 다른 씬은 옛 길이로 남았음)
+  const ck=JSON.stringify([sc.cuts,refs,locks,engineChars(),REFS.length,PATS.length,RE.RATIO?.label||'',RE.RATIO?.all||0,RE.PREFS||0]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
   const out=_scenePanels(i);SP_CACHE.set(i,{k:ck,v:out});return out}
 // 처음 편집 화면을 열 때 기다리지 않게: 쉬는 틈에 다른 씬 컷 계산을 미리 해 둠
 (function warmScenes(i=0){if(typeof PATS==='undefined'||!PATS.length||typeof SCENES==='undefined')return setTimeout(warmScenes,600,i);if(i>=SCENES.length)return;
