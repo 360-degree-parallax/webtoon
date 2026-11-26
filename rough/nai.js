@@ -50,7 +50,55 @@
     [['응시', '뚫어지게', '빤히'], ['staring']], [['먼 곳을', '먼 산', '하늘을 바라', '하늘을 본'], ['looking afar']],
     [['돌진', '달려든', '달려들'], ['charging', 'dynamic pose']], [['도망', '달아나', '달아난'], ['running away', 'motion blur']],
   ];
+  // 기본형(…다)으로 적은 동작 → 활용형까지: 어간 + ㄴ/ㄹ 받침(달린·달릴) + 아/어 줄임(달려·꺼내·쥐어→쥐어) + 과거(달렸·꺼냈)
+  //   ㄹ 탈락(흔들다→흔드는·흔든), ㅂ 불규칙(눕다→누운·누워), 하다(→한·해·했)도. 어간이 한 글자면 어간 자체는 안 넣음(너무 흔해서)
+  const HB = 0xAC00, syl = (l, v, t) => String.fromCharCode(HB + (l * 21 + v) * 28 + t), jamo = ch => { const c = ch.charCodeAt(0) - HB; return c < 0 || c >= 11172 ? null : [Math.floor(c / 588), Math.floor(c % 588 / 28), c % 28]; };
+  const CONTRACT = { 20: 6, 8: 9, 13: 14, 18: 4 };  // ㅣ→ㅕ, ㅗ→ㅘ, ㅜ→ㅝ, ㅡ→ㅓ
+  function forms(base) {
+    if (!/다$/.test(base)) return [base];
+    const st = base.slice(0, -1), head = st.slice(0, -1), j = jamo(st.slice(-1)); if (!j) return [st];
+    const [l, v, t] = j, out = new Set(); if (st.length >= 2) out.add(st);
+    const add = x => out.add(head + x);
+    if (st.endsWith('하')) { ['한', '할', '해', '했', '하는', '하며', '하고'].forEach(x => out.add(st.slice(0, -1) + x)); return [...out]; }
+    if (t === 0) { add(syl(l, v, 4)); add(syl(l, v, 8)); add(syl(l, v, 0) + '는'); add(syl(l, v, 0) + '고'); add(syl(l, v, 0) + '며');
+      const cv = CONTRACT[v]; if (cv != null) { const y = v === 20 && l === 11 ? 11 : l; add(syl(y, cv, 0)); add(syl(y, cv, 20)); } else { add(syl(l, v, 20)); } }
+    else { out.add(st); add(syl(l, v, t) + '은'); add(syl(l, v, t) + '는'); add(syl(l, v, t) + '어'); add(syl(l, v, t) + '아'); add(syl(l, v, t) + '었'); add(syl(l, v, t) + '았');
+      if (t === 8) { add(syl(l, v, 0) + '는'); add(syl(l, v, 4)); add(syl(l, v, 0) + '며'); }
+      if (t === 17) { add(syl(l, v, 0) + '운'); add(syl(l, v, 0) + '워'); } }
+    return [...out].filter(x => x.length >= 2);
+  }
+  // DB 컷 글에서 자주 빠지던 동작(tools/mine_actions.js) — 기본형으로 적고 위 forms()로 펼침
+  const POSE_BASE = [
+    [['놀라다', '깜짝'], ['surprised', 'wide-eyed']], [['눈물을 흘리다', '눈물 흘리다', '눈물이 맺히다', '눈물 고이다', '눈물이 고이다', '울먹이다', '흐느끼다'], ['tears', 'crying']],
+    [['당황하다'], ['flustered', 'sweatdrop']], [['감싸다', '감싸 안다'], ['embracing']], [['얼굴을 붉히다', '볼을 붉히다'], ['blush']], [['이마를 짚다', '머리를 짚다'], ['hand on own forehead']],
+    [['안다', '껴안다', '끌어안다', '부둥켜안다'], ['hug']], [['얼굴을 묻다', '품에 얼굴을'], ['face in another\'s chest']], [['떠나다', '나가다', '나서다', '들어서다', '들어오다'], ['walking']],
+    [['다가오다', '다가가다'], ['walking towards']], [['손을 내밀다', '내밀다'], ['reaching out']], [['떨어지다', '추락하다'], ['falling']], [['수군대다', '수군거리다'], ['whispering', 'crowd']],
+    [['눈을 맞추다', '시선을 맞추다', '눈이 마주치다', '마주하다', '마주 보다'], ['eye contact', 'face-to-face']], [['손을 맞잡다', '맞잡다'], ['holding hands']], [['안기다', '품에 안기다'], ['hug', 'being hugged']],
+    [['손을 흔들다'], ['waving']], [['막다', '가로막다'], ['blocking', 'outstretched arm']], [['내려다보다'], ['looking down']], [['올려다보다', '우러러보다'], ['looking up']],
+    [['쓰다듬다'], ['petting', 'headpat']], [['내려놓다'], ['putting down']], [['부르다', '외쳐 부르다'], ['calling out', 'open mouth']], [['문이 열리다'], ['open door']], [['문이 닫히다'], ['closed door']],
+    [['손을 모으다', '두 손을 모으다'], ['own hands together']], [['움켜쥐다', '꽉 쥐다', '부여잡다'], ['clenched hand', 'grabbing']], [['따지다', '쏘아붙이다', '대들다'], ['arguing', 'open mouth', 'angry']],
+    [['멍하다', '멍하니'], ['blank stare']], [['손가락질하다'], ['pointing at another']], [['인사하다', '고개 숙이다'], ['bowing']], [['맞닿다', '이마를 맞대다'], ['forehead-to-forehead']],
+    [['건네받다', '받아 들다', '받아들다'], ['receiving', 'holding']], [['손짓하다'], ['beckoning']], [['어깨에 얹다', '손을 얹다'], ["hand on another's shoulder"]], [['고개를 돌리다', '얼굴을 돌리다', '눈을 돌리다'], ['looking away']],
+    [['손을 뻗다', '팔을 뻗다'], ['outstretched arm', 'reaching']], [['머리를 긁다', '뒷머리를 긁다'], ['scratching head']], [['두드리다', '노크하다'], ['knocking']], [['벗다', '벗어 던지다'], ['undressing']],
+    [['움찔하다', '흠칫하다', '움찔'], ['flinch']], [['떠올리다', '회상하다'], ['thinking', 'looking afar']], [['노크하다'], ['knocking']], [['미소 짓다', '미소를 짓다', '웃음 짓다'], ['smile']],
+    [['입술을 깨물다'], ['biting own lip']], [['침을 삼키다', '마른침'], ['gulping', 'sweat']], [['이를 악물다', '이를 갈다'], ['clenched teeth']], [['한숨 쉬다', '한숨을 쉬다'], ['sigh']],
+    [['고개를 끄덕이다', '끄덕이다'], ['nodding']], [['고개를 젓다', '도리질'], ['shaking head']], [['어깨를 으쓱하다', '으쓱하다'], ['shrugging']], [['하품하다'], ['yawning']],
+    [['눈을 뜨다'], ['open eyes']], [['눈을 비비다'], ['rubbing eyes']], [['볼을 꼬집다', '볼을 잡아당기다'], ['cheek pinching']], [['귓속말하다', '귓속말'], ['whispering']],
+    [['포옹하다'], ['hug']], [['악수하다'], ['handshake']], [['업다', '업히다'], ['piggyback']], [['키스하다', '입 맞추다', '입을 맞추다'], ['kiss']],
+    [['밀치다', '밀어내다', '떠밀다'], ['pushing']], [['끌고 가다', '끌려가다', '잡아끌다'], ['dragging', 'pulling']], [['붙잡다', '부축하다'], ['holding another']], [['뿌리치다'], ['shaking off']],
+    [['통화하다'], ['holding phone', 'talking on phone']], [['문자를 보내다', '휴대폰을 보다', '폰을 보다'], ['looking at phone', 'holding phone']], [['서빙하다', '쟁반을 들다'], ['holding tray']],
+    [['요리하다'], ['cooking']], [['청소하다', '빗자루'], ['cleaning', 'holding broom']], [['피아노를 치다', '연주하다'], ['playing instrument']], [['그림을 그리다'], ['drawing', 'holding brush']],
+    [['붉히다'], ['blush']], [['떨리다', '떨다'], ['trembling']], [['기대다', '기대앉다'], ['leaning']], [['돌아서다', '돌아눕다'], ['back turned']], [['생각에 잠기다', '골똘히', '고민하다', '생각하다'], ['thinking', 'hand on own chin']],
+    [['비가 내리다', '빗속', '비를 맞다'], ['rain', 'wet']], [['눈이 내리다', '눈발'], ['snowing']], [['화나다', '화내다', '분노하다', '분개하다'], ['angry']], [['무표정하다'], ['expressionless']],
+    [['손목을 잡다', '팔을 잡다', '옷자락을 잡다', '소매를 잡다', '멱살을 잡다'], ["grabbing another's arm"]], [['땀을 흘리다', '식은땀'], ['sweat']], [['빛나다', '반짝이다'], ['glowing', 'sparkle']],
+    [['샤워하다'], ['showering', 'wet']], [['옷을 갈아입다', '옷을 입다'], ['changing clothes']], [['화장하다'], ['applying makeup']], [['책상에 엎드리다'], ['head on desk']],
+  ];
   // 사람 동작으로 보이는 한국어 어미(동작 태그를 못 찾았을 때 알림용)
+  POSE.push(...POSE_BASE.map(([ws, t]) => [[...new Set(ws.flatMap(forms))], t]));
+  // Claude가 컷 프롬프트를 만들며 새로 옮긴 동작(배운 동작) — 앱이 N.useLearned([[한국어 낱말들], [태그들]])로 넣음
+  let LEARNED_N = 0;
+  N.useLearned = list => { POSE.splice(POSE.length - LEARNED_N, LEARNED_N); const L = (list || []).filter(x => Array.isArray(x) && x[0]?.length && x[1]?.length).map(([ws, t]) => [[...new Set(ws.flatMap(forms))], t]); POSE.push(...L); LEARNED_N = L.length; };
+  N.forms = forms;
   const VERBISH = /(다|고|며|면서|는|은|ㄴ다|하며|한다)[.!?…]*$|[가-힣](는다|ㄴ다|었다|았다|였다|한다|된다|진다)/;
   const PLACE = [
     [['복도'], ['indoors', 'hallway']], [['저택'], ['mansion']], [['정원'], ['outdoors', 'garden']], [['숲', '풀밭'], ['outdoors', 'forest']],
@@ -463,5 +511,5 @@
   const SHOT_ALL = new Set(Object.values(SHOT).flat().concat(['wide shot', 'very wide shot']).map(t => t.toLowerCase()));
   // 칸 이름(A1~E5) → 좌표
   const cellPos = cell => { const c = COLS.indexOf(String(cell)[0]), r = +String(cell).slice(1) - 1; return c < 0 || !(r >= 0 && r < 5) ? null : pos(+(0.1 + c * 0.2).toFixed(1), +(0.1 + r * 0.2).toFixed(1)); };
-  Object.assign(N, { cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
+  Object.assign(N, { poseTags: t => tagsOf(String(t || ''), POSE), cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughNAI = {}));

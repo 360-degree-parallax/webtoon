@@ -397,6 +397,25 @@ test('소품이 빛·연기의 출처로만 나오면 화면 밖(효과만) · �
   await p.click('#conti .ccard[data-ct="1"] [data-propvis]'); await p.waitForTimeout(300);
   assert(await ev(() => !/mirror/.test(naiCuts()[1].o.base) && !SCENES[SCUR].pageEdits[1]?.propAttach), '다시 누르면 자동(글에서 판단)으로');
 });
+test('배운 동작: Claude가 옮긴 새 동작을 규칙 사전에 쌓음 · 자동 생성', async ({p, ev}) => {
+  await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
+    "export async function refineNai(k,pl){window._calls=(window._calls||0)+1;window._pl=pl;return {cuts:pl.cuts.map(c=>({n:c.n,base:'AI',chars:[]})),props:[],actions:[{ko:'팔을 벌리다',tags:'spread arms'},{ko:'Edgar',tags:'x'}],model:'test'}}export function explain(e){return String(e)}"}));
+  await ev(() => { setKey('sk-test', 'session'); showView('write'); CUTS.splice(0, CUTS.length, '@준이 팔을 벌린다.', '@준이 달린다.'); saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(700);
+  await ev(() => showView('layout')); await p.waitForTimeout(500);
+  assert(await ev(() => !!naiCuts()[0].o.missAct && naiPayload().cuts[0].missingAction && /running/.test(naiPayload().cuts[1].ruleActions)), 'Claude에 규칙이 찾은 동작·못 찾은 동작 전달');
+  await p.click('#conti [data-act=nairefine]'); await p.click('#refinedlg [data-r=go]'); await p.waitForTimeout(1200);
+  const L = await ev(() => [LEARNED.map(x => x.ko), NAI.poseTags('리나가 팔을 벌린 채 웃는다')]);
+  assert(L[0].includes('팔을 벌리다') && !L[0].includes('Edgar'), '새 동작만 배움(영문·고유명사 거름)');
+  assert(L[1].includes('spread arms'), '배운 동작은 활용형까지 규칙 사전에');
+  assert(await ev(() => document.querySelector('#conti [data-act="learned"]').textContent.includes('1')), '배운 동작 수 표시');
+  // 자동 생성: 켜고 씬 글을 바꾸면 콘티에서 한 번 자동으로
+  const c0 = await ev(() => window._calls);
+  await p.click('#conti [data-naiauto]'); await ev(() => { CUTS[1] = '@준이 넘어진다.'; saveScenes(); compute(false); renderNai(); }); await p.waitForTimeout(2600);
+  assert(await ev(c => window._calls === c + 1 && !ainFor().stale, c0), '자동 생성: 바뀐 씬을 한 번 만듦');
+  await p.waitForTimeout(2000);
+  assert(await ev(c => window._calls === c + 1, c0), '최신이면 다시 안 부름');
+  await ev(() => { NAI_AUTO = false; localStorage.setItem('rough-nai-auto', '0'); });
+});
 test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
   const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
   await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);

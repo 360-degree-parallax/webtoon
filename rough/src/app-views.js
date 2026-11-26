@@ -84,6 +84,22 @@ const NAI_STYLE_DEF='webtoon, korean webtoon, soft shading, flat color, thin lin
 let NAISTYLE=NAI_STYLE_DEF;
 try{NAISTYLE=localStorage.getItem('rough-nai-style')||NAI_STYLE_DEF}catch(_){}
 function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(a=>a.trim()).filter(Boolean),body:c.body||'female',look:c.look||''}))}
+// 배운 동작: Claude가 컷 프롬프트를 만들며 새로 태그로 옮긴 동작(규칙 사전에 없던 것) → 이 브라우저에 쌓아 규칙 초안이 다음부터 바로 씀
+var LEARNED=[];try{LEARNED=JSON.parse(localStorage.getItem('rough-learned-actions')||'[]')}catch(_){LEARNED=[]}
+const applyLearned=()=>NAI.useLearned(LEARNED.map(x=>[[x.ko],String(x.tags).split(',').map(t=>t.trim()).filter(Boolean)]));applyLearned();
+function learnActions(list){let n=0;for(const a of list||[]){const ko=String(a.ko||'').trim().slice(0,30),tags=String(a.tags||'').trim().slice(0,120);
+    if(!ko||!tags||ko.length<2||/[A-Za-z]/.test(ko)||NAI.poseTags(ko).length)continue;const i=LEARNED.findIndex(x=>x.ko===ko);if(i>=0)LEARNED[i]={ko,tags,at:Date.now()};else{LEARNED.push({ko,tags,at:Date.now()});n++}}
+  if(n){try{localStorage.setItem('rough-learned-actions',JSON.stringify(LEARNED.slice(-500)))}catch(_){}applyLearned()}return n}
+function openLearned(){let d=$('#learndlg');if(!d){d=document.createElement('dialog');d.id='learndlg';d.className='keydlg';document.body.appendChild(d)}
+  const draw=()=>{d.innerHTML=`<h3>배운 동작 ${LEARNED.length}개</h3><p class="hint">컷 프롬프트 생성 때 Claude가 규칙 사전에 없던 동작을 태그로 옮기면 여기 쌓이고, 다음부터 규칙 초안이 바로 써요(활용형까지).</p>
+    <ul class="learnl">${LEARNED.slice().reverse().map(x=>`<li><b>${esc(x.ko)}</b> → <code>${esc(x.tags)}</code><button class="link" data-learndel="${esc(x.ko)}">지우기</button></li>`).join('')||'<li class="empty">아직 없어요</li>'}</ul><div class="acts"><button class="btn dark" data-r="x">닫기</button></div>`};
+  draw();d.onclick=e=>{const x=e.target.closest('[data-learndel]');if(x){LEARNED=LEARNED.filter(v=>v.ko!==x.dataset.learndel);try{localStorage.setItem('rough-learned-actions',JSON.stringify(LEARNED))}catch(_){}applyLearned();draw();renderNai();return}
+    if(e.target.closest('[data-r=x]'))d.close()};d.showModal()}
+// 자동 생성: 켜면 API 키가 있을 때 콘티에서 그 씬 프롬프트가 없거나 예전 것이면 Claude로 한 번 만듦(씬 글이 바뀌면 다시)
+var NAI_AUTO=false;try{NAI_AUTO=localStorage.getItem('rough-nai-auto')==='1'}catch(_){}
+let NAI_AUTO_T=0,NAI_AUTO_TRIED='';
+function naiAutoSoon(){if(!NAI_AUTO||!AIKEY||naiBusy||VIEW!=='layout'||!state.panels.length)return;const a=ainFor();if(a&&!a.stale)return;
+  const sig=SCENES[SCUR].id+':'+sigOf(naiPayload());if(NAI_AUTO_TRIED===sig)return;clearTimeout(NAI_AUTO_T);NAI_AUTO_T=setTimeout(()=>{if(VIEW!=='layout'||naiBusy)return;NAI_AUTO_TRIED=sig;naiRefine()},1500)}
 // 씬 무드: 씬에 직접 정한 값(SCENES[i].mood) 또는 컷 감정에서 자동(강도 가중 30% 넘는 감정)
 const sceneMoodOf=(si,ps)=>SCENES[si]?.mood||NAI.sceneMood(ps||(si===SCUR?state.panels:panelsOf(si)));
 // 소품 보이기(컷마다): pageEdits[slot].propAttach[이름] — 'hide'=화면 밖, 'show'·'bg'·'char:…'·'layer'=보임, 없으면 글에서 추론(NAI.propPresence)
@@ -100,7 +116,7 @@ let NAIVIEW='ai',AIN={};try{AIN=JSON.parse(localStorage.getItem('rough-ai-nai')|
 function naiPayload(){const L=naiRuleCuts(),chars=naiChars();
   const sceneText=L.map(({p})=>[p.act,p.caption,...(p.dialogs||[]).map(d=>d.text)].join(' ')).join(' ');
   return{format:2,title:SCENES[SCUR].title||'',sceneMood:{emotion:sceneMoodOf(SCUR),tags:(NAI.SCENE_MOOD[sceneMoodOf(SCUR)]||[]).join(', ')},world:worldBrief(),lore:loreHits(sceneText).map(e=>({name:e.name,category:LORE_CAT[e.cat]?.[0]||e.cat,keywords:e.keys||'',description:(e.desc||'').slice(0,600),tags:loreTagList(e).join(', ')})),props:(()=>{const m=new Map();L.forEach(({p,o})=>propsFor(p).filter(x=>(o.props||[]).some(v=>v.name===x.name)).forEach(x=>m.set(x.name,{name:x.name,look:x.look,tags:x.tags})));return[...m.values()]})(),style:NAISTYLE,chars:chars.filter(c=>L.some(({o})=>o.chars.some(x=>x.name===c.name))).map(c=>({name:c.name,gender:c.body==='male'?'male':'female',tags:NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),look:c.look})),
-    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,props:(o.props||[]).map(x=>x.name),offscreen:(o.propsOff||[]).map(x=>({name:x.name,show:x.emit.join(', ')||'없음'})),
+    cuts:L.map(({p,i,o})=>{const a=state.an[p.chunk];return{n:i+1,size:`${o.size.w}x${o.size.h}`,focus:o.mode,shot:p.shot,angle:p.ang,emotion:p.emo,intensity:p.i,peak:p.vng==='P',role:p.vng+' '+(p.role||''),trans:p.trans||'',gapAfter:RP.gapTag(p.gap??0.3),who:p.who||'',action:p.act,ruleActions:NAI.poseTags(p.act).join(', '),missingAction:o.missAct||'',props:(o.props||[]).map(x=>x.name),offscreen:(o.propsOff||[]).map(x=>({name:x.name,show:x.emit.join(', ')||'없음'})),
       dialogs:(p.dialogs||[]).map(d=>({who:d.who||'',note:d.note||'',text:d.text})),caption:p.caption||'',sfx:p.sfx||[],story:a?`${narrLabel(a.narr)} · ${a.goal}`:'',draft:{base:o.base,chars:o.chars.map(c=>({name:c.name,cell:c.pos.cell,prompt:c.prompt}))}}})}}
 function ainFor(){const r=AIN[SCENES[SCUR].id];if(!r||!state.panels.length)return null;return{...r,stale:r.sig!==sigOf(naiPayload())}}
 function naiCuts(){const L=naiRuleCuts(),ai=NAIVIEW==='ai'&&ainFor();if(!ai||ai.stale)return stripForeignProps(L);
@@ -144,7 +160,7 @@ function setCtNote(i,v){const sid=SCENES[SCUR].id,m=CTNOTE[sid]||={};if(v.trim()
 const withNotes=pl=>({...pl,cuts:pl.cuts.map(c=>{const n=ctNote(c.n-1).trim();return n?{...c,note:n}:c})});
 async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}if(ensureProps(CUTS).added.length)compute(false);
   if(!AIKEY){openKey(naiRefine);return}const st=t=>{$('#naist').textContent=t;NAI_MSG=t;naiBtnSync()};naiBusy=true;NAI_ERR=false;NAI_DONE=0;$('#naibtn').disabled=true;st('Claude에 보내는 중… 컷이 많으면 1분 안팎 걸려요');const sid=SCENES[SCUR].id,payload=naiPayload();
-  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});const np=savePropTags(r.props);
+  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});const np=savePropTags(r.props),nl=learnActions(r.actions);if(nl)setTimeout(()=>toast(`새 동작 ${nl}개를 배웠어요 · 다음부터 규칙 초안에도 들어가요`,2400),2800);
     AIN[sid]={sig:sigOf(np?naiPayload():payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';naiBusy=false;NAI_DONE=Date.now();st(`컷 ${r.cuts?.length||''}개 프롬프트를 만들었어요 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);setTimeout(naiBtnSync,4100);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';naiBusy=false;NAI_ERR=true;st('생성하지 못했어요 · '+m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false;naiBtnSync()}}
@@ -186,7 +202,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
   // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
-  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label><label class="ct-fit" title="씬 전체에 같은 색감·조명을 깔아요 · 자동은 컷 감정(강도 가중)에서 정해요"><span>씬 무드</span> <select data-scenemood aria-label="씬 무드"><option value=""${sc.mood?'':' selected'}>자동 · ${esc(NAI.sceneMood(ps))}</option>${Object.keys(NAI.SCENE_MOOD).map(k=>`<option value="${k}"${sc.mood===k?' selected':''}>${k}</option>`).join('')}</select></label><label class="ct-fit ct-lymode" title="컷 한 장 대신 배경·인물·소품 프롬프트를 따로 만들고, 넣은 그림을 레이어로 겹쳐요 · 배경은 같은 장소 컷끼리, 소품은 모든 컷이 한 장을 같이 써서 모양이 고정돼요"><input type="checkbox" data-layermode${LAYER_MODE?' checked':''}> 요소별 레이어로 뽑기</label></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><label class="ct-auto" title="켜면 API 키가 있을 때 이 씬 프롬프트가 없거나 씬 글이 바뀐 뒤 콘티에 오면 Claude로 자동으로 만들어요(씬마다 한 번)"><input type="checkbox" data-naiauto${NAI_AUTO?' checked':''}> 자동</label><button class="link" data-act="learned" title="Claude가 새로 옮겨 규칙 사전에 더한 동작">배운 동작 ${LEARNED.length}</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label><label class="ct-fit" title="씬 전체에 같은 색감·조명을 깔아요 · 자동은 컷 감정(강도 가중)에서 정해요"><span>씬 무드</span> <select data-scenemood aria-label="씬 무드"><option value=""${sc.mood?'':' selected'}>자동 · ${esc(NAI.sceneMood(ps))}</option>${Object.keys(NAI.SCENE_MOOD).map(k=>`<option value="${k}"${sc.mood===k?' selected':''}>${k}</option>`).join('')}</select></label><label class="ct-fit ct-lymode" title="컷 한 장 대신 배경·인물·소품 프롬프트를 따로 만들고, 넣은 그림을 레이어로 겹쳐요 · 배경은 같은 장소 컷끼리, 소품은 모든 컷이 한 장을 같이 써서 모양이 고정돼요"><input type="checkbox" data-layermode${LAYER_MODE?' checked':''}> 요소별 레이어로 뽑기</label></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">현재 초안을 표시 중이에요 · 컷 프롬프트를 다시 생성할 수 있어요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
@@ -228,6 +244,9 @@ function ctGo(i,smooth=true){const L=state.panels.length;if(!L)return;i=Math.max
   el.addEventListener('change',e=>{const s=e.target.closest('[data-ctf]');if(!s)return;setCutDir(+s.closest('.ct-edit').dataset.i,s.dataset.ctf,s.value)});
   el.addEventListener('change',e=>{if(!e.target.matches('[data-ctfit]'))return;const i=+e.target.closest('.ct-edit').dataset.i,k=cutIdxOf(state.panels[i]);if(k<0)return;setCutFit(k,e.target.value);renderConti();toast(`${i+1}번 컷 칸 높이: ${e.target.value==='ratio'?'컷 비율':e.target.value==='img'?'넣은 그림 비율':'작품 설정대로'}`)});
   el.addEventListener('change',e=>{if(!e.target.matches('[data-fitratio]'))return;setFitRatio(e.target.checked)});
+  el.addEventListener('change',e=>{if(!e.target.matches('[data-naiauto]'))return;NAI_AUTO=e.target.checked;try{localStorage.setItem('rough-nai-auto',NAI_AUTO?'1':'0')}catch(_){}
+    toast(NAI_AUTO?(AIKEY?'자동 생성 켬 · 이 씬 프롬프트가 없거나 예전 것이면 곧 Claude로 만들어요':'자동 생성 켬 · API 키를 넣으면 시작해요'):'자동 생성 끔 · 「컷 프롬프트 생성」을 눌러 만들어요',2400);if(NAI_AUTO){NAI_AUTO_TRIED='';naiAutoSoon()}});
+  el.addEventListener('click',e=>{if(e.target.closest('[data-act="learned"]')){e.stopPropagation();openLearned()}});
   el.addEventListener('click',e=>{const b=e.target.closest('[data-propvis]');if(!b)return;e.stopPropagation();togglePropVis(+b.dataset.propvis,b.dataset.name)});
   el.addEventListener('change',e=>{if(!e.target.matches('[data-scenemood]'))return;const v=e.target.value;if(v)SCENES[SCUR].mood=v;else delete SCENES[SCUR].mood;saveScenes();renderNai();
     const m=sceneMoodOf(SCUR);toast(`씬 무드: ${v?m:'자동 · '+m}${(NAI.SCENE_MOOD[m]||[]).length?' — '+NAI.SCENE_MOOD[m].join(', '):''} · 모든 컷 프롬프트에 들어가요`,2600)});
@@ -462,7 +481,7 @@ function savePropTags(list){let n=0;for(const x of list||[]){const e=propOf(x.na
 async function contiRegenCut(i,req){if(CT_BUSY.has(i))return;if(!AIKEY){openKey(()=>contiRegenCut(i,req));return}
   setCtNote(i,req);CT_BUSY.add(i);CT_MSG[i]='Claude에 보내는 중…';renderConti();const sid=SCENES[SCUR].id,payload=naiPayload();
   let mod;try{mod=await import('./claude.js');const r=await mod.refineNaiCut(AIKEY,payload,i+1,req,{onStatus:t=>{CT_MSG[i]=t;const x=$('#conti')?.querySelector(`.ct-edit[data-i="${i}"] .ct-edst`);if(x)x.textContent=t}});
-    const wasFresh=prev0=>prev0&&!ainFor()?.stale,prev=AIN[sid],fresh=wasFresh(prev);savePropTags(r.props);
+    const wasFresh=prev0=>prev0&&!ainFor()?.stale,prev=AIN[sid],fresh=wasFresh(prev);savePropTags(r.props);learnActions(r.actions);
     const cuts=(fresh?prev.cuts:[]).filter(c=>c.n!==i+1).concat([r.cut]);
     AIN[sid]={sig:sigOf(naiPayload()),cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';CT_MSG[i]=`✓ ${i+1}번 컷 프롬프트를 새로 만들었어요`;toast(CT_MSG[i],2200)}
@@ -473,3 +492,5 @@ async function contiRegenCut(i,req){if(CT_BUSY.has(i))return;if(!AIKEY){openKey(
 function setFitRatio(on){FIT_RATIO=!!on;try{localStorage.setItem('rough-fit-ratio',on?'1':'0')}catch(_){}SA_CACHE?.clear?.();if(VIEW==='layout')renderConti();if(VIEW==='webtoon')renderWebtoon();render?.();
   toast(on?'그림을 넣은 컷도 컷 비율로 맞춰요 · 그림은 칸에 꽉 채워 잘려요(편집에서 끌어 위치 조정)':'그림을 넣은 컷은 그림 비율대로 칸 높이를 정해요',2600)}
 function setCutFit(slot,v,si=SCUR){const sc=SCENES[si];if(!sc)return;const e=sc.pageEdits||(sc.pageEdits=[]);if(v){(e[slot]||(e[slot]={})).fit=v}else if(e[slot])delete e[slot].fit;saveScenes();SA_CACHE?.clear?.()}
+// 자동 생성: 콘티를 그릴 때마다 확인(켰을 때만, 씬마다 한 번)
+{const _rc=renderConti;renderConti=function(...a){const r=_rc.apply(this,a);try{naiAutoSoon()}catch(_){}return r}}

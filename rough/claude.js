@@ -99,6 +99,8 @@ const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 한 컷�
 - angle은 감정 연출이다. 로우앵글은 위압·결의·분노를(from below, looking down at viewer, dramatic perspective, foreshortening), 하이앵글은 작고 약하고 외로움을(from above, looking up, 넓은 빈 공간), 아이레벨이라도 긴장·당황이 크면 dutch angle로. 그 감정이 화면 구도·인물 자세·시선에 보이게 쓴다.
 - emotion과 intensity(0~3): 표정·몸짓·조명을 감정에 맞게, intensity가 높을수록 더 강하게(2는 1.15::태그::, 3은 1.3::태그:: 가중치). peak 컷은 dynamic angle·강한 명암으로 씬에서 가장 센 구도.
 - sceneMood는 씬 전체 분위기다. 그 색감·조명(tags)을 모든 컷에 같게 깔아 컷끼리 톤이 이어지게 하고, 컷의 감정 조명은 그 위에 얹는다. 시간대(밤·낮)와 어긋나는 밝기 태그는 쓰지 않는다.
+- 각 컷의 ruleActions는 규칙 사전이 action에서 찾은 동작 태그, missingAction은 규칙 사전이 못 찾은 동작 문장이다. ruleActions는 맞으면 살리고 틀리면 고치며, missingAction은 반드시 네가 태그로 옮긴다.
+- 규칙 사전에 없던 동작을 새로 태그로 옮겼으면 응답 actions에 {ko: 그 동작의 한국어 기본형이나 짧은 구(예: 응시하다, 하늘을 올려다보다), tags: 영어 태그 1~3개}로 돌려준다. 다른 장면에서도 같은 뜻으로 쓰일 일반적인 동작만 넣고, 인물 이름·고유명사·이 장면에만 맞는 표현은 넣지 않는다. 없으면 빈 배열.
 - action의 동작(달린다·넘어진다·칼을 휘두른다·소리친다 등)은 빠짐없이 그 인물 프롬프트의 태그(running, falling, swinging sword, shouting…)로 옮기고, 태그로 안 되는 동작은 짧은 영문 구절로 쓴다. 동작이 있는 컷에서 동작 태그 없이 외형·표정만 쓰지 않는다. 움직임이 큰 동작은 motion blur·dynamic pose·full body처럼 움직임이 보이는 프레이밍을 곁들인다.
 - story(묶음 흐름·목적)와 앞뒤 컷을 보고, 이 컷이 흐름에서 맡은 역할(설정·고조·정점·여운)에 맞게 프레이밍과 빛의 세기를 정한다.
 
@@ -134,14 +136,15 @@ const SCHEMA_NAI = {
       },
     },
     props: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, tags: { type: 'string' } }, required: ['name', 'tags'], additionalProperties: false } },
+    actions: { type: 'array', items: { type: 'object', properties: { ko: { type: 'string' }, tags: { type: 'string' } }, required: ['ko', 'tags'], additionalProperties: false } },
   },
-  required: ['cuts', 'props'],
+  required: ['cuts', 'props', 'actions'],
   additionalProperties: false,
 };
-// payload: { title, sceneMood:{emotion, tags}, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], props:[{name, look, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, props:[name], offscreen:[{name, show}], dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
+// payload: { title, sceneMood:{emotion, tags}, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], props:[{name, look, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, ruleActions, missingAction, props:[name], offscreen:[{name, show}], dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
 export async function refineNai(apiKey, payload, { onStatus } = {}) {
   const r = await run(apiKey, SYSTEM_NAI, SCHEMA_NAI, `다음 씬의 NovelAI V4.5 태그를 다시 짜줘.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
-  return { cuts: r.out.cuts, props: r.out.props || [], model: r.model, usage: r.usage };
+  return { cuts: r.out.cuts, props: r.out.props || [], actions: r.out.actions || [], model: r.model, usage: r.usage };
 }
 
 
@@ -263,5 +266,5 @@ export async function refineNaiCut(apiKey, payload, n, request, { onStatus } = {
   const r = await run(apiKey, sys, SCHEMA_NAI, `다음 씬에서 ${n}번 컷의 NovelAI V4.5 태그만 다시 짜줘.${request ? `\n작가 요청: ${request}` : ''}\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
   const cut = (r.out.cuts || []).find(c => c.n === n) || (r.out.cuts || [])[0];
   if (!cut) throw new Error('그 컷의 프롬프트가 오지 않았어요');
-  return { cut: { ...cut, n }, props: r.out.props || [], model: r.model };
+  return { cut: { ...cut, n }, props: r.out.props || [], actions: r.out.actions || [], model: r.model };
 }

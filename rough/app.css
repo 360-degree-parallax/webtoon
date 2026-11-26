@@ -1454,3 +1454,5 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 button.ct-prop{border:0;cursor:pointer;font:inherit;font-size:11px}.ct-prop.off{color:#8a909a;background:rgba(138,144,154,.12);text-decoration:line-through}.ct-prop.off small{text-decoration:none;display:inline-block}
 .ly-melt.off{color:#9aa3b2}
 .ovh [data-ovh]{pointer-events:all}
+.ct-auto{font-size:12px;display:inline-flex;gap:4px;align-items:center;margin-right:6px;color:var(--t2,#555)}
+.learnl{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.learnl li{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line,#eee);font-size:13px}.learnl code{font-size:12px;color:#7c3aed}.learnl .link{margin-left:auto}
