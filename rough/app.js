@@ -2544,7 +2544,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
   // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
-  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label><label class="ct-fit ct-lymode" title="컷 한 장 대신 배경·인물·소품 프롬프트를 따로 만들고, 넣은 그림을 레이어로 겹쳐요 · 배경은 같은 장소 컷끼리, 소품은 모든 컷이 한 장을 같이 써서 모양이 고정돼요"><input type="checkbox" data-layermode${LAYER_MODE?' checked':''}> 요소별 레이어로 뽑기</label>${LAYER_MODE?`<label class="ct-fit" title="인물·소품 그림의 흰 배경을 지워 겹쳐요 · 투명 PNG를 넣을 때는 꺼도 돼요"><input type="checkbox" data-layercut${LAYER_CUT?' checked':''}> 흰 배경 지우기</label>`:''}</div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label><label class="ct-fit ct-lymode" title="컷 한 장 대신 배경·인물·소품 프롬프트를 따로 만들고, 넣은 그림을 레이어로 겹쳐요 · 배경은 같은 장소 컷끼리, 소품은 모든 컷이 한 장을 같이 써서 모양이 고정돼요"><input type="checkbox" data-layermode${LAYER_MODE?' checked':''}> 요소별 레이어로 뽑기</label>${LAYER_MODE?`<label class="ct-fit" title="인물·함께·소품 그림의 흰 배경과, 인물 사이·팔 사이 같은 완전 흰색 빈틈을 투명하게 해서 겹쳐요(눈 하이라이트 같은 작은 흰 점은 남김) · 투명 PNG를 넣을 때는 꺼도 돼요"><input type="checkbox" data-layercut${LAYER_CUT?' checked':''}> 흰색 자동 투명</label>`:''}</div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">현재 초안을 표시 중이에요 · 컷 프롬프트를 다시 생성할 수 있어요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
@@ -2864,14 +2864,24 @@ function syncLayers(si){const sc=SCENES[si];if(!sc)return 0;const plan=layerPlan
     for(const [x,a] of want){const has=ov.find(v=>v.layer===x.kind&&v.key===x.key);
       if(has){if(has.asset!==a.id){has.asset=a.id;n++}}else{ov.push({asset:a.id,layer:x.kind,key:x.key,x:x.x,y:x.y,scale:x.scale});n++}}}
   if(n)saveScenes();return n}
-// 흰 배경 지우기: 테두리에서 이어진 밝고 채도 낮은 픽셀만 투명하게(인물 안의 흰 옷·눈 흰자는 테두리와 이어지지 않으면 남음), 경계는 반투명으로 부드럽게
-function whiteCutout(d,w,h){const px=d.data,seen=new Uint8Array(w*h),isW=k=>{const r=px[k*4],g=px[k*4+1],b=px[k*4+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);return mn>=228&&mx-mn<=22};
+// 흰 배경 지우기(인물·함께·소품 레이어, 배경 레이어는 그대로)
+//   1) 테두리에서 이어진 밝고 채도 낮은 픽셀(거의 흰색) → 투명
+//   2) 완전 흰색(#fafafa 이상·무채색) 덩어리는 테두리와 떨어져 있어도 투명(팔과 몸 사이·두 인물 사이 빈틈 등).
+//      단 아주 작은 덩어리(눈 하이라이트·작은 반사광, 그림 넓이의 0.05% 또는 60픽셀 미만)는 남김
+//   3) 지운 곳과 맞닿은 경계는 밝기에 따라 반투명으로 부드럽게
+function whiteCutout(d,w,h){const px=d.data,N=w*h,seen=new Uint8Array(N),near=k=>{const r=px[k*4],g=px[k*4+1],b=px[k*4+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);return mn>=228&&mx-mn<=22},
+    pure=k=>{const r=px[k*4],g=px[k*4+1],b=px[k*4+2];return Math.min(r,g,b)>=250&&Math.max(r,g,b)-Math.min(r,g,b)<=6};
   const st=[];for(let x=0;x<w;x++){st.push(x,(h-1)*w+x)}for(let y=0;y<h;y++){st.push(y*w,y*w+w-1)}
-  while(st.length){const k=st.pop();if(seen[k]||!isW(k))continue;seen[k]=1;px[k*4+3]=0;const x=k%w,y=(k-x)/w;
-    if(x>0)st.push(k-1);if(x<w-1)st.push(k+1);if(y>0)st.push(k-w);if(y<h-1)st.push(k+w)}
-  for(let k=0;k<w*h;k++){if(seen[k])continue;const x=k%w,y=(k-x)/w;let e=0;
-    if(x>0&&seen[k-1])e++;if(x<w-1&&seen[k+1])e++;if(y>0&&seen[k-w])e++;if(y<h-1&&seen[k+w])e++;
-    if(e){const r=px[k*4],g=px[k*4+1],b=px[k*4+2],l=Math.min(r,g,b);px[k*4+3]=Math.min(px[k*4+3],l>200?Math.round(255*(1-(l-200)/55)*.9+20):255-e*25)}}
+  while(st.length){const k=st.pop();if(seen[k]||!near(k))continue;seen[k]=1;const x=k%w;
+    if(x>0)st.push(k-1);if(x<w-1)st.push(k+1);if(k>=w)st.push(k-w);if(k<N-w)st.push(k+w)}
+  const minA=Math.max(60,Math.round(N*.0005)),mark=new Uint8Array(N);
+  for(let s0=0;s0<N;s0++){if(seen[s0]||mark[s0]||!pure(s0))continue;const reg=[];const q=[s0];mark[s0]=1;
+    while(q.length){const k=q.pop();reg.push(k);const x=k%w;for(const j of [x>0?k-1:-1,x<w-1?k+1:-1,k>=w?k-w:-1,k<N-w?k+w:-1])if(j>=0&&!mark[j]&&!seen[j]&&pure(j)){mark[j]=1;q.push(j)}}
+    if(reg.length>=minA)for(const k of reg)seen[k]=1}
+  for(let k=0;k<N;k++)if(seen[k])px[k*4+3]=0;
+  for(let k=0;k<N;k++){if(seen[k])continue;const x=k%w;let e=0;
+    if(x>0&&seen[k-1])e++;if(x<w-1&&seen[k+1])e++;if(k>=w&&seen[k-w])e++;if(k<N-w&&seen[k+w])e++;
+    if(e){const l=Math.min(px[k*4],px[k*4+1],px[k*4+2]);px[k*4+3]=Math.min(px[k*4+3],l>200?Math.round(255*(1-(l-200)/55)*.9+20):255-e*25)}}
   return d}
 async function layerPNG(file,label,cut){const url=URL.createObjectURL(file);try{const im=await loadImg(url);const k=Math.min(1,1536/Math.max(im.naturalWidth,im.naturalHeight));
   const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));const g=c.getContext('2d');g.drawImage(im,0,0,c.width,c.height);
@@ -2929,7 +2939,7 @@ function layerRows(L,o,dim){const sid=SCENES[SCUR].id,bg=IMG.cut[cutId(sid,L.i)]
   el.addEventListener('change',e=>{const s=e.target.closest('[data-lypick]');if(!s||!s.value)return;const w=who(e),src=IMG.overlay[s.value];if(!w||!src)return;layerReuse(w[0],w[1],w[2],src)});
   el.addEventListener('change',e=>{const s=e.target.closest('[data-lyatt]');if(!s)return;const r=s.closest('.ly-row');setPropAttach(+s.dataset.lyatt,r.dataset.key,s.value)});
   el.addEventListener('change',e=>{if(e.target.matches('[data-layermode]'))setLayerMode(e.target.checked);
-    if(e.target.matches('[data-layercut]')){LAYER_CUT=e.target.checked;try{localStorage.setItem('rough-layer-cutout',LAYER_CUT?'1':'0')}catch(_){}toast(LAYER_CUT?'인물·소품 그림의 흰 배경을 지워서 넣어요':'인물·소품 그림을 그대로 넣어요 · 투명 PNG를 쓸 때')}})}
+    if(e.target.matches('[data-layercut]')){LAYER_CUT=e.target.checked;try{localStorage.setItem('rough-layer-cutout',LAYER_CUT?'1':'0')}catch(_){}toast(LAYER_CUT?'인물·소품 그림의 흰 배경과 완전 흰색 빈틈을 투명하게 넣어요':'인물·소품 그림을 그대로 넣어요 · 투명 PNG를 쓸 때')}})}
 
 async function layerReuse(i,kind,key,src){const L=layerPlan(SCUR)[i],x=L&&layerItem(L,kind,key);if(!x)return;const sid=SCENES[SCUR].id,old=charOf(L,x,sid);
   const a={...src,id:'overlay:'+(crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2)),layer:{kind,key,pose:x.pose,scene:sid,slot:L.slot}};

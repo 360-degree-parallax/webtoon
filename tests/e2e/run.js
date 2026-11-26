@@ -295,6 +295,17 @@ test('레이어: 두 인물이 함께 나오면 각자 + 함께(상호작용) �
   assert(ov.some(v => v.startsWith('group:')) && !ov.some(v => v.startsWith('char:')), '함께 그림을 넣으면 그 컷은 개별 인물 대신 함께 그림');
   await ev(() => setLayerMode(false));
 });
+test('레이어: 흰색 자동 투명(테두리 흰 배경 + 안쪽 완전 흰 빈틈, 작은 흰 점은 남김)', async ({p, ev}) => {
+  const a = await ev(() => { const c = document.createElement('canvas'); c.width = 100; c.height = 100; const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, 100, 100); g.fillStyle = '#c00'; g.fillRect(10, 10, 80, 80); g.fillStyle = '#fff'; g.fillRect(30, 30, 40, 40); g.fillRect(14, 14, 3, 3);
+    g.fillStyle = '#f0eee8'; g.fillRect(75, 75, 10, 10);
+    const d = whiteCutout(g.getImageData(0, 0, 100, 100), 100, 100), A = (x, y) => d.data[(y * 100 + x) * 4 + 3];
+    return [A(3, 3), A(50, 50), A(15, 15), A(20, 20), A(80, 80)]; });
+  assert(a[0] === 0, '테두리 흰 배경 투명');
+  assert(a[1] === 0, '안쪽 완전 흰 빈틈도 투명');
+  assert(a[2] === 255, '작은 흰 점(하이라이트)은 남김');
+  assert(a[3] === 255 && a[4] === 255, '그림과 안쪽의 연한 색(완전 흰색 아님)은 남김');
+});
 test('레이어: 소품은 나온 컷에만 · 소품 중심 컷에도 인물 레이어', async ({p, ev}) => {
   await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
     "export async function refineNai(k,pl){return {cuts:pl.cuts.map(c=>({n:c.n,base:'gold pocket watch, golden pocket watch with chain, indoors',chars:[]})),props:[],model:'test'}}export function explain(e){return String(e)}"}));
