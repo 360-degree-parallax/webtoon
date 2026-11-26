@@ -92,4 +92,9 @@ for (const c of CASES) {
   }
 }
 console.log(`컷 배치 범위 검사 ${runs}컷 중 벗어남 ${bad}`);
-process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot ? 0 : 1);
+// 소품 화면 판단(보임·화면 밖·언급만): 시험 문장 + 확인용 문장, 각각 90% 이상
+const NAI = require('./nai.js'), FX = f => require('../tests/fixtures/' + f).cases;
+const propAcc = cs => cs.filter(c => { const r = NAI.propPresence(c.t, c.p); return (r.on ? 'on' : r.why === 'source' ? 'source' : 'absent') === c.want; }).length / cs.length;
+const pa = propAcc(FX('prop-presence.json')), ph = propAcc(FX('prop-presence-holdout.json'));
+console.log(`소품 화면 판단 ${(pa * 100).toFixed(1)}% · 확인용 ${(ph * 100).toFixed(1)}%`);
+process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 ? 0 : 1);

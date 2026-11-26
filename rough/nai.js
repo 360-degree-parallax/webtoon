@@ -316,18 +316,39 @@
   // 소품이 화면에 보이는지 — 같은 컷 글에 여러 번 나오면 한 번이라도 보이면 보임
   //   출처(source): '조마경에서 쏟아진 빛줄기', '조마경의 빛' → 소품은 안 보이고 나온 빛·연기·기운만(EMIT)
   //   언급(absent): '조마경을 떠올린다', '조마경 이야기' → 안 보임
-  const EMIT = [[['빛줄기', '광선', '빛기둥', '빛살'], ['light rays', 'beam of light']], [['빛', '광채', '섬광', '광휘'], ['glowing light', 'light particles']],
+  const EMIT = [[['빛줄기', '광선', '빛기둥', '빛살'], ['light rays', 'beam of light']], [['불빛', '빛', '광채', '섬광', '광휘', '빛의 막'], ['glowing light', 'light particles']],
     [['연기', '안개', '김이'], ['smoke']], [['불꽃', '불길', '화염', '불티'], ['fire', 'sparks']], [['기운', '마력', '힘이', '에너지', '오라'], ['aura', 'magic']],
-    [['물줄기', '물이', '물방울'], ['water splash']], [['꽃잎'], ['petals']], [['소리', '울림', '목소리'], []]];
-  const EMIT_V = /(나온|나오|나와|쏟아|뿜어|뿜는|뿜은|흘러|새어|번지|번진|번져|퍼지|퍼진|퍼져|뻗어|뻗은|뻗는|솟구|솟아|일어|피어|터져|터진|번쩍|비친|비추|비쳐|쏘아|발한|발하|빛나)/;
+    [['물줄기', '물이', '물방울'], ['water splash']], [['꽃잎'], ['petals']], [['소리', '울림', '목소리', '선율', '음악', '노랫소리', '종소리', '멜로디', '노래'], []], [['바람', '돌풍'], ['wind']]];
+  // 나오는 동사(활용형): 나온·쏟아진·뿜어·흘러나온·새어·번진·퍼진·뻗은·솟구친·튄·날린·넘쳐흐른·울린·째깍거리는…
+  const EMIT_V = /(나온|나오|나와|쏟아|뿜어|뿜는|뿜은|흘러|새어|번지|번진|번져|퍼지|퍼진|퍼져|뻗어|뻗은|뻗는|솟구|솟아|일어|피어|터져|터진|번쩍|비친|비추|비쳐|쏘아|발한|발하|빛나|튄|튀어|튀는|날린|날리|넘쳐|넘친|울린|울리|울려|들리|들려|거리는|대는)/;
+  // 빛·연기가 '닿는' 다른 대상(덮친다·비춘다·감싼다·적신다·채운다·흔든다·가른다 …) — 소품 자체가 빛나는 문장과 가름
+  const LAND = /(을|를|에|위로|위에|으로|로)\s*[가-힣]*|[가-힣]+(친다|춘다|싼다|신다|운다|든다|른다|뚫는다|낸다|오른다|진다|채운다|메운다|흩어진다|일렁인다|닿는다)/;
+  // 몸으로 다루는 동사(이 소품이 화면에 있는 근거) — 같은 문장에 떠올림·다짐이 있어도 보임
+  const PHYS = /^(을|를|이|가|은|는|에|의)?\s*.{0,6}?(들|든|쥐|쥔|잡|낀|끼|쓰|쓴|읽|보|봐|비추|비춘|문|물고|벗|건네|내려놓|올려|던지|움켜|숨기|굴러|굴린|떨어|빛나|흔들|붙이|부는|치는|짚|펼친|구겨)/;
+  const MIND = /(떠올|기억|생각|그리워|그리운|다짐|깨달|믿었|믿는|소문|전설|이야기|얘기|언급|회상)/;
   function propPresence(act, name) {
     let at = act.indexOf(name), seen = false, out = null;
     while (at >= 0) {
-      seen = true; const rest = act.slice(at + name.length, at + name.length + 28); let r = { on: true };
-      const src = /^(에서|으로부터|로부터|에게서|의)\s*/.exec(rest);
+      // 다른 낱말 속의 이름은 건너뜀('꽃잎'의 꽃, '단검'의 검): 앞이 한글이거나, 뒤가 조사·띄어쓰기·문장부호가 아닌 한글
+      const pre = act[at - 1] || '', nx = act.slice(at + name.length);
+      if (/[가-힣]/.test(pre) || (/^[가-힣]/.test(nx) && !/^(을|를|이|가|은|는|의|에|도|만|과|와|로|으로|에서|에게|끝|속|위|아래|옆|앞|뒤|안|밖|조각|처럼|까지|부터|이나|이랑|랑)/.test(nx))) { at = act.indexOf(name, at + name.length); continue; }
+      seen = true; const rest = act.slice(at + name.length, at + name.length + 30); let r = { on: true };
+      // 출처: '○○에서 [나온] 빛이 (다른 곳에) 닿는다' / '○○의 빛이 …' / '○○ (화면) 불빛이 …'
+      const src = /^(에서|으로부터|로부터|에게서|의|\s*화면|\s)\s*/.exec(rest);
       if (src) { const tail = rest.slice(src[0].length), em = EMIT.find(([ws]) => ws.some(w => tail.includes(w)));
-        if (em && (src[1] === '의' ? em[0].some(w => tail.startsWith(w)) : EMIT_V.test(tail))) r = { on: false, why: 'source', emit: em[1] }; }
-      if (r.on && /^(을|를|이|가|에 대한|에 관한)?\s*(떠올|생각|기억|그리워|그리운|찾아야|찾으러|찾아 헤|잃어버|잃은|이야기|얘기|언급|소문)/.test(rest)) r = { on: false, why: 'absent', emit: [] };
+        if (em) {
+          const w = em[0].find(x => tail.includes(x)), k = tail.indexOf(w), before = tail.slice(0, k), after = tail.slice(k + w.length);
+          const adnom = EMIT_V.test(before);                       // '쏟아진 빛줄기가' (나오는 동사가 효과 낱말 앞)
+          const only = /^(이|가)?\s*[^\s.]*\s*(나왔다|나온다|번졌다|번진다|번져 나왔다|번져 나온다|피어올랐다|오른다|올랐다|일었다|인다)?[.!…]?\s*$/.test(after) && !LAND.test(after.replace(/^(이|가)\s*/, '').replace(/[^\s]+(다|다\.)$/, ''));
+          if (src[1] === '의') { if (em[0].some(x => tail.startsWith(x))) r = { on: false, why: 'source', emit: em[1] }; }
+          else if (/화면|^\s$/.test(src[1])) { if (em[0].some(x => new RegExp('^(화면\\s*)?' + x + '(이|가)\\s').test(tail))) r = { on: false, why: 'source', emit: em[1] }; }  // '휴대폰 화면 불빛이 …'만(‘램프 불빛 아래’는 보임)
+          else if (adnom || (EMIT_V.test(after) && !only)) r = { on: false, why: 'source', emit: em[1] };
+        }
+      }
+      // 언급만: 떠올림·소문·이야기·되찾기·두고 옴·없음
+      if (r.on && /^(을|를|이|가|에 대한|에 관한)?\s*(떠올|생각|기억|그리워|그리운|찾아야|찾으러|찾아 헤|잃어버|잃은|이야기|얘기|언급|소문|되찾|두고 온|두고 왔)/.test(rest)) r = { on: false, why: 'absent', emit: [] };
+      if (r.on && /^(이|가)\s*(없었|없다|없어|사라졌|사라진)/.test(rest)) r = { on: false, why: 'absent', emit: [] };
+      if (r.on && MIND.test(act) && !PHYS.test(rest)) r = { on: false, why: 'absent', emit: [] };
       if (r.on) return r; if (!out || (!out.emit?.length && r.emit?.length)) out = r;
       at = act.indexOf(name, at + name.length);
     }
