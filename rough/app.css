@@ -1364,20 +1364,48 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .rst:hover,.rst:focus-visible{opacity:1;color:var(--t1);text-decoration:underline;text-underline-offset:3px}
 .rst.undo{opacity:1;color:var(--t2);text-decoration:underline;text-underline-offset:3px}
 .scenes .rstrow{justify-content:center;margin-top:14px}
+/* 구성 카드 다시 생성: 어떻게 바꿀지 적는 칸 */
+#v-plan .pc-ask{margin-top:12px;padding:12px;border-radius:12px;background:var(--surface);display:grid;gap:8px}
+#v-plan .pc-ask label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--t2)}
+#v-plan .pc-ask textarea{width:100%;resize:vertical;min-height:52px;padding:8px 10px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:14px;font-weight:400;background:var(--bg);color:var(--t1)}
+#v-plan .pc-ask-act{display:flex;align-items:center;gap:6px}#v-plan .pc-ask-act small{font-size:11px;color:var(--t3)}
+#v-plan .pc-ask-act .btn{min-height:32px;padding:0 12px;font-size:13px;border-radius:10px}
+#v-plan .pc-ask-act .grow{flex:1}
+/* 컷 프롬프트 생성 상태 */
+.tpill.busy{cursor:progress;filter:none;opacity:.9}.tpill .spin{display:inline-block;width:13px;height:13px;margin-right:7px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:tspin .8s linear infinite}
+@keyframes tspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.tpill .spin{animation-duration:2.4s}}
+.ct-naist{margin:6px 0 0;font-size:13px;color:var(--tg7,var(--t2));min-height:0}.ct-naist:empty{display:none}.ct-naist.err{color:var(--warn,#b45309)}
+/* 콘티 카드 컷 지우기: 머리 오른쪽 작은 회색 글자 */
+#conti .ccard>header{position:relative;padding-right:52px}
+#conti .ct-del{position:absolute;top:0;right:0;background:none;border:0;padding:2px 4px;font:inherit;font-size:12px;color:var(--t3);cursor:pointer;opacity:.75;flex:none}
+#conti .ct-del:hover,#conti .ct-del:focus-visible{opacity:1;color:var(--warn,#b45309);text-decoration:underline;text-underline-offset:3px}
+/* 구성안 → 설정집 제안 창 */
+.entdlg{max-width:620px;width:calc(100vw - 32px)}.entdlg .entl{list-style:none;margin:12px 0;padding:0;display:grid;gap:10px;max-height:60vh;overflow:auto}
+.entdlg .entl li{padding:12px;border:1px solid var(--line2);border-radius:12px;display:grid;gap:6px}
+.entdlg .enth{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.entdlg .enth b{font-size:15px}.entdlg .enth small{font-size:12px;color:var(--t3)}
+.entdlg .entr,.entdlg .entd{margin:0;font-size:13px;color:var(--t2)}.entdlg .entd{color:var(--t3)}
+.entdlg .entc{justify-self:start}
+#conti .ct-ratio{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;font-size:13px;color:var(--t2)}
+#conti .ct-ratio select{margin-left:6px;height:30px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);color:var(--t1);font:inherit;font-size:13px;padding:0 6px}
+#conti .ct-ratio small{font-size:12px;color:var(--t3)}
+/* 콘티 컷 하나 상세 수정 */
+#conti .ct-edbtn{position:absolute;top:0;right:48px;background:none;border:0;padding:2px 4px;font:inherit;font-size:12px;color:var(--t2);cursor:pointer}
+#conti .ct-edbtn:hover,#conti .ct-edbtn[aria-expanded=true]{color:var(--tb,var(--t1));text-decoration:underline;text-underline-offset:3px}
+#conti .ccard>header{padding-right:132px}
+#conti .ct-edit{margin:0 0 16px;padding:12px;border-radius:12px;background:var(--surface);display:grid;gap:10px}
+#conti .ct-edrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}
+#conti .ct-edrow label,#conti .ct-edreq{display:grid;gap:4px;font-size:12px;color:var(--t3)}
+#conti .ct-edrow select{height:32px;border:1px solid var(--line2);border-radius:8px;background:var(--bg);color:var(--t1);font:inherit;font-size:13px;padding:0 6px}
+#conti .ct-edreq textarea{width:100%;resize:vertical;min-height:48px;padding:8px 10px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:13px;background:var(--bg);color:var(--t1)}
+#conti .ct-edact{display:flex;align-items:center;gap:8px}#conti .ct-edact .grow{flex:1}#conti .ct-edst{font-size:12px;color:var(--t3)}
+#conti .ct-edact .tpill{height:34px;font-size:14px;padding:0 14px}
+/* 상단 저장·초기화 */
+.hdrst{align-self:center;margin-right:2px}
+.draftdlg{max-width:560px;width:calc(100vw - 32px)}.draftdlg .drnew{display:flex;gap:8px;margin:10px 0}.draftdlg .drnew input{flex:1;height:38px;padding:0 10px;border:1px solid var(--line2);border-radius:10px;font:inherit;background:var(--bg);color:var(--t1)}
+.draftdlg .drh{margin:14px 0 6px;font-size:14px}.draftdlg .drh small{color:var(--t3);font-weight:400}
+.draftdlg .drl{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:50vh;overflow:auto}
+.draftdlg .drl li{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line2);border-radius:10px}.draftdlg .drl li>div{flex:1;min-width:0;display:grid}
+.draftdlg .drl small{font-size:12px;color:var(--t3)}.draftdlg .drl .empty{color:var(--t3);justify-content:center}
 
-/* 콘티: 컷별 지시사항 + 이 컷 다시 생성 */
-.ct-note{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line2)}
-.ct-note label{display:grid;gap:6px}.ct-note label>span{font-size:13px;font-weight:700;color:var(--t2)}
-.ct-note textarea{width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);color:var(--t1);font:inherit;font-size:14px;line-height:1.55;resize:vertical;min-height:60px}
-.ct-nrow{display:flex;align-items:center;gap:10px;margin-top:8px}.ct-nrow .tpill{margin-left:auto}.ct-nst{color:var(--t3);font-size:12.5px}
-.ct-applied{font-style:normal;font-weight:600;font-size:12px;margin-left:6px;padding:2px 8px;border-radius:10px;background:#e7f3ea;color:#1d4a2a}
-
-/* 콘티: 컷 머리의 샷·앵글·감정 고르기(바꾸면 씬 글 {…}로 적힘) */
-.ct-dirs{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.ct-dir{font:inherit;font-size:12.5px;padding:3px 22px 3px 9px;border:1px solid var(--line2);border-radius:14px;background:var(--bg);color:var(--t2);cursor:pointer;max-width:150px}
-.ct-dir.set{border-color:var(--blue,#2d71f7);color:var(--blue,#2d71f7);font-weight:600;background:color-mix(in srgb,var(--blue,#2d71f7) 8%,var(--bg))}
-.ct-nst.warn{color:#b45309;font-weight:600}
-.ct-nrow .tpill.hot{background:var(--blue,#2d71f7);color:#fff}
-#conti .ct-dir{width:auto;flex:none;height:26px;line-height:1;appearance:auto}
-#conti .ct-dirs>span{color:var(--t3)}
-#conti .ct-beat small.ct-dirs{display:flex;margin-top:6px}
+#conti .ct-edrow select.set{border-color:var(--blue,#2d71f7);color:var(--blue,#2d71f7);font-weight:600}

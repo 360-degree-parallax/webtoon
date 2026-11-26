@@ -84,6 +84,130 @@ test('레퍼런스 필터(인물 수·시선)', async ({p, ev}) => {
   await p.selectOption('select[data-f="gz"]', 'L'); await p.waitForTimeout(300); const gz = await n();
   assert(all > two && two > gz && gz > 0, `필터가 줄어듦 ${all} > ${two} > ${gz}`);
 });
+test('콘티 NovelAI: 화면에 보이는 대상을 컷마다 다르게 구성', async ({p, ev}) => {
+  await ev(() => {
+    CUTS.splice(0, CUTS.length,
+      '빈 저택 복도에 달빛이 비친다. {설정}\n@에드가 "(화면 밖)여기로 와."',
+      '준의 청동 거울 표면만 보인다. {인서트}',
+      '@준의 손끝이 거울에 닿는다. {인서트}',
+      '복도 끝 멀리 @에드가가 서 있다. {설정}',
+      '섬광과 집중선. {효과만}',
+      '@준은 놀라 @에드가를 돌아본다. {클로즈업}',
+    );
+    AIN[SCENES[SCUR].id] = {sig: 'old', cuts: [{n: 1, base: '1boy, portrait', chars: []}]};
+    compute(false);
+    showView('layout');
+  });
+  await p.locator('#conti .ccard').first().waitFor();
+  const cards = await ev(() => [...document.querySelectorAll('#conti .ccard')].map(c => ({
+    meta: c.querySelector('.ct-beat small').textContent,
+    prompts: [...c.querySelectorAll('.ct-prompt pre')].map(pre => pre.textContent),
+  })));
+  assert(cards.length === 6, '컷 수');
+  assert(cards[0].meta.startsWith('배경 ·') && /^(no humans, scenery).*hallway.*moonlight/.test(cards[0].prompts[0]) && cards[0].prompts.length === 1, '화면 밖 화자와 구형 프롬프트 제외');
+  assert(/^no humans, mirror, object focus/.test(cards[1].prompts[0]) && cards[1].prompts[0].includes('bronze') && cards[1].prompts.length === 1, '소유자 없이 소품과 재질');
+  assert(cards[2].prompts[0].startsWith('hands focus, head out of frame') && cards[2].prompts.length === 1, '신체 디테일에서 외형 전체 제외');
+  assert(/^indoors, hallway, scenery, wide shot/.test(cards[3].prompts[0]) && /1boy, far away/.test(cards[3].prompts[1]), '장소 먼저, 인물은 원경');
+  assert(cards[4].prompts[0].startsWith('no humans, abstract background, radial lines') && cards[4].prompts.length === 1, '효과만 표시');
+  assert(cards[5].prompts.length === 3 && cards[5].prompts[0].includes('face focus'), '인물마다 개별 캐릭터 칸');
+  assert(await ev(() => {
+    const output = RoughNAI.refine(naiRuleCuts()[0].o, {
+      base: '1boy, portrait, black hair, stone floor',
+      chars: [{name: '에드가', cell: 'A1', prompt: '1boy'}],
+    });
+    return output.base.includes('stone floor') && !/1boy|portrait|black hair/.test(output.base) && !output.chars.length;
+  }), 'Claude 결과에도 배경 컷 초점 유지');
+});
+test('콘티: 컷 프롬프트 생성 중·완료가 버튼에 보임', async ({p, ev}) => {
+  // claude.js를 가짜로 바꿔 응답을 늦춤(실제 API 키 없이)
+  let release; const gate = new Promise(r => release = r); let fail = false;
+  await p.route('**/claude.js', async route => { await gate; route.fulfill({contentType: 'text/javascript', body: fail
+    ? "export async function refineNai(){const e=new Error('x');e.status=500;throw e}export function explain(){return '서버 오류'}"
+    : "export async function refineNai(k,p,{onStatus}){onStatus&&onStatus('Claude가 쓰는 중');return {cuts:p.cuts?p.cuts.map(()=>({p:'test'})):[],model:'test'}}export function explain(){return 'x'}"}); });
+  await ev(() => { setKey('sk-test', 'session'); showView('layout'); }); await p.waitForTimeout(800);
+  await p.click('#conti [data-act=nairefine]'); await p.click('#refinedlg [data-r=go]'); await p.waitForTimeout(200);
+  assert((await p.textContent('#conti [data-act=nairefine]')).includes('생성 중'), '생성 중 표시');
+  assert(await p.isDisabled('#conti [data-act=nairefine]'), '생성 중에는 버튼 잠김');
+  assert((await p.textContent('#conti .ct-naist')).length > 0, '진행 글자');
+  release(); await p.waitForTimeout(500);
+  assert((await p.textContent('#conti [data-act=nairefine]')).includes('생성 완료'), '생성 완료 표시');
+  assert((await p.textContent('#conti .ct-naist')).includes('만들었어요'), '완료 글자');
+  await p.waitForTimeout(4300);
+  assert((await p.textContent('#conti [data-act=nairefine]')).trim() === '컷 프롬프트 생성', '4초 뒤 원래대로');
+});
+test('콘티: 컷 지우기 → 씬·편집에 반영 · Ctrl+Z', async ({p, ev}) => {
+  await ev(() => showView('layout')); await p.waitForTimeout(800);
+  const before = await ev(() => SCENES[SCUR].cuts.slice()); const n = await ev(() => state.panels.length);
+  const slot = await ev(() => cutSlot(state.panels[1], 1));
+  await p.click('#conti .ccard[data-ct="1"] [data-ctdel]'); await p.waitForTimeout(500);
+  const after = await ev(() => SCENES[SCUR].cuts.slice());
+  assert(after.length === before.length - 1 && !after.includes(before[slot]), '원고에서 그 컷이 빠짐');
+  assert((await ev(() => document.querySelectorAll('#conti .ccard').length)) < n, '콘티 카드가 줄어듦');
+  await p.click('.topnav [data-view=write]'); await p.waitForTimeout(500);
+  assert((await ev(() => document.querySelectorAll('#cutlist li').length)) === after.length, '씬 화면 컷 수 반영');
+  await ev(() => showView('webtoon')); await p.waitForTimeout(1200);
+  assert((await ev(() => SCENES[SCUR].cuts.length)) === after.length, '편집 화면도 같은 원고');
+  await ev(() => showView('layout')); await p.waitForTimeout(500);
+  await p.keyboard.press('Control+z'); await p.waitForTimeout(600);
+  assert(JSON.stringify(await ev(() => SCENES[SCUR].cuts)) === JSON.stringify(before), 'Ctrl+Z로 되돌림');
+});
+test('구성안 → 설정집 제안 창 → 고른 대로 추가', async ({p, ev}) => {
+  await ev(() => setKey('sk-test', 'session'));
+  const n0 = await ev(() => [CHARS.length, LORE.length]);
+  // 가짜 Claude 응답: 엑스트라 하녀(캐릭터 제안)와 시장 상인들(세계관 제안), 이미 있는 에드가는 걸러져야 함
+  await ev(() => { window._fake = { findEntities: async () => ({ items: [
+    { name: '하녀1', suggest: 'char', where: '2번 씬 「마차 소리」 2컷 — 떠나냐고 묻는 하녀', reason: '대사가 있음', body: 'female', aliases: '', look: '갈색 단발, 하녀복', cat: 'term', keys: '', desc: '', tags: '' },
+    { name: '시장 상인들', suggest: 'lore', where: '1번 씬 배경', reason: '배경 무리', body: 'other', aliases: '', look: '', cat: 'faction', keys: '상인', desc: '광장 시장의 상인들', tags: 'merchants' },
+    { name: '에드가', suggest: 'char', where: 'x', reason: 'x', body: 'male', aliases: '', look: '', cat: 'term', keys: '', desc: '', tags: '' } ] }), explain: e => String(e) };
+    suggestEntities({ cards: [{ n: 1, title: 't', cuts: ['a'] }] }, () => {}, window._fake); });
+  await p.waitForSelector('#entdlg[open]');
+  assert((await ev(() => document.querySelectorAll('#entdlg .entl li').length)) === 2, '이미 있는 인물은 빠지고 2개');
+  await p.click('#entdlg [data-r=go]'); await p.waitForTimeout(300);
+  const n1 = await ev(() => [CHARS.length, LORE.length, CHARS.some(c => c.name === '하녀1'), LORE.some(l => l.name === '시장 상인들' && l.cat === 'faction')]);
+  assert(n1[0] === n0[0] + 1 && n1[1] === n0[1] + 1 && n1[2] && n1[3], '캐릭터 1명·세계관 1개 추가');
+  await p.reload(); await p.waitForTimeout(2000);
+  assert(await ev(() => CHARS.some(c => c.name === '하녀1')), '저장됨');
+});
+test('콘티: 컷 비율 기준(작품별) 바꾸면 칸 길이가 따라감', async ({p, ev}) => {
+  await ev(() => showView('layout')); await p.waitForTimeout(1500);
+  const med = async () => ev(() => { const h = state.panels.map(c => c.h).sort((a, b) => a - b); return h[Math.floor(h.length / 2)]; });
+  await p.selectOption('#conti [data-ratioref]', '이두나!'); await p.waitForTimeout(400); const a = await med();
+  await p.selectOption('#conti [data-ratioref]', '호수의 백조'); await p.waitForTimeout(400); const b = await med();
+  assert(a < b, `넓은 작품(${a}) < 세로 긴 작품(${b})`);
+  await p.reload(); await p.waitForTimeout(2500); await ev(() => showView('layout')); await p.waitForTimeout(800);
+  assert((await p.inputValue('#conti [data-ratioref]')) === '호수의 백조', '고른 기준이 남음');
+});
+test('콘티: 컷 하나 상세 수정(샷·감정) · 이 컷만 프롬프트 다시 생성', async ({p, ev}) => {
+  let req = null;
+  await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:
+    "export async function refineNaiCut(k,p,n,r){window._req={n,r};return {cut:{n,base:'REGEN base',chars:[]},model:'test'}}export function explain(e){return String(e)}"}));
+  await ev(() => { setKey('sk-test', 'session'); showView('layout'); }); await p.waitForTimeout(800);
+  await p.click('#conti .ccard[data-ct="1"] [data-ctedit]'); await p.waitForTimeout(200);
+  assert(await ev(() => !!document.querySelector('#conti .ct-edit[data-i="1"]')), '수정 칸 열림');
+  await p.selectOption('#conti .ct-edit[data-i="1"] [data-ctf=shot]', '디테일'); await p.waitForTimeout(400);
+  assert(await ev(() => state.panels[1].shot === '디테일'), '샷 바뀜');
+  await p.selectOption('#conti .ct-edit[data-i="1"] [data-ctf=emo]', '분노'); await p.waitForTimeout(400);
+  assert(await ev(() => state.panels[1].emo === '분노'), '감정 바뀜');
+  await p.fill('#conti .ct-edit[data-i="1"] textarea', '역광으로'); await p.click('#conti [data-ctregen="1"]'); await p.waitForTimeout(800);
+  assert(await ev(() => window._req && window._req.n === 2 && window._req.r === '역광으로'), '이 컷 번호와 요청을 보냄');
+  assert((await p.textContent('#conti .ct-edit[data-i="1"] .ct-edst')).includes('새로 만들었어요'), '완료 표시');
+  await p.click('#conti [data-ctauto="1"]'); await p.waitForTimeout(400);
+  assert(await ev(() => state.panels[1].shot !== '디테일' || !Object.keys(state.panels[1].lock).length), '엔진 값으로 되돌림');
+});
+test('상단 저장(보관함)·초기화 → 불러오기로 되돌림', async ({p, ev}) => {
+  const before = await ev(() => JSON.stringify(SCENES.map(s => s.cuts)));
+  await p.click('#wdraft'); await p.fill('#drname', '테스트 저장'); await p.click('#draftdlg [data-dr=save]'); await p.waitForTimeout(500);
+  assert((await ev(() => [...document.querySelectorAll('#draftdlg .drl li b')].map(b => b.textContent))).includes('테스트 저장'), '보관함에 생김');
+  await p.click('#draftdlg [data-dr=x]');
+  await p.click('#wreset'); await p.waitForTimeout(2500);
+  assert(await ev(() => SCENES.length === 1 && SCENES[0].cuts.join('') === '' && CHARS.length === 0), '초기화됨');
+  await p.click('#wdraft'); await p.waitForTimeout(400);
+  const names = await ev(() => [...document.querySelectorAll('#draftdlg .drl li b')].map(b => b.textContent));
+  assert(names.some(n => n.startsWith('초기화 전')), '초기화 전 자동 보관');
+  await ev(() => [...document.querySelectorAll('#draftdlg .drl li')].find(li => li.querySelector('b').textContent === '테스트 저장').querySelector('[data-dr=load]').click());
+  await p.waitForTimeout(2800);
+  assert((await ev(() => JSON.stringify(SCENES.map(s => s.cuts)))) === before, '불러오면 원래 원고');
+});
 test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   await p.click('#gReview'); await p.waitForTimeout(1500);
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');
@@ -117,6 +241,20 @@ test('초기화: 캐릭터·세계관·구성·씬 → 되돌리기', async ({p,
   assert((await ev(() => JSON.stringify(SCENES.map(s => s.cuts)))) === before, '씬 되돌림');
   await p.reload(); await p.waitForTimeout(2200);
   assert((await ev(() => JSON.stringify(SCENES.map(s => s.cuts)))) === before, '되돌린 씬이 저장돼 있음');
+});
+test('구성: 다시 생성 → 방향 입력 칸 · Esc 닫기 · 적은 말 남음', async ({p, ev}) => {
+  await ev(() => { const card = n => ({id: 'c' + n, n, title: n + '번 씬', cutCount: 2, cuts: ['컷 하나', '컷 둘'], locked: false, role: '', turn: '', ending: ''});
+    localStorage.setItem('rough-composition-v1', JSON.stringify({mode: 'webtoon', webtoon: {form: {}, draft: {summary: '요약', cards: [card(1), card(2)]}}, marketing: {form: {}, draft: null}})); });
+  await p.reload(); await p.waitForTimeout(2200); await ev(() => showView('plan')); await p.waitForTimeout(1500);
+  await p.click('#pc-1 [data-do=regen]'); await p.waitForTimeout(200);
+  assert(await ev(() => !!document.querySelector('#pc-1 .pc-ask textarea') && document.activeElement.matches('.pc-ask textarea')), '입력 칸이 열리고 커서가 감');
+  await p.keyboard.press('Escape'); assert(await ev(() => !document.querySelector('.pc-ask')), 'Esc로 닫힘');
+  await p.click('#pc-1 [data-do=regen]'); await p.keyboard.type('대사를 줄이고 반전으로'); await p.keyboard.press('Enter'); await p.waitForTimeout(400);
+  assert(await ev(() => !document.querySelector('.pc-ask')), 'Enter로 보냄');
+  assert(await ev(() => JSON.parse(localStorage.getItem('rough-composition-v1')).webtoon.draft.cards[0].ask === '대사를 줄이고 반전으로'), '적은 말이 카드에 저장');
+  await ev(() => document.querySelector('#keydlg, dialog[open]')?.close?.());
+  await p.click('#pc-1 [data-do=regen]'); await p.waitForTimeout(200);
+  assert((await p.inputValue('#pc-1 .pc-ask textarea')) === '대사를 줄이고 반전으로', '다음에 열면 채워져 있음');
 });
 test('다크 모드: 시스템 다크에서 data-scheme=dark', async ({b, url}) => {
   const p = await b.newPage({colorScheme: 'dark'}); await p.goto(url); await p.waitForTimeout(1200);

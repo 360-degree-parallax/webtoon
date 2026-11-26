@@ -32,11 +32,11 @@ for n, r in enumerate(rows):
         vis = lambda idx: float(v[idx].any())
         head = [0, 1, 2, 3, 4]; sh = [5, 6]; hip = [11, 12]; kn = [13, 14]; an = [15, 16]
         top = y[v].min() if v.any() else 0; bot = y[v].max() if v.any() else 0
-        shw = abs(x[5] - x[6]) if v[5] and v[6] else 0; hw = (x[v[:5]].max() - x[v[:5]].min()) if v[:5].sum() >= 2 else 0
+        shw = abs(x[5] - x[6]) if v[5] and v[6] else 0; hx = x[:5][v[:5]]; hw = (hx.max() - hx.min()) if len(hx) >= 2 else 0
         tilt = abs(y[5] - y[6]) / (shw + 1e-3) if v[5] and v[6] else 0
         torso = (abs(np.mean(y[hip]) - np.mean(y[sh])) / (shw + 1e-3)) if v[sh].all() and v[hip].all() else 0
         f[:] = [0, (b['x1'] - b['x0']) * (b['y1'] - b['y0']), v.mean(), vis(head), vis(sh), vis(hip), vis(kn), vis(an), bot - top, min(tilt, 3),
-                (shw / (hw + 1e-3)) if hw else 0, min(torso, 5), y[v[:5]].mean() if v[:5].any() else 0, y[v[an]].mean() if v[an].any() else 1.2,
+                (shw / (hw + 1e-3)) if hw else 0, min(torso, 5), y[:5][v[:5]].mean() if v[:5].any() else 0, y[an][v[an]].mean() if v[an].any() else 1.2,
                 abs(np.mean(y[hip]) - y[0]) if v[0] and v[hip].any() else 0, sc[v].mean() if v.any() else 0, 0, 0, 0]
     ids.append(r['cut_id']); X.append(f)
     if n % 500 == 0: print(n, len(rows), f'{time.time() - t0:.0f}s', flush=True)

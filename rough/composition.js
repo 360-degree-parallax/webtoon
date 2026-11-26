@@ -17,7 +17,7 @@ source가 keep이면 원문 순서를 지킨다. reorder이면 목적과 원문�
 마케팅의 최종 행동은 구매로 고정한다. audience의 first(처음 접함), interested(관심), comparing(비교 중)에서 구매까지 증거·비교·옵션·CTA를 자연스럽게 배치한다. 마지막 섹션의 CTA는 구매 행동을 명확히 쓴다. 뒷받침되지 않는 주장은 만들지 않는다. HTML은 명시된 섹션에만 넣는다. HTML UI는 섹션 안의 실행 가능한 조각이다. 코드펜스 없이 HTML, 인라인 CSS, 허용된 경우만 인라인 JS를 쓴다. 외부 리소스, 외부 요청, 추적, 폼 제출, 판매자 URL 추측을 넣지 않는다. 실제 결제 연동이 없는 인터랙션은 옵션·토글·비교처럼 로컬에서 동작한다. 모바일 너비에서도 동작하고 키보드로 조작 가능하게 작성한다.`;
 const steps = {
   outline: '웹툰이면 config.structure를 따른다: coldOpen이 true면 1번 씬은 타이틀 앞에 보여 줄 짧은 도입 장면(약 openCuts컷)으로 둔다. 1화(episode:first)는 인물·세계·사건의 시작을 앞쪽 씬에 압축한다. 마지막 씬을 가장 길게 두고, 감정 강도 최고점은 마지막 10% 안, 마지막 hookCuts컷은 ending에 맞는 공개(새 정보·표정·대사)로 끊는다. 씬 수는 사건 단위로 나눈 결과이며 lower~upper 안에서 정한다. 전체 순서와 분량만 설계한다. cards의 n은 1부터 연속 증가한다. 잠긴 카드의 n과 세부 흐름을 보존한다. 웹툰 각 cutCount는 양의 정수, 합계는 요청된 전체 컷 수와 일치. 웹툰 html은 false. 마케팅 cutCount는 0, turn과 ending은 빈 문자열. 마케팅 html:true는 전체 요청 개수만큼이며 직접 지정한 경우 해당 번호에만 둔다.',
-  get webtoon(){return 'expand에 들어 있는 번호만 반환한다. 각 카드는 설계의 cutCount와 똑같은 개수의 cuts를 반환한다. cuts 요소 하나는 컷 하나다. 한 컷의 행동과 구도는 첫 줄에 한 문장(40자 안팎, 그림에 보이는 것만)으로 간결하게 쓰고 심리 설명·여러 동작 나열은 피하며 대사가 있다면 줄을 바꿔 @인물 "대사", 나레이션은 [문구], 효과음은 -텍스트-로 적는다. 대사를 여러 컷으로 쪼개지 말고 잠긴 씬의 흐름과 인물 설정을 이어간다.'+(globalThis.RoughGrammar?'\n'+globalThis.RoughGrammar.PROMPT:'')},
+  get webtoon(){return 'expand에 들어 있는 번호만 반환한다. 각 카드는 설계의 cutCount와 똑같은 개수의 cuts를 반환한다. cuts 요소 하나는 컷 하나다. 한 컷의 행동과 구도는 첫 줄에 한 문장(40자 안팎, 그림에 보이는 것만)으로 간결하게 쓰고 심리 설명·여러 동작 나열은 피하며 대사가 있다면 줄을 바꿔 @인물 "대사", 나레이션은 [문구], 효과음은 -텍스트-로 적는다. 대사를 여러 컷으로 쪼개지 말고 잠긴 씬의 흐름과 인물 설정을 이어간다. 인물 표기: 화면에 나오거나 말하는 모든 인물은 행동 줄·대사 줄 어디서든 이름 앞에 @를 붙인다(@준 창가로 다가간다 / @준 "누구세요?"). 설정집에 없는 새 인물·단역도 같은 이름으로 늘 @를 붙이고, 이름이 없는 단역은 @경비병, @행인1처럼 짧은 이름을 정해 끝까지 같은 이름을 쓴다. 한 컷에 여러 명이면 모두 @를 붙인다. 그·그녀·두 사람 같은 대명사나 호칭만 쓰지 말고 @이름으로 쓴다(호칭은 대사 안에서만).'+(globalThis.RoughGrammar?'\n'+globalThis.RoughGrammar.PROMPT:'')},
 
   marketing:'expand의 번호만 반환한다. 섹션마다 설득 목적·카피·CTA를 쓴다. 클릭이 필요 없는 섹션은 CTA를 빈 문자열로 둘 수 있다. 설계에서 html이 true인 섹션만 HTML 코드 조각을 쓰고 나머지는 빈 문자열을 반환한다. static이면 JS나 이벤트 속성을 넣지 않는다.',
   code:'expand에 있는 번호의 HTML만 다시 쓴다. 현재 카피·제목·구매 흐름·동작 범위는 보존한다. static이면 JS나 이벤트 속성을 넣지 않는다.',
@@ -101,14 +101,16 @@ export async function generateComposition(request, config, previous, onStatus) {
   return {summary:plan.summary,cards};
 }
 
-export async function regenerateCard(request,config,draft,current,scope,onStatus) {
+export async function regenerateCard(request,config,draft,current,scope,onStatus,ask='') {
   if(current.locked)fail('잠긴 카드는 먼저 잠금을 풀어 주세요.');
   const mode=config.mode;
   if(scope==='code'&&(mode!=='marketing'||!current.withHTML))fail('HTML 코드가 지정된 섹션만 다시 만들 수 있어요.');
   const plan=draft.cards.map(card=>({...card,html:card.withHTML}));
   const schema=scope==='code'?codeSchema:mode==='webtoon'?webtoonSchema:marketingSchema;
-  const result=await request(system+'\n'+steps[scope==='code'?'code':mode],schema,
-    {config,plan:{summary:draft.summary,cards:plan},previous:current,expand:[current.n]},onStatus);
+  // ask: 사용자가 다시 생성할 때 적은 방향. 있으면 다른 조건(컷 수·잠긴 흐름)은 지키면서 그 방향을 가장 먼저 반영
+  const how=ask?'\nrequest가 있으면 사용자가 이 카드를 다시 만들며 적은 방향이다. 설계의 컷 수·형식·앞뒤 흐름은 지키면서 그 방향을 가장 먼저 반영하고, previous와 눈에 띄게 다르게 쓴다.':'';
+  const result=await request(system+'\n'+steps[scope==='code'?'code':mode]+how,schema,
+    {config,plan:{summary:draft.summary,cards:plan},previous:current,expand:[current.n],...(ask?{request:ask}:{})},onStatus);
   const [fresh]=checkCards(result.out,plan.filter(card=>card.n===current.n),mode,scope);
   return {...current,...fresh,id:current.id,locked:false};
 }

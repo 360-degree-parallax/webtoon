@@ -85,20 +85,19 @@ export async function refine(apiKey, payload, { onStatus } = {}) {
 }
 
 // NovelAI Diffusion V4.5 Full: 기본 프롬프트 + 캐릭터 프롬프트(위치)를 Danbooru 태그로 다시 짠다
-const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 컷을 뽑는 프롬프트 엔지니어다.
-입력은 한 씬의 컷 목록이다. 샷·앵글·감정·해상도는 연출 엔진이 이미 정했으니 그대로 지킨다. draft는 규칙으로 만든 태그 초안이다.
-씬 전체를 읽고 추론해서, 컷마다 NovelAI 화면 칸에 그대로 붙여 넣을 태그를 다시 짠다.
+const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 한 컷씩을 그리는 프롬프트를 쓴다. 같은 씬의 다른 컷은 연속성을 확인하는 데 사용한다. draft에 이미 정해진 프레이밍과 인원은 유지한다.
 
-규칙
-- 태그는 Danbooru 태그(영어, 소문자, 쉼표로 구분). 문장 금지. 가중치가 필요하면 V4.5 문법 "1.2::tag::"만 쓴다(과용 금지, 컷당 1~2개).
-- base(기본 프롬프트): 인원 태그(1girl, 1boy, 2girls…, 인물이 없으면 no humans) → 샷·구도(close-up, upper body, full body, wide shot, from above, from below, dutch angle 등) → 장소·배경 소품 → 시간대·빛·날씨 → 분위기 → 마지막에 입력 style 태그를 그대로.
-- chars(캐릭터 프롬프트, 최대 6명): 컷에 보이는 인물만. 각자 1girl/1boy로 시작 → 외형 태그(입력 tags를 기본으로, 컷 안에서 보이는 의상·소품으로 보강) → 표정 → 자세·동작·시선(looking at another, looking back 등). 인물 사이 상호작용은 해당 캐릭터 쪽에 쓴다(예: grabbing another's wrist).
-- cell(캐릭터 위치): 5×5 칸 A~E(가로, 왼쪽→오른쪽) 1~5(세로, 위→아래). 컷 사이에서 인물의 좌우 위치가 뒤바뀌지 않게(180도 선) 유지하고, 클로즈업은 C3 근처, 넓은 샷은 아래쪽(4~5행)에 둔다.
-- 연속성: 앞 컷에서 든 소품, 옷, 머리 모양, 빛 방향은 다음 컷에도 같은 태그로 남긴다. 원문과 모순되는 걸 지어내지 않는다.
-- 디테일(인서트) 컷은 얼굴 대신 손·소품에 초점(hands focus, close-up, head out of frame 등)을 둔다.
-- 글자·말풍선 관련 태그는 넣지 않는다(제외 칸은 쓰지 않음). 대사가 있으면 base에 negative space 정도만.
-- 컷에 note가 있으면 작가가 그 컷에 직접 남긴 지시다. 위 규칙보다 먼저 지키고, 지시와 무관한 부분은 씬 흐름대로 짠다.
-- world(세계관 개요)의 시대·장르·분위기와 lore(이 씬에 나오는 설정 항목: 장소·세력·물건·용어·역사·규칙)의 설명을 읽고, 배경·소품·의상·조명 태그를 그 세계에 맞게 고른다. lore의 tags는 해당 항목이 나오는 컷에 살린다. 세계관과 어긋나는 현대 소품 등은 넣지 않는다.`;
+컷의 focus에 맞춰 base와 chars를 작성한다.
+- scenery: no humans, scenery. 화면에 보이는 공간, 깊이, 전경·후경, 건축, 시간대와 빛을 구체화한다. 화면 밖 화자, 나레이션에 언급된 인물, 이전 컷 인물은 넣지 않는다. chars는 빈 배열.
+- distant: 장소와 넓은 프레임을 먼저 쓴다. 인물은 복도 끝, 길 건너편 등 작은 크기와 위치로 묘사한다. 인물 클로즈업·헤어·눈동자·표정을 강조하지 않는다. draft.chars의 인원과 원경 거리를 유지한다.
+- object: no humans, 핵심 소품, object focus, close-up. 소품의 재질·표면·형태·빛을 묘사한다. 소유자, 손, 얼굴, 거울에 비친 인물을 추가하지 않는다. chars는 빈 배열.
+- detail: extreme close-up. 화면에 보이는 신체 부위와 닿는 물체·동작만 쓴다. 손발 샷은 head out of frame. 외형 전체를 덧붙이지 않는다. chars는 빈 배열.
+- effect: no humans, abstract background. 인물이나 실제 장소의 묘사 없이 색, 빛, 선의 방향과 질감을 쓴다. chars는 빈 배열.
+- character: base에는 인원·프레이밍·공간·조명. 외형·표정·동작·시선은 캐릭터마다 분리한다. draft.chars에서 화면에 보이는 인물만 사용한다. 등록 인물이 없는 경우 컷에 보이는 사람의 동작을 base에 쓴다. cell은 A~E(좌→우), 1~5(상→하)이며 원문 위치와 연속성을 따른다.
+
+컷에 note가 있으면 작가가 그 컷에 직접 남긴 지시다. 그 컷에서는 가장 먼저 반영하고, 지시와 무관한 부분은 씬 흐름대로 쓴다.
+
+영어 소문자 태그를 쉼표와 공백으로 구분한다. 핵심 시각 요소를 앞에 둔다. 물체 배치나 빛의 방향에 필요하면 짧은 영문 구절을 추가한다. 샷·앵글·해상도는 입력을 따른다. world/lore의 정보는 화면에 드러나는 요소만 쓴다. 대사·나레이션·효과음은 이미지에 쓰지 않는다. 사용자가 정한 화풍은 기본 프롬프트 뒤에 둔다.`;
 const SCHEMA_NAI = {
   type: 'object',
   properties: {
@@ -127,27 +126,12 @@ const SCHEMA_NAI = {
   required: ['cuts'],
   additionalProperties: false,
 };
-// payload: { title, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
+// payload: { title, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
 export async function refineNai(apiKey, payload, { onStatus } = {}) {
   const r = await run(apiKey, SYSTEM_NAI, SCHEMA_NAI, `다음 씬의 NovelAI V4.5 태그를 다시 짜줘.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
   return { cuts: r.out.cuts, model: r.model, usage: r.usage };
 }
 
-
-// 컷 하나만 다시: 씬 전체(지금 화면의 프롬프트를 draft로)를 주고 target 컷만 작가 지시대로 다시 짠다
-const SYSTEM_NAI_CUT = SYSTEM_NAI + `
-
-지금은 씬 전체가 아니라 target 컷 하나만 다시 짠다.
-- instruction은 작가가 이 컷에 남긴 지시다. 가장 먼저, 빠짐없이 반영한다. 지시가 엔진의 샷·앵글과 부딪히면 지시를 따른다.
-- 지시와 무관한 부분은 target 컷의 지금 프롬프트(current)를 최대한 그대로 둔다. 바꿀 이유가 없는 태그는 지우지 않는다.
-- 다른 컷의 draft는 지금 화면에 있는 프롬프트다. 앞뒤 컷과 인물 좌우 위치·의상·소품·빛이 이어지게 맞춘다(지시가 바꾸라고 한 것은 예외).`;
-const SCHEMA_NAI_CUT = { type: 'object', properties: { base: SCHEMA_NAI.properties.cuts.items.properties.base, chars: SCHEMA_NAI.properties.cuts.items.properties.chars }, required: ['base', 'chars'], additionalProperties: false };
-// payload: refineNai와 같은 씬 정보 + target:{n, instruction, current:{base, chars}}
-export async function refineNaiCut(apiKey, payload, { onStatus } = {}) {
-  const t = payload.target;
-  const r = await run(apiKey, SYSTEM_NAI_CUT, SCHEMA_NAI_CUT, `다음 씬에서 ${t.n}번 컷의 NovelAI V4.5 태그만 다시 짜줘. 작가 지시: ${t.instruction || '(없음 — 씬 흐름에 맞게 다듬기)'}\n\n${JSON.stringify(payload, null, 1)}`, s => onStatus?.(s.replace('씬을 읽는', `${t.n}번 컷을 읽는`)));
-  return { base: r.out.base, chars: r.out.chars, model: r.model, usage: r.usage };
-}
 
 // 작화 프롬프트 생성: 세계관·인물 외형 → NovelAI 화풍 태그 + 인물별 외형 태그(모든 컷에 공통으로 붙는 값)
 const SYSTEM_ART = `너는 NovelAI Diffusion V4.5용 태그를 짓는 웹툰 작화 감독이다.
@@ -193,4 +177,39 @@ export function explain(err) {
 // 구성 단계도 NovelAI와 같은 Claude 연결과 오류 처리를 사용한다.
 export function requestComposition(apiKey, system, schema, payload, onStatus) {
   return run(apiKey, system, schema, JSON.stringify(payload), status=>onStatus?.(status.replace('씬을 읽는','기획을 읽는')));
+}
+
+// 구성안이 나온 직후: 설정집에 없는 인물(엑스트라 포함)·장소·물건·세력을 찾아 캐릭터/세계관 중 어디에 넣을지 제안
+const ENT_SYSTEM = `너는 웹툰 설정 정리 담당이다. 입력은 이번 화 구성안(씬 카드와 컷 초안)과 이미 설정집에 있는 캐릭터·세계관 항목이다.
+할 일: 구성안에 나오지만 설정집에 아직 없는 것을 모두 찾아, 각각 캐릭터로 둘지 세계관 항목으로 둘지 제안한다.
+- 사람은 이름이 없어도(하녀1, 경비병, 점원, 행인들) 컷에 모습이 나오면 후보다. 이미 있는 캐릭터 이름·별칭과 같은 사람은 빼고, 같은 사람을 여러 이름으로 부르면 하나로 묶는다.
+- 대사가 있거나 두 컷 이상 나오거나 이야기에 영향을 주는 사람은 suggest를 "char"로. 배경에 한 번 지나가는 무리·직업군(예: 시장 상인들, 기사단 병사들)은 "lore"(cat: faction)로. 아주 사소하면 "skip".
+- 장소·건물·물건·조직·용어·사건도 이름이 붙어 있거나 그림에 반복되면 lore 후보(cat: place|faction|item|term|history|rule).
+- where: 어떤 상황에 나오는지 사람이 바로 알아보게 "2번 씬 「마차 소리」 3컷 — 에드가에게 떠나냐고 묻는 하녀"처럼 짧게.
+- 캐릭터 look: NovelAI·이미지 생성에 바로 쓸 외형(머리·눈·체형·옷차림·나이대)을 한국어 한 줄로. 원문에 없으면 장면·시대·직업에 맞게 정하되 지어낸 티 나는 고유 설정은 넣지 않는다.
+- 세계관 항목 desc는 한두 문장, keys는 컷 글에 나올 법한 호칭을 쉼표로, tags는 영어 이미지 태그 몇 개.
+- 최대 12개, 중요한 순서로. 없으면 빈 배열.`;
+const ENT_SCHEMA = {
+  type: 'object',
+  properties: { items: { type: 'array', items: { type: 'object', properties: {
+    name: { type: 'string' }, suggest: { type: 'string', enum: ['char', 'lore', 'skip'] }, where: { type: 'string' }, reason: { type: 'string' },
+    body: { type: 'string', enum: ['female', 'male', 'other'] }, aliases: { type: 'string' }, look: { type: 'string' },
+    cat: { type: 'string', enum: ['place', 'faction', 'item', 'term', 'history', 'rule'] }, keys: { type: 'string' }, desc: { type: 'string' }, tags: { type: 'string' },
+  }, required: ['name', 'suggest', 'where', 'reason', 'body', 'aliases', 'look', 'cat', 'keys', 'desc', 'tags'], additionalProperties: false } } },
+  required: ['items'], additionalProperties: false,
+};
+// payload: { cast:[{name,aliases}], lore:[{name,keys}], world:{…}, cards:[{n,title,cuts:[…]}] }
+export async function findEntities(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, ENT_SYSTEM, ENT_SCHEMA, JSON.stringify(payload), s => onStatus?.(s.replace('씬을 읽는', '등장인물·설정을 찾는')));
+  return { items: r.out.items || [], model: r.model };
+}
+
+// 컷 하나만 다시 생성: 씬 전체는 연속성 확인용으로 주고, only의 컷만 반환하게 함. request는 작가가 적은 방향
+export async function refineNaiCut(apiKey, payload, n, request, { onStatus } = {}) {
+  const sys = SYSTEM_NAI + `\n\n이번에는 cuts 중 n=${n}인 컷 하나만 다시 쓴다. 반환 cuts에는 그 컷 하나만 넣는다. 다른 컷은 앞뒤 연속성(의상·위치·조명)을 맞추는 데만 쓴다.` +
+    (request ? `\n작가 요청이 있으면 그 컷의 샷·인원 같은 draft 값은 지키면서 요청을 가장 먼저 반영한다.` : '');
+  const r = await run(apiKey, sys, SCHEMA_NAI, `다음 씬에서 ${n}번 컷의 NovelAI V4.5 태그만 다시 짜줘.${request ? `\n작가 요청: ${request}` : ''}\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
+  const cut = (r.out.cuts || []).find(c => c.n === n) || (r.out.cuts || [])[0];
+  if (!cut) throw new Error('그 컷의 프롬프트가 오지 않았어요');
+  return { cut: { ...cut, n }, model: r.model };
 }
