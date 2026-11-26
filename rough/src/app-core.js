@@ -495,13 +495,20 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
+// 넣은 그림도 컷 비율로 맞추기(기본 켬): 칸 높이는 콘티의 컷 길이, 그림은 칸을 꽉 채우게 잘림. 컷마다 pageEdits.fit('ratio'|'img')로 따로 정할 수 있음
+var FIT_RATIO=true;try{FIT_RATIO=localStorage.getItem('rough-fit-ratio')!=='0'}catch(_){}
+const fitRatio=edit=>edit?.fit?edit.fit==='ratio':FIT_RATIO;
+// 칸보다 그림이 세로로 길면 위쪽을 더 남기고(얼굴이 위에 있는 컷이 많음, 넘치는 부분의 25%만 위에서 자름), 가로로 길면 가운데
+function fitImage(im,bx,y,bw,h){if(!im.w||!im.h)return `<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`;
+  const ih=bw*im.h/im.w;if(ih>=h){const top=y-(ih-h)*.25;return `<image href="${im.src}" x="${bx}" y="${top.toFixed(1)}" width="${bw}" height="${ih.toFixed(1)}" preserveAspectRatio="none"/>`}
+  const iw=h*im.w/im.h;return `<image href="${im.src}" x="${(bx-(iw-bw)/2).toFixed(1)}" y="${y}" width="${iw.toFixed(1)}" height="${h}" preserveAspectRatio="none"/>`}
 function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false,sceneEnd=null}={}){let y=40,o='',gaps='',backgrounds='',defs='',lastEnd=null;const multi=panels.length>1;
   let prev=null,handles='',tightGaps='';
-  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=RoughGrammar.merge(edits?.[slot],p);const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
+  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=RoughGrammar.merge(edits?.[slot],p);const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w&&!fitRatio(edit)?bw*im.h/im.w:p.h*bw);
     // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
     if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const blank=!!edit?.blank;const u=im||blank?null:underlay(p);
     // 코드로 그린 러프 그림은 쓰지 않음: 등록 이미지 → 원본 컷 레퍼런스(그림 영역만 잘라) → 빈 칸에 샷·앵글 표시
-    let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:'';
+    let art=im?fitImage(im,bx,y,bw,h):'';
     if(u){const c=u.crop&&u.w?u.crop:null;const vb=c?`${(c[0]*u.w).toFixed(0)} ${(c[1]*u.h).toFixed(0)} ${((c[2]-c[0])*u.w).toFixed(0)} ${((c[3]-c[1])*u.h).toFixed(0)}`:null;
       art=c?`<svg x="${bx}" y="${y}" width="${bw}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${u.src}" width="${u.w}" height="${u.h}" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/></svg>`:`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`}
     else if(!im&&!blank)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;

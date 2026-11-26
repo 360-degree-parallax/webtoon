@@ -497,13 +497,20 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
+// 넣은 그림도 컷 비율로 맞추기(기본 켬): 칸 높이는 콘티의 컷 길이, 그림은 칸을 꽉 채우게 잘림. 컷마다 pageEdits.fit('ratio'|'img')로 따로 정할 수 있음
+var FIT_RATIO=true;try{FIT_RATIO=localStorage.getItem('rough-fit-ratio')!=='0'}catch(_){}
+const fitRatio=edit=>edit?.fit?edit.fit==='ratio':FIT_RATIO;
+// 칸보다 그림이 세로로 길면 위쪽을 더 남기고(얼굴이 위에 있는 컷이 많음, 넘치는 부분의 25%만 위에서 자름), 가로로 길면 가운데
+function fitImage(im,bx,y,bw,h){if(!im.w||!im.h)return `<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`;
+  const ih=bw*im.h/im.w;if(ih>=h){const top=y-(ih-h)*.25;return `<image href="${im.src}" x="${bx}" y="${top.toFixed(1)}" width="${bw}" height="${ih.toFixed(1)}" preserveAspectRatio="none"/>`}
+  const iw=h*im.w/im.h;return `<image href="${im.src}" x="${(bx-(iw-bw)/2).toFixed(1)}" y="${y}" width="${iw.toFixed(1)}" height="${h}" preserveAspectRatio="none"/>`}
 function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false,sceneEnd=null}={}){let y=40,o='',gaps='',backgrounds='',defs='',lastEnd=null;const multi=panels.length>1;
   let prev=null,handles='',tightGaps='';
-  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=RoughGrammar.merge(edits?.[slot],p);const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
+  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=RoughGrammar.merge(edits?.[slot],p);const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w&&!fitRatio(edit)?bw*im.h/im.w:p.h*bw);
     // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
     if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const blank=!!edit?.blank;const u=im||blank?null:underlay(p);
     // 코드로 그린 러프 그림은 쓰지 않음: 등록 이미지 → 원본 컷 레퍼런스(그림 영역만 잘라) → 빈 칸에 샷·앵글 표시
-    let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:'';
+    let art=im?fitImage(im,bx,y,bw,h):'';
     if(u){const c=u.crop&&u.w?u.crop:null;const vb=c?`${(c[0]*u.w).toFixed(0)} ${(c[1]*u.h).toFixed(0)} ${((c[2]-c[0])*u.w).toFixed(0)} ${((c[3]-c[1])*u.h).toFixed(0)}`:null;
       art=c?`<svg x="${bx}" y="${y}" width="${bw}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${u.src}" width="${u.w}" height="${u.h}" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/></svg>`:`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`}
     else if(!im&&!blank)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;
@@ -2482,7 +2489,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
   // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
-  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">현재 초안을 표시 중이에요 · 컷 프롬프트를 다시 생성할 수 있어요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
@@ -2521,6 +2528,8 @@ function ctGo(i,smooth=true){const L=state.panels.length;if(!L)return;i=Math.max
     const a=e.target.closest('[data-ctauto]');if(a){e.stopPropagation();ctAuto(+a.dataset.ctauto)}});
   // 샷·앵글·감정·길이: 컷 글에 {…}로 적어 씬 글·편집·다시 열기에도 남음
   el.addEventListener('change',e=>{const s=e.target.closest('[data-ctf]');if(!s)return;setCutDir(+s.closest('.ct-edit').dataset.i,s.dataset.ctf,s.value)});
+  el.addEventListener('change',e=>{if(!e.target.matches('[data-ctfit]'))return;const i=+e.target.closest('.ct-edit').dataset.i,k=cutIdxOf(state.panels[i]);if(k<0)return;setCutFit(k,e.target.value);renderConti();toast(`${i+1}번 컷 칸 높이: ${e.target.value==='ratio'?'컷 비율':e.target.value==='img'?'넣은 그림 비율':'작품 설정대로'}`)});
+  el.addEventListener('change',e=>{if(!e.target.matches('[data-fitratio]'))return;setFitRatio(e.target.checked)});
   el.addEventListener('click',e=>{const d=e.target.closest('[data-ctgo]');if(d){if(CT_EMPTY&&$('#conti').querySelector(`.ccard[data-ct="${d.dataset.ctgo}"]`)?.hidden){CT_EMPTY=false;renderConti()}ctGo(+d.dataset.ctgo);return}
     const c=e.target.closest('.ccard');if(c){CT_CUR=+c.dataset.ct;el.querySelectorAll('.ct-dot').forEach(x=>x.classList.toggle('cur',+x.dataset.ctgo===CT_CUR));el.querySelectorAll('.ccard').forEach(x=>x.classList.toggle('cur',x===c))}
     const a=e.target.closest('[data-act="ncopyall"]');if(a){const i=+a.dataset.i;CT_COPIED.add(i);CT_CUR=i;target={kind:'cut',key:String(i)};setTimeout(renderConti,0);toast(`${i+1}번 컷 프롬프트를 복사했어요 · 생성한 그림을 Ctrl+V로 붙여 넣으면 이 컷에 들어가요`,2600)}});
@@ -2740,7 +2749,7 @@ document.addEventListener('change',e=>{const s=e.target.closest('[data-ratioref]
 // 샷·앵글·감정·길이를 이 컷만 바꾸고(컷 글의 {…} 지시로 저장 → 씬·편집·다시 열기에도 남음), 작가 요청(씬별 저장)을 적어 프롬프트를 이 컷만 Claude로 다시 만듦
 function ctEditor(p,i){const L=p.dir||{},has=f=>L[f]!==undefined&&L[f]!==null,sel=(f,list,cur,auto,lab)=>`<label><span>${lab}</span><select data-ctf="${f}" class="${has(f)?'set':''}"><option value="">${has(f)?'↺ 자동으로':`자동 · ${esc(cur??'')}`}</option>${list.map(([l,v])=>`<option value="${esc(v)}"${has(f)&&String(L[f])===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select></label>`;
   const busy=CT_BUSY.has(i);
-  return `<div class="ct-edit" data-i="${i}"><div class="ct-edrow">${sel('shot',RE.SHOTS.map(x=>[x,x]),p.shot,p.auto?.shot,'샷')}${sel('ang',RE.ANGLES.map(x=>[x,x]),p.ang,p.auto?.ang,'앵글')}${sel('emo',CT_EMOS.map(x=>[x,x]),p.emo,p.auto?.emo||p.emo,'감정')}${sel('h',LEN.map(([w,h])=>[w,h]),lenWord(p.h),p.auto?lenWord(p.auto.h):'','길이')}
+  return `<div class="ct-edit" data-i="${i}"><div class="ct-edrow">${sel('shot',RE.SHOTS.map(x=>[x,x]),p.shot,p.auto?.shot,'샷')}${sel('ang',RE.ANGLES.map(x=>[x,x]),p.ang,p.auto?.ang,'앵글')}${sel('emo',CT_EMOS.map(x=>[x,x]),p.emo,p.auto?.emo||p.emo,'감정')}${sel('h',LEN.map(([w,h])=>[w,h]),lenWord(p.h),p.auto?lenWord(p.auto.h):'','길이')}<label><span>칸 높이</span><select data-ctfit><option value="">작품 설정 · ${FIT_RATIO?'컷 비율':'그림 비율'}</option><option value="ratio"${cutEdits()[cutIdxOf(p)]?.fit==='ratio'?' selected':''}>컷 비율(그림은 잘라서 채움)</option><option value="img"${cutEdits()[cutIdxOf(p)]?.fit==='img'?' selected':''}>넣은 그림 비율</option></select></label>
     ${['shot','ang','emo','h'].some(has)?`<button type="button" class="link" data-ctauto="${i}">엔진 값으로</button>`:''}</div>
     <label class="ct-edreq"><span>프롬프트 요청 <small>씬별로 저장 · 컷 프롬프트 생성(씬 전체)에도 같이 보내요</small></span><textarea rows="2" data-ctnote="${i}" maxlength="500" placeholder="예: 비 오는 밤, 역광, 손에 든 편지를 강조 · Ctrl+Enter로 다시 생성">${esc(ctNote(i))}</textarea></label>
     <div class="ct-edact"><span class="ct-edst" aria-live="polite">${esc(CT_MSG[i]||'')}</span><span class="grow"></span><button type="button" class="tpill${busy?' busy':''}" data-ctregen="${i}"${busy?' disabled':''}>${busy?'<i class="spin" aria-hidden="true"></i>생성 중…':'이 컷 프롬프트 다시 생성'}</button></div></div>`}
@@ -2755,3 +2764,8 @@ async function contiRegenCut(i,req){if(CT_BUSY.has(i))return;if(!AIKEY){openKey(
     NAIVIEW='ai';CT_MSG[i]=`✓ ${i+1}번 컷 프롬프트를 새로 만들었어요`;toast(CT_MSG[i],2200)}
   catch(err){console.warn(err);CT_MSG[i]='생성하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요');if(err?.status===401){setKey('',null);openKey(()=>contiRegenCut(i,req))}}
   finally{CT_BUSY.delete(i);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderConti()}}}
+
+// 넣은 그림도 컷 비율로 맞추기: 작품 전체 설정 / 컷 하나(pageEdits.fit)
+function setFitRatio(on){FIT_RATIO=!!on;try{localStorage.setItem('rough-fit-ratio',on?'1':'0')}catch(_){}SA_CACHE?.clear?.();if(VIEW==='layout')renderConti();if(VIEW==='webtoon')renderWebtoon();render?.();
+  toast(on?'그림을 넣은 컷도 컷 비율로 맞춰요 · 그림은 칸에 꽉 채워 잘려요(편집에서 끌어 위치 조정)':'그림을 넣은 컷은 그림 비율대로 칸 높이를 정해요',2600)}
+function setCutFit(slot,v,si=SCUR){const sc=SCENES[si];if(!sc)return;const e=sc.pageEdits||(sc.pageEdits=[]);if(v){(e[slot]||(e[slot]={})).fit=v}else if(e[slot])delete e[slot].fit;saveScenes();SA_CACHE?.clear?.()}

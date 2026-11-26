@@ -1422,3 +1422,5 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .sh .sbfill{margin-left:auto;flex:none}
 .filldlg .fillrow{grid-template-columns:auto minmax(0,1fr);align-items:start}.filldlg .fillrow b{grid-column:2}.filldlg .fillrow textarea{grid-column:2;width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--line2);border-radius:8px;font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;background:var(--bg);color:var(--t1)}
 .filldlg .fillrow textarea{min-height:0!important;height:auto;max-height:220px;field-sizing:content}
+
+#conti .ct-fit{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;color:var(--t2);cursor:pointer}
