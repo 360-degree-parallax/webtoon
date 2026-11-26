@@ -32,7 +32,7 @@ function charCard(c,i){const n=c.name.trim(),im=n&&IMG.char[n],st=n?charStat(n):
       <label class="cf"><span>다른 호칭 <small>쉼표로 구분 · 줄글에서 같은 인물로 찾아요</small></span><input data-ck="aliases" value="${esc(c.aliases||'')}" placeholder="예: 도련님, 에드" spellcheck="false"></label>
       <label class="cf"><span>외형 <small>NovelAI 태그 · 쉼표로 구분 · 비우면 특징 글에서 자동으로 만들어요</small></span><textarea class="ce-tags" data-ck="tags" rows="3" placeholder="${esc(tagEx(c))}" spellcheck="false">${esc(NAITAGS[n]??'')}</textarea></label>
       <label class="cf cf-big"><span>특징 <small data-cnt>${(c.look||'').length}/1000</small></span><textarea data-ck="look" rows="9" maxlength="1000" placeholder="성격, 말투, 버릇, 관계, 태그로 다 못 담는 외형 특징(흉터·분위기·체격) 등을 자유롭게">${esc(c.look||'')}</textarea></label>
-      <div class="ce-foot"><span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span>${n?(INFER_BUSY.has(n)?'<span class="ce-infer busy">외형 추론 중…</span>':`<button type="button" class="link ce-infer" data-act="charinfer" title="구성안·씬 글에서 이 인물이 나오는 대목을 읽고 비어 있는 외형 태그·특징을 채워요">글에서 외형 추론</button>`):''}<span class="grow"></span><button type="button" class="btn" data-act="librevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="libsave">보관함에 저장</button><button type="button" class="btn" data-act="chdel">작품에서 빼기</button></div>
+      <div class="ce-foot"><span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span>${n?(INFER_BUSY.has(n)?'<span class="ce-infer busy">외형 추론 중…</span>':(NAITAGS[n]!=null||String(c.look||'').trim()?`<button type="button" class="link ce-infer" data-act="charinfer" data-redo="1" title="구성안·씬 글을 다시 읽고 외형 태그·특징을 새로 제안해요 · 지금 값과 비교해서 고른 것만 바꿔요">외형 다시 추론</button>`:`<button type="button" class="link ce-infer" data-act="charinfer" title="구성안·씬 글에서 이 인물이 나오는 대목을 읽고 비어 있는 외형 태그·특징을 채워요">글에서 외형 추론</button>`)):''}<span class="grow"></span><button type="button" class="btn" data-act="librevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="libsave">보관함에 저장</button><button type="button" class="btn" data-act="chdel">작품에서 빼기</button></div>
     </div></article>`}
 function updateCard(i){const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`),c=CHARS[i];if(!el||!c)return;const st=libState(c);
   const bd=el.querySelector('[data-badge]');bd.textContent=st==='same'?'보관함과 같음':st==='diff'?'보관함과 다름':'';bd.className='cbadge'+(st==='diff'?' diff':'');bd.hidden=!st;
@@ -113,10 +113,10 @@ $('#chars').addEventListener('click',e=>{const i=cardOf(e);if(i<0)return;const c
   if(e.target.closest('[data-cimgdel]')){e.stopPropagation();if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n);renderSlots();render()}return}
   if(e.target.closest('[data-cimg]')){if(!n){toast('이름을 먼저 정해 주세요');e.target.closest('.cedit').querySelector('[data-ck=name]').focus();return}target={kind:'char',key:n};$('#file').click();return}
   const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
-  if(k==='charinfer'){if(n)inferChars([n]);return}
+  if(k==='charinfer'){if(n)inferChars([n],{redo:!!a.dataset.redo});return}
   if(k==='libsave')libSave(i);
   else if(k==='librevert'){const L=libOf(c);if(L){libApply(L,c);saveChars();compute(false);renderSlots();toast('보관함 버전으로 되돌렸어요')}}
-  else if(k==='chdel'){if(!confirm(`${n||'이 캐릭터'}을(를) 이 작품에서 뺄까요?${c.lib?' 보관함에는 남아 있어요.':' 보관함에 저장하지 않았다면 다시 불러올 수 없어요.'}`))return;if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n)}CHARS.splice(i,1);saveChars();compute(false);renderSlots();toast('작품에서 뺐어요')}});
+  else if(k==='chdel'){if(!confirm(`${n||'이 캐릭터'}을(를) 이 작품에서 뺄까요?${c.lib?' 보관함에는 남아 있어요.':' 보관함에 저장하지 않았다면 다시 불러올 수 없어요.'}`))return;if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n)}CHARS.splice(i,1);if(n&&!CHARS.some(x=>x.name.trim()===n)){delete NAITAGS[n];saveNaiTags();if(ARTGEN.chars[n]!=null){delete ARTGEN.chars[n];delete ARTGEN.looks?.[n];try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}}}saveChars();compute(false);renderSlots();toast('작품에서 뺐어요 · 다시 넣으면 외형을 새로 추론해요')}});
 $('#chars').addEventListener('keydown',e=>{if(e.target.matches('[data-cimg]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.target.click()}});
 for(const ev of ['dragover','dragleave','drop'])$('#chars').addEventListener(ev,e=>{const d=e.target.closest('[data-cimg]');if(!d)return;e.preventDefault();d.classList.toggle('over',ev==='dragover');
   if(ev==='drop'){const i=cardOf(e),n=i>=0&&CHARS[i].name.trim();const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!n){toast('이름을 먼저 정해 주세요');return}if(f)attach(f,{kind:'char',key:n})}});
@@ -132,13 +132,19 @@ function mentionsOf(name,plan){const hit=t=>String(t||'').includes(name),out=[];
   SCENES.forEach((sc,si)=>(sc.cuts||[]).forEach((c,k)=>{if(hit(c)){const prev=sc.cuts[k-1],next=sc.cuts[k+1];out.push(`[씬 ${si+1} ${sc.title||''} · ${k+1}컷] ${[prev&&'(앞) '+String(prev).replace(/\n/g,' / '),String(c).replace(/\n/g,' / '),next&&'(뒤) '+String(next).replace(/\n/g,' / ')].filter(Boolean).join(' ‖ ')}`)}}));
   (plan?.cards||[]).forEach(cd=>(cd.cuts||[]).forEach((c,k)=>{if(hit(c))out.push(`[구성 ${cd.n}번 「${cd.title}」 ${k+1}컷] ${String(c).replace(/\n/g,' / ')}`)}));
   return out.slice(0,40).map(s=>s.slice(0,400))}
-async function inferChars(names,{fresh=false,hints={}}={}){names=names.filter(n=>n&&!INFER_BUSY.has(n));if(!names.length)return;if(!AIKEY){openKey(()=>inferChars(names,{fresh}));return}
+async function inferChars(names,{fresh=false,hints={},redo=false}={}){names=names.filter(n=>n&&!INFER_BUSY.has(n));if(!names.length)return;if(!AIKEY){openKey(()=>inferChars(names,{fresh}));return}
   names.forEach(n=>INFER_BUSY.add(n));if(VIEW==='chars')renderChars();
   const plan=planBrief(),payload={world:worldBrief(),cast:CHARS.filter(c=>c.name.trim()&&!names.includes(c.name.trim())).map(c=>({name:c.name.trim(),gender:c.body,tags:charTags(c).join(', ')})),
     plan:plan&&{prompt:plan.prompt,cards:plan.cards.map(({n,title,purpose})=>({n,title,purpose}))},chars:names.map(n=>({name:n,mentions:mentionsOf(n,plan),...(hints[n]?{note:hints[n]}:{})}))};
   let mod;try{mod=await import('./claude.js');const r=await mod.inferChars(AIKEY,payload);let k=0;
-    for(const x of r.chars){const c=CHARS.find(c=>c.name.trim()===x.name.trim());if(!c)continue;
-      if(fresh&&x.body)c.body=x.body;if(!String(c.look||'').trim()&&x.look)c.look=x.look.trim();if(NAITAGS[c.name.trim()]==null&&x.tags){NAITAGS[c.name.trim()]=x.tags.trim();ARTGEN.chars[c.name.trim()]=x.tags.trim()}k++}
+    ARTGEN.looks||={};const rows=[];
+    for(const x of r.chars){const c=CHARS.find(c=>c.name.trim()===x.name.trim());if(!c)continue;const n=c.name.trim(),curT=NAITAGS[n]??'',curL=String(c.look||'').trim();
+      // 다시 추론: 이미 있는 값은 바로 덮지 않고 지금/새 값을 나란히(직접 고친 값은 체크 해제)
+      if(redo){if(x.tags?.trim()&&x.tags.trim()!==curT)rows.push({who:n,f:'tags',cur:curT,v:x.tags.trim(),on:!curT||ARTGEN.chars[n]===curT,put:v=>{NAITAGS[n]=v;ARTGEN.chars[n]=v}});
+        if(x.look?.trim()&&x.look.trim()!==curL)rows.push({who:n,f:'look',cur:curL,v:x.look.trim(),on:!curL||ARTGEN.looks[n]===curL,put:v=>{c.look=v;ARTGEN.looks[n]=v}});
+        if(x.body&&x.body!==c.body)rows.push({who:n,f:'body',cur:c.body==='male'?'남자':'여자',v:x.body==='male'?'남자':'여자',on:false,put:v=>{c.body=/남/.test(v)?'male':'female'}});continue}
+      if(fresh&&x.body)c.body=x.body;if(!curL&&x.look){c.look=x.look.trim();ARTGEN.looks[n]=c.look}if(NAITAGS[n]==null&&x.tags){NAITAGS[n]=x.tags.trim();ARTGEN.chars[n]=x.tags.trim()}k++}
+    if(redo){if(rows.length)fillDialog(rows,{title:'외형 다시 추론',lead:'구성·씬 글을 다시 읽고 새로 제안했어요. 지금 값과 비교해서 바꿀 것만 체크해요. 직접 고친 값은 체크를 풀어 두었어요.'});else toast('새로 바꿀 만한 값이 없어요');return}
     saveChars();saveNaiTags();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}
     toast(k?`${names.join(', ')} 외형을 구성·씬 글로 채웠어요 · 설정집에서 확인해 주세요`:'채울 외형을 찾지 못했어요',2800)}
   catch(err){console.warn(err?.status||err);toast('외형을 추론하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요'),3000);for(const n of names){const c=CHARS.find(c=>c.name.trim()===n);if(c&&!String(c.look||'').trim()&&hints[n]){c.look=hints[n];saveChars()}}if(err?.status===401){setKey('',null);openKey(()=>inferChars(names,{fresh,hints}))}}
@@ -277,7 +283,7 @@ function fillPayload(){const plan=planBrief();
     world:WORLD.off?null:Object.fromEntries(WF.map(f=>[f,WORLD[f]||''])),
     lore:LORE.map(e=>({name:e.name||'',category:LORE_CAT[e.cat]?.[0]||e.cat||'',keys:e.keys||'',desc:e.desc||'',tags:e.tags||''})).filter(e=>e.name),
     plan:plan&&{prompt:plan.prompt,cards:plan.cards.map(({n,title,purpose})=>({n,title,purpose}))},scenes}}
-const FILL_LABEL={aliases:'다른 호칭',tags:'외형 태그',look:'특징',name:'이름',genre:'장르',era:'시대',tone:'분위기',summary:'요약',detail:'자세한 설정',keys:'키워드',desc:'설명'};
+const FILL_LABEL={body:'성별',aliases:'다른 호칭',tags:'외형 태그',look:'특징',name:'이름',genre:'장르',era:'시대',tone:'분위기',summary:'요약',detail:'자세한 설정',keys:'키워드',desc:'설명'};
 async function fillSetbook(){if(FILL_BUSY)return;if(!AIKEY){openKey(fillSetbook);return}
   const empty=fillPayload();const holes=empty.chars.some(c=>!c.tags||!c.look)||(empty.world&&WF.some(f=>!empty.world[f]))||empty.lore.some(e=>!e.keys||!e.desc||!e.tags);
   if(!holes){toast('비어 있는 칸이 없어요');return}
@@ -294,9 +300,9 @@ async function fillSetbook(){if(FILL_BUSY)return;if(!AIKEY){openKey(fillSetbook)
   catch(err){console.warn(err?.status||err);toast('빈 칸을 채우지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요'),3000);if(err?.status===401){setKey('',null);openKey(fillSetbook)}}
   finally{FILL_BUSY=false;fillBtns()}}
 function fillBtns(t){document.querySelectorAll('[data-act="sbfill"]').forEach(b=>{b.disabled=FILL_BUSY;b.textContent=FILL_BUSY?(t&&/쓰는 중/.test(t)?t.replace('Claude가 ',''):'채우는 중…'):'빈 칸 채우기'})}
-function fillDialog(rows){let d=$('#filldlg');if(!d){d=document.createElement('dialog');d.id='filldlg';d.className='keydlg artdlg filldlg';document.body.appendChild(d)}
-  d.innerHTML=`<h3>설정집 빈 칸 채우기</h3><p>채워진 설정과 구성·씬 글을 근거로 비어 있던 칸만 제안했어요. 고친 뒤 체크한 것만 넣어요.</p>
-  <div class="artcmp">${rows.map((x,n)=>`<label class="artrow fillrow"><input type="checkbox" data-n="${n}" checked><b>${esc(x.who)} · ${FILL_LABEL[x.f]||x.f}</b><textarea data-fv="${n}" rows="${x.v.length>80?3:1}" spellcheck="false">${esc(x.v)}</textarea></label>`).join('')}</div>
+function fillDialog(rows,{title='설정집 빈 칸 채우기',lead='채워진 설정과 구성·씬 글을 근거로 비어 있던 칸만 제안했어요. 고친 뒤 체크한 것만 넣어요.'}={}){let d=$('#filldlg');if(!d){d=document.createElement('dialog');d.id='filldlg';d.className='keydlg artdlg filldlg';document.body.appendChild(d)}
+  d.innerHTML=`<h3>${esc(title)}</h3><p>${esc(lead)}</p>
+  <div class="artcmp">${rows.map((x,n)=>`<label class="artrow fillrow"><input type="checkbox" data-n="${n}"${x.on===false?'':' checked'}><b>${esc(x.who)} · ${FILL_LABEL[x.f]||x.f}</b>${x.cur!=null?`<span class="fillcur">지금: ${esc(x.cur||'(비어 있음)')}</span>`:''}<textarea data-fv="${n}" rows="${x.v.length>80?3:1}" spellcheck="false">${esc(x.v)}</textarea></label>`).join('')}</div>
   <div class="btnrow"><button class="btn" data-r="no">취소</button><button class="btn dark" data-r="go">넣기</button></div>`;
   d.onclick=e=>{if(e.target.closest('textarea'))return;const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;
     if(k==='go'){let n=0;d.querySelectorAll('input[data-n]:checked').forEach(i=>{const x=rows[+i.dataset.n],v=d.querySelector(`[data-fv="${i.dataset.n}"]`).value.trim();if(v){x.put(v);n++}});
