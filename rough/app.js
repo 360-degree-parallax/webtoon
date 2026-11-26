@@ -2889,12 +2889,19 @@ function setCutFit(slot,v,si=SCUR){const sc=SCENES[si];if(!sc)return;const e=sc.
 //   함께 레이어에 그림을 넣으면 그 컷에서는 함께 그림을 쓰고 그 인물들의 개별 레이어는 뺌
 // 인물·함께·소품 그림은 늘 흰색 자동 투명(배경 레이어는 그대로)
 const LAYER_CUT=true;
-// 레이어 기본 크기: 그림 비율과 칸 높이(컷 세로/가로 = p.h)로 폭(%)을 정함. 인물·함께는 샷별로 칸 높이의 몇 %를 차지하고 칸 아래에 붙임(클로즈업·디테일은 가운데)
-const LAYER_HF={설정:.38,전경:.55,전신:.92,중경:.96,클로즈업:1,디테일:.9,SD:.7,'화면 인서트':.8,'효과 배경':.9};
+// 레이어 기본 크기·위치: 연출 DB 실측(rough/layer-fit.js — 샷별 주인물 상자의 칸 대비 높이·아래끝·가로 중심, 두 명이면 왼쪽·오른쪽)
+//   그림 비율과 칸 높이(컷 세로/가로 = p.h)로 폭(%)을 계산. 인물 그림은 넣을 때 투명 여백을 잘라 내서(보이는 인물 = 그림 상자) 실측과 같은 기준
+const LAYER_HF={설정:.26,전경:.45,전신:.74,중경:.67,클로즈업:.88,디테일:.99,SD:.63,'화면 인서트':.61,'효과 배경':.55};
 function fitLayer(x,a,L){if(!a?.w||!a?.h)return{x:x.x,y:x.y,scale:x.scale};const r=L.p.h||1;
   if(x.kind==='prop'){const hf=Math.min(.9,(x.scale/100)*(a.h/a.w)/r);return{x:x.x,y:x.y,scale:Math.round(Math.min(140,hf*r*(a.w/a.h)*100))}}
-  const hf=LAYER_HF[L.p.shot]??.9,mid=L.p.shot==='클로즈업'||L.p.shot==='디테일';
-  return{x:x.x,y:Math.round(mid?50:100-hf*50),scale:Math.max(8,Math.round(Math.min(140,hf*r*(a.w/a.h)*100)))}}
+  const F=(window.RoughLayerFit||{})[L.p.shot]||{},chars=L.chars.length,pair=chars>=2&&F.pair;
+  let hf=(pair?F.pair.h:F.h)??LAYER_HF[L.p.shot]??.67,bottom=(pair?F.pair.bottom:F.bottom)??.98,cx=x.x;
+  if(x.kind==='group'){hf=Math.min(1,F.h??hf);cx=50}
+  else if(pair&&chars===2){const k=L.chars.findIndex(c=>c.key===x.key);cx=Math.round((k===0?F.pair.left:F.pair.right)*100)}
+  else if(chars===1&&F.x!=null)cx=Math.round(F.x*100);
+  // 폭이 칸보다 너무 넓어지면(가로로 긴 그림) 폭 기준으로 줄임
+  let w=hf*r*(a.w/a.h)*100;if(w>(x.kind==='group'?100:95)){w=x.kind==='group'?100:95;hf=w/100*(a.h/a.w)/r}
+  return{x:cx,y:Math.round((bottom-hf/2)*1000)/10,scale:Math.max(8,Math.round(w))}}
 function setLayerMode(on){LAYER_MODE=!!on;try{localStorage.setItem('rough-layer-mode',on?'1':'0')}catch(_){}if(on)SCENES.forEach((_,si)=>syncLayers(si));renderConti();
   // 편집·씬 미리보기도 바로 바꿈(켜면 레이어 배경+인물·소품 레이어, 끄면 한 컷 그림)
   try{SA_CACHE?.clear?.()}catch(_){}if(typeof rerenderCuts==='function')rerenderCuts();if(typeof render==='function')render();if(VIEW==='webtoon')renderWebtoon();window.RoughOverlayPanel?.refresh?.();
@@ -2947,7 +2954,11 @@ function whiteCutout(d,w,h){const px=d.data,N=w*h,seen=new Uint8Array(N),near=k=
   return d}
 async function layerPNG(file,label,cut){const url=URL.createObjectURL(file);try{const im=await loadImg(url);const k=Math.min(1,1536/Math.max(im.naturalWidth,im.naturalHeight));
   const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));const g=c.getContext('2d');g.drawImage(im,0,0,c.width,c.height);
-  if(cut)g.putImageData(whiteCutout(g.getImageData(0,0,c.width,c.height),c.width,c.height),0,0);
+  if(cut){const d=whiteCutout(g.getImageData(0,0,c.width,c.height),c.width,c.height);g.putImageData(d,0,0);
+    // 투명 여백 잘라 내기(보이는 인물·물건 = 그림 상자 → 레이어 크기가 실측 인물 크기와 같은 기준). 2% 여유
+    let x0=c.width,y0=c.height,x1=-1,y1=-1;for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(d.data[(y*c.width+x)*4+3]>24){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+    if(x1>=x0&&y1>=y0&&(x1-x0+1)*(y1-y0+1)<c.width*c.height*.97){const pad=Math.round(Math.max(c.width,c.height)*.02);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(c.width-1,x1+pad);y1=Math.min(c.height-1,y1+pad);
+      const k2=document.createElement('canvas');k2.width=x1-x0+1;k2.height=y1-y0+1;k2.getContext('2d').drawImage(c,x0,y0,k2.width,k2.height,0,0,k2.width,k2.height);return{id:'overlay:'+(crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2)),kind:'overlay',name:label,src:k2.toDataURL('image/png'),w:k2.width,h:k2.height}}}
   return{id:'overlay:'+(crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2)),kind:'overlay',name:label,src:c.toDataURL('image/png'),w:c.width,h:c.height}}finally{URL.revokeObjectURL(url)}}
 // 레이어 그림 넣기: kind bg|char|prop, i=지금 씬 컷 번호
 async function layerPut(file,i,kind,key){if(!file||!file.type.startsWith('image/'))return;const L=layerPlan(SCUR)[i];if(!L)return;const sid=SCENES[SCUR].id;

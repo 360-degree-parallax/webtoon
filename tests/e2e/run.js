@@ -244,7 +244,7 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   await p.waitForTimeout(400);
   const r = await ev(async () => { const sid = SCENES[SCUR].id, LP = layerPlan(SCUR), ed = SCENES[SCUR].pageEdits[LP[0].slot];
     const a = charOf(LP[0], LP[0].chars[0], sid), im = await loadImg(a.src), c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
-    return { ov: (ed.overlays || []).map(v => v.layer + ':' + v.key), corner: g.getImageData(2, 2, 1, 1).data[3], mid: g.getImageData(40, 50, 1, 1).data[3],
+    return { ov: (ed.overlays || []).map(v => v.layer + ':' + v.key), corner: g.getImageData(0, 0, 1, 1).data[3], mid: g.getImageData(Math.floor(im.width / 2), Math.floor(im.height / 2), 1, 1).data[3],
       bg: IMG.lybg[lybId(sid, 0)]?.layerBg != null, same: LP[0].bg.key === LP[1].bg.key, bg1: !!IMG.lybg[lybId(sid, 1)] }; });
   assert(r.ov.includes('char:에드가') && r.ov.includes('prop:회중시계'), '컷 소재에 인물·소품 레이어');
   assert(r.corner === 0 && r.mid === 255, '흰 배경만 투명');
@@ -258,9 +258,10 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   assert(sh.diff && sh.a0 !== sh.a1, '다른 자세는 따로');
   assert(await ev(() => !!document.querySelector('#conti .ccard[data-ct="0"] [data-lypick]')), '다른 컷 그림 고르기');
   // 기본 크기: 그림 비율·칸 높이에 맞춤(인물은 샷별 높이, 칸 아래에 붙임)
-  const fit = await ev(() => { const L = layerPlan(SCUR)[1], v = SCENES[SCUR].pageEdits[L.slot].overlays.find(o => o.layer === 'char'), a = IMG.overlay[v.asset];
-    const hf = {설정: .38, 전경: .55, 전신: .92, 중경: .96, 클로즈업: 1, 디테일: .9}[L.p.shot] ?? .9; return [v.auto, v.scale, Math.round(Math.min(140, hf * L.p.h * a.w / a.h * 100))]; });
-  assert(fit[0] && Math.abs(fit[1] - Math.max(8, fit[2])) <= 1, '인물 레이어 크기가 그림 비율·칸 높이에 맞음');
+  const fit = await ev(() => { const L = layerPlan(SCUR)[1], v = SCENES[SCUR].pageEdits[L.slot].overlays.find(o => o.layer === 'char'), a = IMG.overlay[v.asset], F = RoughLayerFit[L.p.shot];
+    const hf = v.scale / 100 * a.h / a.w / L.p.h; return {auto: v.auto, hf, bottom: v.y / 100 + hf / 2, F, w: a.w, h: a.h}; });
+  assert(fit.auto && fit.F && Math.abs(fit.bottom - (fit.F.bottom)) < .02 && (Math.abs(fit.hf - fit.F.h) < .02 || fit.hf < fit.F.h), `인물 레이어: DB 실측 높이·아래끝에 맞춤 (${JSON.stringify(fit)})`);
+  assert(fit.w < 80 && fit.h < 100, '흰 여백을 지운 뒤 투명 여백도 잘라 냄');
   await ev(() => showView('webtoon')); await p.waitForTimeout(1200);
   // 편집: 레이어를 눌러 고르고 끌어서 옮김
   await ev(() => { if (!pageEditing) document.querySelector('#wedit').click(); }); await p.waitForTimeout(600);
