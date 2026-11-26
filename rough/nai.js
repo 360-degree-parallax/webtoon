@@ -299,36 +299,80 @@
     ].filter(Boolean);
     return L.join('\n\n');
   }
-  // 요소별 레이어: 한 컷을 배경 · 인물마다 · 소품마다 따로 뽑아 겹침(편집에서 레이어로 고정·이동)
-  //   배경: 사람·소품 없이 장소만(컷 크기). 같은 씬에서 장소가 같으면 같은 배경을 여러 컷이 같이 씀(key)
-  //   인물: 흰 단색 배경에 그 인물 하나(나중에 배경을 지워 겹침). 외형 태그는 컷 프롬프트와 같음
-  //   소품: 흰 배경에 물건 하나. 설정집 태그 그대로 → 한 장을 모든 컷이 같이 씀
+  // 요소별 레이어: 한 컷을 배경 · 인물마다(+ 함께 나오는 장면) 따로 뽑아 겹침(편집에서 레이어로 고정·이동)
+  //   배경: 사람 없이 장소만(컷 크기), 늘 따로. 같은 씬에서 장소·앵글이 같으면 같은 배경을 여러 컷이 같이 씀(key)
+  //   인물: 흰 단색 배경에 그 인물 하나. 두 명 이상이면 서로 닿고 마주하는 장면을 그대로 그린 '함께' 레이어도(NovelAI 여러 인물 칸)
+  //   소품: 따로 떼기보다 녹여 넣음 — 인물이 들거나 쥐면 그 인물(과 함께) 레이어에, 놓여 있으면 배경에. 'layer'로 고르면 따로 한 장
   const CUTOUT = ['simple background', 'white background'];
   const LAYER_SHOT = { 설정: [0.18, 1.8], 전경: [0.26, 1.75], 전신: [0.42, 1.7], 중경: [0.62, 1.25], 클로즈업: [0.95, 1], 디테일: [0.8, 1], SD: [0.45, 1.2] };
+  // 두 사람이 닿거나 마주하는 동작 → 함께 레이어 태그
+  const INTERACT = [
+    [['껴안', '안아', '안기', '포옹', '품에'], ['hug']], [['손을 잡', '손잡', '깍지'], ['holding hands']], [['손목'], ["grabbing another's wrist"]],
+    [['입맞', '키스', '입술을 포'], ['kiss']], [['마주', '서로 바라', '눈을 맞', '눈이 마주'], ['face-to-face', 'eye contact']], [['어깨에 손', '어깨를 잡', '어깨에 얹'], ["hand on another's shoulder"]],
+    [['건네', '내민', '건넨'], ['giving', 'reaching out']], [['밀쳐', '밀친', '밀어'], ['pushing']], [['끌어당', '잡아당'], ['pulling']], [['기대', '기댄'], ['leaning on person']],
+    [['업고', '업힌', '업어'], ['piggyback']], [['안아 들', '안아들', '공주님'], ['princess carry']], [['등을 맞', '등을 기'], ['back-to-back']], [['볼을 쓰', '머리를 쓰다'], ['headpat']],
+    [['벽에 밀', '벽치기', '벽에 손'], ['kabedon']], [['멱살'], ['grabbing collar']], [['춤'], ['dancing together']],
+  ];
+  // 소품을 인물이 다루는 동사(소품 이름 바로 뒤 몇 글자 안에서): 있으면 그 인물 레이어에 녹임
+  //   활용형까지(꺼내다→꺼낸·꺼냈, 들다→든, 쥐다→쥔 …)
+  const HOLD = /^.{0,8}?(들|든|쥐|쥔|쥡|꺼내|꺼낸|꺼냈|꺼냅|건네|건넨|건넸|받|내밀|내민|내밉|끼|낀|차고|찬|메고|멘|품|잡|흔들|흔든|보여|보인|들여다|만지|만진|만졌|펼치|펼친|펼쳐|읽|입|쓰고|쓴|두르|두른|감싸|감싼|움켜|움킨|던지|던진|던졌|놓치|놓친|떨어뜨|떨어트|꽂|꽂은|가리키|가리킨|내려놓|올려놓|들어 올|들어올)/;
+  const INTER_TAGS = new Set(INTERACT.flatMap(([, t]) => t).concat(['hug', 'holding hands', "grabbing another's wrist", "hand on another's shoulder"]).filter(t => t !== 'reaching out'));
+  const propHead = t => { const w = String(t || '').toLowerCase().trim().split(/\s+/); return w.length >= 3 ? w.slice(-2).join(' ') : w.length === 2 ? w[1] : w[0] || ''; };
   function layers(o, p, ctx = {}) {
-    const style = splitTags(ctx.style || ''), props = o.props || [];
-    const propTags = new Set(props.flatMap(x => splitTags(x.tags)).map(t => t.toLowerCase()));
-    tagsOf(props.map(x => x.name).join(' '), OBJECT).forEach(t => propTags.add(String(t).toLowerCase()));  // 소품 이름에서 나온 물건 태그(회중시계→clock)도 배경에서 뺌
-    const heads = props.map(x => { const w = String(splitTags(x.tags)[0] || '').toLowerCase().trim().split(/\s+/); return w.length >= 3 ? w.slice(-2).join(' ') : w.length === 2 ? w[1] : w[0] || ''; }).filter(h => h.length >= 4);
-    const keep = t => !propTags.has(tagName(t).toLowerCase()) && !heads.some(h => tagName(t).toLowerCase().includes(h)) && t !== 'negative space' && t !== 'no text';
-    const effect = o.mode === 'effect';
-    const bgTags = effect ? splitTags(o.base) : ['no humans', 'scenery', ...sceneTags(splitTags(o.base), 'scenery').filter(t => !SHOT_ALL.has(tagName(t).toLowerCase()))];
-    const place = (o.place || []).slice().sort().join('+');
-    const bg = { kind: 'bg', label: '배경', key: effect || !place ? `cut${ctx.i ?? 0}` : `${place}|${p.ang || ''}`,
-      prompt: joinTags([...bgTags.filter(keep), 'no text']), size: o.size, shared: !effect && !!place };
-    const [sc, ratio] = LAYER_SHOT[p.shot] || LAYER_SHOT.중경;
+    const style = splitTags(ctx.style || ''), props = o.props || [], act = String(p.act || '');
     const cast = o.layerCast || o.chars, n = Math.max(1, cast.length);
-    // 자세 키: 화풍·흰 배경을 뺀 인물 태그(외형·표정·자세·프레이밍·앵글)를 정렬해 이음 → 같으면 같은 그림을 여러 컷·씬이 같이 씀
+    // 소품마다 어디에 넣을지: ctx.attach(name) = 'auto'|'bg'|'layer'|'char:이름'
+    const attachOf = x => {
+      const want = ctx.attach?.(x.name) || 'auto';
+      if (want !== 'auto') { const nm = want.startsWith('char:') ? want.slice(5) : ''; return want.startsWith('char:') ? (cast.some(c => c.name === nm) ? { to: 'char', name: nm } : { to: 'bg' }) : { to: want }; }
+      const at = act.indexOf(x.name);
+      if (!cast.length || at < 0 || !HOLD.test(act.slice(at + x.name.length))) return { to: 'bg', auto: true };
+      // 문장의 주어(그 컷 주인공)가 다룸. 주인공이 화면에 없으면 소품 앞에 가장 가까이 나온 인물
+      if (cast.some(c => c.name === p.who)) return { to: 'char', name: p.who, auto: true };
+      const before = act.slice(0, at), near = cast.map(c => [c.name, before.lastIndexOf(c.name)]).filter(([, k]) => k >= 0).sort((a, b) => b[1] - a[1])[0];
+      return { to: 'char', name: near ? near[0] : cast[0].name, auto: true };
+    };
+    const propA = props.map(x => ({ ...x, at: attachOf(x) }));
+    const tagsFor = x => splitTags(x.tags).length ? splitTags(x.tags) : [];
+    const allPropTags = new Set(props.flatMap(x => splitTags(x.tags)).map(t => t.toLowerCase()));
+    tagsOf(props.map(x => x.name).join(' '), OBJECT).forEach(t => allPropTags.add(String(t).toLowerCase()));  // 소품 이름에서 나온 물건 태그(회중시계→clock)
+    const heads = props.map(x => propHead(splitTags(x.tags)[0])).filter(h => h.length >= 4);
+    const isProp = t => { const v = tagName(t).toLowerCase(); return allPropTags.has(v) || heads.some(h => v.includes(h)); };
+    const clean = t => t !== 'negative space' && t !== 'no text';
+    const effect = o.mode === 'effect';
+    const bgProps = propA.filter(x => x.at.to === 'bg').flatMap(tagsFor);
+    const bgTags = effect ? splitTags(o.base) : ['no humans', 'scenery', ...sceneTags(splitTags(o.base), 'scenery').filter(t => !SHOT_ALL.has(tagName(t).toLowerCase())).filter(t => !isProp(t)), ...bgProps];
+    const place = (o.place || []).slice().sort().join('+');
+    const bg = { kind: 'bg', label: '배경', key: effect || !place ? `cut${ctx.i ?? 0}` : `${place}|${p.ang || ''}${bgProps.length ? '|' + bgProps.join('+') : ''}`,
+      prompt: joinTags([...bgTags.filter(clean), 'no text']), size: o.size, shared: !effect && !!place };
+    const [sc, ratio] = LAYER_SHOT[p.shot] || LAYER_SHOT.중경;
+    // 자세 키: 화풍·흰 배경을 뺀 인물 태그(외형·표정·자세·든 소품·프레이밍·앵글)를 정렬해 이음 → 같으면 같은 그림을 여러 컷·씬이 같이 씀
     const poseOf = (name, tags) => name + '|' + [...new Set(tags.map(t => tagName(t).toLowerCase()).filter(t => t && !CUTOUT.includes(t) && t !== 'no text' && !style.some(x => tagName(x).toLowerCase() === t)))].sort().join(',');
-    const chars = cast.map((c, k) => { const body = [...splitTags(c.prompt).filter(t => !/^(far away)$/i.test(tagName(t))), ...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || []];
-      return { kind: 'char', label: `인물 ${c.name}`, name: c.name, key: c.name, pose: poseOf(c.name, body),
-      prompt: joinTags([...body, ...CUTOUT, ...style, 'no text']),
-      size: size(ratio), x: Math.round(c.pos.x * 100), y: Math.round(c.pos.y * 100), scale: Math.round(Math.min(95, sc * 100 * (n > 1 ? 0.75 : 1))) }; });
+    const frame = [...(SHOT[p.shot] || []).filter(t => !/scenery|background/.test(t)), ...ANG[p.ang] || []];
+    const held = name => propA.filter(x => x.at.to === 'char' && x.at.name === name);
+    // 개별 인물 레이어에는 둘이 닿는 동작 태그(hug 등)를 뺌 — 함께 레이어의 기본 프롬프트로
+    const bodyOf = c => [...splitTags(c.prompt).filter(t => !/^(far away)$/i.test(tagName(t)) && !isProp(t) && !(cast.length >= 2 && INTER_TAGS.has(tagName(t).toLowerCase()))), ...held(c.name).flatMap(x => [...tagsFor(x), HOLD.test(act.slice(act.indexOf(x.name) + x.name.length)) && /들|든|쥐|쥔|잡|움켜|움킨|흔들|흔든|꺼내|꺼낸|꺼냈/.test(act.slice(act.indexOf(x.name) + x.name.length, act.indexOf(x.name) + x.name.length + 6)) ? 'holding' : ''].filter(Boolean))];
+    const chars = cast.map(c => { const body = [...bodyOf(c), ...frame];
+      return { kind: 'char', label: `인물 ${c.name}`, name: c.name, key: c.name, pose: poseOf(c.name, body), holds: held(c.name).map(x => x.name),
+        prompt: joinTags([...body, ...CUTOUT, ...style, 'no text']),
+        size: size(ratio), x: Math.round(c.pos.x * 100), y: Math.round(c.pos.y * 100), scale: Math.round(Math.min(95, sc * 100 * (n > 1 ? 0.75 : 1))) }; });
+    // 함께: 두 명 이상 — 기본 프롬프트(인원·상호작용·구도) + 인물 칸마다 그 인물 묘사(NovelAI V4.5 여러 인물)
+    let group = null;
+    if (cast.length >= 2) {
+      const names = cast.map(c => c.name), counts = cast.flatMap(c => splitTags(c.prompt).filter(t => COUNT_TAG.test(tagName(t))));
+      const inter = uniq([...tagsOf(act, INTERACT), ...cast.flatMap(c => splitTags(c.prompt).map(tagName).filter(t => INTER_TAGS.has(t.toLowerCase())))]);
+      const parts = cast.map(c => ({ name: c.name, cell: c.pos.cell || pos(c.pos.x, c.pos.y).cell, prompt: joinTags(bodyOf(c).filter(t => !COUNT_TAG.test(tagName(t)))) }));
+      const base = joinTags([...counts, ...inter, ...frame, ...CUTOUT, ...style, 'no text']);
+      group = { kind: 'group', label: `함께 ${names.join('·')}`, names, key: [...names].sort().join('+'), interact: inter,
+        pose: [...names].sort().join('+') + '#' + poseOf('', [base, ...parts.map(x => x.name + ':' + x.prompt)].flatMap(splitTags)),
+        prompt: [base, ...parts.map(x => x.prompt)].join('\n\n'), blocks: [{ title: '기본 프롬프트', text: base }, ...parts.map((x, k) => ({ title: `캐릭터 ${k + 1} · ${x.name} <small>위치 ${x.cell}</small>`, text: x.prompt }))],
+        size: size(Math.max(0.75, ratio * 0.85)), x: 50, y: 50, scale: Math.round(Math.min(95, sc * 100 * 1.35)) };
+    }
     const focus = ['object', 'detail'].includes(o.mode);
-    const propL = props.filter(x => x.tags || x.look).map((x, k) => ({ kind: 'prop', label: `소품 ${x.name}`, name: x.name, key: x.name,
-      prompt: joinTags(['no humans', 'still life', 'object focus', ...splitTags(x.tags), ...CUTOUT, ...style, 'no text']), size: size(1), needsTags: !x.tags,
+    const propL = propA.map((x, k) => ({ kind: 'prop', label: `소품 ${x.name}`, name: x.name, key: x.name, at: x.at, sep: x.at.to === 'layer',
+      prompt: joinTags(['no humans', 'still life', 'object focus', ...tagsFor(x), ...CUTOUT, ...style, 'no text']), size: size(1), needsTags: !x.tags,
       x: focus ? 50 : 30 + (k % 3) * 20, y: focus ? 55 : 78, scale: focus ? 70 : 22 }));
-    return { bg, chars, props: propL };
+    return { bg, chars, group, props: propL };
   }
   const SHOT_ALL = new Set(Object.values(SHOT).flat().concat(['wide shot', 'very wide shot']).map(t => t.toLowerCase()));
   // 칸 이름(A1~E5) → 좌표

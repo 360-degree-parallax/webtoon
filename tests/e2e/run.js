@@ -225,12 +225,19 @@ test('요소별 레이어: 배경·인물·소품 프롬프트 따로 → 넣은
   await p.waitForTimeout(600);
   await ev(() => { LORE.find(x => x.name === '회중시계').tags = 'gold pocket watch'; showView('layout'); }); await p.waitForTimeout(500);
   await p.click('#conti [data-layermode]'); await p.waitForTimeout(400);
-  const rows = await ev(() => [...document.querySelectorAll('#conti .ccard[data-ct="0"] .ly-row')].map(r => [r.dataset.ly, r.dataset.key, r.querySelector('pre').textContent]));
+  const rowsOf = () => ev(() => [...document.querySelectorAll('#conti .ccard[data-ct="0"] .ly-row')].map(r => [r.dataset.ly, r.dataset.key, [...r.querySelectorAll('pre')].map(x => x.textContent).join(' || ')]));
+  let rows = await rowsOf();
   assert(rows.map(r => r[0]).join() === 'prop,char,bg', '소품·인물·배경 줄');
-  const bg = rows[2][2], ch = rows[1][2], pr = rows[0][2];
-  assert(bg.startsWith('no humans, scenery') && !/1boy|gold pocket watch|clock/.test(bg), '배경: 사람·소품 없이');
+  assert(!rows[0][2] && rows[1][2].includes('gold pocket watch') && !/gold pocket watch|clock/.test(rows[2][2]), '꺼내 든 소품은 인물 레이어에 녹여 넣음');
+  const bg = rows[2][2], ch = rows[1][2];
+  assert(bg.startsWith('no humans, scenery') && !/1boy/.test(bg), '배경: 사람 없이');
   assert(ch.includes('white background') && !/hallway/.test(ch), '인물: 흰 배경에 인물만');
-  assert(pr.includes('gold pocket watch') && pr.includes('white background'), '소품: 설정집 태그 그대로');
+  await p.selectOption('#conti .ccard[data-ct="0"] [data-lyatt]', 'bg'); await p.waitForTimeout(300);
+  rows = await rowsOf();
+  assert(rows[2][2].includes('gold pocket watch') && !rows[1][2].includes('gold pocket watch'), '배경에 넣기로 바꾸면 배경 프롬프트로');
+  await p.selectOption('#conti .ccard[data-ct="0"] [data-lyatt]', 'layer'); await p.waitForTimeout(300);
+  rows = await rowsOf(); const pr = rows[0][2];
+  assert(pr.includes('gold pocket watch') && pr.includes('white background') && !rows[1][2].includes('gold pocket watch') && !rows[2][2].includes('gold pocket watch'), '따로 레이어: 설정집 태그 그대로, 인물·배경에서는 뺌');
   // 흰 바탕에 빨간 네모 그림을 만들어 넣기
   const mk = `(async()=>{const c=document.createElement('canvas');c.width=80;c.height=100;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,80,100);g.fillStyle='#c00';g.fillRect(20,20,40,60);const b=await new Promise(r=>c.toBlob(r,'image/png'));return new File([b],'x.png',{type:'image/png'})})()`;
   await ev(`(async()=>{await layerPut(await ${mk},0,'char','에드가');await layerPut(await ${mk},0,'prop','회중시계');await layerPut(await ${mk},0,'bg','')})()`);
@@ -273,6 +280,20 @@ test('회차마다 등장인물 따로 · 설정한 인물은 보관함에 자�
   const kai = await ev(() => LIB.find(x => x.name === '카이').id);
   await p.click(`#libgrid [data-libuse="${kai}"]`); await p.waitForTimeout(400);
   assert(await ev(() => CHARS.some(c => c.name === '카이' && c.look === '흑발, 안경')), '보관함에서 이 회차로 불러오기');
+});
+test('레이어: 두 인물이 함께 나오면 각자 + 함께(상호작용) 레이어', async ({p, ev}) => {
+  await ev(() => { showView('write'); CUTS.splice(0, CUTS.length, '@에드가가 @준을 껴안는다.', '@준이 창가에 서 있다.'); saveScenes(); renderCuts(); cutChanged(); }); await p.waitForTimeout(700);
+  await ev(() => { showView('layout'); setLayerMode(true); }); await p.waitForTimeout(500);
+  const L = await ev(() => { const x = layerPlan(SCUR); return x.map(l => ({g: l.group && {names: l.group.names, blocks: l.group.blocks.map(b => b.text), inter: l.group.interact}, chars: l.chars.map(c => c.prompt)})); });
+  assert(L[0].g && L[0].g.names.length === 2 && L[0].g.inter.includes('hug') && /1boy/.test(L[0].g.blocks[0]) && /1girl/.test(L[0].g.blocks[0]) && L[0].g.blocks.length === 3, '함께: 인원·상호작용 + 인물 칸 둘');
+  assert(L[0].chars.length === 2 && L[0].chars.every(c => !/\bhug\b/.test(c)), '개별 인물에는 상호작용 태그 없음');
+  assert(!L[1].g, '혼자 나오는 컷은 함께 레이어 없음');
+  assert(await ev(() => !!document.querySelector('#conti .ccard[data-ct="0"] .ly-row[data-ly="group"]')), '콘티에 함께 줄');
+  const mk = `(async()=>{const c=document.createElement('canvas');c.width=80;c.height=100;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,80,100);g.fillStyle='#c00';g.fillRect(20,20,40,60);const b=await new Promise(r=>c.toBlob(r,'image/png'));return new File([b],'x.png',{type:'image/png'})})()`;
+  await ev(`(async()=>{const l=layerPlan(SCUR)[0];await layerPut(await ${mk},0,'char','준');await layerPut(await ${mk},0,'group',l.group.key)})()`); await p.waitForTimeout(400);
+  const ov = await ev(() => (SCENES[SCUR].pageEdits[layerPlan(SCUR)[0].slot].overlays || []).map(v => v.layer + ':' + v.key));
+  assert(ov.some(v => v.startsWith('group:')) && !ov.some(v => v.startsWith('char:')), '함께 그림을 넣으면 그 컷은 개별 인물 대신 함께 그림');
+  await ev(() => setLayerMode(false));
 });
 test('레이어: 소품은 나온 컷에만 · 소품 중심 컷에도 인물 레이어', async ({p, ev}) => {
   await p.route('**/claude.js', route => route.fulfill({contentType: 'text/javascript', body:

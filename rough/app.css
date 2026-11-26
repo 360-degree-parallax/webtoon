@@ -1445,3 +1445,5 @@ dialog.rvzoom{padding:0;border:0;background:transparent;max-width:96vw;max-heigh
 .ly-main{min-width:0}.ly-row[data-ly=prop] h4{color:#a16207}.ly-row[data-ly=bg] h4{color:#0f766e}
 .ly-pick{margin-top:4px;font-size:12px;max-width:100%}
 .lcard .lep{color:#2d71f7}
+.ly-gh{font-size:12px;font-weight:600;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px}.ly-gh small{font-weight:400;color:var(--t3,#8a909a)}
+.ly-row[data-ly=group] .ly-gh{color:#7c3aed}.ly-melt{border-style:dotted;color:#a16207;cursor:default}.ly-att{font-size:12px}
