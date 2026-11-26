@@ -84,6 +84,40 @@ test('레퍼런스 필터(인물 수·시선)', async ({p, ev}) => {
   await p.selectOption('select[data-f="gz"]', 'L'); await p.waitForTimeout(300); const gz = await n();
   assert(all > two && two > gz && gz > 0, `필터가 줄어듦 ${all} > ${two} > ${gz}`);
 });
+test('콘티 NovelAI: 화면에 보이는 대상을 컷마다 다르게 구성', async ({p, ev}) => {
+  await ev(() => {
+    SCENES[SCUR].cuts = [
+      '빈 저택 복도에 달빛이 비친다. {설정}\n@에드가 "(화면 밖)여기로 와."',
+      '준의 청동 거울 표면만 보인다. {인서트}',
+      '@준의 손끝이 거울에 닿는다. {인서트}',
+      '복도 끝 멀리 @에드가가 서 있다. {설정}',
+      '섬광과 집중선. {효과만}',
+      '@준은 놀라 @에드가를 돌아본다. {클로즈업}',
+    ];
+    AIN[SCENES[SCUR].id] = {sig: 'old', cuts: [{n: 1, base: '1boy, portrait', chars: []}]};
+    compute(false);
+    showView('layout');
+  });
+  await p.locator('#conti .ccard').first().waitFor();
+  const cards = await ev(() => [...document.querySelectorAll('#conti .ccard')].map(c => ({
+    meta: c.querySelector('.ct-beat small').textContent,
+    prompts: [...c.querySelectorAll('.ct-prompt pre')].map(pre => pre.textContent),
+  })));
+  assert(cards.length === 6, '컷 수');
+  assert(cards[0].meta.startsWith('배경 ·') && /^(no humans, scenery).*hallway.*moonlight/.test(cards[0].prompts[0]) && cards[0].prompts.length === 1, '화면 밖 화자와 구형 프롬프트 제외');
+  assert(/^no humans, mirror, object focus/.test(cards[1].prompts[0]) && cards[1].prompts[0].includes('bronze') && cards[1].prompts.length === 1, '소유자 없이 소품과 재질');
+  assert(cards[2].prompts[0].startsWith('hands focus, head out of frame') && cards[2].prompts.length === 1, '신체 디테일에서 외형 전체 제외');
+  assert(/^indoors, hallway, scenery, wide shot/.test(cards[3].prompts[0]) && /1boy, far away/.test(cards[3].prompts[1]), '장소 먼저, 인물은 원경');
+  assert(cards[4].prompts[0].startsWith('no humans, abstract background, radial lines') && cards[4].prompts.length === 1, '효과만 표시');
+  assert(cards[5].prompts.length === 3 && cards[5].prompts[0].includes('face focus'), '인물마다 개별 캐릭터 칸');
+  assert(await ev(() => {
+    const output = RoughNAI.refine(naiRuleCuts()[0].o, {
+      base: '1boy, portrait, black hair, stone floor',
+      chars: [{name: '에드가', cell: 'A1', prompt: '1boy'}],
+    });
+    return output.base.includes('stone floor') && !/1boy|portrait|black hair/.test(output.base) && !output.chars.length;
+  }), 'Claude 결과에도 배경 컷 초점 유지');
+});
 test('판정 화면: 큐·선택지 설명·그림 분석', async ({p, ev}) => {
   await p.click('#gReview'); await p.waitForTimeout(1500);
   assert(await ev(() => /\/\d{3,}/.test(document.querySelector('.rvn')?.textContent || '')), '판정 수');

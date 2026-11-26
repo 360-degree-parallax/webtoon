@@ -85,19 +85,17 @@ export async function refine(apiKey, payload, { onStatus } = {}) {
 }
 
 // NovelAI Diffusion V4.5 Full: 기본 프롬프트 + 캐릭터 프롬프트(위치)를 Danbooru 태그로 다시 짠다
-const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 컷을 뽑는 프롬프트 엔지니어다.
-입력은 한 씬의 컷 목록이다. 샷·앵글·감정·해상도는 연출 엔진이 이미 정했으니 그대로 지킨다. draft는 규칙으로 만든 태그 초안이다.
-씬 전체를 읽고 추론해서, 컷마다 NovelAI 화면 칸에 그대로 붙여 넣을 태그를 다시 짠다.
+const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 한 컷씩을 그리는 프롬프트를 쓴다. 같은 씬의 다른 컷은 연속성을 확인하는 데 사용한다. draft에 이미 정해진 프레이밍과 인원은 유지한다.
 
-규칙
-- 태그는 Danbooru 태그(영어, 소문자, 쉼표로 구분). 문장 금지. 가중치가 필요하면 V4.5 문법 "1.2::tag::"만 쓴다(과용 금지, 컷당 1~2개).
-- base(기본 프롬프트): 인원 태그(1girl, 1boy, 2girls…, 인물이 없으면 no humans) → 샷·구도(close-up, upper body, full body, wide shot, from above, from below, dutch angle 등) → 장소·배경 소품 → 시간대·빛·날씨 → 분위기 → 마지막에 입력 style 태그를 그대로.
-- chars(캐릭터 프롬프트, 최대 6명): 컷에 보이는 인물만. 각자 1girl/1boy로 시작 → 외형 태그(입력 tags를 기본으로, 컷 안에서 보이는 의상·소품으로 보강) → 표정 → 자세·동작·시선(looking at another, looking back 등). 인물 사이 상호작용은 해당 캐릭터 쪽에 쓴다(예: grabbing another's wrist).
-- cell(캐릭터 위치): 5×5 칸 A~E(가로, 왼쪽→오른쪽) 1~5(세로, 위→아래). 컷 사이에서 인물의 좌우 위치가 뒤바뀌지 않게(180도 선) 유지하고, 클로즈업은 C3 근처, 넓은 샷은 아래쪽(4~5행)에 둔다.
-- 연속성: 앞 컷에서 든 소품, 옷, 머리 모양, 빛 방향은 다음 컷에도 같은 태그로 남긴다. 원문과 모순되는 걸 지어내지 않는다.
-- 디테일(인서트) 컷은 얼굴 대신 손·소품에 초점(hands focus, close-up, head out of frame 등)을 둔다.
-- 글자·말풍선 관련 태그는 넣지 않는다(제외 칸은 쓰지 않음). 대사가 있으면 base에 negative space 정도만.
-- world(세계관 개요)의 시대·장르·분위기와 lore(이 씬에 나오는 설정 항목: 장소·세력·물건·용어·역사·규칙)의 설명을 읽고, 배경·소품·의상·조명 태그를 그 세계에 맞게 고른다. lore의 tags는 해당 항목이 나오는 컷에 살린다. 세계관과 어긋나는 현대 소품 등은 넣지 않는다.`;
+컷의 focus에 맞춰 base와 chars를 작성한다.
+- scenery: no humans, scenery. 화면에 보이는 공간, 깊이, 전경·후경, 건축, 시간대와 빛을 구체화한다. 화면 밖 화자, 나레이션에 언급된 인물, 이전 컷 인물은 넣지 않는다. chars는 빈 배열.
+- distant: 장소와 넓은 프레임을 먼저 쓴다. 인물은 복도 끝, 길 건너편 등 작은 크기와 위치로 묘사한다. 인물 클로즈업·헤어·눈동자·표정을 강조하지 않는다. draft.chars의 인원과 원경 거리를 유지한다.
+- object: no humans, 핵심 소품, object focus, close-up. 소품의 재질·표면·형태·빛을 묘사한다. 소유자, 손, 얼굴, 거울에 비친 인물을 추가하지 않는다. chars는 빈 배열.
+- detail: extreme close-up. 화면에 보이는 신체 부위와 닿는 물체·동작만 쓴다. 손발 샷은 head out of frame. 외형 전체를 덧붙이지 않는다. chars는 빈 배열.
+- effect: no humans, abstract background. 인물이나 실제 장소의 묘사 없이 색, 빛, 선의 방향과 질감을 쓴다. chars는 빈 배열.
+- character: base에는 인원·프레이밍·공간·조명. 외형·표정·동작·시선은 캐릭터마다 분리한다. draft.chars에서 화면에 보이는 인물만 사용한다. 등록 인물이 없는 경우 컷에 보이는 사람의 동작을 base에 쓴다. cell은 A~E(좌→우), 1~5(상→하)이며 원문 위치와 연속성을 따른다.
+
+영어 소문자 태그를 쉼표와 공백으로 구분한다. 핵심 시각 요소를 앞에 둔다. 물체 배치나 빛의 방향에 필요하면 짧은 영문 구절을 추가한다. 샷·앵글·해상도는 입력을 따른다. world/lore의 정보는 화면에 드러나는 요소만 쓴다. 대사·나레이션·효과음은 이미지에 쓰지 않는다. 사용자가 정한 화풍은 기본 프롬프트 뒤에 둔다.`;
 const SCHEMA_NAI = {
   type: 'object',
   properties: {
@@ -126,7 +124,7 @@ const SCHEMA_NAI = {
   required: ['cuts'],
   additionalProperties: false,
 };
-// payload: { title, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
+// payload: { title, world:{name, genre, era, tone, summary, detail, tags}, lore:[{name, category, keywords, description, tags}], style, chars:[{name, gender, tags, look}], cuts:[{n, size, focus, shot, angle, emotion, intensity, peak, role, trans, gapAfter, who, action, dialogs, caption, sfx, story, draft:{base, chars:[{name, cell, prompt}]}}] }
 export async function refineNai(apiKey, payload, { onStatus } = {}) {
   const r = await run(apiKey, SYSTEM_NAI, SCHEMA_NAI, `다음 씬의 NovelAI V4.5 태그를 다시 짜줘.\n\n${JSON.stringify(payload, null, 1)}`, onStatus);
   return { cuts: r.out.cuts, model: r.model, usage: r.usage };
