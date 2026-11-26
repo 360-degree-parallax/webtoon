@@ -86,14 +86,14 @@ test('레퍼런스 필터(인물 수·시선)', async ({p, ev}) => {
 });
 test('콘티 NovelAI: 화면에 보이는 대상을 컷마다 다르게 구성', async ({p, ev}) => {
   await ev(() => {
-    SCENES[SCUR].cuts = [
+    CUTS.splice(0, CUTS.length,
       '빈 저택 복도에 달빛이 비친다. {설정}\n@에드가 "(화면 밖)여기로 와."',
       '준의 청동 거울 표면만 보인다. {인서트}',
       '@준의 손끝이 거울에 닿는다. {인서트}',
       '복도 끝 멀리 @에드가가 서 있다. {설정}',
       '섬광과 집중선. {효과만}',
       '@준은 놀라 @에드가를 돌아본다. {클로즈업}',
-    ];
+    );
     AIN[SCENES[SCUR].id] = {sig: 'old', cuts: [{n: 1, base: '1boy, portrait', chars: []}]};
     compute(false);
     showView('layout');
