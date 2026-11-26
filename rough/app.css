@@ -32,6 +32,9 @@ svg.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .gnb{position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;gap:8px;padding:0 24px;background:var(--bg);border-bottom:1px solid var(--line)}
 .wordmark{font-size:19px;font-weight:800;letter-spacing:-.01em}
 .wordmark span{font-weight:500;color:var(--t2);font-size:14px;margin-left:10px}
+/* 상단 작품 제목: 로고 옆에서 바로 고침 */
+.gtitle{margin-left:12px;min-width:80px;height:34px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:none;color:var(--t1);font:inherit;font-size:15px;font-weight:600;outline:none;text-overflow:ellipsis}
+.gtitle:hover{border-color:var(--line2)}.gtitle:focus{border-color:var(--blue,#2d71f7);background:var(--bg)}
 .gnb .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .ib{width:40px;height:40px;border-radius:8px;display:grid;place-items:center}
 .ib:hover{background:var(--hover)}
@@ -552,7 +555,7 @@ table.db img{width:40px;height:52px;object-fit:cover;object-position:top;border-
 @media(max-width:1100px){.dbgrid{grid-template-columns:1fr}.dbside{position:static;max-height:none}}
 @media(max-width:1180px){.page{grid-template-columns:minmax(0,1fr) 340px;gap:32px;padding:0 24px}.tr{grid-template-columns:28px minmax(0,1fr) 70px 86px 80px 80px 64px 56px;}}
 @media(max-width:900px){.page{grid-template-columns:1fr}.pv{position:relative;height:auto;padding-top:0}.canvas{max-height:80vh}}
-@media(max-width:640px){.page{padding:0 16px}.gnb{padding:0 12px}.wordmark span,.gnb .btn:not(.dark){display:none}.tr.head{display:none}}
+@media(max-width:640px){.page{padding:0 16px}.gnb{padding:0 12px}.wordmark span,.gnb .btn:not(.dark){display:none}.gtitle{max-width:40vw;font-size:14px}.tr.head{display:none}}
 @media(max-width:640px){
   .wrap{padding:24px 16px 64px}
   .main{padding-top:24px}

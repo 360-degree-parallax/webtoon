@@ -23,13 +23,17 @@ function closeXMenu(){const m=$('#wxmenu');if(m&&!m.hidden){m.hidden=true;$('#we
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#wxmenu').hidden){closeXMenu();$('#wexport').focus()}});
 document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switchScene(+e.target.value)});
 const WMODE='final';  // 편집 화면은 늘 완성본(등록 그림, 없으면 레퍼런스). 완성본/러프 전환은 뺌
-// 작품 제목: 직접 적으면 그 값으로 고정. 비어 있으면 세계관 이름 → 첫 씬 제목을 대신 보여 줌(흐린 글씨). 예전 예시 문구는 빈 것으로 침
-const OLD_SAMPLE_TITLE='녹빛자정의 연인 · 예시';
-try{const v=localStorage.getItem('rough-work-title')||'';$('#wtitle').value=v===OLD_SAMPLE_TITLE?'':v}catch(_){}
-function workTitleAuto(){const w=typeof WORLD!=='undefined'&&WORLD&&!WORLD.off?(WORLD.name||'').trim():'';return w||(SCENES?.[0]?.title||'').trim()||'제목 없음'}
-function workTitle(){return ($('#wtitle')?.value||'').trim()||workTitleAuto()}
-function syncWorkTitle(){const el=$('#wtitle');if(!el)return;el.placeholder=workTitleAuto();el.title=el.value.trim()?'작품 제목 · 지우면 세계관 이름을 대신 보여 줘요':'작품 제목 · 비어 있어서 세계관 이름(없으면 첫 씬 제목)을 보여 주는 중 · 눌러서 직접 적어요'}
-$('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}syncWorkTitle()});
+// 작품 제목: 상단 바(로고 옆)와 편집 화면 큰 제목 두 곳에서 같은 값을 고침. 기본은 '새 작품 1'(예전 예시 문구도 기본으로 바꿈)
+const OLD_SAMPLE_TITLE='녹빛자정의 연인 · 예시',DEF_TITLE='새 작품 1';
+const TITLE_ELS=()=>['#gtitle','#wtitle'].map(q=>$(q)).filter(Boolean);
+{let v=DEF_TITLE;try{const s=localStorage.getItem('rough-work-title');if(s!=null&&s!==OLD_SAMPLE_TITLE)v=s}catch(_){}TITLE_ELS().forEach(el=>el.value=v)}
+function workTitleAuto(){return DEF_TITLE}
+function workTitle(){return ($('#gtitle')?.value||$('#wtitle')?.value||'').trim()||DEF_TITLE}
+// 상단 입력칸은 글자 수만큼 폭을 맞춤
+function fitTitle(el){el.style.width=Math.min(360,Math.max(80,(el.value||el.placeholder).length*15+24))+'px'}
+function syncWorkTitle(src){TITLE_ELS().forEach(el=>{if(src&&el!==src&&el.value!==src.value)el.value=src.value;el.placeholder=DEF_TITLE;el.title='작품 제목 · 눌러서 고쳐요(저장 이름·내보내기 파일 이름에도 쓰여요)'});const g=$('#gtitle');if(g)fitTitle(g)}
+TITLE_ELS().forEach(el=>{el.addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}syncWorkTitle(e.target)});
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});el.addEventListener('blur',e=>{if(!e.target.value.trim()){e.target.value=DEF_TITLE;try{localStorage.setItem('rough-work-title',DEF_TITLE)}catch(_){}syncWorkTitle(e.target)}})});
 syncWorkTitle();
 // 다른 씬의 컷 계산은 글·고른 레퍼런스·고정값이 같으면 다시 돌리지 않음(레이어 패널·씬 경계 색이 컷마다 불러 무거웠음)
 var SP_CACHE=new Map(),SP_FRESH=null;  // SP_FRESH: 이번 작업 안에서 이미 확인한 씬(같은 작업 안에서 수백 번 불려 확인 비용도 컸음)
