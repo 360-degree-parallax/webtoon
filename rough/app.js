@@ -497,13 +497,20 @@ function panelBox(p,i,multi){const ws=W-60;if(!multi)return{x:30,w:ws,frame:true
   if(p.shot==='설정'||p.shot==='효과 배경')return{x:0,w:W,frame:false};
   if(p.shot==='디테일'){const w=Math.round(ws*.72);return{x:p.side==='left'?30:30+ws-w,w,frame:true}}
   return{x:30,w:ws,frame:true}}
+// 넣은 그림도 컷 비율로 맞추기(기본 켬): 칸 높이는 콘티의 컷 길이, 그림은 칸을 꽉 채우게 잘림. 컷마다 pageEdits.fit('ratio'|'img')로 따로 정할 수 있음
+var FIT_RATIO=true;try{FIT_RATIO=localStorage.getItem('rough-fit-ratio')!=='0'}catch(_){}
+const fitRatio=edit=>edit?.fit?edit.fit==='ratio':FIT_RATIO;
+// 칸보다 그림이 세로로 길면 위쪽을 더 남기고(얼굴이 위에 있는 컷이 많음, 넘치는 부분의 25%만 위에서 자름), 가로로 길면 가운데
+function fitImage(im,bx,y,bw,h){if(!im.w||!im.h)return `<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`;
+  const ih=bw*im.h/im.w;if(ih>=h){const top=y-(ih-h)*.25;return `<image href="${im.src}" x="${bx}" y="${top.toFixed(1)}" width="${bw}" height="${ih.toFixed(1)}" preserveAspectRatio="none"/>`}
+  const iw=h*im.w/im.h;return `<image href="${im.src}" x="${(bx-(iw-bw)/2).toFixed(1)}" y="${y}" width="${iw.toFixed(1)}" height="${h}" preserveAspectRatio="none"/>`}
 function renderSVG(panels,sel=-1,pre='c',nums=true,imgs=null,clean=false,{edits,interactive=false,rough=false,sceneEnd=null}={}){let y=40,o='',gaps='',backgrounds='',defs='',lastEnd=null;const multi=panels.length>1;
   let prev=null,handles='',tightGaps='';
-  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=RoughGrammar.merge(edits?.[slot],p);const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w?bw*im.h/im.w:p.h*bw);
+  panels.forEach((p,i)=>{const slot=cutSlot(p,i),edit=RoughGrammar.merge(edits?.[slot],p);const im=imgs&&imgs[i];const B=panelBox(p,i,multi);let bx=B.x,bw=B.w;let h=Math.round(im&&im.w&&!fitRatio(edit)?bw*im.h/im.w:p.h*bw);
     // 편집 화면에서 끌어 바꾼 칸 크기(x·폭·높이)
     if(edit?.frame){bx=edit.frame.x;bw=edit.frame.w;h=edit.frame.h}const on=i===sel;const blank=!!edit?.blank;const u=im||blank?null:underlay(p);
     // 코드로 그린 러프 그림은 쓰지 않음: 등록 이미지 → 원본 컷 레퍼런스(그림 영역만 잘라) → 빈 칸에 샷·앵글 표시
-    let art=im?`<image href="${im.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:'';
+    let art=im?fitImage(im,bx,y,bw,h):'';
     if(u){const c=u.crop&&u.w?u.crop:null;const vb=c?`${(c[0]*u.w).toFixed(0)} ${(c[1]*u.h).toFixed(0)} ${((c[2]-c[0])*u.w).toFixed(0)} ${((c[3]-c[1])*u.h).toFixed(0)}`:null;
       art=c?`<svg x="${bx}" y="${y}" width="${bw}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${u.src}" width="${u.w}" height="${u.h}" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/></svg>`:`<image href="${u.src}" x="${bx}" y="${y}" width="${bw}" height="${h}" preserveAspectRatio="xMidYMid slice" opacity="${u.op}"${u.color?'':' filter="url(#gs)"'}/>`}
     else if(!im&&!blank)art=`<text x="${bx+bw/2}" y="${y+h/2+6}" font-size="16" font-weight="600" text-anchor="middle" fill="#b6bac2">${esc(p.shot||'')} · ${esc(p.ang||'')}</text>`;
@@ -682,19 +689,26 @@ async function attachCuts(files,from){files=[...files].filter(f=>f.type.startsWi
 // ---------- 인물 설정 ----------
 const NOTP=/하늘|거리|배경|풍경|장소|정원|복도|방$|집$|도시|건물|골목|숲|바다|교실/;
 let CHARS=[];
-const DEFAULT_CHARS=[{name:'에드가',aliases:'',body:'male',look:'검은 머리를 넘긴 짧은 머리, 초록 눈, 검은 연미복과 흰 나비넥타이 차림의 하인'},{name:'준',aliases:'',body:'female',look:'밤색 머리를 하나로 묶은 하녀, 갈색 눈, 앞치마 차림'}];
-try{const v=localStorage.getItem('rough-chars');CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){CHARS=DEFAULT_CHARS.map(c=>({...c}))}
-// 예전 기본 외형(금발)은 기본 사진(검은 머리)과 달라서, 손대지 않은 기본 문구만 새 문구로
-CHARS.forEach(c=>{if(c.name==='에드가'&&c.look==='금발 짧은 머리, 초록 눈, 검은 연미복과 흰 장갑을 낀 하인')c.look=DEFAULT_CHARS[0].look});
+const DEFAULT_CHARS=[{name:'에드가',aliases:'',body:'male',look:'저택의 수석 하인. 늘 존댓말을 쓰고 표정 변화가 적다. 감정을 드러내지 않으려 하지만 준 앞에서는 말끝이 흐려진다. 생각할 때 장갑 낀 손끝을 만지는 버릇이 있다. 키가 크고 자세가 곧다.'},{name:'준',aliases:'',body:'female',look:'저택에 들어온 지 얼마 안 된 하녀. 밝고 말이 빠르며 감정이 얼굴에 그대로 드러난다. 실수가 잦지만 금방 털고 일어난다. 에드가를 어려워하면서도 자꾸 말을 건다.'}];
+// 기본 인물의 외형 태그(NovelAI) — 처음 열었을 때만 채움
+const DEFAULT_TAGS={'에드가':'black hair, short hair, slicked back hair, green eyes, tall, butler, black tailcoat, white bowtie, white gloves','준':'brown hair, long hair, ponytail, brown eyes, maid, maid headdress, black dress, white apron'};
+// 예전 기본 문구(외형을 글로 적던 시절)를 손대지 않았으면 새 특징 문구로 바꾸고 태그를 채운다
+const OLD_DEFAULT_LOOK={'에드가':['금발 짧은 머리, 초록 눈, 검은 연미복과 흰 장갑을 낀 하인','검은 머리를 넘긴 짧은 머리, 초록 눈, 검은 연미복과 흰 나비넥타이 차림의 하인'],'준':['밤색 머리를 하나로 묶은 하녀, 갈색 눈, 앞치마 차림']};
+let FRESH_CHARS=false;
+try{const v=localStorage.getItem('rough-chars');FRESH_CHARS=!v;CHARS=v?JSON.parse(v):DEFAULT_CHARS.map(c=>({...c}))}catch(_){FRESH_CHARS=true;CHARS=DEFAULT_CHARS.map(c=>({...c}))}
+const OLD_DEFAULT_HIT=[];CHARS.forEach(c=>{if((OLD_DEFAULT_LOOK[c.name]||[]).includes(c.look)){c.look=DEFAULT_CHARS.find(d=>d.name===c.name).look;OLD_DEFAULT_HIT.push(c.name)}});
 function saveChars(){try{localStorage.setItem('rough-chars',JSON.stringify(CHARS))}catch(_){}}
 function engineChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),aliases:String(c.aliases||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean)}))}
 // 등장인물 카드 (캐릭터챗 프로필 카드 형태) + 프로필 편집 창
 var NAITAGS;try{NAITAGS=JSON.parse(localStorage.getItem('rough-nai-tags')||'{}')}catch(_){NAITAGS={}}
 const saveNaiTags=()=>{try{localStorage.setItem('rough-nai-tags',JSON.stringify(NAITAGS))}catch(_){}};
+{const fill=n=>{if(DEFAULT_TAGS[n]&&!NAITAGS[n])NAITAGS[n]=DEFAULT_TAGS[n]};if(FRESH_CHARS)CHARS.forEach(c=>fill(c.name));OLD_DEFAULT_HIT.forEach(fill);if(FRESH_CHARS||OLD_DEFAULT_HIT.length){saveNaiTags();saveChars()}}
 const hueOf=n=>{let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))%360;return h};
 const avBg=n=>`hsl(${hueOf(n)} 32% 52%)`;
 function charTags(c){return (NAITAGS[c.name]??window.RoughNAI.lookTags(c.look).join(', ')).split(',').map(t=>t.trim()).filter(Boolean)}
 function charStat(name){const bs=RE.parseCuts(CUTS,engineChars());return{cuts:bs.filter(b=>b.who===name||(b.act||'').includes(name)).length,lines:bs.reduce((a,b)=>a+(b.dialogs||[]).filter(d=>d.who===name).length,0)}}
+// 외형 칸 예시: NovelAI 태그 형태(성별에 맞춰)
+const tagEx=c=>c.body==='male'?'예: 1boy, black hair, short hair, slicked back hair, green eyes, tall, tailcoat, white bowtie':'예: 1girl, brown hair, long hair, ponytail, brown eyes, maid, apron, white headdress';
 function charCard(c,i){const n=c.name.trim(),im=n&&IMG.char[n],st=n?charStat(n):{cuts:0,lines:0};
   return `<article class="cedit" data-ci="${i}" data-old="${esc(n)}">
     <div class="ce-side"><div class="drop ce-img${im?' has':''}" data-cimg tabindex="0" role="button" aria-label="${esc(n||'캐릭터')} 대표 이미지" style="${im?'':`background:${avBg(n||'?')}`}">${im?`<img src="${im.src}" alt=""><button class="x" data-cimgdel aria-label="이미지 지우기">×</button>`:`<span class="ini">${esc((n||'?').slice(0,1))}</span><small>+ 대표 이미지</small>`}</div>
@@ -702,14 +716,14 @@ function charCard(c,i){const n=c.name.trim(),im=n&&IMG.char[n],st=n?charStat(n):
     <div class="ce-f">
       <div class="ce-top"><input class="ce-name" data-ck="name" value="${esc(c.name)}" maxlength="20" placeholder="이름" aria-label="이름" spellcheck="false"><div class="seg3">${[['female','여자'],['male','남자']].map(([v,l])=>`<button type="button" data-cbody="${v}" aria-pressed="${c.body===v}">${l}</button>`).join('')}</div><span class="cbadge" data-badge></span></div>
       <label class="cf"><span>다른 호칭 <small>쉼표로 구분 · 줄글에서 같은 인물로 찾아요</small></span><input data-ck="aliases" value="${esc(c.aliases||'')}" placeholder="예: 도련님, 에드" spellcheck="false"></label>
-      <label class="cf"><span>외형 <small data-cnt>${(c.look||'').length}/1000</small></span><textarea data-ck="look" rows="4" maxlength="1000" placeholder="머리 모양·색, 눈, 체격, 옷차림, 특징">${esc(c.look||'')}</textarea></label>
-      <label class="cf"><span>NovelAI 태그 <small>비우면 외형에서 자동으로 만들어요</small></span><input data-ck="tags" value="${esc(NAITAGS[n]??'')}" placeholder="${esc(window.RoughNAI.lookTags(c.look).join(', ')||'blonde hair, short hair, green eyes')}" spellcheck="false"></label>
-      <div class="ce-foot"><span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span><span class="grow"></span><button type="button" class="btn" data-act="librevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="libsave">보관함에 저장</button><button type="button" class="btn" data-act="chdel">작품에서 빼기</button></div>
+      <label class="cf"><span>외형 <small>NovelAI 태그 · 쉼표로 구분 · 비우면 특징 글에서 자동으로 만들어요</small></span><textarea class="ce-tags" data-ck="tags" rows="3" placeholder="${esc(tagEx(c))}" spellcheck="false">${esc(NAITAGS[n]??'')}</textarea></label>
+      <label class="cf cf-big"><span>특징 <small data-cnt>${(c.look||'').length}/1000</small></span><textarea data-ck="look" rows="9" maxlength="1000" placeholder="성격, 말투, 버릇, 관계, 태그로 다 못 담는 외형 특징(흉터·분위기·체격) 등을 자유롭게">${esc(c.look||'')}</textarea></label>
+      <div class="ce-foot"><span class="cstat">이 씬 ${st.cuts}컷 · 대사 ${st.lines}</span>${n?(INFER_BUSY.has(n)?'<span class="ce-infer busy">외형 추론 중…</span>':`<button type="button" class="link ce-infer" data-act="charinfer" title="구성안·씬 글에서 이 인물이 나오는 대목을 읽고 비어 있는 외형 태그·특징을 채워요">글에서 외형 추론</button>`):''}<span class="grow"></span><button type="button" class="btn" data-act="librevert" hidden>보관함 버전으로</button><button type="button" class="btn" data-act="libsave">보관함에 저장</button><button type="button" class="btn" data-act="chdel">작품에서 빼기</button></div>
     </div></article>`}
 function updateCard(i){const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`),c=CHARS[i];if(!el||!c)return;const st=libState(c);
   const bd=el.querySelector('[data-badge]');bd.textContent=st==='same'?'보관함과 같음':st==='diff'?'보관함과 다름':'';bd.className='cbadge'+(st==='diff'?' diff':'');bd.hidden=!st;
   const sv=el.querySelector('[data-act=libsave]');sv.textContent=st?'보관함 갱신':'보관함에 저장';sv.disabled=st==='same';el.querySelector('[data-act=librevert]').hidden=st!=='diff';
-  el.querySelector('[data-cnt]').textContent=`${(c.look||'').length}/1000`;el.querySelector('[data-ck=tags]').placeholder=window.RoughNAI.lookTags(c.look).join(', ')||'blonde hair, short hair, green eyes';
+  el.querySelector('[data-cnt]').textContent=`${(c.look||'').length}/1000`;el.querySelector('[data-ck=tags]').placeholder=tagEx(c);
   const n=c.name.trim();if(!IMG.char[n]){const d=el.querySelector('[data-cimg]');d.style.background=avBg(n||'?');const ini=d.querySelector('.ini');if(ini)ini.textContent=(n||'?').slice(0,1)}}
 function updateCastStat(){const k=CHARS.filter(c=>libState(c)==='same').length,d=CHARS.filter(c=>libState(c)==='diff').length;$('#castst').textContent=`${CHARS.length}명 · 보관함 저장 ${k}${d?` · 보관함과 다름 ${d}`:''}`}
 function renderChars(){
@@ -785,14 +799,36 @@ $('#chars').addEventListener('click',e=>{const i=cardOf(e);if(i<0)return;const c
   if(e.target.closest('[data-cimgdel]')){e.stopPropagation();if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n);renderSlots();render()}return}
   if(e.target.closest('[data-cimg]')){if(!n){toast('이름을 먼저 정해 주세요');e.target.closest('.cedit').querySelector('[data-ck=name]').focus();return}target={kind:'char',key:n};$('#file').click();return}
   const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
+  if(k==='charinfer'){if(n)inferChars([n]);return}
   if(k==='libsave')libSave(i);
   else if(k==='librevert'){const L=libOf(c);if(L){libApply(L,c);saveChars();compute(false);renderSlots();toast('보관함 버전으로 되돌렸어요')}}
   else if(k==='chdel'){if(!confirm(`${n||'이 캐릭터'}을(를) 이 작품에서 뺄까요?${c.lib?' 보관함에는 남아 있어요.':' 보관함에 저장하지 않았다면 다시 불러올 수 없어요.'}`))return;if(IMG.char[n]){delete IMG.char[n];idb.del('char:'+n)}CHARS.splice(i,1);saveChars();compute(false);renderSlots();toast('작품에서 뺐어요')}});
 $('#chars').addEventListener('keydown',e=>{if(e.target.matches('[data-cimg]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.target.click()}});
 for(const ev of ['dragover','dragleave','drop'])$('#chars').addEventListener(ev,e=>{const d=e.target.closest('[data-cimg]');if(!d)return;e.preventDefault();d.classList.toggle('over',ev==='dragover');
   if(ev==='drop'){const i=cardOf(e),n=i>=0&&CHARS[i].name.trim();const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!n){toast('이름을 먼저 정해 주세요');return}if(f)attach(f,{kind:'char',key:n})}});
-const focusCard=i=>setTimeout(()=>{const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.querySelector(CHARS[i].name.trim()?'[data-ck=look]':'[data-ck=name]').focus({preventScroll:true})}},30);
-function addCharFromSugg(name){CHARS.push({name,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderSugg();renderCastSum?.();renderParse?.();toast(`설정집에 「${name}」을 추가했어요 · 외형은 설정집에서 채워 주세요`)}
+const focusCard=i=>setTimeout(()=>{const el=document.querySelector(`#chars .cedit[data-ci="${i}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.querySelector(CHARS[i].name.trim()?'[data-ck=tags]':'[data-ck=name]').focus({preventScroll:true})}},30);
+function addCharFromSugg(name){CHARS.push({name,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();renderSugg();renderCastSum?.();renderParse?.();
+  if(AIKEY){toast(`설정집에 「${name}」을 추가했어요 · 구성·씬 글로 외형을 추론하는 중…`,2600);inferChars([name],{fresh:true})}else toast(`설정집에 「${name}」을 추가했어요 · API 키를 넣으면 구성·씬 글로 외형을 채워 드려요`,3000)}
+// ---------- 새 인물 외형 추론: 구성안·씬 글에서 그 인물이 나오는 대목을 모아 Claude에게 ----------
+// 비어 있는 칸만 채움(작가가 이미 적은 태그·특징은 그대로). fresh면 방금 넣은 인물이라 성별도 추론값으로
+const INFER_BUSY=new Set();
+function planBrief(){try{const o=JSON.parse(localStorage.getItem('rough-composition-v1')||'null'),w=o?.webtoon;if(!w)return null;
+  return{prompt:String(w.form?.prompt||'').slice(0,2000),cards:(w.draft?.cards||[]).map(c=>({n:c.n,title:c.title||'',purpose:c.purpose||'',cuts:(c.cuts||[])}))}}catch(_){return null}}
+function mentionsOf(name,plan){const hit=t=>String(t||'').includes(name),out=[];
+  SCENES.forEach((sc,si)=>(sc.cuts||[]).forEach((c,k)=>{if(hit(c)){const prev=sc.cuts[k-1],next=sc.cuts[k+1];out.push(`[씬 ${si+1} ${sc.title||''} · ${k+1}컷] ${[prev&&'(앞) '+String(prev).replace(/\n/g,' / '),String(c).replace(/\n/g,' / '),next&&'(뒤) '+String(next).replace(/\n/g,' / ')].filter(Boolean).join(' ‖ ')}`)}}));
+  (plan?.cards||[]).forEach(cd=>(cd.cuts||[]).forEach((c,k)=>{if(hit(c))out.push(`[구성 ${cd.n}번 「${cd.title}」 ${k+1}컷] ${String(c).replace(/\n/g,' / ')}`)}));
+  return out.slice(0,40).map(s=>s.slice(0,400))}
+async function inferChars(names,{fresh=false,hints={}}={}){names=names.filter(n=>n&&!INFER_BUSY.has(n));if(!names.length)return;if(!AIKEY){openKey(()=>inferChars(names,{fresh}));return}
+  names.forEach(n=>INFER_BUSY.add(n));if(VIEW==='chars')renderChars();
+  const plan=planBrief(),payload={world:worldBrief(),cast:CHARS.filter(c=>c.name.trim()&&!names.includes(c.name.trim())).map(c=>({name:c.name.trim(),gender:c.body,tags:charTags(c).join(', ')})),
+    plan:plan&&{prompt:plan.prompt,cards:plan.cards.map(({n,title,purpose})=>({n,title,purpose}))},chars:names.map(n=>({name:n,mentions:mentionsOf(n,plan),...(hints[n]?{note:hints[n]}:{})}))};
+  let mod;try{mod=await import('./claude.js');const r=await mod.inferChars(AIKEY,payload);let k=0;
+    for(const x of r.chars){const c=CHARS.find(c=>c.name.trim()===x.name.trim());if(!c)continue;
+      if(fresh&&x.body)c.body=x.body;if(!String(c.look||'').trim()&&x.look)c.look=x.look.trim();if(NAITAGS[c.name.trim()]==null&&x.tags){NAITAGS[c.name.trim()]=x.tags.trim();ARTGEN.chars[c.name.trim()]=x.tags.trim()}k++}
+    saveChars();saveNaiTags();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}
+    toast(k?`${names.join(', ')} 외형을 구성·씬 글로 채웠어요 · 설정집에서 확인해 주세요`:'채울 외형을 찾지 못했어요',2800)}
+  catch(err){console.warn(err?.status||err);toast('외형을 추론하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요'),3000);for(const n of names){const c=CHARS.find(c=>c.name.trim()===n);if(c&&!String(c.look||'').trim()&&hints[n]){c.look=hints[n];saveChars()}}if(err?.status===401){setKey('',null);openKey(()=>inferChars(names,{fresh,hints}))}}
+  finally{names.forEach(n=>INFER_BUSY.delete(n));if(VIEW==='chars')renderChars();if(VIEW==='layout')renderNai?.()}}
 $('#cutlist').addEventListener('click',e=>{const b=e.target.closest('.newchar [data-sug]');if(b){e.preventDefault();addCharFromSugg(b.dataset.sug)}});
 $('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-sug]');if(!b)return;CHARS.push({name:b.dataset.sug,aliases:'',body:CHARS.filter(c=>c.body==='female').length>CHARS.filter(c=>c.body==='male').length?'male':'female',look:''});saveChars();compute(false);renderSlots();showView('chars');focusCard(CHARS.length-1)});
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a||a.closest('#chars .cedit'))return;const k=a.dataset.act;
@@ -916,6 +952,44 @@ async function wlibImport(file){try{const d=JSON.parse(await file.text());if(d.t
     if(ev==='drop'){const el=rowOf(e);const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(!f||!el)return;attach(f,el.dataset.wk==='world'?{kind:'world',key:'cover'}:{kind:'lore',key:LORE[+el.dataset.li].id})}});
   $('#wlibq').addEventListener('input',e=>{WLIBQ=e.target.value;renderWlib()});
   $('#wlibfile').addEventListener('change',e=>{const f=e.target.files[0];if(f)wlibImport(f);e.target.value=''});}
+
+// ---------- 설정집 빈 칸 채우기 ----------
+// 채워진 캐릭터·세계관·설정 항목 + 구성안 + 씬 글을 근거로 Claude가 빈 칸만 제안 → 고른 것만 넣음(채워진 칸은 건드리지 않음)
+let FILL_BUSY=false;
+function fillPayload(){const plan=planBrief();
+  const scenes=SCENES.map(sc=>({title:sc.title||'',cuts:(sc.cuts||[]).filter(c=>String(c).trim()).map(c=>String(c).slice(0,300))}));
+  let budget=14000;for(const sc of scenes){sc.cuts=sc.cuts.filter(c=>(budget-=c.length)>0)}
+  return{chars:CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.trim(),gender:c.body,aliases:c.aliases||'',tags:NAITAGS[c.name.trim()]??'',look:c.look||''})),
+    world:WORLD.off?null:Object.fromEntries(WF.map(f=>[f,WORLD[f]||''])),
+    lore:LORE.map(e=>({name:e.name||'',category:LORE_CAT[e.cat]?.[0]||e.cat||'',keys:e.keys||'',desc:e.desc||'',tags:e.tags||''})).filter(e=>e.name),
+    plan:plan&&{prompt:plan.prompt,cards:plan.cards.map(({n,title,purpose})=>({n,title,purpose}))},scenes}}
+const FILL_LABEL={aliases:'다른 호칭',tags:'외형 태그',look:'특징',name:'이름',genre:'장르',era:'시대',tone:'분위기',summary:'요약',detail:'자세한 설정',keys:'키워드',desc:'설명'};
+async function fillSetbook(){if(FILL_BUSY)return;if(!AIKEY){openKey(fillSetbook);return}
+  const empty=fillPayload();const holes=empty.chars.some(c=>!c.tags||!c.look)||(empty.world&&WF.some(f=>!empty.world[f]))||empty.lore.some(e=>!e.keys||!e.desc||!e.tags);
+  if(!holes){toast('비어 있는 칸이 없어요');return}
+  FILL_BUSY=true;fillBtns();let mod;
+  try{mod=await import('./claude.js');const r=await mod.fillSetbook(AIKEY,empty,{onStatus:t=>fillBtns(t)});const rows=[];
+    for(const x of r.chars||[]){const c=CHARS.find(c=>c.name.trim()===String(x.name).trim());if(!c)continue;const n=c.name.trim();
+      if(!String(c.aliases||'').trim()&&x.aliases?.trim())rows.push({who:n,f:'aliases',v:x.aliases.trim(),put:v=>{c.aliases=v}});
+      if(NAITAGS[n]==null&&x.tags?.trim())rows.push({who:n,f:'tags',v:x.tags.trim(),put:v=>{NAITAGS[n]=v;ARTGEN.chars[n]=v}});
+      if(!String(c.look||'').trim()&&x.look?.trim())rows.push({who:n,f:'look',v:x.look.trim(),put:v=>{c.look=v}})}
+    if(r.world&&!WORLD.off)for(const f of WF){const v=String(r.world[f]||'').trim();if(v&&!String(WORLD[f]||'').trim())rows.push({who:'세계관',f,v,put:v=>{WORLD[f]=v}})}
+    for(const x of r.lore||[]){const e=LORE.find(e=>(e.name||'').trim()===String(x.name).trim());if(!e)continue;
+      for(const f of ['keys','desc','tags']){const v=String(x[f]||'').trim();if(v&&!String(e[f]||'').trim())rows.push({who:'설정 · '+e.name,f,v,put:v=>{e[f]=v}})}}
+    if(!rows.length){toast('채울 값을 찾지 못했어요');return}fillDialog(rows)}
+  catch(err){console.warn(err?.status||err);toast('빈 칸을 채우지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요'),3000);if(err?.status===401){setKey('',null);openKey(fillSetbook)}}
+  finally{FILL_BUSY=false;fillBtns()}}
+function fillBtns(t){document.querySelectorAll('[data-act="sbfill"]').forEach(b=>{b.disabled=FILL_BUSY;b.textContent=FILL_BUSY?(t&&/쓰는 중/.test(t)?t.replace('Claude가 ',''):'채우는 중…'):'빈 칸 채우기'})}
+function fillDialog(rows){let d=$('#filldlg');if(!d){d=document.createElement('dialog');d.id='filldlg';d.className='keydlg artdlg filldlg';document.body.appendChild(d)}
+  d.innerHTML=`<h3>설정집 빈 칸 채우기</h3><p>채워진 설정과 구성·씬 글을 근거로 비어 있던 칸만 제안했어요. 고친 뒤 체크한 것만 넣어요.</p>
+  <div class="artcmp">${rows.map((x,n)=>`<label class="artrow fillrow"><input type="checkbox" data-n="${n}" checked><b>${esc(x.who)} · ${FILL_LABEL[x.f]||x.f}</b><textarea data-fv="${n}" rows="${x.v.length>80?3:1}" spellcheck="false">${esc(x.v)}</textarea></label>`).join('')}</div>
+  <div class="btnrow"><button class="btn" data-r="no">취소</button><button class="btn dark" data-r="go">넣기</button></div>`;
+  d.onclick=e=>{if(e.target.closest('textarea'))return;const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;
+    if(k==='go'){let n=0;d.querySelectorAll('input[data-n]:checked').forEach(i=>{const x=rows[+i.dataset.n],v=d.querySelector(`[data-fv="${i.dataset.n}"]`).value.trim();if(v){x.put(v);n++}});
+      saveChars();saveNaiTags();saveWorld();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}
+      if(VIEW==='chars')renderChars();if(VIEW==='world')renderWorld();try{compute(false)}catch(_){}toast(n?`설정집 빈 칸 ${n}개를 채웠어요`:'넣은 것이 없어요')}
+    d.close()};d.showModal()}
+document.addEventListener('click',e=>{if(e.target.closest('[data-act="sbfill"]'))fillSetbook()});
 // 러프 툴 본체 3/6 — 씬: @ 자동완성·씬 목록·컷 입력·해석 줄·효과음 추천
 // 원본 조각: tools/build_app.py가 6개를 순서대로 이어 rough/app.js를 만듦(사이트는 app.js 하나를 실음 — 조각끼리 불러올 때 서로 부르는 곳이 많아 따로 싣지 않음)
 // ---------- @ 자동완성 ----------
@@ -979,7 +1053,7 @@ function renderSceneList(){
   $('#scount').textContent=`${SCENES.length}개`;
   document.querySelectorAll('[data-scbar]').forEach(el=>el.innerHTML=`<button class="ib" data-scmove="-1" aria-label="이전 씬"${SCUR?'':' disabled'}>‹</button><select data-scsel aria-label="씬 고르기">${SCENES.map((sc,i)=>`<option value="${i}"${i===SCUR?' selected':''}>${esc(sceneLabel(sc,i))}</option>`).join('')}</select><button class="ib" data-scmove="1" aria-label="다음 씬"${SCUR<SCENES.length-1?'':' disabled'}>›</button><span>${SCENES[SCUR].cuts.filter(c=>c.trim()).length}컷</span>`);
 }
-function switchScene(i){if(i<0||i>=SCENES.length)return;saveScenes();SCUR=i;CUTS=SCENES[i].cuts;saveScenes();
+function switchScene(i){if(i<0||i>=SCENES.length)return;saveScenes();if(i!==SCUR&&typeof ctClearCopied==='function')ctClearCopied();SCUR=i;CUTS=SCENES[i].cuts;saveScenes();
   $('#sctitle').value=SCENES[i].title||'';renderCuts();renderSceneList();state.sel=-1;compute(true);renderSlots();renderSugg();
 }
 function deleteScene(index){
@@ -1100,6 +1174,7 @@ document.querySelector('.scins').addEventListener('click',e=>{const b=e.target.c
   t.dispatchEvent(new Event('input',{bubbles:true}))});
 // 연출 넣기 메뉴: 누르면 지금 줄 끝에 {…}. 같은 줄에 이미 {…}가 있으면 그 안에 쉼표로 이어 붙임
 const DIR_MENU=[['샷',['설정','전경','전신','중경','클로즈업','디테일','효과 배경']],['앵글',['아이레벨','하이앵글','로우앵글','탑뷰']],
+  ['감정',['감정 설렘','감정 긴장','감정 놀람','감정 분노','감정 당황','감정 쓸쓸','감정 결의','감정 다정','감정 기쁨','감정 의아','감정 냉담','감정 회상','감정 개그','감정 평온']],
   ['NovelAI 초점',Object.keys(window.RoughNAI.FOCUS)],
   ['칸 길이·간격',['짧게','길게','아주 길게','붙임','쉼','큰 쉼','하이라이트']],['그림',['확대 1.5','확대 2','집중선','집중선 진하게','속도선 가로','속도선 위로']],
   ['배경',['배경 검정','배경 흰색','배경 노을',...PAGE_BACKGROUNDS.filter(Boolean).map(b=>'배경 '+b.name),'씬 끝 흰색','씬 끝 유지']],['말풍선',['속삭임','외침','생각','전화','분노','숨','떨림','의미심장']]];
@@ -1154,15 +1229,26 @@ function closeXMenu(){const m=$('#wxmenu');if(m&&!m.hidden){m.hidden=true;$('#we
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#wxmenu').hidden){closeXMenu();$('#wexport').focus()}});
 document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switchScene(+e.target.value)});
 const WMODE='final';  // 편집 화면은 늘 완성본(등록 그림, 없으면 레퍼런스). 완성본/러프 전환은 뺌
-try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 예시'}catch(_){$('#wtitle').value='제목 없는 작품'}
-$('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
+// 작품 제목: 상단 바(로고 옆)와 편집 화면 큰 제목 두 곳에서 같은 값을 고침. 기본은 '새 작품 1'(예전 예시 문구도 기본으로 바꿈)
+const OLD_SAMPLE_TITLE='녹빛자정의 연인 · 예시',DEF_TITLE='새 작품 1';
+const TITLE_ELS=()=>['#gtitle','#wtitle'].map(q=>$(q)).filter(Boolean);
+{let v=DEF_TITLE;try{const s=localStorage.getItem('rough-work-title');if(s!=null&&s!==OLD_SAMPLE_TITLE)v=s}catch(_){}TITLE_ELS().forEach(el=>el.value=v)}
+function workTitleAuto(){return DEF_TITLE}
+function workTitle(){return ($('#gtitle')?.value||$('#wtitle')?.value||'').trim()||DEF_TITLE}
+// 상단 입력칸은 글자 수만큼 폭을 맞춤
+function fitTitle(el){el.style.width=Math.min(380,Math.max(90,(el.value||el.placeholder).length*17+28))+'px'}
+function syncWorkTitle(src){TITLE_ELS().forEach(el=>{if(src&&el!==src&&el.value!==src.value)el.value=src.value;el.placeholder=DEF_TITLE;el.title='작품 제목 · 눌러서 고쳐요(저장 이름·내보내기 파일 이름에도 쓰여요)'});const g=$('#gtitle');if(g)fitTitle(g);document.title=workTitle()}
+TITLE_ELS().forEach(el=>{el.addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}syncWorkTitle(e.target)});
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});el.addEventListener('blur',e=>{if(!e.target.value.trim()){e.target.value=DEF_TITLE;try{localStorage.setItem('rough-work-title',DEF_TITLE)}catch(_){}syncWorkTitle(e.target)}})});
+syncWorkTitle();
 // 다른 씬의 컷 계산은 글·고른 레퍼런스·고정값이 같으면 다시 돌리지 않음(레이어 패널·씬 경계 색이 컷마다 불러 무거웠음)
 var SP_CACHE=new Map(),SP_FRESH=null;  // SP_FRESH: 이번 작업 안에서 이미 확인한 씬(같은 작업 안에서 수백 번 불려 확인 비용도 컸음)
 function spStale(){SP_FRESH=null}
 function scenePanels(i){if(i===SCUR)return state.panels;const sc=SCENES[i];if(!sc)return [];
   if(SP_FRESH?.has(i)&&SP_CACHE.has(i))return SP_CACHE.get(i).v;if(!SP_FRESH){SP_FRESH=new Set();queueMicrotask(spStale)}SP_FRESH.add(i);
   const refs=Array.from(sc.pageEdits||[],e=>e?.ref||0);while(refs.length&&!refs.at(-1))refs.pop();  // 빈 칸이 늘기만 해도 다시 계산하던 것 막기
-  const ck=JSON.stringify([sc.cuts,refs,locks,engineChars(),REFS.length,PATS.length]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
+  // 컷 비율 기준(RE.RATIO)·작가 취향(RE.PREFS)도 키에 넣음: 콘티에서 비율을 바꾸면 다른 씬도 새로 계산(예전엔 지금 씬만 바뀌고 다른 씬은 옛 길이로 남았음)
+  const ck=JSON.stringify([sc.cuts,refs,locks,engineChars(),REFS.length,PATS.length,RE.RATIO?.label||'',RE.RATIO?.all||0,RE.PREFS||0]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
   const out=_scenePanels(i);SP_CACHE.set(i,{k:ck,v:out});return out}
 // 처음 편집 화면을 열 때 기다리지 않게: 쉬는 틈에 다른 씬 컷 계산을 미리 해 둠
 (function warmScenes(i=0){if(typeof PATS==='undefined'||!PATS.length||typeof SCENES==='undefined')return setTimeout(warmScenes,600,i);if(i>=SCENES.length)return;
@@ -1228,7 +1314,7 @@ function patchSection(os,html){const t=document.createElement('template');t.inne
     const ok=[...o.children],nk=[...n.children];if(ok.length!==nk.length||ok.some((c,j)=>c.tagName!==nk[j].tagName)){o.replaceWith(n);return}
     for(const a of [...o.attributes])if(!n.hasAttribute(a.name))o.removeAttribute(a.name);for(const a of n.attributes)if(o.getAttribute(a.name)!==a.value)o.setAttribute(a.name,a.value);
     ok.forEach((x,j)=>{if(x.outerHTML!==nk[j].outerHTML)x.replaceWith(nk[j])})})}
-function renderWebtoon(){SP_FRESH=null;SA_G=saGlobal();SA_ON=true;try{return _renderWebtoon()}finally{SA_ON=false}}
+function renderWebtoon(){syncWorkTitle();SP_FRESH=null;SA_G=saGlobal();SA_ON=true;try{return _renderWebtoon()}finally{SA_ON=false}}
 function _renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
     const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':art.svg;
@@ -1254,6 +1340,12 @@ function pageSettings(create=false,key=pageSelection){
   if(create&&!edits[slot])edits[slot]={};
   return edits[slot];
 }
+// 화면에 그려지는 값 = 씬 글 {…}에서 나온 값 + 직접 고친 값. 편집 도구는 이걸 보여 주고,
+// 글에서 나온 값을 고칠 때는 pageAdopt로 직접 고친 값에 먼저 옮긴 뒤 바꿈(안 그러면 고칠 대상이 없거나 글 값이 다시 이김)
+function pagePanel(key=pageSelection){if(!key)return null;const [si,slot]=key.split(':').map(Number);return scenePanels(si).find((p,i)=>cutSlot(p,i)===slot)||null}
+function pageView(key=pageSelection){if(!key)return null;return RoughGrammar.merge(pageSettings(false,key),pagePanel(key))||null}
+function pageAdopt(field,key=pageSelection){const v=pageView(key)?.[field],st=pageSettings(true,key);if(v==null)return st;const cp=x=>JSON.parse(JSON.stringify(x));
+  if(st[field]==null)st[field]=cp(v);else if(typeof v==='object'&&typeof st[field]==='object')for(const k of Object.keys(v))if(st[field][k]==null)st[field][k]=cp(v[k]);return st}
 function refreshPageTools(){
   const previous=selectedLetter&&{key:pageKey(selectedLetter.closest('[data-slot-index]')),letter:selectedLetter.dataset.letter};
   selectLetter(null);
@@ -1278,7 +1370,7 @@ function selectPageCut(group){
   pageReader.querySelector('.cut-selected')?.classList.remove('cut-selected');
   pageReader.querySelectorAll('.frame-handles.sel').forEach(h=>h.classList.remove('sel'));
   pageReader.querySelector('[data-slot-index].sel')?.classList.remove('sel');group.classList.add('sel');
-  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');showZoom(pageSettings()?.img?.s||1);
+  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');showZoom(pageView()?.img?.s||1);
 }
 const backgroundColor=$('#wbgcolor'),backgroundPresets=$('#wbgpresets');
 const BG_THUMB=[];window.bgThumbSVG=i=>BG_THUMB[i]||'';
@@ -1300,7 +1392,7 @@ function refreshBackgroundTools(){
   if(isLast){const sel=$('#wsceneend');sel.value=SCENES[si].endTo||'next';sel.options[0].textContent=si<SCENES.length-1?'다음 씬 첫 컷 색으로 이어감':'흰색으로 (마지막 씬)'}
 }
 // 전환 중간색·위치
-function refreshTransTools(){const e=pageSettings(),st=PAGE_BACKGROUNDS[e?.transition];const on=e?.transMid?e.transMid!=='none':!!st;
+function refreshTransTools(){const e=pageView(),st=PAGE_BACKGROUNDS[e?.transition];const on=e?.transMid?e.transMid!=='none':!!st;
   $('#wtmidon').checked=on;$('#wtmid').value=/^#/.test(e?.transMid||'')?e.transMid:(st?.mid||'#808080');$('#wtmid').disabled=!on;
   const sv=e?.transStop??st?.stop??50;$('#wtstop').value=sv;$('#wtstopv').textContent=sv+'%';$('#wtstop').disabled=!on;
   $('#wbgimgs').innerHTML=Object.values(IMG.bg).sort((a,b)=>a.at-b.at).map(r=>`<button type="button" data-bgimg="${r.id}" aria-pressed="${e?.bgImage===r.id}" title="${esc(r.name||'배경 이미지')}"><img src="${r.src}" alt=""><span data-bgimg-del="${r.id}" title="목록에서 지우기">×</span></button>`).join('')+`<button type="button" class="add" data-bgimg-add title="PNG·JPG를 배경 소재로 추가">+ 이미지</button>`+(e?.bgImage?`<button type="button" class="add" data-bgimg-off>빼기</button>`:'');
@@ -1371,7 +1463,7 @@ $('#wletterreset').addEventListener('click',()=>{
   }
   saveScenes();renderWebtoon();
 });
-function letterPosition(letter){return {x:0,y:0,...pageSettings()?.letters?.[letter.dataset.letter]}}
+function letterPosition(letter){return {x:0,y:0,...pageView()?.letters?.[letter.dataset.letter]}}
 function moveLetter(letter,position){letter.setAttribute('transform',`translate(${position.x} ${position.y})`)}
 function saveLetter(letter,position){
   const settings=pageSettings(true);
@@ -1420,7 +1512,7 @@ letterMemo.addEventListener('keydown',e=>{
   if(!e.isComposing&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();letterTextForm.requestSubmit()}
 });
 letterOriginal.addEventListener('click',()=>{
-  const edit=selectedLetter&&pageSettings()?.letters?.[selectedLetter.dataset.letter];
+  const edit=selectedLetter&&pageView()?.letters?.[selectedLetter.dataset.letter];
   if(typeof edit?.text!=='string')return;
   const effect=isEffectLetter(selectedLetter);
   delete edit.text;
@@ -1562,7 +1654,7 @@ pageReader.addEventListener('pointerdown',e=>{
   selectPageCut(group);
   const letter=e.target.closest('[data-letter]');
   selectLetter(letter);
-  if(!letter){if((pageSettings()?.img?.s||1)>1&&e.target.closest('[data-art]'))startArtDrag(group,e);return}  // 확대한 그림은 처음 누를 때부터 바로 끌기
+  if(!letter){if((pageView()?.img?.s||1)>1&&e.target.closest('[data-art]'))startArtDrag(group,e);return}  // 확대한 그림은 처음 누를 때부터 바로 끌기
   e.preventDefault();
   const handle=e.target.closest('[data-tail-handle]');
   if(handle){
@@ -1717,14 +1809,15 @@ function saveFrame(){const d=frameDrag;frameDrag=null;if(!d.moved)return;const {
   saveScenes();renderWebtoon();markFrameShape()}
 // ---------- 칸 안 그림 확대·이동 ----------
 let artDrag=null,zoomTimer=0;const ZMAX=5;
-function zoomOf(group){const z=pageSettings(false,pageKey(group))?.img;return {s:1,dx:0,dy:0,...z}}
+function zoomOf(group){const z=pageView(pageKey(group))?.img;return {s:1,dx:0,dy:0,...z}}
 function clampZoom(group,z){const f=JSON.parse(group.dataset.frame),s=Math.max(1,Math.min(ZMAX,z.s)),mx=f.w*(s-1)/2,my=f.h*(s-1)/2;
   return {s,dx:Math.max(-mx,Math.min(mx,z.dx)),dy:Math.max(-my,Math.min(my,z.dy))}}
 function setZoom(group,z){z=clampZoom(group,z);const f=JSON.parse(group.dataset.frame),el=group.querySelector('[data-art]');
   const tf=zoomTf(z,f.x,f.y,f.w,f.h);if(tf)el.setAttribute('transform',tf.slice(12,-1));else el.removeAttribute('transform');
   group._z=z;if(pageSelection===pageKey(group))showZoom(z.s);return z}
 function saveZoom(group){const z=group._z;if(!z)return;const set=pageSettings(true,pageKey(group));
-  if(z.s<=1.001)delete set.img;else set.img={s:+z.s.toFixed(3),dx:Math.round(z.dx),dy:Math.round(z.dy)};saveScenes()}
+  // 씬 글에 {확대 …}가 있으면 1배로 줄인 것도 남겨야 글 값이 다시 이기지 않음
+  if(z.s<=1.001){if(RoughGrammar.fromText(pagePanel(pageKey(group)))?.img)set.img={s:1,dx:0,dy:0};else delete set.img}else set.img={s:+z.s.toFixed(3),dx:Math.round(z.dx),dy:Math.round(z.dy)};saveScenes()}
 function startArtDrag(group,e){e.preventDefault();artDrag={group,svg:group.ownerSVGElement,z0:zoomOf(group),start:pagePoint(group.ownerSVGElement,e),id:e.pointerId};pageReader.setPointerCapture(e.pointerId)}
 // 커서 아래 점이 그대로 있도록 확대
 function zoomAt(group,s2,pt){const z=group._z||zoomOf(group),f=JSON.parse(group.dataset.frame),cx=f.x+f.w/2,cy=f.y+f.h/2;
@@ -1794,7 +1887,7 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
   const draw=(list,name)=>{const H=Math.round(list.reduce((a,x)=>a+LABEL+x.im.height*W/x.im.width,0));const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);let y=0;
     for(const x of list){g.fillStyle='#8a8f98';g.font='600 15px Pretendard, sans-serif';g.textAlign='center';g.fillText(sceneLabel(SCENES[x.i],x.i),W/2,y+34);y+=LABEL;const h=x.im.height*W/x.im.width;g.drawImage(x.im,0,y,W,h);y+=h}
     return new Promise(res=>c.toBlob(bl=>{download(name,URL.createObjectURL(bl));res()},'image/png'))};
-  const base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
+  const base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
   if(total<=30000){await draw(items,`${base}.png`);st('이미지로 저장했어요')}else{for(const x of items)await draw([x],`${base}-씬${x.i+1}.png`);st(`길어서 씬별 ${items.length}장으로 저장했어요`)}}
 
 // ---------- 작업 파일: localStorage의 rough-* 설정(AI 키 제외) + IndexedDB 이미지(rough-refs)를 한 JSON으로 ----------
@@ -1803,8 +1896,8 @@ async function saveProject(){const local={};for(let k=0;k<localStorage.length;k+
   flushScenes();local['rough-scenes']=JSON.stringify(SCENES);local['rough-scene-cur']=String(SCUR);  // 기본 저장 공간이 차서 IndexedDB에만 있어도 빠지지 않게
   for(const r of (await idb.allDocs()))if(r.json&&r.id.startsWith('doc:rough-ep:')&&local[r.id.slice(4)]==null)local[r.id.slice(4)]=r.json;
   const images=(await idb.all()).filter(r=>!/^(snap|save):/.test(String(r.id)));
-  const data={format:'rough-project',version:1,savedAt:new Date().toISOString(),title:$('#wtitle')?.value||'',scenes:SCENES.length,local,images};
-  const base=($('#wtitle')?.value||'webtoon').replace(/[\\/:*?"<>|]/g,'_'),blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const data={format:'rough-project',version:1,savedAt:new Date().toISOString(),title:workTitle(),scenes:SCENES.length,local,images};
+  const base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_'),blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   download(`${base}-${new Date().toISOString().slice(0,10)}.rough.json`,URL.createObjectURL(blob));
   toast(`작업 파일을 저장했어요 · 씬 ${SCENES.length}개 · 이미지 ${images.length}장 · ${(blob.size/1048576).toFixed(1)}MB`,3500)}
 function loadProjectPick(){const f=document.createElement('input');f.type='file';f.accept='.json,application/json';f.onchange=()=>f.files[0]&&loadProject(f.files[0]);f.click()}
@@ -1823,7 +1916,7 @@ async function loadProject(file){let d;try{d=JSON.parse(await file.text())}catch
 let snapAt=0;
 const epId=()=>window.RoughEpisodes?.cur?.id||'';
 function autoSnapshot(force,label){const now=Date.now();if(!force&&now-snapAt<600000)return Promise.resolve();snapAt=now;
-  const o={id:'snap:'+now,kind:'snap',at:now,ep:epId(),label:label||'',title:$('#wtitle')?.value||'',scenes:JSON.stringify(SCENES)};
+  const o={id:'snap:'+now,kind:'snap',at:now,ep:epId(),label:label||'',title:workTitle(),scenes:JSON.stringify(SCENES)};
   return idb.put(o).then(async()=>{const snaps=(await idb.all()).filter(r=>r.kind==='snap'&&(r.ep||'')===o.ep).sort((a,b)=>b.at-a.at);for(const r of snaps.slice(30))idb.del(r.id)})}
 const snapSum=j=>{try{const a=JSON.parse(j);return `씬 ${a.length}개 · 컷 ${a.reduce((n,sc)=>n+sc.cuts.filter(c=>c.trim()).length,0)}개`}catch(_){return''}};
 // 다른 원고를 잠깐 그려 보기: 지금 원고를 건드리지 않게 씬 목록을 바꿔 끼웠다가 되돌림
@@ -1913,7 +2006,7 @@ async function exportSlices(o,st){st('이미지 만드는 중');await loadPageMa
     for(const x of lay){if(x.y+x.h<y0&&x.t+LABEL<y0)continue;if(x.t>y0+hh)break;
       if(LABEL){g.fillStyle='#8a8f98';g.font=`600 ${Math.round(15*o.w/W)}px Pretendard, sans-serif`;g.textAlign='center';g.fillText(sceneLabel(SCENES[x.i],x.i),o.w/2,x.t-y0+LABEL*0.6)}
       g.drawImage(x.im,0,x.y-y0,o.w,x.h)}};
-  const files=[],ext=o.fmt==='png'?'png':'jpg',type=o.fmt==='png'?'image/png':'image/jpeg',base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
+  const files=[],ext=o.fmt==='png'?'png':'jpg',type=o.fmt==='png'?'image/png':'image/jpeg',base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
   let y0=0,n=0,hard=0;
   while(y0<total){let hh=Math.min(o.h,total-y0);const c=document.createElement('canvas');c.width=o.w;c.height=hh;const g=c.getContext('2d');paint(g,y0,hh);
     if(o.smart&&y0+hh<total){const data=g.getImageData(0,0,o.w,hh).data,lo=Math.floor(hh*0.4);let cut=-1;
@@ -1932,7 +2025,7 @@ async function exportSlices(o,st){st('이미지 만드는 중');await loadPageMa
 // 불러오기 전·초기화 전에는 지금 상태를 자동으로 한 칸 보관해 되돌릴 수 있게
 function workLocal(){flushScenes();const local={};for(let k=0;k<localStorage.length;k++){const key=localStorage.key(k);if(key.startsWith('rough-')&&!PJ_SKIP.has(key)&&!/^rough-(theme|coach|view)$/.test(key))local[key]=localStorage.getItem(key)}
   local['rough-scenes']=JSON.stringify(SCENES);local['rough-scene-cur']=String(SCUR);return local}
-async function saveDraft(name){const now=Date.now(),title=$('#wtitle')?.value||'';
+async function saveDraft(name){const now=Date.now(),title=workTitle();
   const o={id:'save:'+now,kind:'save',at:now,name:name||`${title||'작업'} · ${new Date(now).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}`,title,sum:snapSum(JSON.stringify(SCENES))+` · 인물 ${CHARS.length}명`,local:workLocal()};
   await idb.put(o);return o}
 async function loadDraft(r){if(!confirm(`「${r.name}」을(를) 불러올까요?\n지금 작업은 '불러오기 전'으로 보관함에 남겨 둬요.`))return;
@@ -2135,7 +2228,7 @@ function finishMaterialLine(e){
   materialStatus(kind==='focus'?'집중선을 넣었어요.':'속도선을 넣었어요.');
 }
 function showMaterialLine(){
-  const lines=pageSelection&&pageSettings()?.materialLines;
+  const lines=pageSelection&&pageView()?.materialLines;
   const existing=Object.keys(lines||{}),select=$('#wmaterial-line-kind');
   $('#wmaterial-line-edit').hidden=!existing.length;
   if(!existing.length)return;
@@ -2147,15 +2240,17 @@ function showMaterialLine(){
 $('#wmaterial-line-kind').addEventListener('change',showMaterialLine);
 for(const prop of ['color','density']){
   $('#wmaterial-'+prop).addEventListener('change',e=>{
-    const kind=$('#wmaterial-line-kind').value,line=pageSelection&&pageSettings()?.materialLines?.[kind];
+    const kind=$('#wmaterial-line-kind').value,line=pageSelection&&pageView()?.materialLines?.[kind]&&pageAdopt('materialLines').materialLines[kind];
     if(!line)return;
     line[prop]=prop==='density'?Number(e.target.value):e.target.value;
     saveScenes();renderWebtoon();
   });
 }
 $('#wmaterial-delete').addEventListener('click',()=>{
-  const lines=pageSelection&&pageSettings()?.materialLines;if(!lines)return;
-  delete lines[$('#wmaterial-line-kind').value];saveScenes();renderWebtoon();
+  // 글에서 나온 효과선도 같이 지우도록 레이어 Delete와 같은 길로
+  if(!pageSelection||!pageView()?.materialLines)return;const kd=$('#wmaterial-line-kind').value;
+  if(window.RoughWS?.deletePart){RoughWS.deletePart(pageSelection,'line:'+kd);return}
+  const lines=pageSettings()?.materialLines;if(lines){delete lines[kd];saveScenes();renderWebtoon()}
 });
 function inspector(){const L=!!selectedLetter,C=!!pageSelection;$('#wsec-letter').hidden=!L;$('#wsec-cut').hidden=!C;$('#wempty').hidden=L;
   $('#wmaterials').hidden=!pageEditing||!C;materialSearch.hidden=!C||!materialRows.length;showMaterialLine();
@@ -2193,6 +2288,13 @@ function edRecord(){if(typeof VIEW==='undefined'||!UNDO_VIEWS.includes(VIEW)||ed
   if(edSnap!==null&&cur!==edSnap){const now=Date.now();if(now-edLast>(VIEW==='write'?1500:600)||!UNDO.length)UNDO.push(edSnap);if(UNDO.length>100)UNDO.shift();REDO.length=0;edLast=now;edSavedAt=now;edSaveLabel()}
   edSnap=cur;edButtons()}
 {const _ss=saveScenes;saveScenes=function(...a){edRecord();return _ss(...a)}}
+// 되돌리기 기록은 화면(씬·콘티·편집)마다 따로: 화면을 떠날 때 그 화면 기록을 보관하고 돌아오면 다시 꺼냄.
+// 기록은 작업 전체 상태라서, 떠나 있는 동안 다른 화면에서 원고가 바뀌었으면 그 화면의 예전 기록은 버림(다른 화면에서 한 일을 되돌리지 않게)
+const ED_HIST={};let ED_VIEW=null;
+function edSwitch(v){const nv=UNDO_VIEWS.includes(v)?v:null;if(nv===ED_VIEW&&edSnap!==null)return;const cur=edState();
+  if(ED_VIEW)ED_HIST[ED_VIEW]={U:UNDO.slice(),R:REDO.slice(),at:edSnap??cur};
+  UNDO.length=0;REDO.length=0;const h=nv&&ED_HIST[nv];if(h&&h.at===cur){UNDO.push(...h.U);REDO.push(...h.R)}
+  ED_VIEW=nv;edSnap=cur;edLast=0;edButtons()}
 // 되돌린 뒤 지금 화면 다시 그리기
 function edRefresh(){if(VIEW==='write'){renderCuts();compute(false)}else if(VIEW==='layout'){compute(false);rerenderCuts()}}
 function edSaveLabel(){const el=$('#edsave');if(!el)return;if(SAVE_FAIL){saveFailLabel();return}if(!edSavedAt){el.textContent='자동 저장';el.classList.remove('on');return}
@@ -2220,6 +2322,8 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape'||typeof VIEW==='unde
 // ---------- 보기 전환 ----------
 let VIEW='nai';
 function showView(v){if(v==='nai')v='layout';
+  // 콘티를 떠나면 '복사했어요' 표시와 붙여 넣기 대상 컷을 풂(돌아왔을 때 예전 복사 표시가 남지 않게)
+  if(VIEW==='layout'&&v!=='layout')ctClearCopied();
   // 설정집 = 캐릭터 + 세계관(하위 탭). 상단 탭은 마지막으로 본 쪽을 엶
   if(v==='setbook'){try{v=localStorage.getItem('rough-setbook-sub')||'chars'}catch(_){v='chars'}}if(v==='chars'||v==='world'){try{localStorage.setItem('rough-setbook-sub',v)}catch(_){}}  // 작화는 콘티에 합침(예전 주소·저장된 화면 호환)
   if(!['chars','world','plan','write','layout','nai','webtoon','db'].includes(v))v='write';VIEW=v;document.querySelectorAll('.topnav [data-view]').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v||(b.dataset.view==='setbook'&&(v==='chars'||v==='world'))));
@@ -2231,9 +2335,9 @@ function showView(v){if(v==='nai')v='layout';
     try{renderCuts();renderSceneList();compute(false);renderSlots();renderSugg()}catch(e){console.warn(e)}}
   if(v==='write')requestAnimationFrame(()=>document.querySelectorAll('.cutin').forEach(grow));
   $('#gscbar').hidden=!['write','layout','nai','webtoon'].includes(v);$('#gDb').setAttribute('aria-pressed',v==='db');
-  if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons();refreshPageMaterials()}
+  if(v==='webtoon'){renderWebtoon();refreshPageMaterials()}
   if(v==='webtoon'&&matchMedia('(max-width:760px)').matches&&window.RoughStudio?.fitWidth)requestAnimationFrame(()=>RoughStudio.fitWidth());
-  if(v==='write'||v==='layout'){edSnap=edState();edButtons()}$('#gundo').hidden=!(v==='write'||v==='layout');
+  edSwitch(v);$('#gundo').hidden=!(v==='write'||v==='layout');
   if(v!=='webtoon'&&materialMode)armMaterialLine('');
   if(v==='plan')openComposition();
   if(v==='layout')renderNai();if(v==='db')loadDB();
@@ -2341,9 +2445,14 @@ function artCompare(r,chars){let d=$('#artdlg');if(!d){d=document.createElement(
         else{const nm=x.k.slice(2);NAITAGS[nm]=x.next;ARTGEN.chars[nm]=x.next}});
       saveNaiTags();try{localStorage.setItem('rough-art-gen',JSON.stringify(ARTGEN))}catch(_){}$('#naistyle').value=NAISTYLE;renderNai();toast(n?`작화 프롬프트 ${n}개를 바꿨어요 · 컷 프롬프트 생성을 다시 누르면 컷에도 반영돼요`:'바꾼 것이 없어요',2600)}
     d.close()};d.showModal()}
+// 컷별 지시사항: 씬마다 컷 번호로 저장. 컷 프롬프트 생성(씬 전체)에도 note로 같이 보냄(서명에는 넣지 않음 — 지시만 적어도 '예전 것' 표시가 뜨지 않게)
+var CTNOTE;try{CTNOTE=JSON.parse(localStorage.getItem('rough-ct-note')||'{}')}catch(_){CTNOTE={}}
+const ctNote=i=>(CTNOTE[SCENES[SCUR].id]||{})[i]||'';
+function setCtNote(i,v){const sid=SCENES[SCUR].id,m=CTNOTE[sid]||={};if(v.trim())m[i]=v;else delete m[i];if(!Object.keys(m).length)delete CTNOTE[sid];try{localStorage.setItem('rough-ct-note',JSON.stringify(CTNOTE))}catch(_){}}
+const withNotes=pl=>({...pl,cuts:pl.cuts.map(c=>{const n=ctNote(c.n-1).trim();return n?{...c,note:n}:c})});
 async function naiRefine(){if(naiBusy)return;if(!state.panels.length){toast('컷이 없어요');return}
   if(!AIKEY){openKey(naiRefine);return}const st=t=>{$('#naist').textContent=t;NAI_MSG=t;naiBtnSync()};naiBusy=true;NAI_ERR=false;NAI_DONE=0;$('#naibtn').disabled=true;st('Claude에 보내는 중… 컷이 많으면 1분 안팎 걸려요');const sid=SCENES[SCUR].id,payload=naiPayload();
-  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,payload,{onStatus:st});
+  let mod;try{mod=await import('./claude.js');const r=await mod.refineNai(AIKEY,withNotes(payload),{onStatus:st});
     AIN[sid]={sig:sigOf(payload),cuts:r.cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';naiBusy=false;NAI_DONE=Date.now();st(`컷 ${r.cuts?.length||''}개 프롬프트를 만들었어요 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);setTimeout(naiBtnSync,4100);toast('컷 프롬프트를 만들었어요 · 카드마다 바뀐 프롬프트를 확인해 주세요',2600);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderTable()}}
   catch(err){console.error(err?.status||err?.name||'error');const m=mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요';naiBusy=false;NAI_ERR=true;st('생성하지 못했어요 · '+m);if(err?.status===401){setKey('',null);openKey(naiRefine,m)}}finally{naiBusy=false;$('#naibtn').disabled=false;naiBtnSync()}}
@@ -2357,7 +2466,7 @@ function naiText(){return naiCuts().map(({o})=>naiCopy(o)).join('\n\n\n')+'\n'}
 function renderNai(){if(VIEW==='layout')setTimeout(renderConti);$('#naistyle').value!==NAISTYLE&&document.activeElement!==$('#naistyle')&&($('#naistyle').value=NAISTYLE);
   const chars=naiChars().filter(c=>!/^(나|너|모두|사람들)$/.test(c.name));
   $('#naichars').innerHTML=chars.length?chars.map(c=>{const v=NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),src=artSrc(c.name,v),im=IMG.char[c.name];
-    return `<div class="naichar"><span class="av" style="${im?'':`background:${avBg(c.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(c.name.slice(0,1))}</span><b>${esc(c.name)}${src?`<em class="art-src${src==='자동'?' auto':''}">${src}</em>`:''}</b><input data-naitag="${esc(c.name)}" value="${esc(v)}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="link" data-act="naireset" data-n="${esc(c.name)}" title="외형 글에서 규칙으로 다시 만들기">외형에서 다시</button></div>`}).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
+    return `<div class="naichar"><span class="av" style="${im?'':`background:${avBg(c.name)}`}">${im?`<img src="${im.src}" alt="">`:esc(c.name.slice(0,1))}</span><b>${esc(c.name)}${src?`<em class="art-src${src==='자동'?' auto':''}">${src}</em>`:''}</b><input data-naitag="${esc(c.name)}" value="${esc(v)}" spellcheck="false" aria-label="${esc(c.name)} 태그" placeholder="예: 1girl, brown hair, ponytail, maid"><button class="link naidel" data-act="naireset" data-n="${esc(c.name)}" title="이 인물 태그 지우기 · 비우면 특징 글에서 자동으로 만들어요"${NAITAGS[c.name]==null?' hidden':''}>지우기</button></div>`}).join(''):'<p class="empty">캐릭터 페이지에 인물을 넣어주세요.</p>';
   {const e=$('#artstylesrc');if(e){const t=NAISTYLE===NAI_STYLE_DEF?'기본':ARTGEN.style===NAISTYLE?'생성':'';e.textContent=t;e.className='art-src'+(t==='기본'?' auto':'')}}
   const ps=state.panels,sc=ps.length?sceneFor(ps[0]):null;
   $('#nairefs').innerHTML=chars.map(c=>`<span class="${IMG.char[c.name]?'on':'off'}">${IMG.char[c.name]?'●':'○'} ${esc(c.name)} 캐릭터 이미지 ${IMG.char[c.name]?'있음 → Character Reference':'없음'}</span>`).join('')+`<span class="${sc?'on':'off'}">${sc?'●':'○'} 장면 이미지 ${sc?'있음 → Vibe Transfer':'없음'}</span><button class="btn" data-view="write">씬에서 이미지 등록</button>`;
@@ -2371,7 +2480,8 @@ function renderNai(){if(VIEW==='layout')setTimeout(renderConti);$('#naistyle').v
   }).join('')}
 // 콘티 = 컷마다 [그림 넣기 | NovelAI 프롬프트]. 그 밖의 연출 설정·전체 미리보기는 이 화면에서 뺌(연출은 씬 글 {…}로)
 // 콘티 작업 상태: 그림 없는 컷만 보기 · 복사한 컷(붙여 넣기 대상) · 지금 컷(J/K)
-let CT_EMPTY=false,CT_CUR=-1;const CT_COPIED=new Set();
+var CT_EMPTY=false,CT_CUR=-1,CT_COPIED=new Set();
+function ctClearCopied(){CT_COPIED.clear();if(target&&target.kind==='cut')target=null}
 // 프롬프트 칸: 모든 컷에 똑같이 붙는 화풍 태그는 흐리게(복사에는 그대로 들어감)
 // 프롬프트 칸: 모든 컷에 똑같이 붙는 화풍 태그는 흐리게(복사에는 그대로 들어감)
 function ctBlk(title,txt,dim){const tags=String(txt||'').split(/,\s*/);
@@ -2383,7 +2493,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
   const has=L.map(({p,i})=>!!cutImg(SCUR,i,p));
   const n=ps.length,pct=Math.round(done/n*100);
   // 버튼: 작화 프롬프트 생성(작화 설정 카드) · 컷 프롬프트 생성(여기). 여러 장 넣기는 그림 칸에 여러 장 끌어다 놓기로
-  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
+  const head=`<div class="ct-head"><div class="ct-hrow"><h2 data-work>${esc(sc.title||'제목 없는 씬')}</h2><span class="grow"></span><button class="link" data-act="naidown" title="이 씬 모든 컷 프롬프트를 txt로">프롬프트 저장</button><button class="tpill" data-act="nairefine">컷 프롬프트 생성</button></div><div class="ct-ratio"><label>컷 비율 기준 <select data-ratioref aria-label="컷 비율 기준">${ratioOptions()}</select></label><small>${ratioNote()}</small><label class="ct-fit" title="켜면 그림을 넣은 컷도 칸 높이를 컷 비율로 두고 그림을 칸에 꽉 채워 잘라요 · 끄면 넣은 그림 비율대로 칸 높이가 바뀌어요"><input type="checkbox" data-fitratio${FIT_RATIO?' checked':''}> 넣은 그림도 컷 비율로 맞추기</label></div><p class="ct-naist" aria-live="polite"></p>${NAISTYLE===NAI_STYLE_DEF&&!Object.keys(ARTGEN.chars).length?'<p class="ct-hint">작화 프롬프트를 먼저 만들면 컷마다 화풍이 맞춰져요</p>':''}
     <p class="ct-sub">${done===n?'모든 컷에 그림을 넣었어요':done?`그림 ${n-done}장만 더 넣으면 돼요`:'컷마다 프롬프트를 복사해 그림을 만들고 넣어 주세요'}${ai?(ai.stale?' · <span class="ct-warn">현재 초안을 표시 중이에요 · 컷 프롬프트를 다시 생성할 수 있어요</span>':' · 생성한 컷 프롬프트예요'):''}</p>
     <div class="ct-progw"><div class="ct-prog" role="progressbar" aria-label="그림 넣은 컷" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div><span>${done}/${n}</span></div>
 </div>
@@ -2392,13 +2502,26 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
       <span class="ct-keys" title="J·K 다음·이전 컷 · C 지금 컷 프롬프트 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기"><span><kbd>J</kbd><kbd>K</kbd>이동</span><span><kbd>C</kbd>복사</span><span><kbd>Ctrl</kbd><kbd>V</kbd>붙여 넣기</span></span></nav>`;
   el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
     return `<article class="ccard${CT_COPIED.has(i)?' copied':''}${i===CT_CUR?' cur':''}" data-ct="${i}"${CT_EMPTY&&im?' hidden':''}>
-      <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}<button type="button" class="ct-edbtn" data-ctedit="${i}" aria-expanded="${CT_EDIT.has(i)}" title="이 컷의 구도·감정·길이를 고치고 프롬프트를 이 컷만 다시 만들어요">${CT_EDIT.has(i)?'수정 닫기':'이 컷 수정'}</button><button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
+      <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p><small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}<button type="button" class="ct-edbtn" data-ctedit="${i}" aria-expanded="${CT_EDIT.has(i)}" title="이 컷의 구도·감정·길이를 고치고 프롬프트를 이 컷만 다시 만들어요">${CT_EDIT.has(i)?'수정 닫기':'이 컷 수정'+(ctNote(i).trim()||['shot','ang','emo','h'].some(f=>p.dir&&p.dir[f]!=null)?' •':'')}</button><button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
       ${CT_EDIT.has(i)?ctEditor(p,i):''}
       <div class="ct-body">
         <div class="ct-art"><div class="drop ct-drop${im?' has':''}" style="aspect-ratio:${o.size.w}/${o.size.h}" tabindex="0" role="button" data-cutslot="${i}" aria-label="${i+1}번 컷 그림 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${i+1}번 컷"><span class="ct-swap" aria-hidden="true">그림 바꾸기</span><button class="x" data-delcut="${i}" aria-label="${i+1}번 컷 그림 빼기">×</button>`:`${ref?`<img class="ct-ref" src="${ref.thumb||ref.src}" alt="">`:''}<span class="ct-plus"><b>+</b>그림 넣기<small>${CT_COPIED.has(i)?'Ctrl+V로 붙여 넣기':'끌어다 놓아도 돼요'}</small></span>`}</div></div>
         <div class="ct-prompt"><div class="ct-ph"><span>NovelAI 프롬프트</span><button class="tpill${CT_COPIED.has(i)?' done':''}" data-act="ncopyall" data-i="${i}">${CT_COPIED.has(i)?'✓ 복사했어요':'프롬프트 복사'}</button></div>
           ${ctBlk('기본 프롬프트',o.base,dim)}${o.chars.map((c,n)=>ctBlk(`캐릭터 ${n+1} · ${esc(c.name)} <small>위치 ${c.pos.cell}</small>`,c.prompt,dim)).join('')}</div>
       </div></article>`}).join('')+(CT_EMPTY&&done===ps.length?'<p class="empty ct-alldone">모든 컷에 그림이 있어요</p>':'')}
+// 콘티에서 샷·앵글·감정 바꾸기: 컷 글의 {…} 연출 지시로 적음 → 씬 글·판정·러프·프롬프트·편집이 모두 같은 값을 봄
+const CT_DIR={shot:['샷'],ang:['앵글'],emo:['감정'],h:['길이']};
+const panelVal=(p,f)=>f==='h'?lenWord(p.h):p[f];
+const cutIdxOf=p=>{const m=String(p?.key||'').match(/^#(\d+):/);return m?+m[1]:-1};
+// 같은 종류의 지시는 글 전체에서 지우고, 값이 있으면 첫 줄 끝 {…}에 이어 붙임
+function writeDir(text,f,val){const cat=x=>{const d=RE.readDirs([x]);return !!d[f]};
+  let lines=String(text||'').split('\n').map(l=>l.replace(/\{([^{}\n]*)\}/g,(m,inner)=>{const ts=inner.split(/[,，·\/]/).map(x=>x.trim()).filter(Boolean).filter(x=>!cat(x));return ts.length?`{${ts.join(', ')}}`:''}).replace(/[ \t]{2,}/g,' ').replace(/\s+$/,''));
+  if(val){const tok=f==='emo'?'감정 '+val:f==='h'?'길이 '+val:val;let k=lines.findIndex(l=>l.trim());if(k<0){lines=[`{${tok}}`];k=0}else{const l=lines[k],m=l.match(/\{([^{}]*)\}\s*$/);lines[k]=m?l.slice(0,m.index)+`{${m[1].trim()}, ${tok}}`:l+` {${tok}}`}}
+  return lines.join('\n')}
+function setCutDir(i,f,val){const p=state.panels[i],k=cutIdxOf(p);if(!p||k<0||CUTS[k]==null)return;
+  const next=writeDir(CUTS[k],f,val);if(next===CUTS[k])return;if(locks[p.key])delete locks[p.key][f];
+  CUTS[k]=next;saveScenes();compute(false);renderNai();
+  const now=state.panels[i];toast(`${i+1}번 컷 ${CT_DIR[f][0]}: ${val?val:'자동 · '+(now?panelVal(now,f):'')}${ainFor()?.cuts?.some(c=>c.n===i+1)?' · 이 컷 다시 생성을 누르면 프롬프트에 반영돼요':''}`,2600)}
 function ctGo(i,smooth=true){const L=state.panels.length;if(!L)return;i=Math.max(0,Math.min(L-1,i));CT_CUR=i;
   $('#conti').querySelectorAll('.ccard').forEach(c=>c.classList.toggle('cur',+c.dataset.ct===i));$('#conti').querySelectorAll('.ct-dot').forEach(d=>d.classList.toggle('cur',+d.dataset.ctgo===i));
   const c=$('#conti').querySelector(`.ccard[data-ct="${i}"]`);if(c&&!c.hidden)c.scrollIntoView({block:'start',behavior:smooth?'smooth':'auto'})}
@@ -2406,14 +2529,17 @@ function ctGo(i,smooth=true){const L=state.panels.length;if(!L)return;i=Math.max
   el.addEventListener('click',e=>{const x=e.target.closest('[data-ctdel]');if(x){e.stopPropagation();contiDelete(+x.dataset.ctdel);return}});
   el.addEventListener('click',e=>{const x=e.target.closest('[data-ctedit]');if(x){e.stopPropagation();const i=+x.dataset.ctedit;CT_EDIT.has(i)?CT_EDIT.delete(i):CT_EDIT.add(i);renderConti();return}
     const g=e.target.closest('[data-ctregen]');if(g){e.stopPropagation();const i=+g.dataset.ctregen;contiRegenCut(i,g.closest('.ct-edit')?.querySelector('textarea')?.value.trim()||'');return}
-    const a=e.target.closest('[data-ctauto]');if(a){e.stopPropagation();const p=state.panels[+a.dataset.ctauto];if(p){delete locks[p.key];compute(false);renderConti();toast('이 컷을 엔진 값으로 되돌렸어요')}}});
-  el.addEventListener('change',e=>{const s=e.target.closest('[data-ctf]');if(!s)return;const i=+s.closest('.ct-edit').dataset.i,p=state.panels[i];if(!p)return;
-    const L=locks[p.key]||(locks[p.key]={}),f=s.dataset.ctf;if(s.value==='')delete L[f];else L[f]=f==='h'?+s.value:s.value;compute(false);renderConti();
-    toast(`${i+1}번 컷 ${({shot:'샷',ang:'앵글',emo:'감정',h:'길이'})[f]}을 바꿨어요 · 프롬프트를 이 컷만 다시 만들 수 있어요`,2200)});
+    const a=e.target.closest('[data-ctauto]');if(a){e.stopPropagation();ctAuto(+a.dataset.ctauto)}});
+  // 샷·앵글·감정·길이: 컷 글에 {…}로 적어 씬 글·편집·다시 열기에도 남음
+  el.addEventListener('change',e=>{const s=e.target.closest('[data-ctf]');if(!s)return;setCutDir(+s.closest('.ct-edit').dataset.i,s.dataset.ctf,s.value)});
+  el.addEventListener('change',e=>{if(!e.target.matches('[data-ctfit]'))return;const i=+e.target.closest('.ct-edit').dataset.i,k=cutIdxOf(state.panels[i]);if(k<0)return;setCutFit(k,e.target.value);renderConti();toast(`${i+1}번 컷 칸 높이: ${e.target.value==='ratio'?'컷 비율':e.target.value==='img'?'넣은 그림 비율':'작품 설정대로'}`)});
+  el.addEventListener('change',e=>{if(!e.target.matches('[data-fitratio]'))return;setFitRatio(e.target.checked)});
   el.addEventListener('click',e=>{const d=e.target.closest('[data-ctgo]');if(d){if(CT_EMPTY&&$('#conti').querySelector(`.ccard[data-ct="${d.dataset.ctgo}"]`)?.hidden){CT_EMPTY=false;renderConti()}ctGo(+d.dataset.ctgo);return}
     const c=e.target.closest('.ccard');if(c){CT_CUR=+c.dataset.ct;el.querySelectorAll('.ct-dot').forEach(x=>x.classList.toggle('cur',+x.dataset.ctgo===CT_CUR));el.querySelectorAll('.ccard').forEach(x=>x.classList.toggle('cur',x===c))}
     const a=e.target.closest('[data-act="ncopyall"]');if(a){const i=+a.dataset.i;CT_COPIED.add(i);CT_CUR=i;target={kind:'cut',key:String(i)};setTimeout(renderConti,0);toast(`${i+1}번 컷 프롬프트를 복사했어요 · 생성한 그림을 Ctrl+V로 붙여 넣으면 이 컷에 들어가요`,2600)}});
   el.addEventListener('change',e=>{if(e.target.matches('[data-ctempty]')){CT_EMPTY=e.target.checked;renderConti()}});
+  el.addEventListener('input',e=>{const n=e.target.dataset.ctnote;if(n!=null)setCtNote(+n,e.target.value)});
+  el.addEventListener('keydown',e=>{const n=e.target.dataset?.ctnote;if(n!=null&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();contiRegenCut(+n,e.target.value.trim())}});
   document.addEventListener('keydown',e=>{if(VIEW!=='layout'||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target;if(t.closest&&t.closest('input,textarea,select,[contenteditable],dialog'))return;if(!$('#naidrawer')?.hidden)return;
     const k=e.key.toLowerCase(),vis=[...$('#conti').querySelectorAll('.ccard:not([hidden])')].map(c=>+c.dataset.ct);if(!vis.length)return;
     if(k==='j'||k==='k'){e.preventDefault();const p=vis.indexOf(CT_CUR);const n=p<0?(k==='j'?0:vis.length-1):Math.max(0,Math.min(vis.length-1,p+(k==='j'?1:-1)));ctGo(vis[n])}
@@ -2473,7 +2599,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   else if(a==='naibase')naiBase(+el.dataset.i);
   else if(a==='nairef'){const r=IMG.char[el.dataset.n];if(r)dataUrlDownload(`${el.dataset.n}-character-reference.jpg`,r.src)}
   else if(a==='naivibe'){const sc=state.panels.length&&sceneFor(state.panels[0]);if(sc)dataUrlDownload(`${sc.name||'scene'}-vibe.jpg`,sc.src)}
-  else if(a==='naireset'){delete NAITAGS[el.dataset.n];saveNaiTags();renderNai()}});
+  else if(a==='naireset'){delete NAITAGS[el.dataset.n];saveNaiTags();renderNai();toast(`${el.dataset.n} 태그를 지웠어요 · 특징 글에서 자동으로 만들어요`)}});
 $('#naichars').addEventListener('change',e=>{const t=e.target.closest('[data-naitag]');if(!t)return;NAITAGS[t.dataset.naitag]=t.value.trim();saveNaiTags();renderNai()});
 $('#naistyle').value=NAISTYLE;
 $('#naistyle').addEventListener('input',e=>{NAISTYLE=e.target.value;try{localStorage.setItem('rough-nai-style',NAISTYLE)}catch(_){}clearTimeout(window._nst);window._nst=setTimeout(renderNai,300)});
@@ -2601,11 +2727,12 @@ function entityDialog(items){let d=$('#entdlg');if(!d){d=document.createElement(
   const pick=items.map(x=>x.suggest);
   d.onclick=e=>{const b=e.target.closest('[data-v]');if(b){pick[+b.dataset.n]=b.dataset.v;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
     const k=e.target.closest('[data-r]')?.dataset.r;if(!k)return;
-    if(k==='go'){let nc=0,nl=0;items.forEach((x,n)=>{const v=pick[n];
-        if(v==='char'){CHARS.push({name:x.name.trim(),aliases:x.aliases||'',body:x.body==='male'?'male':'female',look:x.look||''});nc++}
+    if(k==='go'){let nc=0,nl=0;const added=[],hints={};items.forEach((x,n)=>{const v=pick[n];
+        if(v==='char'){CHARS.push({name:x.name.trim(),aliases:x.aliases||'',body:x.body==='male'?'male':'female',look:''});added.push(x.name.trim());if(x.look)hints[x.name.trim()]=`구성 정리 메모(외형): ${x.look}${x.where?` · 나오는 곳: ${x.where}`:''}`;nc++}
         else if(v==='lore'){LORE.push({id:'l'+Date.now().toString(36)+n,name:x.name.trim(),cat:LORE_CAT[x.cat]?x.cat:'term',keys:x.keys||'',desc:x.desc||'',tags:x.tags||''});nl++}});
       if(nc){saveChars();if(VIEW==='chars')renderChars()}if(nl){saveWorld();if(VIEW==='world')renderWorld()}
-      if(nc||nl){try{compute(false)}catch(_){}toast([nc&&`캐릭터 ${nc}명`,nl&&`세계관 항목 ${nl}개`].filter(Boolean).join(' · ')+'를 설정집에 추가했어요',2600)}}
+      if(nc||nl){try{compute(false)}catch(_){}toast([nc&&`캐릭터 ${nc}명`,nl&&`세계관 항목 ${nl}개`].filter(Boolean).join(' · ')+`를 설정집에 추가했어요${added.length?' · 캐릭터 외형을 구성·씬 글로 추론하는 중…':''}`,2600)}
+      if(added.length)inferChars(added,{hints})}
     d.close()};
   d.showModal()}
 
@@ -2623,19 +2750,26 @@ document.addEventListener('change',e=>{const s=e.target.closest('[data-ratioref]
   toast(s.value==='off'?'컷 길이를 엔진 그대로 써요':`컷 비율을 ${s.value==='__all'?'상용 웹툰 평균':s.value}에 맞췄어요 · 편집 화면에도 반영돼요`,2400)});
 
 // ---------- 콘티 컷 하나 상세 수정 ----------
-// 샷·앵글·감정·길이를 이 컷만 바꾸고(씬·편집 화면과 같은 locks 값), 작가 요청을 적어 프롬프트를 이 컷만 Claude로 다시 만듦
-function ctEditor(p,i){const L=p.lock||{},sel=(f,list,cur,auto,lab)=>`<label><span>${lab}</span><select data-ctf="${f}"><option value="">자동 · ${esc(auto??'')}</option>${list.map(([l,v])=>`<option value="${esc(v)}"${L[f]!==undefined&&String(L[f])===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select></label>`;
+// 샷·앵글·감정·길이를 이 컷만 바꾸고(컷 글의 {…} 지시로 저장 → 씬·편집·다시 열기에도 남음), 작가 요청(씬별 저장)을 적어 프롬프트를 이 컷만 Claude로 다시 만듦
+function ctEditor(p,i){const L=p.dir||{},has=f=>L[f]!==undefined&&L[f]!==null,sel=(f,list,cur,auto,lab)=>`<label><span>${lab}</span><select data-ctf="${f}" class="${has(f)?'set':''}"><option value="">${has(f)?'↺ 자동으로':`자동 · ${esc(cur??'')}`}</option>${list.map(([l,v])=>`<option value="${esc(v)}"${has(f)&&String(L[f])===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select></label>`;
   const busy=CT_BUSY.has(i);
-  return `<div class="ct-edit" data-i="${i}"><div class="ct-edrow">${sel('shot',RE.SHOTS.map(x=>[x,x]),p.shot,p.auto?.shot,'샷')}${sel('ang',RE.ANGLES.map(x=>[x,x]),p.ang,p.auto?.ang,'앵글')}${sel('emo',CT_EMOS.map(x=>[x,x]),p.emo,p.auto?.emo||p.emo,'감정')}${sel('h',LEN.map(([w,h])=>[w,h]),lenWord(p.h),p.auto?lenWord(p.auto.h):'','길이')}
-    ${Object.keys(L).length?`<button type="button" class="link" data-ctauto="${i}">엔진 값으로</button>`:''}</div>
-    <label class="ct-edreq"><span>프롬프트 요청 <small>비워 두면 지금 값대로</small></span><textarea rows="2" placeholder="예: 비 오는 밤, 역광, 손에 든 편지를 강조">${esc(CT_REQ[i]||'')}</textarea></label>
+  return `<div class="ct-edit" data-i="${i}"><div class="ct-edrow">${sel('shot',RE.SHOTS.map(x=>[x,x]),p.shot,p.auto?.shot,'샷')}${sel('ang',RE.ANGLES.map(x=>[x,x]),p.ang,p.auto?.ang,'앵글')}${sel('emo',CT_EMOS.map(x=>[x,x]),p.emo,p.auto?.emo||p.emo,'감정')}${sel('h',LEN.map(([w,h])=>[w,h]),lenWord(p.h),p.auto?lenWord(p.auto.h):'','길이')}<label><span>칸 높이</span><select data-ctfit><option value="">작품 설정 · ${FIT_RATIO?'컷 비율':'그림 비율'}</option><option value="ratio"${cutEdits()[cutIdxOf(p)]?.fit==='ratio'?' selected':''}>컷 비율(그림은 잘라서 채움)</option><option value="img"${cutEdits()[cutIdxOf(p)]?.fit==='img'?' selected':''}>넣은 그림 비율</option></select></label>
+    ${['shot','ang','emo','h'].some(has)?`<button type="button" class="link" data-ctauto="${i}">엔진 값으로</button>`:''}</div>
+    <label class="ct-edreq"><span>프롬프트 요청 <small>씬별로 저장 · 컷 프롬프트 생성(씬 전체)에도 같이 보내요</small></span><textarea rows="2" data-ctnote="${i}" maxlength="500" placeholder="예: 비 오는 밤, 역광, 손에 든 편지를 강조 · Ctrl+Enter로 다시 생성">${esc(ctNote(i))}</textarea></label>
     <div class="ct-edact"><span class="ct-edst" aria-live="polite">${esc(CT_MSG[i]||'')}</span><span class="grow"></span><button type="button" class="tpill${busy?' busy':''}" data-ctregen="${i}"${busy?' disabled':''}>${busy?'<i class="spin" aria-hidden="true"></i>생성 중…':'이 컷 프롬프트 다시 생성'}</button></div></div>`}
-const CT_REQ={},CT_MSG={};
+const CT_MSG={};
+// 엔진 값으로: 이 컷 글의 샷·앵글·감정·길이 지시를 모두 지움
+function ctAuto(i){const p=state.panels[i],k=cutIdxOf(p);if(!p||k<0)return;let x=CUTS[k];for(const f of ['shot','ang','emo','h'])x=writeDir(x,f,'');delete locks[p.key];if(x!==CUTS[k]){CUTS[k]=x;saveScenes()}compute(false);renderNai();toast('이 컷을 엔진 값으로 되돌렸어요')}
 async function contiRegenCut(i,req){if(CT_BUSY.has(i))return;if(!AIKEY){openKey(()=>contiRegenCut(i,req));return}
-  CT_REQ[i]=req;CT_BUSY.add(i);CT_MSG[i]='Claude에 보내는 중…';renderConti();const sid=SCENES[SCUR].id,payload=naiPayload();
+  setCtNote(i,req);CT_BUSY.add(i);CT_MSG[i]='Claude에 보내는 중…';renderConti();const sid=SCENES[SCUR].id,payload=naiPayload();
   let mod;try{mod=await import('./claude.js');const r=await mod.refineNaiCut(AIKEY,payload,i+1,req,{onStatus:t=>{CT_MSG[i]=t;const x=$('#conti')?.querySelector(`.ct-edit[data-i="${i}"] .ct-edst`);if(x)x.textContent=t}});
     const prev=AIN[sid],cuts=(prev&&!ainFor()?.stale?prev.cuts:[]).filter(c=>c.n!==i+1).concat([r.cut]);
     AIN[sid]={sig:sigOf(naiPayload()),cuts,model:r.model,at:Date.now()};try{localStorage.setItem('rough-ai-nai',JSON.stringify(AIN))}catch(_){}
     NAIVIEW='ai';CT_MSG[i]=`✓ ${i+1}번 컷 프롬프트를 새로 만들었어요`;toast(CT_MSG[i],2200)}
   catch(err){console.warn(err);CT_MSG[i]='생성하지 못했어요 · '+(mod?mod.explain(err):'Claude 모듈을 불러오지 못했어요');if(err?.status===401){setKey('',null);openKey(()=>contiRegenCut(i,req))}}
   finally{CT_BUSY.delete(i);if(SCENES[SCUR].id===sid&&VIEW==='layout'){renderNai();renderConti()}}}
+
+// 넣은 그림도 컷 비율로 맞추기: 작품 전체 설정 / 컷 하나(pageEdits.fit)
+function setFitRatio(on){FIT_RATIO=!!on;try{localStorage.setItem('rough-fit-ratio',on?'1':'0')}catch(_){}SA_CACHE?.clear?.();if(VIEW==='layout')renderConti();if(VIEW==='webtoon')renderWebtoon();render?.();
+  toast(on?'그림을 넣은 컷도 컷 비율로 맞춰요 · 그림은 칸에 꽉 채워 잘려요(편집에서 끌어 위치 조정)':'그림을 넣은 컷은 그림 비율대로 칸 높이를 정해요',2600)}
+function setCutFit(slot,v,si=SCUR){const sc=SCENES[si];if(!sc)return;const e=sc.pageEdits||(sc.pageEdits=[]);if(v){(e[slot]||(e[slot]={})).fit=v}else if(e[slot])delete e[slot].fit;saveScenes();SA_CACHE?.clear?.()}

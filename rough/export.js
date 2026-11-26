@@ -207,13 +207,13 @@ async function zip(files){const enc=new TextEncoder(),parts=[],central=[];let of
   e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,size,true);e.setUint32(16,off,true);
   return new Blob([...parts,...central,new Uint8Array(e.buffer)],{type:'application/zip'})}
 
-const titleBase=()=>safe($('#wtitle').value)||'webtoon';
+const titleBase=()=>safe(workTitle())||'webtoon';
 async function exportSVG(st){st('SVG 만드는 중');const r=await buildSVG(st);if(!r){st('저장할 컷이 없어요');return}
   download(`${titleBase()}-figma.svg`,URL.createObjectURL(new Blob([r.svg],{type:'image/svg+xml'})));
   st(`SVG로 저장했어요 · 씬 ${r.count}개 · 피그마 캔버스에 끌어다 놓으면 레이어로 열려요`)}
 async function exportPSD(st){st('PSD 모듈 불러오는 중');const ag=await loadAgPsd();const ms=await models(st,{fonts:true});if(!ms.length){st('저장할 컷이 없어요');return}
   const files=[];for(const m of ms){st(`PSD 만드는 중 · ${m.title}`);files.push({name:`${pad(m.i+1)}_${safe(m.title)}.psd`,data:await scenePSD(m,ag)})}
-  files.push({name:'대사 목록.txt',data:'﻿'+scriptText(ms,$('#wtitle').value||'제목 없음')});
+  files.push({name:'대사 목록.txt',data:'﻿'+scriptText(ms,workTitle())});
   download(`${titleBase()}-clipstudio.zip`,URL.createObjectURL(await zip(files)));
   st(`PSD ${ms.length}장을 ZIP으로 저장했어요 · 클립스튜디오에서 파일 › 열기로 PSD를 열어요`)}
 

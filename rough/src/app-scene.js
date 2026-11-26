@@ -61,7 +61,7 @@ function renderSceneList(){
   $('#scount').textContent=`${SCENES.length}개`;
   document.querySelectorAll('[data-scbar]').forEach(el=>el.innerHTML=`<button class="ib" data-scmove="-1" aria-label="이전 씬"${SCUR?'':' disabled'}>‹</button><select data-scsel aria-label="씬 고르기">${SCENES.map((sc,i)=>`<option value="${i}"${i===SCUR?' selected':''}>${esc(sceneLabel(sc,i))}</option>`).join('')}</select><button class="ib" data-scmove="1" aria-label="다음 씬"${SCUR<SCENES.length-1?'':' disabled'}>›</button><span>${SCENES[SCUR].cuts.filter(c=>c.trim()).length}컷</span>`);
 }
-function switchScene(i){if(i<0||i>=SCENES.length)return;saveScenes();SCUR=i;CUTS=SCENES[i].cuts;saveScenes();
+function switchScene(i){if(i<0||i>=SCENES.length)return;saveScenes();if(i!==SCUR&&typeof ctClearCopied==='function')ctClearCopied();SCUR=i;CUTS=SCENES[i].cuts;saveScenes();
   $('#sctitle').value=SCENES[i].title||'';renderCuts();renderSceneList();state.sel=-1;compute(true);renderSlots();renderSugg();
 }
 function deleteScene(index){
@@ -182,6 +182,7 @@ document.querySelector('.scins').addEventListener('click',e=>{const b=e.target.c
   t.dispatchEvent(new Event('input',{bubbles:true}))});
 // 연출 넣기 메뉴: 누르면 지금 줄 끝에 {…}. 같은 줄에 이미 {…}가 있으면 그 안에 쉼표로 이어 붙임
 const DIR_MENU=[['샷',['설정','전경','전신','중경','클로즈업','디테일','효과 배경']],['앵글',['아이레벨','하이앵글','로우앵글','탑뷰']],
+  ['감정',['감정 설렘','감정 긴장','감정 놀람','감정 분노','감정 당황','감정 쓸쓸','감정 결의','감정 다정','감정 기쁨','감정 의아','감정 냉담','감정 회상','감정 개그','감정 평온']],
   ['NovelAI 초점',Object.keys(window.RoughNAI.FOCUS)],
   ['칸 길이·간격',['짧게','길게','아주 길게','붙임','쉼','큰 쉼','하이라이트']],['그림',['확대 1.5','확대 2','집중선','집중선 진하게','속도선 가로','속도선 위로']],
   ['배경',['배경 검정','배경 흰색','배경 노을',...PAGE_BACKGROUNDS.filter(Boolean).map(b=>'배경 '+b.name),'씬 끝 흰색','씬 끝 유지']],['말풍선',['속삭임','외침','생각','전화','분노','숨','떨림','의미심장']]];

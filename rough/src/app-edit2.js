@@ -171,7 +171,7 @@ function finishMaterialLine(e){
   materialStatus(kind==='focus'?'집중선을 넣었어요.':'속도선을 넣었어요.');
 }
 function showMaterialLine(){
-  const lines=pageSelection&&pageSettings()?.materialLines;
+  const lines=pageSelection&&pageView()?.materialLines;
   const existing=Object.keys(lines||{}),select=$('#wmaterial-line-kind');
   $('#wmaterial-line-edit').hidden=!existing.length;
   if(!existing.length)return;
@@ -183,15 +183,17 @@ function showMaterialLine(){
 $('#wmaterial-line-kind').addEventListener('change',showMaterialLine);
 for(const prop of ['color','density']){
   $('#wmaterial-'+prop).addEventListener('change',e=>{
-    const kind=$('#wmaterial-line-kind').value,line=pageSelection&&pageSettings()?.materialLines?.[kind];
+    const kind=$('#wmaterial-line-kind').value,line=pageSelection&&pageView()?.materialLines?.[kind]&&pageAdopt('materialLines').materialLines[kind];
     if(!line)return;
     line[prop]=prop==='density'?Number(e.target.value):e.target.value;
     saveScenes();renderWebtoon();
   });
 }
 $('#wmaterial-delete').addEventListener('click',()=>{
-  const lines=pageSelection&&pageSettings()?.materialLines;if(!lines)return;
-  delete lines[$('#wmaterial-line-kind').value];saveScenes();renderWebtoon();
+  // 글에서 나온 효과선도 같이 지우도록 레이어 Delete와 같은 길로
+  if(!pageSelection||!pageView()?.materialLines)return;const kd=$('#wmaterial-line-kind').value;
+  if(window.RoughWS?.deletePart){RoughWS.deletePart(pageSelection,'line:'+kd);return}
+  const lines=pageSettings()?.materialLines;if(lines){delete lines[kd];saveScenes();renderWebtoon()}
 });
 function inspector(){const L=!!selectedLetter,C=!!pageSelection;$('#wsec-letter').hidden=!L;$('#wsec-cut').hidden=!C;$('#wempty').hidden=L;
   $('#wmaterials').hidden=!pageEditing||!C;materialSearch.hidden=!C||!materialRows.length;showMaterialLine();
@@ -229,6 +231,13 @@ function edRecord(){if(typeof VIEW==='undefined'||!UNDO_VIEWS.includes(VIEW)||ed
   if(edSnap!==null&&cur!==edSnap){const now=Date.now();if(now-edLast>(VIEW==='write'?1500:600)||!UNDO.length)UNDO.push(edSnap);if(UNDO.length>100)UNDO.shift();REDO.length=0;edLast=now;edSavedAt=now;edSaveLabel()}
   edSnap=cur;edButtons()}
 {const _ss=saveScenes;saveScenes=function(...a){edRecord();return _ss(...a)}}
+// 되돌리기 기록은 화면(씬·콘티·편집)마다 따로: 화면을 떠날 때 그 화면 기록을 보관하고 돌아오면 다시 꺼냄.
+// 기록은 작업 전체 상태라서, 떠나 있는 동안 다른 화면에서 원고가 바뀌었으면 그 화면의 예전 기록은 버림(다른 화면에서 한 일을 되돌리지 않게)
+const ED_HIST={};let ED_VIEW=null;
+function edSwitch(v){const nv=UNDO_VIEWS.includes(v)?v:null;if(nv===ED_VIEW&&edSnap!==null)return;const cur=edState();
+  if(ED_VIEW)ED_HIST[ED_VIEW]={U:UNDO.slice(),R:REDO.slice(),at:edSnap??cur};
+  UNDO.length=0;REDO.length=0;const h=nv&&ED_HIST[nv];if(h&&h.at===cur){UNDO.push(...h.U);REDO.push(...h.R)}
+  ED_VIEW=nv;edSnap=cur;edLast=0;edButtons()}
 // 되돌린 뒤 지금 화면 다시 그리기
 function edRefresh(){if(VIEW==='write'){renderCuts();compute(false)}else if(VIEW==='layout'){compute(false);rerenderCuts()}}
 function edSaveLabel(){const el=$('#edsave');if(!el)return;if(SAVE_FAIL){saveFailLabel();return}if(!edSavedAt){el.textContent='자동 저장';el.classList.remove('on');return}

@@ -124,6 +124,9 @@
   // 줄 어디에나 {클로즈업} {로우앵글, 확대 1.5} 처럼. 쉼표·가운뎃점·빗금으로 여러 개
   // 엔진이 쓰는 것(샷·앵글·길이·간격·하이라이트)은 여기서 읽고, 나머지(확대·효과선·배경·말풍선 모양…)는 fx로 넘겨 화면이 해석
   const DIR_RE = /\{([^{}\n]{1,80})\}/g;
+  // 감정 지시는 {감정 설렘}처럼 '감정'을 붙여서만(말풍선 모양 {분노}와 겹치지 않게)
+  const EMOS = [...new Set(LEX.map(x => x[0]))];
+  const EMO_BASE = Object.fromEntries(EMOS.map(e => [e, LEX.find(x => x[0] === e)[1]]));
   const SHOT_ALIAS = { 원경: '설정', 롱샷: '설정', '설정샷': '설정', 와이드: '전경', 풀샷: '전신', 전신샷: '전신', 미디엄: '중경', 미디엄샷: '중경', 바스트: '중경', 바스트샷: '중경', 클로즈: '클로즈업', 업: '클로즈업', 익스트림: '디테일', '익스트림 클로즈업': '디테일', 인서트: '디테일', 디테일샷: '디테일', '배경 효과': '효과 배경', 효과: '효과 배경', 심상: '효과 배경' };
   const ANG_ALIAS = { 눈높이: '아이레벨', 정면: '아이레벨', 부감: '하이앵글', 위에서: '하이앵글', 하이: '하이앵글', 앙각: '로우앵글', 아래에서: '로우앵글', 로우: '로우앵글', 조감: '탑뷰', 버즈아이: '탑뷰', 탑: '탑뷰' };
   const LEN_W = { 짧게: 0.6, '길이 짧게': 0.6, '길이 보통': 1, 길게: 1.5, '길이 길게': 1.5, '아주 길게': 2.2, '길이 아주 길게': 2.2 };
@@ -137,6 +140,7 @@
       else if (LEN_W[t]) d.h = LEN_W[t];
       else if ((m = t.match(/^길이\s*([\d.]+)$/))) d.h = Math.max(0.45, Math.min(2.4, +m[1] || 1));
       else if (GAP_W[t]) d.gap = GAP_W[t];
+      else if ((m = t.match(/^감정\s*(\S+)$/)) && EMOS.includes(m[1])) d.emo = m[1];
       else if (/^(하이라이트|정점|클라이맥스)$/.test(t)) d.hl = true;
       else d.fx.push(t);
     }
@@ -309,6 +313,8 @@
   function analyzeChunk(raw) {
     // 학습 모델(E.FEEL)이 있으면 감정·강도를 덮어씀: FEEL(beat) → {emo, i, why} 또는 null
     const beats = raw.map(b => { const f = feel(b), m = E.FEEL && (E.FEEL_MODE !== 'fallback' || !f._hit) && E.FEEL(b); return { ...b, ...f, ...(m ? { emo: m.emo ?? f.emo, i: m.i != null ? Math.max(0, Math.min(3, m.i + E.FEEL_SHIFT)) : f.i, emoWhy: m.why || f.emoWhy } : {}) }; });
+    // 글에 적은 감정 {감정 X}이 판정보다 우선. 강도는 그 감정의 기본 강도 이상으로
+    beats.forEach(b => { const e = b.dir && b.dir.emo; if (!e) return; if (e !== b.emo) b.emoWhy = '글에 적은 연출'; b.emo = e; if (e === '평온') b.i = Math.min(b.i, 1); else b.i = Math.max(b.i, EMO_BASE[e] || 0); });
     beats.forEach((b, k) => {
       let [r, why] = roleOf(b, k, beats[k - 1]); const sm = E.SHOT && E.ROLE_MODEL && E.SHOT(b); if (sm && sm.role) { if (sm.role !== r) why = '글 전체로 판단(학습 모델)'; r = sm.role; } b.role = r; b.roleWhy = why;
       // 드러남은 그 자체로 고비: 공개 컷은 강도 2 이상, 핵심 소품이면 +1
@@ -631,5 +637,5 @@
     return bs >= 2 ? best : null;
   }
 
-  Object.assign(E, { useRatio, RATIO: null, SHOTS, ANGLES, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, useRefText, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
+  Object.assign(E, { useRatio, RATIO: null, SHOTS, ANGLES, EMOS, readDirs, takeDirs, DIR_RE, parse, parseCut, parseCuts, analyzeCuts, proseToCuts, sentences, guessNames, mentions, analyze, analyzeChunk, chunk, rank, score, layout, suggestRef, nameProbs, useRankModel, useLayoutModel, layFeats, setPrefs, PREFS: null, useBundleModel, bundlePredict, seqFeats, useShotModel, useAngleModel, useRefText, applyShot, SHOT: null, ROLE_MODEL: true, FEEL: null, FEEL_MODE: 'all', FEEL_SHIFT: 0, useFeelModel, applyFeel, makeFeel, WEIGHTS: W });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughEngine = {}));

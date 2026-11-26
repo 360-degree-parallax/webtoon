@@ -95,6 +95,8 @@ const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰 한 컷�
 - effect: no humans, abstract background. 인물이나 실제 장소의 묘사 없이 색, 빛, 선의 방향과 질감을 쓴다. chars는 빈 배열.
 - character: base에는 인원·프레이밍·공간·조명. 외형·표정·동작·시선은 캐릭터마다 분리한다. draft.chars에서 화면에 보이는 인물만 사용한다. 등록 인물이 없는 경우 컷에 보이는 사람의 동작을 base에 쓴다. cell은 A~E(좌→우), 1~5(상→하)이며 원문 위치와 연속성을 따른다.
 
+컷에 note가 있으면 작가가 그 컷에 직접 남긴 지시다. 그 컷에서는 가장 먼저 반영하고, 지시와 무관한 부분은 씬 흐름대로 쓴다.
+
 영어 소문자 태그를 쉼표와 공백으로 구분한다. 핵심 시각 요소를 앞에 둔다. 물체 배치나 빛의 방향에 필요하면 짧은 영문 구절을 추가한다. 샷·앵글·해상도는 입력을 따른다. world/lore의 정보는 화면에 드러나는 요소만 쓴다. 대사·나레이션·효과음은 이미지에 쓰지 않는다. 사용자가 정한 화풍은 기본 프롬프트 뒤에 둔다.`;
 const SCHEMA_NAI = {
   type: 'object',
@@ -133,7 +135,7 @@ export async function refineNai(apiKey, payload, { onStatus } = {}) {
 
 // 작화 프롬프트 생성: 세계관·인물 외형 → NovelAI 화풍 태그 + 인물별 외형 태그(모든 컷에 공통으로 붙는 값)
 const SYSTEM_ART = `너는 NovelAI Diffusion V4.5용 태그를 짓는 웹툰 작화 감독이다.
-입력은 작품의 세계관과 등장인물(이름·성별·외형 글·지금 태그)이다. 모든 컷에 공통으로 붙일 두 가지를 만든다.
+입력은 작품의 세계관과 등장인물(이름·성별·특징 글·지금 외형 태그)이다. 특징 글(look)에는 성격·말투와 태그로 다 못 담은 외형 특징이 섞여 있다. 모든 컷에 공통으로 붙일 두 가지를 만든다.
 
 1) style: 화풍 태그. 영어 태그를 쉼표로, 8~16개.
 - 웹툰 채색 방식, 선 굵기, 명암 처리, 색감, 질감, 시대·장르 분위기를 고른다(예: korean webtoon, soft shading, thin lineart, muted colors).
@@ -142,7 +144,8 @@ const SYSTEM_ART = `너는 NovelAI Diffusion V4.5용 태그를 짓는 웹툰 작
 - 1girl·1boy 같은 인원 태그는 넣지 않는다(컷 프롬프트가 컷마다 붙인다).
 - 머리 색·길이·모양, 눈 색, 나이대 느낌, 체형, 늘 입는 옷과 장신구, 흉터·안경 같은 고정 특징만.
 - 표정·자세·동작·장소·조명은 넣지 않는다(컷마다 바뀌는 값이라 컷 프롬프트에서 정함).
-- 외형 글에 없는 것은 세계관(시대·장르)에 어울리게 정하되, 외형 글과 모순되게 지어내지 않는다.
+- 특징 글에서는 눈에 보이는 것만 태그로 옮기고, 성격·말투는 태그로 만들지 않는다.
+- 글과 태그에 없는 것은 세계관(시대·장르)에 어울리게 정하되, 그 내용과 모순되게 지어내지 않는다.
 - 지금 태그가 있으면 그 내용을 살리면서 빠진 고정 특징을 채우고 다듬는다.
 
 입력에 있는 인물만, 같은 이름으로 돌려준다. 설명 문장 없이 태그만.`;
@@ -199,6 +202,46 @@ const ENT_SCHEMA = {
 export async function findEntities(apiKey, payload, { onStatus } = {}) {
   const r = await run(apiKey, ENT_SYSTEM, ENT_SCHEMA, JSON.stringify(payload), s => onStatus?.(s.replace('씬을 읽는', '등장인물·설정을 찾는')));
   return { items: r.out.items || [], model: r.model };
+}
+
+// 설정집에 새로 넣은 인물: 구성안·씬 글에서 그 인물이 나오는 대목을 읽고 외형 태그(NovelAI)·특징 글·성별을 추론
+const INFER_SYSTEM = `너는 웹툰 캐릭터 설정 담당이다. 입력은 세계관, 이미 있는 등장인물(외형 태그 예시), 이번 화 구성안 요약, 그리고 새로 추가한 인물들이 나오는 컷 글(mentions)이다.
+새 인물마다 세 가지를 정한다.
+1) body: female 또는 male. 글의 호칭·대사·직업에서 판단하고, 정말 모르면 이야기에 자연스러운 쪽.
+2) tags: NovelAI V4.5용 외형 태그. 영어 소문자 Danbooru 태그를 쉼표로, 10~18개. 1girl·1boy 같은 인원 태그는 넣지 않는다.
+   머리 색·길이·모양, 눈 색, 나이대 느낌(young man, old man, child 등), 체형, 늘 입는 옷과 장신구, 흉터·안경 같은 고정 특징만. 표정·자세·장소·조명은 넣지 않는다.
+   글에 나온 외모·옷·직업·신분을 먼저 반영하고, 없는 것은 세계관의 시대·장르와 이 인물의 역할에 어울리게 정한다. 이미 있는 인물과 머리 색·옷이 겹쳐 헷갈리지 않게 한다.
+3) look: 특징 글(한국어 3~5문장). 이 인물이 이야기에서 맡은 역할, 성격, 말투, 버릇, 다른 인물과의 관계를 글에 근거해 쓰고, 태그로 다 못 담는 외형 특징(분위기·체격·흉터)을 덧붙인다. 글에 없는 큰 비밀이나 과거사는 지어내지 않는다.
+입력에 있는 새 인물만, 같은 이름으로 돌려준다.`;
+const INFER_SCHEMA = { type: 'object', properties: { chars: { type: 'array', items: { type: 'object', properties: {
+  name: { type: 'string' }, body: { type: 'string', enum: ['female', 'male'] }, tags: { type: 'string' }, look: { type: 'string' },
+}, required: ['name', 'body', 'tags', 'look'], additionalProperties: false } } }, required: ['chars'], additionalProperties: false };
+// payload: { world, cast:[{name, gender, tags}], plan:{prompt, cards:[{n,title,purpose}]}, chars:[{name, mentions:[…]}] }
+export async function inferChars(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, INFER_SYSTEM, INFER_SCHEMA, `새로 추가한 인물의 외형 태그와 특징 글을 정해줘.\n\n${JSON.stringify(payload, null, 1)}`, s => onStatus?.(s.replace('씬을 읽는', '인물을 읽는')));
+  return { chars: r.out.chars || [], model: r.model };
+}
+
+// 설정집 빈 칸 채우기: 채워진 캐릭터·세계관·설정 항목과 구성안·씬 글을 근거로 비어 있는 칸만 제안
+const FILL_SYSTEM = `너는 웹툰 설정집 정리 담당이다. 입력은 작품의 설정집(캐릭터·세계관 개요·설정 항목)과 이번 화 구성안 요약, 씬 컷 글이다. 각 칸이 빈 문자열이면 비어 있는 칸이다.
+할 일: 비어 있는 칸만 채울 값을 제안한다. 이미 채워진 칸은 근거로만 쓰고 고쳐 쓰지 않는다(돌려줄 때 그 칸은 빈 문자열).
+근거 순서: 1) 이미 채워진 설정집 내용 2) 씬 컷 글과 구성안에 나온 사실 3) 세계관의 시대·장르·분위기에 어울리는 추론. 서로 모순되게 지어내지 않고, 근거가 약한 큰 비밀·과거사는 만들지 않는다.
+캐릭터
+- tags: NovelAI V4.5 외형 태그. 영어 소문자 Danbooru 태그를 쉼표로 10~18개. 1girl·1boy 같은 인원 태그, 표정·자세·장소·조명은 넣지 않는다. 머리·눈·나이대·체형·늘 입는 옷·장신구·고정 특징만. 다른 인물과 헷갈리지 않게.
+- look: 특징 글(한국어 3~5문장). 역할, 성격, 말투, 버릇, 관계, 태그로 못 담는 외형 특징.
+- aliases: 글에서 이 인물을 부르는 다른 호칭(도련님, 에드 등)만 쉼표로. 없으면 빈 문자열.
+세계관 개요(world): name·genre·era·tone은 짧게, summary는 2~3문장, detail은 이야기에 필요한 규칙·사회·장소를 5~10문장, tags는 영어 이미지 태그 6~12개(배경·시대·분위기).
+설정 항목(lore): 이미 있는 항목의 빈 keys(컷 글에 나올 법한 호칭을 쉼표로)·desc(한두 문장)·tags(영어 이미지 태그 몇 개)만. 새 항목은 만들지 않는다.
+입력에 있는 캐릭터·항목만, 같은 이름으로 돌려준다.`;
+const FILL_SCHEMA = { type: 'object', properties: {
+  chars: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, aliases: { type: 'string' }, tags: { type: 'string' }, look: { type: 'string' } }, required: ['name', 'aliases', 'tags', 'look'], additionalProperties: false } },
+  world: { type: 'object', properties: { name: { type: 'string' }, genre: { type: 'string' }, era: { type: 'string' }, tone: { type: 'string' }, summary: { type: 'string' }, detail: { type: 'string' }, tags: { type: 'string' } }, required: ['name', 'genre', 'era', 'tone', 'summary', 'detail', 'tags'], additionalProperties: false },
+  lore: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, keys: { type: 'string' }, desc: { type: 'string' }, tags: { type: 'string' } }, required: ['name', 'keys', 'desc', 'tags'], additionalProperties: false } },
+}, required: ['chars', 'world', 'lore'], additionalProperties: false };
+// payload: { chars:[{name, gender, aliases, tags, look}], world:{…}|null, lore:[{name, category, keys, desc, tags}], plan, scenes:[{title, cuts:[…]}] }
+export async function fillSetbook(apiKey, payload, { onStatus } = {}) {
+  const r = await run(apiKey, FILL_SYSTEM, FILL_SCHEMA, `설정집의 비어 있는 칸을 채울 값을 제안해줘.\n\n${JSON.stringify(payload, null, 1)}`, s => onStatus?.(s.replace('씬을 읽는', '설정집을 읽는')));
+  return { ...r.out, model: r.model };
 }
 
 // 컷 하나만 다시 생성: 씬 전체는 연속성 확인용으로 주고, only의 컷만 반환하게 함. request는 작가가 적은 방향

@@ -78,7 +78,7 @@ editTree=function(){const el=$('#wtoc');if(!el)return;const by={};
       const has=!!cutImg(i,n,p),open=OPEN.has(k)||(k===pageSelection&&!SHUT.has(k));
       const rows=open?[`<button class="tlay" data-tlayer="${esc(k)}|frame" aria-current="${LP(k,'frame')}" title="Delete: 컷 지우기"><span class="ti">${ICON.칸}</span>칸</button>`,
         `<button class="tlay" data-tlayer="${esc(k)}|art" aria-current="${LP(k,'art')}" title="더블클릭: 그림 편집 · Delete: 넣은 그림만 빼기"><span class="ti">${ICON.그림}</span>그림<small>${has?'이미지':'레퍼런스'}</small></button>`,
-        ...extraRows(k,i,+g.dataset.slotIndex),
+        ...extraRows(k,i,+g.dataset.slotIndex,p),
         ...[...g.querySelectorAll('[data-letter]')].map(L=>{const lk=L.dataset.letter,kind=kindOf(lk),hk=k+'|'+lk,txt=(L.dataset.letterText||'').replace(/\s+/g,' ');
           return `<div class="tlrow"><button class="tlay" data-tlayer="${esc(hk)}" title="더블클릭: 문구 고치기 · Delete: 지우기" aria-current="${k===pageSelection&&lk===curLetter}"><span class="ti">${ICON[kind]}</span><span class="tt">${esc(txt||kind)}</span></button>${eye(!HIDE.has(hk),hk,kind)}</div>`})].join(''):'';
       return `<div class="tcutrow"><button class="texp" data-texp="${esc(k)}" aria-expanded="${open}" aria-label="${n+1}컷 레이어 ${open?'접기':'펼치기'}">▸</button><button class="tcut" data-tcut="${esc(k)}" aria-current="${k===pageSelection}"><i class="${has?'on':''}" title="${has?'이미지 등록됨':'러프'}"></i>${n+1}컷<small>${esc(p.shot||'')}</small></button></div>${open?`<div class="tlayers">${rows}</div>`:''}`}).join('')});
@@ -88,7 +88,8 @@ editTree=function(){const el=$('#wtoc');if(!el)return;const by={};
   else el.innerHTML=parts.map((h,i)=>`<div class="tsw" data-tsw="${i}">${h}</div>`).join('');
   el._tparts=parts};
 // 칸에 붙는 에셋(배경 · 효과선 · 이미지 소재)도 레이어 줄로 — 누르면 고르고 Delete로 지움
-function extraRows(k,si,slot){const e=SCENES[si]?.pageEdits?.[slot]||{},rows=[];const row=(what,icon,label,sub,title)=>`<button class="tlay" data-tlayer="${esc(k)}|${what}" aria-current="${LP(k,what)}" title="${title}"><span class="ti">${icon}</span>${label}${sub?`<small>${esc(sub)}</small>`:''}</button>`;
+// 씬 글의 {속도선 …}·{배경 …}처럼 글에서 나온 값도 같이 보여 줌(그림에 그려지는 것과 같은 합친 값)
+function extraRows(k,si,slot,p){const raw=SCENES[si]?.pageEdits?.[slot],e=(p&&window.RoughGrammar?RoughGrammar.merge(raw,p):raw)||{},rows=[];const row=(what,icon,label,sub,title)=>`<button class="tlay" data-tlayer="${esc(k)}|${what}" aria-current="${LP(k,what)}" title="${title}"><span class="ti">${icon}</span>${label}${sub?`<small>${esc(sub)}</small>`:''}</button>`;
   const bg=[e.transition?'전환 질감':'',/^#/.test(e.background||'')?'배경색':'',e.bgImage?'배경 이미지':''].filter(Boolean);
   if(bg.length)rows.push(row('bg',ICON.배경,'배경',bg.join(' · '),'Delete: 이 컷 배경(전환·색·이미지) 지우기'));
   Object.keys(e.materialLines||{}).forEach(kd=>rows.push(row('line:'+kd,ICON.효과선,kd==='speed'?'속도선':'집중선','효과선','Delete: 효과선 지우기 · 색은 상황 막대')));
@@ -144,8 +145,8 @@ rd.innerHTML=`<div class="rd-bar"><b id="rdtitle"></b><div class="seg3" id="rdw"
 document.body.appendChild(rd);let lastFocus=null;
 function openRead(){if(!inEdit())return;lastFocus=document.activeElement;
   const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);return ps.length?sceneArt(i,ps,`r${i}_`,false).svg:''}).filter(Boolean);
-  $('#rdscroll').innerHTML=`<div class="rd-head">${esc($('#wtitle').value||'제목 없음')}</div>${parts.join('')}<div class="rd-end">끝 · 씬 ${parts.length}개</div>`;
-  $('#rdtitle').textContent=($('#wtitle')?.value||'').trim()||'읽기 모드';rd.hidden=false;document.body.style.overflow='hidden';$('#rdscroll').scrollTop=0;$('#rdscroll').focus()}
+  $('#rdscroll').innerHTML=`<div class="rd-head">${esc(workTitle())}</div>${parts.join('')}<div class="rd-end">끝 · 씬 ${parts.length}개</div>`;
+  $('#rdtitle').textContent=workTitle()||'읽기 모드';rd.hidden=false;document.body.style.overflow='hidden';$('#rdscroll').scrollTop=0;$('#rdscroll').focus()}
 function closeRead(){if(rd.hidden)return;rd.hidden=true;document.body.style.overflow='';$('#rdscroll').innerHTML='';lastFocus?.focus?.()}
 $('#wread').addEventListener('click',openRead);$('#rdclose').addEventListener('click',closeRead);
 rd.addEventListener('click',e=>{if(e.target===rd)closeRead();const b=e.target.closest('[data-w]');if(b){rd.style.setProperty('--rdw',b.dataset.w+'px');rd.querySelectorAll('[data-w]').forEach(x=>x.setAttribute('aria-pressed',x===b))}});

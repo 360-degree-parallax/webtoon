@@ -10,15 +10,17 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(R))}catch(e){typeof 
 const load=()=>loading||(loading=fetch('db/review-queue.json').then(r=>r.ok?r.json():null).then(d=>{Q=d;return d}).catch(()=>{Q=false}));
 const st=it=>{const r=R[it.id];return !r?'left':r.hold?'hold':'done'};
 const list=()=>!Q?[]:Q.items.filter(it=>it.id===PIN||((!F.field||it.field===F.field)&&(F.state==='all'||st(it)===F.state)));
-const counts=()=>{const c={left:0,hold:0,done:0};(Q?.items||[]).forEach(it=>c[st(it)]++);return c};
+// 배지 숫자는 항목 id만 있으면 셀 수 있어서, 처음엔 가벼운 id 목록(db/review-queue-ids.json)만 받음
+let IDS=null;const loadIds=()=>fetch('db/review-queue-ids.json').then(r=>r.ok?r.json():null).then(d=>{IDS=d?.ids||null}).catch(()=>{});
+const counts=()=>{const c={left:0,hold:0,done:0};(Q?Q.items:(IDS||[]).map(id=>({id}))).forEach(it=>c[st(it)]++);return c};
 
 // DB 화면에 '판정' 탭을 붙임
 const box=document.createElement('div');box.id='reviewbox';box.className='rv';box.hidden=true;
 document.querySelector('#v-db .wrap').appendChild(box);
 {const _r=renderDB;renderDB=function(...a){_r(...a);sync()}}
 // 상단 '판정' 버튼(DB 옆): 누르면 DB 화면을 판정 모드로 엶. 남은 수를 배지로
-const gBtn=$('#gReview'),badge=()=>{const c=counts();$('#gReviewN').textContent=Q?(c.left+c.hold||''):''};
-load().then(badge);
+const gBtn=$('#gReview'),badge=()=>{const c=counts();$('#gReviewN').textContent=(Q||IDS)?(c.left+c.hold||''):''};
+loadIds().then(()=>IDS?badge():load().then(badge));
 function sync(){const on=ON&&VIEW==='db';$('#dbfilter').hidden=on;document.querySelector('#v-db .dbgrid').hidden=on;box.hidden=!on;$('#dbtabs').hidden=on;
   $('#dbdesc').textContent=on?'학습 모델이 지금 DB 값과 어긋난다고 본 컷이에요. 맞는 값을 고르거나, 애매하면 메모와 함께 보류해 주세요. 직접 고른 값(지금 값 유지 포함)은 다음 학습에서 일반 라벨의 5배로 반영돼요.':$('#dbdesc').textContent;
   document.querySelector('#v-db h1').textContent=on?'판정':'데이터베이스';

@@ -5,7 +5,8 @@
 2. python3 tools/sync_db.py 내려받은.xlsx --revision 173
    - 컷표·작품 정보·작업 방법·5컷 리듬·장면·코드표만 읽어 rough/db/db.json으로(명경 시험 시트·요약·컬러 띠·썸네일은 제외)
    - 작품 정보의 집계 칸(수식)은 값이 없으면 행을 세어 채움
-   - 값 검사(tools/validate_db.py) → 통과하면 저장, patterns.json·nai-stats.js 다시 생성
+   - 컷표 메모의 자동 판정 글을 칸 형태·사선·자동 말풍선·나레이션 상자 칸(맨 뒤)으로 나눔(tools/db_derive.py)
+   - 값 검사(tools/validate_db.py) → 통과하면 저장, patterns.json·nai-stats.js·db/cut-text.json 다시 생성
    - --check: 파일을 바꾸지 않고 지금 사본과 다른 점만 보고
    - xlsx를 여러 개 주면 행을 이어 붙임(「웹툰 연출 DB」가 셀 한도에 닿아 HM·SL은 「웹툰 연출 DB 2」에 있음).
      코드표·작업 방법은 첫 파일 것을 씀. --revision은 첫 파일, --revision2는 두 번째 파일의 리비전
@@ -63,6 +64,8 @@ def main():
             if more[s]['columns'] != new[s]['columns']: sys.exit(f'{extra}: {s} 열이 첫 파일과 달라요')
             new[s]['rows'] += more[s]['rows']
     fill_counts(new)
+    from db_derive import derive  # 메모의 자동 판정(칸 형태·사선·말풍선 수)을 따로 칸으로
+    print(f'메모 → 칸 형태·사선·자동 말풍선·나레이션 상자: {derive(new)}행')
     old = json.loads(OUT.read_text()) if OUT.exists() else {}
     diff = []
     for s in SHEETS:
@@ -89,7 +92,7 @@ def main():
         print(f'검사 실패: 사본을 바꾸지 않았어요. 검사한 파일은 {tmp} 에 남겨 두었어요.'); sys.exit(1)
     tmp.replace(OUT); print('저장', OUT.relative_to(ROOT))
     if '--no-build' in sys.argv: return
-    for s in ('build_patterns.py', 'build_nai_stats.py'):
+    for s in ('build_patterns.py', 'build_nai_stats.py', 'build_db_lite.py'):
         r = subprocess.run([sys.executable, str(ROOT / 'tools' / s)], capture_output=True, text=True); print((r.stdout.strip().splitlines() or [''])[0])
         if r.returncode: print(r.stderr); sys.exit(1)
 

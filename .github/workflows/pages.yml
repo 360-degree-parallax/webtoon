@@ -23,6 +23,9 @@ jobs:
         run: |
           mkdir -p _site
           cp -r rough docs README.md _site/
+          # 도구(학습·검수 스크립트)만 쓰고 브라우저는 읽지 않는 파일은 빼서 사이트 용량을 줄임
+          rm -f _site/rough/db/cut-meta.json _site/rough/db/cut-lines.json _site/rough/db/verified.json
+          rm -rf _site/rough/src
           printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=rough/"><a href="rough/">러프 툴 열기</a>' > _site/index.html
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v3

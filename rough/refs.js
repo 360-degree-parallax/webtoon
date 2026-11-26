@@ -12,9 +12,12 @@ const codeOf=r=>r.source_cut.slice(0,2);
 
 // 컷 내용(대사·묘사)은 DB 사본에서 한 번만 불러옴
 function loadText(){if(TEXT||textLoading)return textLoading;
-  textLoading=fetch('db/db.json').then(r=>r.ok?r.json():null).then(d=>{TEXT={};const t=d?.['컷표'];if(!t)return;
-    const c=t.columns,ci=c.indexOf('컷ID'),ti=c.indexOf('내용'),si=c.indexOf('장면');
-    t.rows.forEach(r=>{if(r[ci])TEXT[r[ci]]={text:String(r[ti]||''),scene:String(r[si]||'')}});if(!panel.hidden)render()}).catch(()=>{TEXT={}});
+  // 가벼운 조각(db/cut-text.json, tools/build_db_lite.py)을 먼저, 없으면 db.json 전체
+  const fromLite=d=>{TEXT={};(d.rows||[]).forEach(([id,text,s])=>{TEXT[id]={text:String(text||''),scene:String(d.scenes?.[s]||'')}})};
+  const fromFull=d=>{TEXT={};const t=d?.['컷표'];if(!t)return;const c=t.columns,ci=c.indexOf('컷ID'),ti=c.indexOf('내용'),si=c.indexOf('장면');
+    t.rows.forEach(r=>{if(r[ci])TEXT[r[ci]]={text:String(r[ti]||''),scene:String(r[si]||'')}})};
+  textLoading=fetch('db/cut-text.json').then(r=>r.ok?r.json().then(fromLite):fetch('db/db.json').then(r=>r.ok?r.json():null).then(fromFull))
+    .then(()=>{if(!panel.hidden)render()}).catch(()=>{TEXT={}});
   return textLoading}
 
 function items(){return Object.values(REF_PICK).filter(r=>F.all||r.fit==='ok'||r.fixed)}

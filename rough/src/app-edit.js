@@ -23,15 +23,26 @@ function closeXMenu(){const m=$('#wxmenu');if(m&&!m.hidden){m.hidden=true;$('#we
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#wxmenu').hidden){closeXMenu();$('#wexport').focus()}});
 document.addEventListener('change',e=>{if(e.target.matches('[data-scsel]'))switchScene(+e.target.value)});
 const WMODE='final';  // 편집 화면은 늘 완성본(등록 그림, 없으면 레퍼런스). 완성본/러프 전환은 뺌
-try{$('#wtitle').value=localStorage.getItem('rough-work-title')||'녹빛자정의 연인 · 예시'}catch(_){$('#wtitle').value='제목 없는 작품'}
-$('#wtitle').addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}});
+// 작품 제목: 상단 바(로고 옆)와 편집 화면 큰 제목 두 곳에서 같은 값을 고침. 기본은 '새 작품 1'(예전 예시 문구도 기본으로 바꿈)
+const OLD_SAMPLE_TITLE='녹빛자정의 연인 · 예시',DEF_TITLE='새 작품 1';
+const TITLE_ELS=()=>['#gtitle','#wtitle'].map(q=>$(q)).filter(Boolean);
+{let v=DEF_TITLE;try{const s=localStorage.getItem('rough-work-title');if(s!=null&&s!==OLD_SAMPLE_TITLE)v=s}catch(_){}TITLE_ELS().forEach(el=>el.value=v)}
+function workTitleAuto(){return DEF_TITLE}
+function workTitle(){return ($('#gtitle')?.value||$('#wtitle')?.value||'').trim()||DEF_TITLE}
+// 상단 입력칸은 글자 수만큼 폭을 맞춤
+function fitTitle(el){el.style.width=Math.min(380,Math.max(90,(el.value||el.placeholder).length*17+28))+'px'}
+function syncWorkTitle(src){TITLE_ELS().forEach(el=>{if(src&&el!==src&&el.value!==src.value)el.value=src.value;el.placeholder=DEF_TITLE;el.title='작품 제목 · 눌러서 고쳐요(저장 이름·내보내기 파일 이름에도 쓰여요)'});const g=$('#gtitle');if(g)fitTitle(g);document.title=workTitle()}
+TITLE_ELS().forEach(el=>{el.addEventListener('input',e=>{try{localStorage.setItem('rough-work-title',e.target.value)}catch(_){}syncWorkTitle(e.target)});
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});el.addEventListener('blur',e=>{if(!e.target.value.trim()){e.target.value=DEF_TITLE;try{localStorage.setItem('rough-work-title',DEF_TITLE)}catch(_){}syncWorkTitle(e.target)}})});
+syncWorkTitle();
 // 다른 씬의 컷 계산은 글·고른 레퍼런스·고정값이 같으면 다시 돌리지 않음(레이어 패널·씬 경계 색이 컷마다 불러 무거웠음)
 var SP_CACHE=new Map(),SP_FRESH=null;  // SP_FRESH: 이번 작업 안에서 이미 확인한 씬(같은 작업 안에서 수백 번 불려 확인 비용도 컸음)
 function spStale(){SP_FRESH=null}
 function scenePanels(i){if(i===SCUR)return state.panels;const sc=SCENES[i];if(!sc)return [];
   if(SP_FRESH?.has(i)&&SP_CACHE.has(i))return SP_CACHE.get(i).v;if(!SP_FRESH){SP_FRESH=new Set();queueMicrotask(spStale)}SP_FRESH.add(i);
   const refs=Array.from(sc.pageEdits||[],e=>e?.ref||0);while(refs.length&&!refs.at(-1))refs.pop();  // 빈 칸이 늘기만 해도 다시 계산하던 것 막기
-  const ck=JSON.stringify([sc.cuts,refs,locks,engineChars(),REFS.length,PATS.length]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
+  // 컷 비율 기준(RE.RATIO)·작가 취향(RE.PREFS)도 키에 넣음: 콘티에서 비율을 바꾸면 다른 씬도 새로 계산(예전엔 지금 씬만 바뀌고 다른 씬은 옛 길이로 남았음)
+  const ck=JSON.stringify([sc.cuts,refs,locks,engineChars(),REFS.length,PATS.length,RE.RATIO?.label||'',RE.RATIO?.all||0,RE.PREFS||0]),hit=SP_CACHE.get(i);if(hit&&hit.k===ck)return hit.v;
   const out=_scenePanels(i);SP_CACHE.set(i,{k:ck,v:out});return out}
 // 처음 편집 화면을 열 때 기다리지 않게: 쉬는 틈에 다른 씬 컷 계산을 미리 해 둠
 (function warmScenes(i=0){if(typeof PATS==='undefined'||!PATS.length||typeof SCENES==='undefined')return setTimeout(warmScenes,600,i);if(i>=SCENES.length)return;
@@ -97,7 +108,7 @@ function patchSection(os,html){const t=document.createElement('template');t.inne
     const ok=[...o.children],nk=[...n.children];if(ok.length!==nk.length||ok.some((c,j)=>c.tagName!==nk[j].tagName)){o.replaceWith(n);return}
     for(const a of [...o.attributes])if(!n.hasAttribute(a.name))o.removeAttribute(a.name);for(const a of n.attributes)if(o.getAttribute(a.name)!==a.value)o.setAttribute(a.name,a.value);
     ok.forEach((x,j)=>{if(x.outerHTML!==nk[j].outerHTML)x.replaceWith(nk[j])})})}
-function renderWebtoon(){SP_FRESH=null;SA_G=saGlobal();SA_ON=true;try{return _renderWebtoon()}finally{SA_ON=false}}
+function renderWebtoon(){syncWorkTitle();SP_FRESH=null;SA_G=saGlobal();SA_ON=true;try{return _renderWebtoon()}finally{SA_ON=false}}
 function _renderWebtoon(){if(!PATS.length){refreshPageTools();$('#reader').innerHTML='<p class="empty">패턴을 불러오는 중이에요</p>';return}
   let cuts=0,imgd=0;const parts=SCENES.map((sc,i)=>{const ps=scenePanels(i);cuts+=ps.length;imgd+=cutCount(i,ps);const art=ps.length?sceneArt(i,ps,`w${i}_`,pageEditing):null;
     const body=!ps.length?'<p class="empty">아직 컷이 없어요</p>':art.svg;
@@ -123,6 +134,12 @@ function pageSettings(create=false,key=pageSelection){
   if(create&&!edits[slot])edits[slot]={};
   return edits[slot];
 }
+// 화면에 그려지는 값 = 씬 글 {…}에서 나온 값 + 직접 고친 값. 편집 도구는 이걸 보여 주고,
+// 글에서 나온 값을 고칠 때는 pageAdopt로 직접 고친 값에 먼저 옮긴 뒤 바꿈(안 그러면 고칠 대상이 없거나 글 값이 다시 이김)
+function pagePanel(key=pageSelection){if(!key)return null;const [si,slot]=key.split(':').map(Number);return scenePanels(si).find((p,i)=>cutSlot(p,i)===slot)||null}
+function pageView(key=pageSelection){if(!key)return null;return RoughGrammar.merge(pageSettings(false,key),pagePanel(key))||null}
+function pageAdopt(field,key=pageSelection){const v=pageView(key)?.[field],st=pageSettings(true,key);if(v==null)return st;const cp=x=>JSON.parse(JSON.stringify(x));
+  if(st[field]==null)st[field]=cp(v);else if(typeof v==='object'&&typeof st[field]==='object')for(const k of Object.keys(v))if(st[field][k]==null)st[field][k]=cp(v[k]);return st}
 function refreshPageTools(){
   const previous=selectedLetter&&{key:pageKey(selectedLetter.closest('[data-slot-index]')),letter:selectedLetter.dataset.letter};
   selectLetter(null);
@@ -147,7 +164,7 @@ function selectPageCut(group){
   pageReader.querySelector('.cut-selected')?.classList.remove('cut-selected');
   pageReader.querySelectorAll('.frame-handles.sel').forEach(h=>h.classList.remove('sel'));
   pageReader.querySelector('[data-slot-index].sel')?.classList.remove('sel');group.classList.add('sel');
-  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');showZoom(pageSettings()?.img?.s||1);
+  group.querySelector('.page-frame').classList.add('cut-selected');handlesOf(group)?.classList.add('sel');showZoom(pageView()?.img?.s||1);
 }
 const backgroundColor=$('#wbgcolor'),backgroundPresets=$('#wbgpresets');
 const BG_THUMB=[];window.bgThumbSVG=i=>BG_THUMB[i]||'';
@@ -169,7 +186,7 @@ function refreshBackgroundTools(){
   if(isLast){const sel=$('#wsceneend');sel.value=SCENES[si].endTo||'next';sel.options[0].textContent=si<SCENES.length-1?'다음 씬 첫 컷 색으로 이어감':'흰색으로 (마지막 씬)'}
 }
 // 전환 중간색·위치
-function refreshTransTools(){const e=pageSettings(),st=PAGE_BACKGROUNDS[e?.transition];const on=e?.transMid?e.transMid!=='none':!!st;
+function refreshTransTools(){const e=pageView(),st=PAGE_BACKGROUNDS[e?.transition];const on=e?.transMid?e.transMid!=='none':!!st;
   $('#wtmidon').checked=on;$('#wtmid').value=/^#/.test(e?.transMid||'')?e.transMid:(st?.mid||'#808080');$('#wtmid').disabled=!on;
   const sv=e?.transStop??st?.stop??50;$('#wtstop').value=sv;$('#wtstopv').textContent=sv+'%';$('#wtstop').disabled=!on;
   $('#wbgimgs').innerHTML=Object.values(IMG.bg).sort((a,b)=>a.at-b.at).map(r=>`<button type="button" data-bgimg="${r.id}" aria-pressed="${e?.bgImage===r.id}" title="${esc(r.name||'배경 이미지')}"><img src="${r.src}" alt=""><span data-bgimg-del="${r.id}" title="목록에서 지우기">×</span></button>`).join('')+`<button type="button" class="add" data-bgimg-add title="PNG·JPG를 배경 소재로 추가">+ 이미지</button>`+(e?.bgImage?`<button type="button" class="add" data-bgimg-off>빼기</button>`:'');
@@ -240,7 +257,7 @@ $('#wletterreset').addEventListener('click',()=>{
   }
   saveScenes();renderWebtoon();
 });
-function letterPosition(letter){return {x:0,y:0,...pageSettings()?.letters?.[letter.dataset.letter]}}
+function letterPosition(letter){return {x:0,y:0,...pageView()?.letters?.[letter.dataset.letter]}}
 function moveLetter(letter,position){letter.setAttribute('transform',`translate(${position.x} ${position.y})`)}
 function saveLetter(letter,position){
   const settings=pageSettings(true);
@@ -289,7 +306,7 @@ letterMemo.addEventListener('keydown',e=>{
   if(!e.isComposing&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();letterTextForm.requestSubmit()}
 });
 letterOriginal.addEventListener('click',()=>{
-  const edit=selectedLetter&&pageSettings()?.letters?.[selectedLetter.dataset.letter];
+  const edit=selectedLetter&&pageView()?.letters?.[selectedLetter.dataset.letter];
   if(typeof edit?.text!=='string')return;
   const effect=isEffectLetter(selectedLetter);
   delete edit.text;
@@ -431,7 +448,7 @@ pageReader.addEventListener('pointerdown',e=>{
   selectPageCut(group);
   const letter=e.target.closest('[data-letter]');
   selectLetter(letter);
-  if(!letter){if((pageSettings()?.img?.s||1)>1&&e.target.closest('[data-art]'))startArtDrag(group,e);return}  // 확대한 그림은 처음 누를 때부터 바로 끌기
+  if(!letter){if((pageView()?.img?.s||1)>1&&e.target.closest('[data-art]'))startArtDrag(group,e);return}  // 확대한 그림은 처음 누를 때부터 바로 끌기
   e.preventDefault();
   const handle=e.target.closest('[data-tail-handle]');
   if(handle){
@@ -586,14 +603,15 @@ function saveFrame(){const d=frameDrag;frameDrag=null;if(!d.moved)return;const {
   saveScenes();renderWebtoon();markFrameShape()}
 // ---------- 칸 안 그림 확대·이동 ----------
 let artDrag=null,zoomTimer=0;const ZMAX=5;
-function zoomOf(group){const z=pageSettings(false,pageKey(group))?.img;return {s:1,dx:0,dy:0,...z}}
+function zoomOf(group){const z=pageView(pageKey(group))?.img;return {s:1,dx:0,dy:0,...z}}
 function clampZoom(group,z){const f=JSON.parse(group.dataset.frame),s=Math.max(1,Math.min(ZMAX,z.s)),mx=f.w*(s-1)/2,my=f.h*(s-1)/2;
   return {s,dx:Math.max(-mx,Math.min(mx,z.dx)),dy:Math.max(-my,Math.min(my,z.dy))}}
 function setZoom(group,z){z=clampZoom(group,z);const f=JSON.parse(group.dataset.frame),el=group.querySelector('[data-art]');
   const tf=zoomTf(z,f.x,f.y,f.w,f.h);if(tf)el.setAttribute('transform',tf.slice(12,-1));else el.removeAttribute('transform');
   group._z=z;if(pageSelection===pageKey(group))showZoom(z.s);return z}
 function saveZoom(group){const z=group._z;if(!z)return;const set=pageSettings(true,pageKey(group));
-  if(z.s<=1.001)delete set.img;else set.img={s:+z.s.toFixed(3),dx:Math.round(z.dx),dy:Math.round(z.dy)};saveScenes()}
+  // 씬 글에 {확대 …}가 있으면 1배로 줄인 것도 남겨야 글 값이 다시 이기지 않음
+  if(z.s<=1.001){if(RoughGrammar.fromText(pagePanel(pageKey(group)))?.img)set.img={s:1,dx:0,dy:0};else delete set.img}else set.img={s:+z.s.toFixed(3),dx:Math.round(z.dx),dy:Math.round(z.dy)};saveScenes()}
 function startArtDrag(group,e){e.preventDefault();artDrag={group,svg:group.ownerSVGElement,z0:zoomOf(group),start:pagePoint(group.ownerSVGElement,e),id:e.pointerId};pageReader.setPointerCapture(e.pointerId)}
 // 커서 아래 점이 그대로 있도록 확대
 function zoomAt(group,s2,pt){const z=group._z||zoomOf(group),f=JSON.parse(group.dataset.frame),cx=f.x+f.w/2,cy=f.y+f.h/2;
@@ -663,7 +681,7 @@ async function saveWebtoon(){const st=t=>$('#wst').textContent=t;st('이미지 �
   const draw=(list,name)=>{const H=Math.round(list.reduce((a,x)=>a+LABEL+x.im.height*W/x.im.width,0));const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);let y=0;
     for(const x of list){g.fillStyle='#8a8f98';g.font='600 15px Pretendard, sans-serif';g.textAlign='center';g.fillText(sceneLabel(SCENES[x.i],x.i),W/2,y+34);y+=LABEL;const h=x.im.height*W/x.im.width;g.drawImage(x.im,0,y,W,h);y+=h}
     return new Promise(res=>c.toBlob(bl=>{download(name,URL.createObjectURL(bl));res()},'image/png'))};
-  const base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
+  const base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
   if(total<=30000){await draw(items,`${base}.png`);st('이미지로 저장했어요')}else{for(const x of items)await draw([x],`${base}-씬${x.i+1}.png`);st(`길어서 씬별 ${items.length}장으로 저장했어요`)}}
 
 // ---------- 작업 파일: localStorage의 rough-* 설정(AI 키 제외) + IndexedDB 이미지(rough-refs)를 한 JSON으로 ----------
@@ -672,8 +690,8 @@ async function saveProject(){const local={};for(let k=0;k<localStorage.length;k+
   flushScenes();local['rough-scenes']=JSON.stringify(SCENES);local['rough-scene-cur']=String(SCUR);  // 기본 저장 공간이 차서 IndexedDB에만 있어도 빠지지 않게
   for(const r of (await idb.allDocs()))if(r.json&&r.id.startsWith('doc:rough-ep:')&&local[r.id.slice(4)]==null)local[r.id.slice(4)]=r.json;
   const images=(await idb.all()).filter(r=>!/^(snap|save):/.test(String(r.id)));
-  const data={format:'rough-project',version:1,savedAt:new Date().toISOString(),title:$('#wtitle')?.value||'',scenes:SCENES.length,local,images};
-  const base=($('#wtitle')?.value||'webtoon').replace(/[\\/:*?"<>|]/g,'_'),blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const data={format:'rough-project',version:1,savedAt:new Date().toISOString(),title:workTitle(),scenes:SCENES.length,local,images};
+  const base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_'),blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   download(`${base}-${new Date().toISOString().slice(0,10)}.rough.json`,URL.createObjectURL(blob));
   toast(`작업 파일을 저장했어요 · 씬 ${SCENES.length}개 · 이미지 ${images.length}장 · ${(blob.size/1048576).toFixed(1)}MB`,3500)}
 function loadProjectPick(){const f=document.createElement('input');f.type='file';f.accept='.json,application/json';f.onchange=()=>f.files[0]&&loadProject(f.files[0]);f.click()}
@@ -692,7 +710,7 @@ async function loadProject(file){let d;try{d=JSON.parse(await file.text())}catch
 let snapAt=0;
 const epId=()=>window.RoughEpisodes?.cur?.id||'';
 function autoSnapshot(force,label){const now=Date.now();if(!force&&now-snapAt<600000)return Promise.resolve();snapAt=now;
-  const o={id:'snap:'+now,kind:'snap',at:now,ep:epId(),label:label||'',title:$('#wtitle')?.value||'',scenes:JSON.stringify(SCENES)};
+  const o={id:'snap:'+now,kind:'snap',at:now,ep:epId(),label:label||'',title:workTitle(),scenes:JSON.stringify(SCENES)};
   return idb.put(o).then(async()=>{const snaps=(await idb.all()).filter(r=>r.kind==='snap'&&(r.ep||'')===o.ep).sort((a,b)=>b.at-a.at);for(const r of snaps.slice(30))idb.del(r.id)})}
 const snapSum=j=>{try{const a=JSON.parse(j);return `씬 ${a.length}개 · 컷 ${a.reduce((n,sc)=>n+sc.cuts.filter(c=>c.trim()).length,0)}개`}catch(_){return''}};
 // 다른 원고를 잠깐 그려 보기: 지금 원고를 건드리지 않게 씬 목록을 바꿔 끼웠다가 되돌림
@@ -782,7 +800,7 @@ async function exportSlices(o,st){st('이미지 만드는 중');await loadPageMa
     for(const x of lay){if(x.y+x.h<y0&&x.t+LABEL<y0)continue;if(x.t>y0+hh)break;
       if(LABEL){g.fillStyle='#8a8f98';g.font=`600 ${Math.round(15*o.w/W)}px Pretendard, sans-serif`;g.textAlign='center';g.fillText(sceneLabel(SCENES[x.i],x.i),o.w/2,x.t-y0+LABEL*0.6)}
       g.drawImage(x.im,0,x.y-y0,o.w,x.h)}};
-  const files=[],ext=o.fmt==='png'?'png':'jpg',type=o.fmt==='png'?'image/png':'image/jpeg',base=($('#wtitle').value||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
+  const files=[],ext=o.fmt==='png'?'png':'jpg',type=o.fmt==='png'?'image/png':'image/jpeg',base=(workTitle()||'webtoon').replace(/[\\/:*?"<>|]/g,'_');
   let y0=0,n=0,hard=0;
   while(y0<total){let hh=Math.min(o.h,total-y0);const c=document.createElement('canvas');c.width=o.w;c.height=hh;const g=c.getContext('2d');paint(g,y0,hh);
     if(o.smart&&y0+hh<total){const data=g.getImageData(0,0,o.w,hh).data,lo=Math.floor(hh*0.4);let cut=-1;
@@ -801,7 +819,7 @@ async function exportSlices(o,st){st('이미지 만드는 중');await loadPageMa
 // 불러오기 전·초기화 전에는 지금 상태를 자동으로 한 칸 보관해 되돌릴 수 있게
 function workLocal(){flushScenes();const local={};for(let k=0;k<localStorage.length;k++){const key=localStorage.key(k);if(key.startsWith('rough-')&&!PJ_SKIP.has(key)&&!/^rough-(theme|coach|view)$/.test(key))local[key]=localStorage.getItem(key)}
   local['rough-scenes']=JSON.stringify(SCENES);local['rough-scene-cur']=String(SCUR);return local}
-async function saveDraft(name){const now=Date.now(),title=$('#wtitle')?.value||'';
+async function saveDraft(name){const now=Date.now(),title=workTitle();
   const o={id:'save:'+now,kind:'save',at:now,name:name||`${title||'작업'} · ${new Date(now).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}`,title,sum:snapSum(JSON.stringify(SCENES))+` · 인물 ${CHARS.length}명`,local:workLocal()};
   await idb.put(o);return o}
 async function loadDraft(r){if(!confirm(`「${r.name}」을(를) 불러올까요?\n지금 작업은 '불러오기 전'으로 보관함에 남겨 둬요.`))return;

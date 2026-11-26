@@ -57,7 +57,7 @@ window.RoughDrag={begin,adjust,end,hideGuides};
 let CLIP=[];
 // 식자 하나 → 복사 항목(종류·글·편집값·가운데 좌표). at을 주면 그 위치(translate)를 기준으로 가운데 계산
 function copyItem(L,at){const g=L.closest('[data-slot-index]'),key=pageKey(g),lk=L.dataset.letter,svg=L.ownerSVGElement;
-  const set={...(withKey(key,()=>pageSettings()?.letters?.[lk])||{})};const r=svgRect(L,svg);let cx=r.x+r.w/2,cy=r.y+r.h/2;
+  const set={...(withKey(key,()=>pageView()?.letters?.[lk])||{})};const r=svgRect(L,svg);let cx=r.x+r.w/2,cy=r.y+r.h/2;
   if(at){const cur=keyPos(key,L);cx+=at.x-(cur.x||0);cy+=at.y-(cur.y||0)}
   const text=String(L.dataset.letterText||'').replace(/&#10;/g,'\n');
   return {kind:kindOf(lk),text,set,center:{x:cx,y:cy},key,frame:frameOf(g)}}
@@ -123,7 +123,7 @@ document.addEventListener('keydown',e=>{if(!inEdit()||typing(e.target)||document
   canvas?.addEventListener('pointerdown',e=>{if(!inEdit()||e.button!==0||e.pointerType==='touch'||window.RoughWS.tool!=='select'||!pageEditing)return;  // 손가락은 끌면 화면 스크롤
     if(e.target.closest('[data-letter],[data-page-gap],[data-fh],[data-th],[data-tail-handle],input,textarea,button,select,.wtitle'))return;
     // 컷 그림 위에서도 시작(확대한 그림은 끌어 옮기기라 제외 · 그림 편집 중 제외)
-    const g=e.target.closest('[data-slot-index]');if(g){const z=withKey(pageKey(g),()=>pageSettings()?.img?.s||1);if(z>1||document.querySelector('.cropping,[data-crop]'))return}
+    const g=e.target.closest('[data-slot-index]');if(g){const z=pageView(pageKey(g))?.img?.s||1;if(z>1||document.querySelector('.cropping,[data-crop]'))return}
     mq={x:e.clientX,y:e.clientY,add:e.shiftKey,el:null};canvas.setPointerCapture(e.pointerId)});
   canvas?.addEventListener('pointermove',e=>{if(!mq)return;const w=Math.abs(e.clientX-mq.x),h=Math.abs(e.clientY-mq.y);if(!mq.el&&w+h<6)return;
     if(!mq.el){mq.el=document.createElement('div');mq.el.className='marquee';document.body.appendChild(mq.el)}
