@@ -16,9 +16,9 @@ function showView(v){if(v==='nai')v='layout';
     try{renderCuts();renderSceneList();compute(false);renderSlots();renderSugg()}catch(e){console.warn(e)}}
   if(v==='write')requestAnimationFrame(()=>document.querySelectorAll('.cutin').forEach(grow));
   $('#gscbar').hidden=!['write','layout','nai','webtoon'].includes(v);$('#gDb').setAttribute('aria-pressed',v==='db');
-  if(v==='webtoon'){renderWebtoon();edSnap=edState();edButtons();refreshPageMaterials()}
+  if(v==='webtoon'){renderWebtoon();refreshPageMaterials()}
   if(v==='webtoon'&&matchMedia('(max-width:760px)').matches&&window.RoughStudio?.fitWidth)requestAnimationFrame(()=>RoughStudio.fitWidth());
-  if(v==='write'||v==='layout'){edSnap=edState();edButtons()}$('#gundo').hidden=!(v==='write'||v==='layout');
+  edSwitch(v);$('#gundo').hidden=!(v==='write'||v==='layout');
   if(v!=='webtoon'&&materialMode)armMaterialLine('');
   if(v==='plan')openComposition();
   if(v==='layout')renderNai();if(v==='db')loadDB();
