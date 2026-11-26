@@ -209,7 +209,23 @@
   function parseCuts(cuts, chars) {
     const named = chars && chars.length ? chars.slice() : [];
     for (const c of cuts) for (const m of mentions(c, named)) if (!named.some(x => x.name === m.name)) named.push({ name: m.name });
-    return cuts.map((c, i) => parseCut(c, named, i)).filter(b => b.line.trim());
+    const out = cuts.map((c, i) => parseCut(c, named, i)).filter(b => b.line.trim());
+    // 대명사 주어(그가·그녀는…): 이름이 없는 컷이면 앞 컷들의 인물 중 성별이 맞는 가장 가까운 사람으로(whoGuess = 추측)
+    const sexOf = n => { const c = named.find(x => x.name === n) || {}; const t = [c.body, c.gender, c.sex, c.look].join(' ');
+      return /female|여자|여성|소녀|girl|woman/i.test(t) ? 'f' : /male|남자|남성|소년|boy|\bman\b/i.test(t) ? 'm' : ''; };
+    const seen = [];
+    for (const b of out) {
+      const t = b.actText || '';
+      const pr = !b.who && t.match(/(^|[\s,.!?])(그녀|그)(가|는|도|의|를|에게|와)?(?=\s)/);
+      if (pr) { const want = pr[2] === '그녀' ? 'f' : 'm';
+        const hit = seen.find(n => sexOf(n) === want) || seen.find(n => !sexOf(n)) || (pr[2] === '그' ? seen[0] : '');
+        if (hit) { b.who = hit; b.whoGuess = true; for (const d of b.dialogs || []) if (!d.who) d.who = hit; } }
+      // 이 컷에 이름이 나온 순서대로(나중에 나온 사람이 '그'에 더 가까움), 주인공은 맨 뒤에 한 번 더
+      const order = named.map(c => [c.name, Math.max(t.lastIndexOf(c.name), (b.dialogs || []).some(d => d.who === c.name) ? 0 : -1)]).filter(([, k]) => k >= 0).sort((x, y) => x[1] - y[1]).map(([n]) => n);
+      for (const n of order) { const k = seen.indexOf(n); if (k >= 0) seen.splice(k, 1); seen.unshift(n); }
+      if (b.who && !order.includes(b.who)) { const k = seen.indexOf(b.who); if (k >= 0) seen.splice(k, 1); seen.unshift(b.who); }
+    }
+    return out;
   }
   // 줄글을 컷 칸 글로 나눈다 (줄글 붙여넣기용)
   function proseToCuts(text, chars) {

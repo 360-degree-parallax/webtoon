@@ -25,7 +25,7 @@
     [['붉어', '빨개'], ['blush']], [['앉'], ['sitting']], [['서 있', '선 채'], ['standing']], [['코피'], ['nosebleed']], [['총'], ['holding gun', 'rifle']],
     [['단추', '소매'], ['sleeve', 'button']], [['촛불을 들', '촛대를 들'], ['holding candle']], [['계단을 오'], ['walking up stairs']],
     // 동작(활용형까지): 달린다·달려·달린·달렸… 어간이 바뀌는 것은 따로 적음
-    [['§달리다', '뛰어가', '뛰어간', '뛰어온', '뛰어오', '질주', '내달'], ['running', 'motion blur']],
+    [['§달리다', '§뛰다', '뛰어가', '뛰어간', '뛰어온', '뛰어오', '질주', '내달'], ['running', 'motion blur']],
     [['뛰어오르', '뛰어올라', '뛰어오른', '점프', '도약', '뛰어내'], ['jumping']], [['넘어지', '넘어진', '넘어져', '고꾸라'], ['falling', 'tripping']],
     [['쓰러지', '쓰러진', '쓰러져'], ['lying on the ground']], [['누워', '누운', '눕', '드러누'], ['lying']], [['엎드'], ['on stomach']],
     [['무릎을 꿇', '무릎 꿇', '무릎을 꿇은'], ['kneeling']], [['웅크', '쪼그려', '쭈그려', '쪼그리', '쭈그리'], ['squatting', 'curled up']],
@@ -61,19 +61,19 @@
     const [l, v, t] = j, out = new Set(); if (st.length >= 2) out.add(st);
     const add = x => out.add(head + x);
     if (st.endsWith('하')) { ['한', '할', '해', '했', '하는', '하며', '하고'].forEach(x => out.add(st.slice(0, -1) + x)); return [...out]; }
-    if (t === 0) { add(syl(l, v, 4)); add(syl(l, v, 8)); add(syl(l, v, 0) + '는'); add(syl(l, v, 0) + '고'); add(syl(l, v, 0) + '며');
-      const cv = CONTRACT[v]; if (cv != null) { const y = v === 20 && l === 11 ? 11 : l; add(syl(y, cv, 0)); add(syl(y, cv, 20)); } else { add(syl(l, v, 20)); } }
+    if (t === 0) { add(syl(l, v, 4)); add(syl(l, v, 4) + '다'); add(syl(l, v, 8)); add(syl(l, v, 0) + '는'); add(syl(l, v, 0) + '고'); add(syl(l, v, 0) + '며');
+      const cv = CONTRACT[v]; if (cv != null) { const y = v === 20 && l === 11 ? 11 : l; add(syl(y, cv, 0)); add(syl(y, cv, 20)); } else if (v === 16 || v === 19) { add(syl(l, v, 0) + '어'); add(syl(l, v, 0) + '었'); } else { add(syl(l, v, 20)); } }  // ㅟ·ㅢ는 줄지 않음(뛰어·뛰었)
     else { if (st.length >= 2) out.add(st); add(syl(l, v, t) + '은'); add(syl(l, v, t) + '는'); add(syl(l, v, t) + '어'); add(syl(l, v, t) + '아'); add(syl(l, v, t) + '었'); add(syl(l, v, t) + '았');
-      if (t === 8) { add(syl(l, v, 0) + '는'); add(syl(l, v, 4)); add(syl(l, v, 0) + '며'); }
+      if (t === 8) { add(syl(l, v, 0) + '는'); add(syl(l, v, 4)); add(syl(l, v, 4) + '다'); add(syl(l, v, 0) + '며'); }
       if (t === 17) { add(syl(l, v, 0) + '운'); add(syl(l, v, 0) + '워'); } }
     // 어간이 한 글자면(울다·안다·들다·쥐다) 활용형은 낱말 첫머리에서만 맞춤(§)
-    return [...out].filter(x => x.length >= 2).map(x => st.length === 1 && !x.includes(' ') ? '§' + x : x);  // 한 글자 형태(운·든)는 뜻이 갈려서 사전에 직접 적을 때만
+    return [...new Set([...out].flatMap(x => { if (x.length !== 1 || x === st) return [x]; const f = (x.charCodeAt(0) - 0xAC00) % 28; return f === 4 ? [x + '다'] : f === 20 ? [x + '다', x + '던'] : [x]; }))].filter(x => x.length >= 2).map(x => st.length === 1 && !x.includes(' ') ? '§' + x : x);  // 한 글자 형태(운·든)는 뜻이 갈려서 사전에 직접 적을 때만
   }
   // DB 컷 글에서 자주 빠지던 동작(tools/mine_actions.js) — 기본형으로 적고 위 forms()로 펼침
   const POSE_BASE = [
     [['놀라다', '깜짝'], ['surprised', 'wide-eyed']], [['눈물을 흘리다', '눈물 흘리다', '눈물이 맺히다', '눈물 고이다', '눈물이 고이다', '울먹이다', '흐느끼다'], ['tears', 'crying']],
     [['당황하다'], ['flustered', 'sweatdrop']], [['감싸 안다', '감싸안다'], ['embracing']], [['얼굴을 붉히다', '볼을 붉히다'], ['blush']], [['이마를 짚다', '머리를 짚다'], ['hand on own forehead']],
-    [['안다', '안아 주다', '안아주다', '껴안다', '끌어안다', '부둥켜안다', '품에 안다'], ['hug']], [['얼굴을 묻다', '품에 얼굴을'], ['face in another\'s chest']], [['떠나다', '나가다', '나서다', '들어서다', '들어오다'], ['walking']],
+    [['서다', '멈춰 서다', '우뚝 서다'], ['standing']], [['안다', '안아 주다', '안아주다', '껴안다', '끌어안다', '부둥켜안다', '품에 안다'], ['hug']], [['얼굴을 묻다', '품에 얼굴을'], ['face in another\'s chest']], [['떠나다', '나가다', '나서다', '들어서다', '들어오다'], ['walking']],
     [['다가오다', '다가가다'], ['walking towards']], [['손을 내밀다', '내밀다'], ['reaching out']], [['떨어지다', '추락하다'], ['falling']], [['수군대다', '수군거리다'], ['whispering', 'crowd']],
     [['눈을 맞추다', '시선을 맞추다', '눈이 마주치다', '마주하다', '마주 보다'], ['eye contact', 'face-to-face']], [['손을 맞잡다', '맞잡다'], ['holding hands']], [['안기다', '품에 안기다'], ['hug', 'being hugged']],
     [['손을 흔들다'], ['waving']], [['막다', '가로막다'], ['blocking', 'outstretched arm']], [['내려다보다'], ['looking down']], [['올려다보다', '우러러보다'], ['looking up']],
@@ -130,14 +130,129 @@
   let LEARNED_N = 0;
   N.useLearned = list => { POSE.splice(POSE.length - LEARNED_N, LEARNED_N); const L = (list || []).filter(x => Array.isArray(x) && x[0]?.length && x[1]?.length).map(([ws, t]) => [[...new Set(ws.flatMap(forms))], t]); POSE.push(...L); LEARNED_N = L.length; };
   N.forms = forms;
+  // 배운 동작 검사: 너무 흔한 낱말·부정/바람이 섞인 말·기존 사전과 어긋나는 태그·태그 꼴이 아닌 것은 걸러 냄 → { ok, why: [...] }
+  const GENERIC = new Set(['하다', '있다', '없다', '되다', '보다', '가다', '오다', '나다', '주다', '말하다', '생각하다', '느끼다', '알다', '모르다', '같다', '싶다', '않다', '이다', '그러다', '이러다', '시작하다', '계속하다']);
+  N.checkLearned = (ko, tags) => {
+    ko = String(ko || '').trim(); const ts = String(tags || '').split(',').map(t => t.trim()).filter(Boolean), why = [];
+    if (ko.replace(/\s/g, '').length < 2) why.push('너무 짧음');
+    if (GENERIC.has(ko) || GENERIC.has(ko.replace(/^\S+\s+/, '')) && ko.split(/\s+/).length === 1) why.push('흔한 낱말');
+    if (/지\s*(않|못|말)|(^|\s)(안|못)\s|싶|려\s*하|면$/.test(ko)) why.push('부정·바람·시도가 섞임');
+    if (!ts.length || ts.some(t => /[가-힣]/.test(t) || !/^[\w\s'().:-]+$/.test(t))) why.push('태그 꼴이 아님');
+    const built = POSE.slice(0, POSE.length - LEARNED_N), had = tagsOf(ko, built);
+    if (had.length && !had.some(t => ts.includes(t))) why.push(`사전과 어긋남(${had.join(', ')})`);
+    return { ok: !why.length, why };
+  };
+  // ---------- 절 단위 해석: 누가·무엇을·했는지(부정·시도·가정·대조·참음·이어진 동작) ----------
+  // 그 컷에서만 달라진 외형(그 인물 앞 꾸밈말에 나올 때 그 인물에게)
+  const APPEAR = [[['젖은 머리', '머리가 젖은', '물에 젖은 머리'], ['wet hair']], [['젖은 옷', '흠뻑 젖', '물에 빠진'], ['wet clothes']], [['찢어진', '찢긴', '해진 옷'], ['torn clothes']],
+    [['맨발'], ['barefoot']], [['잠옷'], ['pajamas']], [['피 묻은', '피투성이', '피범벅'], ['blood on clothes']], [['헝클어진 머리', '부스스한 머리', '산발'], ['messy hair']],
+    [['붕대'], ['bandages']], [['반창고'], ['bandaid']], [['눈이 부은', '퉁퉁 부은'], ['swollen eyes']], [['멍든', '멍이 든'], ['bruise']], [['땀에 젖은', '땀범벅'], ['sweat', 'wet clothes']],
+    [['풀어헤친 머리', '머리를 푼'], ['hair down']], [['안경을 쓴', '안경 낀'], ['glasses']], [['가면을 쓴'], ['mask']], [['망토를 두른'], ['cape']], [['앞치마를 두른'], ['apron']]];
+  // 무리·숫자(그 컷에 이름 붙은 인물이 없을 때 기본 프롬프트에)
+  const CROWD = [[['두 사람', '둘이', '두 남녀', '두 명'], ['2others']], [['세 사람', '셋이', '세 명'], ['3others']], [['네 사람', '넷이'], ['4others']],
+    [['병사들', '기사들', '남자들', '사내들', '군인들', '경비병들', '신하들', '청년들', '소년들'], ['multiple boys']], [['하녀들', '여자들', '소녀들', '아가씨들', '시녀들', '귀부인들', '영애들'], ['multiple girls']],
+    [['군중', '사람들', '인파', '무리', '일행', '관중', '구경꾼', '행렬'], ['crowd', 'multiple others']]];
+  // 둘의 위치 관계(함께 레이어·기본 프롬프트에)
+  const SPATIAL = [[['뒤에서 안', '뒤에서 끌어안', '뒤에서 껴안', '백허그'], ['hug from behind']], [['나란히'], ['side by side']], [['등을 맞대', '등을 맞', '등을 기대'], ['back-to-back']],
+    [['무릎을 베', '무릎베개', '무릎에 눕'], ['lap pillow']], [['어깨에 기대', '어깨에 기댄', '어깨에 머리를 기대', '어깨에 머리를 기댄'], ['leaning on shoulder']], [['마주 앉'], ['sitting across from each other']],
+    [['품에 안긴', '품에 안겨'], ['being held']], [['손을 잡고 걷', '손잡고 걷'], ['holding hands', 'walking together']], [['올라타'], ['straddling']]];
+  // 몸 일부가 주어인 문장('준의 손이 떨린다') → 그 부위 클로즈업
+  const BODYSUBJ = [[/(손|손끝|손가락|주먹)(이|가|은|는)\s/, ['hands focus']], [/(발|발끝|발목)(이|가|은|는)\s/, ['feet focus']], [/(눈동자|눈|동공)(이|가|은|는)\s/, ['eye focus']], [/(입술|입꼬리|입)(이|가|은|는)\s/, ['lips']], [/(어깨)(가|는)\s/, ['shoulders']]];
+  const STRONG = /(와락|힘껏|미친 듯이|전력으로|세차게|거칠게|격하게|벌컥|홱|휙|있는 힘껏|다급하게|황급히)/, GENTLE = /(천천히|느릿느릿|느릿|조심스레|조심스럽게|살며시|살짝|가만히|사뿐)/;
+  const GAZE = /(바라보|바라본|쳐다보|쳐다본|노려보|노려본|응시|지켜보|지켜본|올려다보|올려다본|내려다보|내려다본|째려|흘겨보|훔쳐보)/;
+  // 이어지는 동작이어도 유지할 '상태'(들고·앉아·눈물…): 앞 절이어도 그 사람에게 남김
+  const STATE = /^(holding|sitting|standing|lying|kneeling|squatting|leaning|carrying|wearing|smoking|tears|teary|blush|sweat|trembling|crossed arms|hand on|hands on|hand in|own hands|clenched|under covers|curled up|being held|piggyback|princess carry)/;
+  // 절 이음말: 종류(try 시도·cond 가정·con 대조·seq 이어짐·sim 동시)
+  const CONN = [['려다가', 'try'], ['려다', 'try'], ['려고', 'try'], ['려는', 'try'], ['자마자', 'seq'], ['고서', 'seq'], ['다가', 'seq'], ['면서', 'sim'], ['지만', 'con'], ['는데도', 'con'], ['음에도', 'con'], ['었는데', 'con'], ['았는데', 'con'],
+    ['는데', 'sim'], ['으며', 'sim'], ['며', 'sim'], ['더라면', 'cond'], ['으면', 'cond'], ['면', 'cond'], ['고', 'seq'], ['자', 'seq'], ['아서', 'seq'], ['어서', 'seq'], ['해서', 'seq'], ['니까', 'seq']];
+  const NOT_CONN = /^(정면|측면|화면|이면|표면|전면|반면|내면|장면|가면|지면|남자|여자|의자|모자|상자|과자|부자|기자|환자|왕자|사자|액자|감자|창고|최고|광고|경고|사고|원고|바다가|소매|가며|두며)$/;
+  const PARTS = ['께서', '에게서', '에게', '한테', '이랑', '에서', '으로', '은', '는', '이', '가', '도', '의', '을', '를', '와', '과', '랑', '로', '만'];
+  function readAction(text, names, who) {
+    let tx = ' ' + String(text || '').replace(/[“”"]/g, ' ') + ' ';
+    const extra = {}, put = (n, ts) => { if (!n) return; (extra[n] ||= []).push(...ts); };
+    // 앞서 걸러 낼 것: 바람(-고 싶다)·시도(-려 하다)·가정 문장(…텐데/…더라면)
+    tx = tx.replace(/(가슴|심장|맥박|맥)(이|은|도)?\s*(\S+\s)?\S*(뛰|뛴)\S*/g, ' heartbeat ').replace(/\S+고\s+싶\S*/g, ' ').replace(/\S+(으려|려)\s*(한다|했다|하다|하지만|했지만|든다|했던)\S*/g, ' ');
+    // 참음: '눈물을 꾹 참는다' → 참는 표정
+    const sup = (re, ts) => { tx = tx.replace(re, () => { put('@who', ts); return ' '; }); };
+    sup(/(눈물|울음)(을|를|이)?\s*(꾹\s*|애써\s*|겨우\s*)?(참|삼키|삼킨|삼켰|억누르|억누른|억눌|감추|감춘|감췄|훔치|훔친|훔쳤)\S*/g, ['teary eyes', 'holding back tears']);
+    sup(/(웃음)(을|를|이)?\s*(꾹\s*|애써\s*)?(참|삼키|삼킨|억누르|억누른|감추|감춘)\S*/g, ['suppressed smile']);
+    const sents = tx.split(/(?<=[.!?…])\s+/);
+    const per = {}, add = (n, ts) => { if (!n || !ts.length) return; (per[n] ||= []).push(...ts); };
+    const nameOf = w => { const n = names.filter(Boolean).sort((a, b) => b.length - a.length).find(n => w.startsWith(n)); if (!n) return null; const r = w.slice(n.length).replace(/[.,!?…]+$/, ''); return r === '' || PARTS.includes(r) || /^(이|가|은|는|을|를|에게|의|과|와|도)$/.test(r) ? [n, r] : null; };
+    // 이름 자리는 가려서 사전을 봄('두나를'의 '나를'이 나르다로 잡히지 않게)
+    const NM = names.filter(Boolean).sort((a, b) => b.length - a.length), mask = s => NM.reduce((a, n) => a.split(n).join('○'), s);
+    let lastWho = who, gaze = false;
+    for (const sent of sents) {
+      if (/(텐데|더라면|었다면|았다면|였다면|을지도|ㄹ지도|면 좋을|면 좋겠)/.test(sent)) continue;  // 가정·바람 문장은 통째로
+      const ws = sent.trim().split(/\s+/).filter(Boolean); if (!ws.length) continue;
+      // 절 나누기
+      const cl = []; let cur = [];
+      ws.forEach((w, k) => { cur.push(w); const bare = w.replace(/[.,!?…]+$/, ''); if (k === ws.length - 1) return;
+        if (nameOf(bare) || NOT_CONN.test(bare)) return; const c = CONN.find(([e]) => bare.length > e.length && bare.endsWith(e));
+        if (c || /,$/.test(w) && /(고|며|서)$/.test(bare)) { cl.push({ ws: cur, kind: c ? c[1] : 'sim' }); cur = []; } });
+      if (cur.length) cl.push({ ws: cur, kind: 'end' });
+      const conAt = cl.map(c => c.kind).lastIndexOf('con');
+      cl.forEach((c, ci) => {
+        const t = c.ws.join(' ');
+        // 이 절의 주어와, 다른 인물 앞 꾸밈말(그 인물 몫)
+        let subj = null; const owned = new Set();
+        c.ws.forEach((w, k) => { const nm = nameOf(w.replace(/[.,!?…]+$/, '')); if (!nm) return; const [n, r] = nm;
+          if (/^(이|가|은|는|께서|도)$/.test(r) && !subj) subj = n;
+          let j = k - 1, took = [];   // 앞쪽 꾸밈말: ㄴ·는·던으로 끝나는 낱말(+그 목적어·꾸밈 명사)
+          while (j >= 0 && !owned.has(j) && !nameOf(c.ws[j].replace(/[.,!?…]+$/, ''))) { const x = c.ws[j].replace(/[.,!?…]+$/, ''), cc = x.charCodeAt(x.length - 1) - 0xAC00;
+            const adn = /(는|은|던|인)$/.test(x) || (cc >= 0 && cc % 28 === 4) || /의$/.test(x) || /차림의?$/.test(x);
+            if (adn || (took.length && j === k - took.length - 1 && /(을|를|에|이|가)$/.test(x)) || (took.length && !/(다|고|며|서)$/.test(x) && x.length <= 4 && j === k - took.length - 1)) { took.push(j); j--; } else break; }
+          if (took.length && n !== subj) { took.forEach(i => owned.add(i)); const mod = mask(took.map(i => c.ws[i]).reverse().join(' ')); add(n, tagsOf(mod, POSE)); add(n, tagsOf(mod, APPEAR)); }
+          else if (took.length && n === subj) { const mod = took.map(i => c.ws[i]).reverse().join(' '); add(n, tagsOf(mod, APPEAR)); }
+        });
+        // 꾸밈말을 뺀 서술 부분
+        const rest = mask(c.ws.filter((_, i) => !owned.has(i)).join(' '));
+        const s0 = subj || lastWho || who;
+        const neg = /지\s*(않|못|말)|(^|\s)(안|못)\s/.test(rest);
+        let ts = tagsOf(rest, POSE);
+        if (neg || c.kind === 'try' || c.kind === 'cond' || ci <= conAt) ts = [];           // 부정·시도·가정·대조의 앞 절은 버림
+        else if (c.kind === 'seq') ts = ts.filter(x => STATE.test(x));                          // 이어지는 앞 동작은 상태만 남김
+        if (STRONG.test(rest) && ts.length) ts = [...ts.filter(x => x !== 'motion blur'), 'dynamic pose'];
+        if (GENTLE.test(rest)) ts = ts.filter(x => x !== 'motion blur' && x !== 'dynamic pose');
+        if (GAZE.test(rest) && c.ws.some((w, i) => !owned.has(i) && (nameOf(w)?.[1] || '').match(/^(을|를|에게|의)$/) && nameOf(w)[0] !== s0)) { ts.push('looking at another'); gaze = true; }
+        add(s0, ts); add(s0, tagsOf(rest, APPEAR));
+        const dress = rest.match(/(\S+?)(으로|로)\s*갈아입/); if (dress) add(s0, lookTags(dress[1]).length ? lookTags(dress[1]) : []);
+        if (subj) lastWho = subj;
+      });
+    }
+    if (extra['@who']) add(lastWho || who, extra['@who']);
+    Object.keys(per).forEach(k => per[k] = uniq(per[k]));
+    // 몸 일부 주어 → 그 부위 초점, 무리, 위치 관계, 세기
+    const bodyFocus = (BODYSUBJ.find(([re]) => re.test(tx)) || [])[1] || [];
+    // 이름(+조사)을 뺀 글로 위치 관계를 봄('뒤에서 준을 끌어안다' → '뒤에서 끌어안다')
+    const bare = names.filter(Boolean).concat([STRONG.source.slice(1, -1), GENTLE.source.slice(1, -1), '꼭', '꽉', '살포시', '가만히', '물끄러미']).sort((a, b) => b.length - a.length)
+      .reduce((a, n) => a.replace(new RegExp('(' + n + ')(께서|에게|한테|의|을|를|이|가|은|는|와|과|도)?\\s', 'g'), ''), tx);
+    const crowd = tagsOf(tx, CROWD), spatial = tagsOf(bare, SPATIAL);
+    const strong = STRONG.test(tx) ? ['dynamic pose'] : [];
+    return { per, bodyFocus, crowd, spatial, strong, gaze, of: n => per[n] || [], any: () => Object.values(per).flat() };
+  }
+  N.readAction = readAction;
   const VERBISH = /(다|고|며|면서|는|은|ㄴ다|하며|한다)[.!?…]*$|[가-힣](는다|ㄴ다|었다|았다|였다|한다|된다|진다)/;
   const PLACE = [
     [['복도'], ['indoors', 'hallway']], [['저택'], ['mansion']], [['정원'], ['outdoors', 'garden']], [['숲', '풀밭'], ['outdoors', 'forest']],
     [['교실'], ['indoors', 'classroom']], [['부엌'], ['indoors', 'kitchen']], [['계단'], ['stairs']], [['창가', '창밖', '창문'], ['window']], [['무대', '극장'], ['stage', 'theater']],
     [['거리'], ['outdoors', 'street']], [['골목'], ['outdoors', 'alley']], [['카페'], ['indoors', 'cafe']], [['침실'], ['indoors', 'bedroom']], [['연회', '만찬'], ['indoors', 'ballroom', 'chandelier']],
+    // 장소 2차(연출 DB 장면 이름·컷 글에 자주 나오는 곳)
+    [['옥상'], ['outdoors', 'rooftop']], [['공원'], ['outdoors', 'park']], [['벤치'], ['bench']], [['병원', '병실', '응급실'], ['indoors', 'hospital']], [['호수', '호숫가'], ['outdoors', 'lake']],
+    [['바다', '바닷가', '해변'], ['outdoors', 'beach', 'ocean']], [['강가', '강변', '강물'], ['outdoors', 'river']], [['다리 위', '다리를 건'], ['bridge']], [['편의점'], ['convenience store']],
+    [['지하철', '전철'], ['train interior']], [['버스 안', '버스에'], ['bus interior']], [['차 안', '운전석', '조수석'], ['car interior']], [['거실'], ['indoors', 'living room']],
+    [['욕실', '화장실'], ['indoors', 'bathroom']], [['사무실'], ['indoors', 'office']], [['엘리베이터'], ['elevator']], [['학교', '교정'], ['school']], [['운동장'], ['outdoors', 'schoolyard']],
+    [['도서관'], ['indoors', 'library']], [['서재'], ['indoors', 'study room', 'bookshelf']], [['신전'], ['temple']], [['황궁', '궁전', '왕궁'], ['palace']], [['성벽', '성문', '성 안'], ['castle']],
+    [['마차'], ['carriage']], [['동굴'], ['cave']], [['감옥', '지하 감옥', '감방'], ['prison']], [['지하실'], ['basement']], [['시장'], ['outdoors', 'market']], [['광장'], ['outdoors', 'plaza']],
+    [['산길', '산속', '산 정상'], ['outdoors', 'mountain']], [['들판', '초원'], ['outdoors', 'field', 'grass']], [['사막'], ['outdoors', 'desert']], [['술집', '바 카운터', '포장마차'], ['indoors', 'bar']],
+    [['연습실'], ['indoors', 'practice room']], [['대기실'], ['indoors', 'backstage']], [['회의실'], ['indoors', 'meeting room']], [['식당'], ['indoors', 'restaurant']], [['현관'], ['entrance', 'doorway']],
+    [['창가'], ['window']], [['테라스', '발코니'], ['balcony']], [['기숙사', '숙소'], ['indoors', 'dormitory']], [['아파트'], ['apartment']], [['편집실', '스튜디오'], ['indoors', 'studio']],
   ];
   const TIME = [
-    [['밤', '자정'], ['night']], [['노을', '저녁', '석양'], ['sunset']], [['아침'], ['morning']], [['새벽'], ['dawn']],
+    [['밤', '자정'], ['night']], [['노을', '저녁', '석양', '해질녘', '황혼'], ['sunset']], [['아침'], ['morning']], [['새벽', '동틀'], ['dawn']], [['한낮', '정오', '대낮'], ['day']],
+    // 날씨
+    [['비 내리', '비가 내', '빗속', '빗줄기', '폭우', '소나기', '비 오는', '비를 맞'], ['rain']], [['눈 내리', '눈이 내', '눈발', '함박눈', '눈보라', '눈 오는'], ['snowing']],
+    [['안개'], ['fog']], [['폭풍', '천둥', '번개가'], ['storm', 'lightning']], [['흐린 하늘', '먹구름'], ['cloudy sky']],
   ];
   const LIGHT = [
     [['촛불', '촛대'], ['candlelight']], [['달빛'], ['moonlight']], [['햇살', '햇빛'], ['sunlight']],
@@ -222,7 +337,7 @@
   //   한 글자(§든·§운)는 앞뒤 모두 낱말 경계
   const BOUND = new Map(), bound = w => BOUND.get(w) || (BOUND.set(w, new RegExp('(^|[^가-힣])' + w.slice(1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + (w.length === 2 ? '(?![가-힣])' : ''))), BOUND.get(w));
   const has = (s, ws) => ws.some(w => w[0] === '§' ? bound(w).test(s) : s.includes(w));
-  const tagsOf = (s, table) => table.filter(([ws]) => has(s, ws)).flatMap(([, t]) => t);
+  const tagsOf = (s, table) => [...new Set(table.filter(([ws]) => has(s, ws)).flatMap(([, t]) => t))];  // 같은 태그는 한 번만
   const uniq = a => [...new Set(a.filter(Boolean))];
   const actionOf = p => String(p.act || '').replace(/^(?:.+ )?대사$|^효과음 .*$/, '');
   function splitTags(text) {
@@ -374,11 +489,15 @@
       || (c.name === p.who && !speakers.has(c.name) && !OFFSCREEN.test(action))
     ));
     const main = visible.find(c => c.name === p.who) || visible[0];
+    // 절 단위 해석: 인물마다 그 사람이 실제로 하는 동작(부정·시도·가정·대조 앞 절은 버리고, 이어진 동작은 마지막 것 + 상태)
+    const RA = readAction(onScreen, chars.map(c => c.name), main?.name || p.who);
+    const actOf = c => RA.of(c.name);
     const animals = tagsOf(onScreen, ANIMALS);
-    const hasPerson = !!main || (!animals.length && PERSON.test(onScreen)) || (!!p.said && !dialogs.length);
-    const objects = tagsOf(action, OBJECT);
-    const localPlace = tagsOf(action, PLACE);
-    const body = BODY.find(([pattern]) => pattern.test(onScreen))?.[1] || [];
+    const hasPerson = !!main || !!RA.crowd.length || (!animals.length && PERSON.test(onScreen)) || (!!p.said && !dialogs.length);
+    const NMS = chars.map(c => c.name).filter(Boolean).sort((a, b) => b.length - a.length), actM = NMS.reduce((a, n) => a.split(n).join('○'), action);  // 이름 자리는 가리고 사전을 봄
+    const objects = tagsOf(actM, OBJECT);
+    const localPlace = tagsOf(actM, PLACE);
+    const body = uniq([...(BODY.find(([pattern]) => pattern.test(onScreen))?.[1] || []), ...RA.bodyFocus]);
     const mode = focusOf(p, action, hasPerson, objects, localPlace, body);
     const far = mode === 'distant';
     const showCast = mode === 'character' || far;
@@ -395,8 +514,8 @@
     };
     const place = localPlace.length ? localPlace
       : ['scenery', 'distant', 'character'].includes(mode) ? nearest(PLACE) : [];
-    const time = tagsOf(action, TIME);
-    const light = mode === 'effect' ? [] : [...(time.length ? time : nearest(TIME)), ...tagsOf(action, LIGHT)];
+    const time = tagsOf(actM, TIME);
+    const light = mode === 'effect' ? [] : [...(time.length ? time : nearest(TIME)), ...tagsOf(actM, LIGHT)];
     const tone = ['object', 'detail'].includes(mode) ? { tags: [], note: '' } : dbTone(p.emo, mode === 'effect' ? '효과 배경' : p.shot);
     const peak = p.vng === 'P';
     const frame = {
@@ -405,8 +524,11 @@
       object: ['no humans', ...objects, ...(p.shot === '화면 인서트' ? ['screen'] : []), 'object focus', 'close-up', ...place],
       detail: [...body, 'extreme close-up', ...objects, ...place],
       effect: ['no humans', 'abstract background', ...tagsOf(action + ' ' + (p.dir?.fx || []).join(' '), FX), ...tone.tags],
-      character: [...countTags(cast), !cast.length && 'person', ...(SHOT[p.shot] || SHOT['중경']), ...place, ...objects],
+      character: [...countTags(cast), !cast.length && (RA.crowd.length ? '' : 'person'), ...(cast.length ? [] : RA.crowd), ...(SHOT[p.shot] || SHOT['중경']), ...place, ...objects],
     }[mode];
+    // 둘의 위치 관계·몸 일부 초점·세기(기본 프롬프트)
+    if (mode !== 'effect') frame.push(...(cast.length > 1 || visible.length > 1 ? RA.spatial : []), ...(mode === 'character' ? RA.bodyFocus : []), ...(peak || RA.strong.length ? RA.strong : []));
+    if (mode === 'distant' && !cast.length) frame.push(...RA.crowd);
     // #소품(고정): 설정집 물건의 태그를 그대로, 화면 구도 태그 바로 뒤에(컷마다 같은 모양). 효과 배경 컷에는 안 넣음
     const props = mode === 'effect' ? [] : propsOn.filter(x => x.tags);
     // 카메라: 앵글 태그 + 앵글×감정(인물이 없으면 시선 태그는 뺌) + 정점 컷은 역동적 구도
@@ -426,7 +548,7 @@
       const look = String(tags[c.name] || '').trim() || lookTags(c.look).join(', ');
       const appearance = splitTags(look).filter(tag => !COUNT_TAG.test(tagName(tag))
         && tag !== 'no humans' && (!far || !/hair|eyes?|face|portrait|close-up|looking at viewer/i.test(tag)));
-      const actionTags = n === 0 ? tagsOf(onScreen, POSE).filter(tag => !far || /walk|stand|sitting/.test(tag)) : [];
+      const actionTags = actOf(c).filter(tag => !far || /walk|stand|sitting/.test(tag));
       const x = cast.length === 1 ? 0.5 : [0.3, 0.7, 0.5, 0.3, 0.7, 0.5][n];
       const y = n < 3 ? (far ? 0.7 : 0.5) : (far ? 0.9 : 0.7);
       const prompt = joinTags([
@@ -442,17 +564,17 @@
       const isMain = c === main, drawn = charP.find(x => x.name === c.name);
       const k = Math.min(visible.length, 6), x = k === 1 ? 0.5 : [0.3, 0.7, 0.5, 0.3, 0.7, 0.5][n];
       return { name: c.name, pos: drawn && !far ? drawn.pos : pos(x, n < 3 ? 0.5 : 0.7),
-        prompt: joinTags([...countTags([c]), ...appearance, ...(isMain ? weigh(EXPR[p.emo] || [], p.i ?? 1) : []), ...(isMain ? tagsOf(onScreen, POSE) : []), ...(mode === 'detail' ? body : [])]) };
+        prompt: joinTags([...countTags([c]), ...appearance, ...(isMain ? weigh(EXPR[p.emo] || [], p.i ?? 1) : []), ...actOf(c), ...(mode === 'detail' ? body : [])]) };
     });
     // 인물이 나오는데 동작 태그를 하나도 못 찾으면 알림(사전에 없는 동작 — 컷 프롬프트 생성(Claude)으로 채우거나 컷 글을 고쳐 달라고)
-    const missAct = !!main && !far && ['character', 'detail'].includes(mode) && !tagsOf(onScreen, POSE).length && VERBISH.test(onScreen.trim()) ? onScreen.trim().slice(0, 40) : '';
+    const missAct = !!main && !far && ['character', 'detail'].includes(mode) && !actOf(main).length && !tagsOf(onScreen, POSE).length && VERBISH.test(onScreen.trim()) ? onScreen.trim().slice(0, 40) : '';
     const charRef = mode === 'character' && main && refs.char?.(main.name) ? main.name : null;
     const strength = ['detail', 'object'].includes(mode) ? 0.72 : NO_HUMANS.has(mode) || far ? 0.62 : peak ? 0.7 : 0.66;
     return {
       mode, focus: LABELS[mode], frameTags, base, chars: charP, size: size(p.h),
       settings: { steps: 28, guidance: 5, rescale: 0, sampler: 'Euler Ancestral', noise: 'karras', strength, noiseImg: 0.1 },
       charRef, vibe: !charRef && !!refs.scene, peak, aiChoice: !far && cast.length < 2, dbNote: tone.note,
-      props: propsOn.map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '', forced: !!x.forced })), propsOff: propsOff.map(x => ({ name: x.name, why: x.why, emit: x.emit || [] })), place, layerCast, missAct,
+      props: propsOn.map(x => ({ name: x.name, tags: x.tags || '', look: x.look || '', forced: !!x.forced })), propsOff: propsOff.map(x => ({ name: x.name, why: x.why, emit: x.emit || [] })), place, layerCast, missAct, spatial: RA.spatial, crowd: cast.length ? [] : RA.crowd,
     };
   }
 
@@ -551,7 +673,7 @@
     let group = null;
     if (cast.length >= 2) {
       const names = cast.map(c => c.name), counts = cast.flatMap(c => splitTags(c.prompt).filter(t => COUNT_TAG.test(tagName(t))));
-      const inter = uniq([...tagsOf(act, INTERACT), ...cast.flatMap(c => splitTags(c.prompt).map(tagName).filter(t => INTER_TAGS.has(t.toLowerCase())))]);
+      const inter = uniq([...tagsOf(act, INTERACT), ...(o.spatial || []), ...cast.flatMap(c => splitTags(c.prompt).map(tagName).filter(t => INTER_TAGS.has(t.toLowerCase())))]);
       const parts = cast.map(c => ({ name: c.name, cell: c.pos.cell || pos(c.pos.x, c.pos.y).cell, prompt: joinTags(bodyOf(c).filter(t => !COUNT_TAG.test(tagName(t)))) }));
       const base = joinTags([...counts, ...inter, ...frame, ...lit, ...CUTOUT, ...style, 'no text']);
       group = { kind: 'group', label: `함께 ${names.join('·')}`, names, key: [...names].sort().join('+'), interact: inter,

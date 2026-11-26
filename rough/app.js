@@ -2461,11 +2461,12 @@ function naiChars(){return CHARS.filter(c=>c.name.trim()).map(c=>({name:c.name.t
 // 배운 동작: Claude가 컷 프롬프트를 만들며 새로 태그로 옮긴 동작(규칙 사전에 없던 것) → 이 브라우저에 쌓아 규칙 초안이 다음부터 바로 씀
 var LEARNED=[];try{LEARNED=JSON.parse(localStorage.getItem('rough-learned-actions')||'[]')}catch(_){LEARNED=[]}
 // 도구 내장 배운 동작(rough/learned-actions.json, tools/merge_learned.py로 합쳐 커밋) + 이 브라우저에서 배운 것(같은 낱말은 브라우저 것이 이김)
-var LEARNED_BUILTIN=[];
+var LEARNED_BUILTIN=[];var LEARN_SKIP=[];  // 검사에서 걸러 낸 배운 동작(이 창에서만 보여 줌)
 const applyLearned=()=>{const m=new Map();[...LEARNED_BUILTIN,...LEARNED].forEach(x=>m.set(x.ko,x));NAI.useLearned([...m.values()].map(x=>[[x.ko],String(x.tags).split(',').map(t=>t.trim()).filter(Boolean)]))};applyLearned();
 fetch('learned-actions.json').then(r=>r.ok?r.json():null).then(d=>{if(d?.type==='rough-actions'&&Array.isArray(d.items)){LEARNED_BUILTIN=d.items.filter(x=>x&&x.ko&&x.tags);applyLearned();if(VIEW==='layout')renderNai()}}).catch(()=>{});
 function learnActions(list,force){let n=0;for(const a of list||[]){const ko=String(a.ko||'').trim().slice(0,30),tags=String(a.tags||'').trim().slice(0,120);
-    if(!ko||!tags||ko.length<2||/[A-Za-z]/.test(ko)||(!force&&NAI.poseTags(ko).length))continue;const i=LEARNED.findIndex(x=>x.ko===ko);if(i>=0)LEARNED[i]={ko,tags,at:Date.now()};else{LEARNED.push({ko,tags,at:Date.now()});n++}}
+    if(!ko||!tags||ko.length<2||/[A-Za-z]/.test(ko)||(!force&&NAI.poseTags(ko).length))continue;
+    const chk=NAI.checkLearned?NAI.checkLearned(ko,tags):{ok:true};if(!chk.ok){LEARN_SKIP=[{ko,tags,why:chk.why.join(' · ')},...LEARN_SKIP.filter(x=>x.ko!==ko)].slice(0,30);continue}const i=LEARNED.findIndex(x=>x.ko===ko);if(i>=0)LEARNED[i]={ko,tags,at:Date.now()};else{LEARNED.push({ko,tags,at:Date.now()});n++}}
   if(n||force){try{localStorage.setItem('rough-learned-actions',JSON.stringify(LEARNED.slice(-500)))}catch(_){}applyLearned()}return n}
 function learnedExport(){const items=LEARNED.map(({ko,tags})=>({ko,tags}));if(!items.length){toast('이 브라우저에서 배운 동작이 없어요');return}
   download('rough-actions.json',URL.createObjectURL(new Blob([JSON.stringify({type:'rough-actions',version:1,exported:new Date().toISOString(),items},null,1)],{type:'application/json'})));toast(`배운 동작 ${items.length}개를 파일로 내보냈어요`)}
@@ -2474,6 +2475,7 @@ async function learnedImport(file){try{const d=JSON.parse(await file.text());if(
 function openLearned(){let d=$('#learndlg');if(!d){d=document.createElement('dialog');d.id='learndlg';d.className='keydlg';document.body.appendChild(d)}
   const draw=()=>{d.innerHTML=`<h3>배운 동작 ${LEARNED.length}개</h3><p class="hint">컷 프롬프트 생성 때 Claude가 규칙 사전에 없던 동작을 태그로 옮기면 여기 쌓이고, 다음부터 규칙 초안이 바로 써요(활용형까지).</p>
     <ul class="learnl">${LEARNED.slice().reverse().map(x=>`<li><b>${esc(x.ko)}</b> → <code>${esc(x.tags)}</code><button class="link" data-learndel="${esc(x.ko)}">지우기</button></li>`).join('')||'<li class="empty">이 브라우저에서 배운 동작이 아직 없어요</li>'}</ul>
+    ${LEARN_SKIP.length?`<details class="learnb"><summary>걸러 낸 동작 ${LEARN_SKIP.length}개</summary><ul class="learnl">${LEARN_SKIP.map(x=>`<li><b>${esc(x.ko)}</b> → <code>${esc(x.tags)}</code> <small>${esc(x.why)}</small></li>`).join('')}</ul></details>`:''}
     ${LEARNED_BUILTIN.length?`<details class="learnb"><summary>도구에 내장된 동작 ${LEARNED_BUILTIN.length}개</summary><ul class="learnl">${LEARNED_BUILTIN.map(x=>`<li><b>${esc(x.ko)}</b> → <code>${esc(x.tags)}</code></li>`).join('')}</ul></details>`:''}
     <p class="hint">따로 보관: 파일로 내보내 다른 브라우저·기기에서 가져오기 · 도구에 넣기: 내보낸 파일을 <code>python3 tools/merge_learned.py 파일.json</code>으로 <code>rough/learned-actions.json</code>에 합쳐 커밋하면 모든 브라우저가 기본으로 써요 · 상단 「저장」 보관함과 작품 파일에도 함께 들어가요</p>
     <div class="acts"><button class="btn" data-r="exp">파일로 내보내기</button><label class="btn">가져오기<input type="file" accept="application/json,.json" data-r="imp" hidden></label><span class="grow"></span><button class="btn dark" data-r="x">닫기</button></div>`};

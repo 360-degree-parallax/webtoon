@@ -7,6 +7,8 @@
 // 사용: node tools/eval_props.js [--holdout|--script] [--all] [--min 0.9]   정확도가 --min 아래면 종료 코드 1
 const path = require('path'), R = path.join(__dirname, '..');
 const N = require(path.join(R, 'rough', 'nai.js')), E = require(path.join(R, 'rough', 'engine.js'));
+// 도구에 내장된 배운 동작도 앱처럼 씀(rough/learned-actions.json — merge_learned.py가 합친 뒤 이 시험으로 확인)
+try { const L = require(path.join(R, 'rough', 'learned-actions.json')).items || []; N.useLearned(L.map(x => [[x.ko], String(x.tags).split(',').map(t => t.trim()).filter(Boolean)])); } catch (_) {}
 const A = process.argv, all = A.includes('--all'), min = A.includes('--min') ? +A[A.indexOf('--min') + 1] : 0.9;
 const fx = f => require(path.join(R, 'tests', 'fixtures', f));
 const label = r => r.on ? 'on' : r.why === 'source' ? 'source' : 'absent';

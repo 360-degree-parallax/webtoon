@@ -100,4 +100,7 @@ console.log(`소품 화면 판단 ${(pa * 100).toFixed(1)}% · 확인용 ${(ph *
 // 씬 스크립트 컷으로 컷 글 해석 → 컷 프롬프트까지(tools/eval_props.js --script와 같은 판단)
 const sr = require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, '..', 'tools', 'eval_props.js'), '--script', '--min', '0.95'], { encoding: 'utf8' });
 console.log((sr.stdout.match(/^\[.*$/gm) || []).join('\n'));
-process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 && sr.status === 0 ? 0 : 1);
+// 동작·인물 해석(부정·시도·대조·누가·대명사·무리·위치·장소·외형): 시험 세트 + 확인용 세트
+const ar = ['', '--holdout'].map(f => require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, '..', 'tools', 'eval_actions.js'), ...(f ? [f] : []), '--min', '0.9'], { encoding: 'utf8' }));
+console.log('동작 해석 ' + ar.map((r, k) => (k ? '확인용 ' : '') + ((r.stdout.match(/정확도 [\d.]+%/) || ['?'])[0])).join(' · '));
+process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 && sr.status === 0 && ar.every(r => r.status === 0) ? 0 : 1);
