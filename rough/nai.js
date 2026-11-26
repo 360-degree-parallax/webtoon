@@ -359,7 +359,9 @@
     // 소품 보이기: 컷에서 직접 정한 값(ctx.propVis: 'show'|'hide'|'auto')이 먼저, 없으면 글에서 추론. 안 보이는 소품은 이름을 지운 글로 판정(물건 태그도 안 붙게)
     const rawAct = actionOf(p);
     const propAll = (ctx.props?.(p) || []).map(x => { const v = ctx.propVis?.(p, x.name) || 'auto';
-      return { ...x, ...(v === 'hide' ? { on: false, why: 'hidden', emit: [] } : v === 'show' ? { on: true, forced: true } : propPresence(rawAct, x.name)) }; });
+      // 행동 글에 없고 대사·식자에만 나오면 언급만(p.actText = 행동 줄만, 엔진이 넘김. 없으면 예전처럼 act)
+      const actOnly = p.actText != null ? p.actText : rawAct;
+      return { ...x, ...(v === 'hide' ? { on: false, why: 'hidden', emit: [] } : v === 'show' ? { on: true, forced: true } : !actOnly.includes(x.name) ? { on: false, why: 'said', emit: [] } : propPresence(actOnly, x.name)) }; });
     const propsOn = propAll.filter(x => x.on), propsOff = propAll.filter(x => !x.on);
     const emitTags = uniq(propsOff.flatMap(x => x.emit || []));
     const action = propsOff.reduce((a, x) => a.split(x.name).join(' '), rawAct).replace(/\s{2,}/g, ' ');

@@ -1,19 +1,45 @@
 #!/usr/bin/env node
-// 소품 화면 판단(NAI.propPresence) 시험: tests/fixtures/prop-presence.json의 문장마다 보임·화면 밖(출처)·언급만을 맞히는지
-// 사용: node tools/eval_props.js [--all] [--holdout]  (--holdout: 규칙을 고칠 때 보지 않은 확인용 문장)   (--all: 맞힌 것도 보임) · 정확도가 기준(--min, 기본 0.9) 아래면 종료 코드 1
-const path = require('path'), N = require(path.join(__dirname, '..', 'rough', 'nai.js'));
-const FILE = process.argv.includes('--holdout') ? 'prop-presence-holdout.json' : 'prop-presence.json';
-const F = require(path.join(__dirname, '..', 'tests', 'fixtures', FILE));
-const min = +(process.argv[process.argv.indexOf('--min') + 1]) || 0.9, all = process.argv.includes('--all');
-const got = c => { const r = N.propPresence(c.t, c.p); return r.on ? 'on' : r.why === 'source' ? 'source' : 'absent'; };
-let ok = 0, okE = 0, nE = 0; const conf = {}; const bad = [];
-for (const c of F.cases) {
-  const r = N.propPresence(c.t, c.p), g = got(c), hit = g === c.want; if (hit) ok++;
-  conf[c.want + '→' + g] = (conf[c.want + '→' + g] || 0) + 1;
-  if (c.emit) { nE++; if (g === 'source' && (r.emit || [])[0] === c.emit) okE++; }
-  if (!hit || all) bad.push(`${hit ? '  ' : '✗ '}${c.want.padEnd(6)} ${g.padEnd(6)} ${c.p}: ${c.t}`);
+// 소품 화면 판단 시험: 보임(on)·화면 밖 — 나온 효과만(source)·언급만(absent)을 맞히는지
+//   기본: tests/fixtures/prop-presence.json (문장 → NAI.propPresence)
+//   --holdout: prop-presence-holdout.json (규칙을 고칠 때 보지 않은 확인용)
+//   --script: 씬 스크립트 컷(prop-script.json 생성 + prop-script-hand.json 손으로 씀) → 컷 글 해석(RE.parseCut) → 컷 프롬프트(NAI.cut)까지 거쳐
+//             그 소품이 o.props(보임)인지 o.propsOff(화면 밖·언급만)인지
+// 사용: node tools/eval_props.js [--holdout|--script] [--all] [--min 0.9]   정확도가 --min 아래면 종료 코드 1
+const path = require('path'), R = path.join(__dirname, '..');
+const N = require(path.join(R, 'rough', 'nai.js')), E = require(path.join(R, 'rough', 'engine.js'));
+const A = process.argv, all = A.includes('--all'), min = A.includes('--min') ? +A[A.indexOf('--min') + 1] : 0.9;
+const fx = f => require(path.join(R, 'tests', 'fixtures', f));
+const label = r => r.on ? 'on' : r.why === 'source' ? 'source' : 'absent';
+let sets;
+if (A.includes('--script')) {
+  const g = fx('prop-script.json'), h = fx('prop-script-hand.json');
+  const names = [...new Set([...g.cases, ...h.cases].map(c => c.p))];
+  E.PROP_NAMES = names;  // 앱에서는 설정집 물건 이름(등록된 소품)으로 조사를 떼므로 같게
+  const judge = (c, chars) => {
+    const ch = chars.map(n => ({ name: n })), b = E.parseCut(c.t, ch, 0);
+    const p = { ...b, shot: '중경', ang: '아이레벨', emo: '평온', i: 1, h: 1, vng: 'I' };
+    const o = N.cut(p, 0, [p], { chars: ch.map(x => ({ ...x, body: 'male' })), props: q => (q.props || []).map(x => ({ name: x.name, tags: 'prop tag' })) });
+    if ((o.props || []).some(x => x.name === c.p)) return 'on';
+    const off = (o.propsOff || []).find(x => x.name === c.p); return off ? (off.why === 'source' ? 'source' : 'absent') : 'missing';
+  };
+  sets = [['생성', g.cases.map(c => [c, judge(c, g.chars)])], ['손으로 씀', h.cases.map(c => [c, judge(c, h.chars)])]];
+} else {
+  const F = fx(A.includes('--holdout') ? 'prop-presence-holdout.json' : 'prop-presence.json');
+  sets = [[A.includes('--holdout') ? '확인용' : '시험', F.cases.map(c => [c, label(N.propPresence(c.t, c.p))])]];
 }
-const acc = ok / F.cases.length;
-console.log(bad.join('\n'));
-console.log(`\n${F.cases.length}문장 · 정확도 ${(acc * 100).toFixed(1)}% · 효과 태그 ${okE}/${nE} · 정답→판단 ${JSON.stringify(conf)}`);
-process.exit(acc >= min ? 0 : 1);
+let fail = false;
+for (const [name, rows] of sets) {
+  const conf = {}, out = []; let ok = 0; const byNote = {};
+  for (const [c, g] of rows) {
+    const hit = g === c.want; if (hit) ok++;
+    conf[c.want + '→' + g] = (conf[c.want + '→' + g] || 0) + 1;
+    if (c.note) { const b = byNote[c.note] ||= [0, 0]; b[1]++; if (hit) b[0]++; }
+    if (!hit || all) out.push(`${hit ? '  ' : '✗ '}${c.want.padEnd(6)} ${g.padEnd(7)} ${c.p}: ${c.t.replace(/\n/g, ' ⏎ ')}`);
+  }
+  const acc = ok / rows.length; if (acc < min) fail = true;
+  if (out.length) console.log(out.join('\n'));
+  console.log(`[${name}] ${rows.length}문장 · 정확도 ${(acc * 100).toFixed(1)}% · 정답→판단 ${JSON.stringify(conf)}`);
+  const weak = Object.entries(byNote).filter(([, [a, b]]) => a < b);
+  if (weak.length) console.log('  유형별 틀림: ' + weak.map(([k, [a, b]]) => `${k} ${b - a}/${b}`).join(' · '));
+}
+process.exit(fail ? 1 : 0);

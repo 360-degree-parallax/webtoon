@@ -204,7 +204,7 @@
     const cue = [actText, ...dialogs.map(d => d.note), ...dialogs.map(d => d.text), ...captions, ...sfx].filter(Boolean).join(' ');
     const act = actText.replace(/@/g, '') || (dialogs[0] ? `${dialogs[0].who ? dialogs[0].who + ' ' : ''}대사` : captions[0] || (sfx[0] ? `효과음 ${sfx[0]}` : ''));
     const rcue = [actText, ...dialogs.map(d => d.note), said ? `"${said}"` : ''].filter(Boolean).join(' ').replace(/@/g, '');
-    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), captions, sfx, sfxSize, dialogs, cue: cue.replace(/@/g, ''), rcue, dir: readDirs(tokens), props: prs };
+    return { line: text, who: who || '', act, said, key: `#${idx}:` + text, caption: captions.join(' / '), captions, sfx, sfxSize, dialogs, cue: cue.replace(/@/g, ''), rcue, dir: readDirs(tokens), props: prs, actText: actText.replace(/@/g, '') };
   }
   function parseCuts(cuts, chars) {
     const named = chars && chars.length ? chars.slice() : [];
@@ -627,7 +627,7 @@
       if (D.ang) { ang = D.ang; why.ang.unshift('글에 적은 연출'); }
       if (D.h) { h = D.h; why.h.unshift('글에 적은 연출'); }
       if (D.gap) { gap = { 붙임: 0.09, 보통: 0.22, 쉼: 0.48, '큰 쉼': 0.9 }[D.gap]; why.gap.unshift(`${D.gap} · 글에 적은 연출`); }
-      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || (b.caption ? [b.caption] : []), sfx: b.sfx || [], sfxSize: b.sfxSize || [], dialogs: b.dialogs || [], dir: b.dir || null, props: b.props || [], pre, key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
+      return { who: b.who, act: b.act, said: b.said, caption: b.caption || '', captions: b.captions || (b.caption ? [b.caption] : []), sfx: b.sfx || [], sfxSize: b.sfxSize || [], dialogs: b.dialogs || [], dir: b.dir || null, props: b.props || [], actText: b.actText, pre, key: b.key, emo: b.emo, i: b.i, role: b.role, vng: b.vng, trans: b.trans, shot, ang, h, gap, src: pc.id, why };
     });
   }
 

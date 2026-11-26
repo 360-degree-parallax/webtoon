@@ -97,4 +97,7 @@ const NAI = require('./nai.js'), FX = f => require('../tests/fixtures/' + f).cas
 const propAcc = cs => cs.filter(c => { const r = NAI.propPresence(c.t, c.p); return (r.on ? 'on' : r.why === 'source' ? 'source' : 'absent') === c.want; }).length / cs.length;
 const pa = propAcc(FX('prop-presence.json')), ph = propAcc(FX('prop-presence-holdout.json'));
 console.log(`소품 화면 판단 ${(pa * 100).toFixed(1)}% · 확인용 ${(ph * 100).toFixed(1)}%`);
-process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 ? 0 : 1);
+// 씬 스크립트 컷으로 컷 글 해석 → 컷 프롬프트까지(tools/eval_props.js --script와 같은 판단)
+const sr = require('child_process').spawnSync(process.execPath, [require('path').join(__dirname, '..', 'tools', 'eval_props.js'), '--script', '--min', '0.95'], { encoding: 'utf8' });
+console.log((sr.stdout.match(/^\[.*$/gm) || []).join('\n'));
+process.exit(ok === total && bad === 0 && fok === FEEL.length && pok === ptot && pa >= .9 && ph >= .9 && sr.status === 0 ? 0 : 1);
