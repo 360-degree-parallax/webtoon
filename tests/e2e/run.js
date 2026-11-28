@@ -90,6 +90,21 @@ test('편집: 효과선·배경 줄 → 수정 카드 · Esc로 풀기', async (
   await p.keyboard.press('Escape'); await p.waitForTimeout(300);
   assert(await ev(() => !selectedLetter && !window.layerPart), 'Esc로 선택 풀림');
 });
+test('콘티 GPT(기본): 캐릭터 시트 참고 · 인물 없는 컷 · 컷마다 NovelAI로 바꾸기', async ({p, ev}) => {
+  await ev(() => { CUTS.splice(0, CUTS.length, '빈 저택 복도에 달빛이 비친다. {설정}', '@에드가가 달리지 않고 뒤에서 @준을 끌어안는다. {중경}');
+    delete SCENES[SCUR].gen; SCENES[SCUR].pageEdits = []; compute(false); showView('layout'); });
+  await p.locator('#conti .ccard').nth(1).waitFor();
+  const g = await ev(() => [...document.querySelectorAll('#conti .ccard')].map(c => ({ on: c.querySelector('.ct-gen [aria-pressed="true"]')?.dataset.v, pre: [...c.querySelectorAll('.ct-prompt pre')].map(x => x.textContent), refs: c.querySelector('.ct-refs')?.textContent || '' })));
+  assert(g.every(x => x.on === 'gpt') && g.every(x => x.pre.length === 1), '기본은 GPT 프롬프트 하나');
+  assert(/사람은 그리지 않음/.test(g[0].pre[0]) && !/■ 인물과 연기/.test(g[0].pre[0]), '인물 없는 컷');
+  assert(/■ 인물과 연기/.test(g[1].pre[0]) && /hug from behind/.test(g[1].pre[0]) && /그리지 말 것: 에드가의 running/.test(g[1].pre[0]), '위치 관계·안 한 동작');
+  const hasImg = await ev(() => ['에드가', '준'].map(n => !!IMG.char[n]));
+  assert(hasImg.every((h, k) => h ? g[1].refs.includes(['에드가', '준'][k]) && /함께 올릴 캐릭터 시트/.test(g[1].refs) : /시트 없음/.test(g[1].refs)), '캐릭터 시트 안내: ' + g[1].refs);
+  assert(!hasImg.some(Boolean) || /■ 참고 이미지/.test(g[1].pre[0]), '시트가 있으면 참고 이미지 지시');
+  await p.click('#conti .ccard:nth-of-type(2) [data-ctgen="1"][data-v="nai"]'); await p.waitForTimeout(400);
+  assert(await ev(() => genOf(1) === 'nai' && genOf(0) === 'gpt' && document.querySelectorAll('#conti .ccard')[1].querySelectorAll('.ct-prompt pre').length >= 2), '그 컷만 NovelAI');
+  assert(/\[컷 1 · GPT\][\s\S]*\[컷 2 · NovelAI\]/.test(await ev(() => naiText())), '저장 파일에 컷마다 방식');
+});
 test('레퍼런스 필터(인물 수·시선)', async ({p, ev}) => {
   await ev(() => showView('webtoon')); await p.waitForTimeout(1200);
   await ev(() => selectPageCut([...document.querySelectorAll('#reader [data-slot-index]')][0])); await ev(() => document.querySelector('[data-at="ref"]')?.click()); await p.waitForTimeout(600);
@@ -109,7 +124,7 @@ test('콘티 NovelAI: 화면에 보이는 대상을 컷마다 다르게 구성',
       '@준은 놀라 @에드가를 돌아본다. {클로즈업}',
     );
     AIN[SCENES[SCUR].id] = {sig: 'old', cuts: [{n: 1, base: '1boy, portrait', chars: []}]};
-    compute(false);
+    SCENES[SCUR].gen = 'nai'; compute(false);
     showView('layout');
   });
   await p.locator('#conti .ccard').first().waitFor();

@@ -110,7 +110,13 @@
     const S = SHOT[p.shot] || SHOT['중경'], A = ANG[p.ang] || ANG['아이레벨'];
     const own = setting([p]), base = ctx.setting || setting(panels);
     const place = own.place || base.place, light = own.light || base.light;
-    const main = chars.find(c => c.name === p.who), oth = others(p, chars);
+    // ctx.nai: 같은 컷의 NAI.cut 결과(절 해석·보이는 인물·소품·장소·DB 근거) — 있으면 그것을 따름(NovelAI 프롬프트와 같은 사실로)
+    const O = ctx.nai || null, noHuman = O && ['scenery', 'object', 'effect'].includes(O.mode);
+    const vis = O ? (O.layerCast || []).map(x => chars.find(c => c.name === x.name) || { name: x.name }) : null;
+    let main = chars.find(c => c.name === p.who), oth = others(p, chars);
+    if (O) { main = noHuman ? null : vis.find(c => c.name === (O.who || p.who)) || vis[0] || null; oth = noHuman ? [] : vis.filter(c => c !== main); }
+    const actOf = n => (O && O.read && O.read.per && O.read.per[n]) || [];
+    const sheet = new Set(ctx.refNames || []);
     const expr = EXPR[p.emo] || EXPR['평온'];
     const k = p.i >= 3 ? ['intense', '아주 강하게'] : p.i === 2 ? ['clear', '분명하게'] : ['subtle', '은은하게'];
     const poses = pick(textOf(p), POSE);
@@ -121,7 +127,8 @@
     const prev = panels[i - 1], next = panels[i + 1];
     const chunk = an[p.chunk];
     const ar = `${100}:${Math.round(p.h * 100)}`;
-    const look = c => (c && c.look ? c.look.trim().replace(/\s+/g, ' ') : '');
+    // 캐릭터 시트를 함께 올리면 외형은 짧은 식별 문구만(시트와 글이 어긋나지 않게)
+    const look = c => { const t = c && c.look ? c.look.trim().replace(/\s+/g, ' ') : ''; return sheet.has(c && c.name) ? t.split(/[,.·\n]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join(', ') : t; };
     // 영어 (mj / sd)
     const castEn = main ? [`${main.name}${look(main) ? ` (${look(main)})` : ''}${oth.length ? `, placed on the ${side} third` : ''}`, ...oth.map(c => `${c.name}${look(c) ? ` (${look(c)})` : ''} on the ${side === 'left' ? 'right' : 'left'}`)].join('; ') : (oth.length ? oth.map(c => `${c.name}${look(c) ? ` (${look(c)})` : ''}`).join('; ') : '');
     const en = [
@@ -145,11 +152,14 @@
     // 한국어 자연어: 출력 규격 → 연출 의도 → 카메라 → 구도 → 인물·연기 → 동작 → 장소·조명 → 이어짐 → 비울 자리 → 금지
     const sp = spec(p.h), R = ROLE[p.vng] || ROLE.I, gt = gapTag(p.gap ?? 0.3);
     const sideKo = side === 'left' ? '왼쪽' : '오른쪽', oppKo = side === 'left' ? '오른쪽' : '왼쪽';
-    const handPose = poses.some(x => /손|끌어안|어깨|총/.test(x[2]));
-    const cast = [main, ...oth].filter(Boolean), insert = p.shot === '디테일', tiny = p.shot === '설정' || p.shot === '전경';
+    const handPose = poses.some(x => /손|끌어안|어깨|총/.test(x[2])) || (main && actOf(main.name).length > 0);
+    const cast = [main, ...oth].filter(Boolean), insert = p.shot === '디테일' || (O && O.mode === 'detail'), tiny = p.shot === '설정' || p.shot === '전경' || (O && O.mode === 'distant');
+    const refs = cast.filter(c => sheet.has(c.name)), propsOn = O ? (ctx.props?.(p) || []).filter(x => (O.props || []).some(v => v.name === x.name)) : (ctx.props?.(p) || []);
+    const dropped = (O && O.read && O.read.dropped) || [], together = (O && O.read && O.read.spatial) || [], crowd = (O && O.read && O.read.crowd) || [];
     const HANDF = { 설렘: '손끝이 조심스럽고 망설이는 힘', 긴장: '손가락 마디가 하얗게 설 만큼 꽉 쥠', 분노: '거칠게 움켜쥠, 힘줄이 드러남', 다정: '감싸듯 부드럽게', 놀람: '갑자기 멈춘 손, 손가락이 펴짐', 결의: '단단하고 흔들림 없이' };
-    const faceDir = oth.length ? `${jo(main.name, '은', '는')} 화면 ${oppKo}을 향해 몸을 3/4쯤 돌림` : main ? `${main.name}의 시선은 화면 ${oppKo} 여백을 향함(시선 방향에 공간을 남김)` : '';
-    const dist = oth.length ? (poses.some(x => /손목|끌어안|어깨|손을 내/.test(x[2])) ? '두 사람은 팔 하나 거리, 손이 닿는 거리' : p.emo === '냉담' || p.emo === '분노' ? '두 사람 사이에 한 걸음 이상 거리' : '두 사람은 한 걸음 거리') : '';
+    const touch = O && (together.length || cast.some(c => actOf(c.name).some(t => /hug|embrac|holding hands|kiss|carrying|grabbing|headpat|lap pillow|leaning on|being held|piggyback/.test(t))));
+    const faceDir = touch ? `두 사람의 위치 관계(${together.join(', ') || '몸이 닿는 동작'})에 맞게 몸 방향을 정함` : oth.length ? `${jo(main.name, '은', '는')} 화면 ${oppKo}을 향해 몸을 3/4쯤 돌림` : main ? `${main.name}의 시선은 화면 ${oppKo} 여백을 향함(시선 방향에 공간을 남김)` : '';
+    const dist = touch ? '두 사람은 몸이 닿아 있음(간격 없음)' : oth.length ? (poses.some(x => /손목|끌어안|어깨|손을 내/.test(x[2])) ? '두 사람은 팔 하나 거리, 손이 닿는 거리' : p.emo === '냉담' || p.emo === '분노' ? '두 사람 사이에 한 걸음 이상 거리' : '두 사람은 한 걸음 거리') : '';
     const bub = dlg.length ? `${dlg.length > 1 ? '말풍선 ' + dlg.length + '개' : '말풍선 1개'} 자리: 화면 위쪽 ${main && dlg[0].who === main.name ? sideKo : oppKo} 구석, 화면 넓이의 약 ${dlg.length > 1 ? 30 : 20}%를 비움(인물 머리와 겹치지 않게)` : '';
     const cap = p.caption ? `글상자 자리: 왼쪽 위 모서리, 가로 1/3 · 세로 1/8 정도 비움` : '';
     const sfxLine = (p.sfx || []).length ? `효과음 ${p.sfx.map(x => '"' + x + '"').join(', ')}은 글자로 쓰지 말고 ${p.sfx.length ? '동작이 닿거나 멈추는 바로 그 순간을 포착해 표현(작은 충격선이나 옷자락의 흔들림 정도)' : ''}` : '';
@@ -161,6 +171,10 @@
       `- 크기: ${sp.W} × ${sp.H}px 권장${sp.exact ? ` · 표준 비율 ${sp.near}로 그대로 생성 가능` : ` · 이 비율을 고를 수 없으면 가장 가까운 ${sp.near}로 만들고 위아래(또는 좌우)를 잘라 ${sp.ratio}에 맞춤`}`,
       `- 한 장에 이 컷 하나만. 칸 테두리·여러 칸 나눔·여백 프레임 없이 그림이 화면 끝까지 차게`,
       style && '§', style && `■ 화풍`, style && `- ${style.trim()}`, palette.length ? `- 주요 색: ${palette.slice(0, 5).join(' ')} 계열` : '',
+      ...(refs.length ? ['§', `■ 참고 이미지 (함께 올린 캐릭터 시트 ${refs.length}장)`,
+        ...refs.map((c, n) => `- ${n + 1}번 이미지 = ${c.name}: 얼굴·머리 모양·의상·색·화풍을 이 시트와 똑같이(포즈·배경은 따르지 말 것)`),
+        cast.length > refs.length ? `- 시트가 없는 인물(${cast.filter(c => !sheet.has(c.name)).map(c => c.name).join('·')})은 아래 외형 설명대로, 같은 화풍으로` : '',
+        `- 그림 전체 화풍(선·채색·명암)도 캐릭터 시트와 같게`] : []),
       ...(ctx.sheet ? ['§', `■ 참고 이미지 (함께 올린 참고 시트 한 장)`,
         ...cast.map(c => ctx.sheet.charImg.includes(c.name) ? `- ${c.name}: 시트 A칸 '${c.name}' 그림과 얼굴·머리 모양·의상·색을 똑같이` : `- ${c.name}: 시트 A칸 '${c.name}' 외형 설명대로`),
         ctx.sheet.scene ? `- 배경·색: 시트 B칸 장면 이미지의 분위기·빛·색감을 따름` : `- 색·화풍: 시트 B칸의 화풍 설명을 따름`,
@@ -171,6 +185,8 @@
       `■ 연출 의도`,
       `- 이 컷의 역할: ${R[0]} — ${R[1]}`,
       chunk ? `- 묶음 흐름: ${chunk.narr}, 목적은 ${chunk.goal}` : '',
+      ctx.dbRef && ctx.dbRef.text ? `- 참고 구도: 상용 웹툰의 실제 컷 「${ctx.dbRef.text}」${ctx.dbRef.shot ? ` (${[ctx.dbRef.shot, ctx.dbRef.angle].filter(Boolean).join('·')})` : ''} — 화면 구성(무엇을 크게, 어디에 두고, 무엇을 자르는지)만 참고하고 내용·인물은 가져오지 말 것` : '',
+      ctx.sceneMood ? `- 씬 전체 분위기: ${ctx.sceneMood} — 이 씬의 모든 컷이 같은 색감·조명 톤` : '',
       (p.why && p.why.shot && p.why.shot.length > 1) ? `- 이 샷을 고른 이유: ${p.why.shot.slice(1).join(', ')}` : '',
       '§',
       `■ 카메라`,
@@ -179,27 +195,32 @@
       `- 렌즈·심도: ${S.lens}, ${DOF[p.shot] || DOF['중경']}`,
       '§',
       `■ 구도`,
-      insert ? `- 피사체 배치: ${poses[0] ? `'${poses[0][2]}' 부분(손과 손목)` : '동작의 핵심 부위'}을 화면 중앙에서 살짝 ${sideKo}, 3분할 교차점 근처. 얼굴은 화면에 나오지 않음` : cast.length ? `- 주인공 배치: ${jo(main ? main.name : cast[0].name, '을', '를')} 화면 ${sideKo} 1/3 세로선 위에, ${tiny ? '공간 속에 작게' : '얼굴(눈)은 위쪽 1/3 가로선 근처'}` : `- 인물 없이 공간이 주인공. 소실점은 화면 중앙보다 살짝 ${oppKo}`,
+      noHuman ? `- 사람은 그리지 않음: ${O.mode === 'object' ? '소품 하나가 주인공(클로즈업, 재질·표면·빛)' : O.mode === 'effect' ? '인물·실제 장소 없이 색·빛·선의 방향과 질감만' : '공간이 주인공(깊이·전경과 후경·건축·빛)'}` : insert ? `- 피사체 배치: ${poses[0] ? `'${poses[0][2]}' 부분(손과 손목)` : '동작의 핵심 부위'}을 화면 중앙에서 살짝 ${sideKo}, 3분할 교차점 근처. 얼굴은 화면에 나오지 않음` : cast.length ? `- 주인공 배치: ${jo(main ? main.name : cast[0].name, '을', '를')} 화면 ${sideKo} 1/3 세로선 위에, ${tiny ? '공간 속에 작게' : '얼굴(눈)은 위쪽 1/3 가로선 근처'}` : `- 인물 없이 공간이 주인공. 소실점은 화면 중앙보다 살짝 ${oppKo}`,
       `- 인물 크기·여백: ${HEAD[p.shot] || HEAD['중경']}`,
       `- 깊이: ${LAYER[p.shot] || LAYER['중경']}`,
       peak ? `- 정점 컷: 화면에서 가장 밝은 곳과 가장 어두운 곳이 ${main && !insert ? main.name + '의 얼굴' : '핵심 피사체'} 바로 옆에서 만나게, 다른 요소는 줄임` : '',
       `- 독자의 시선이 처음 닿을 곳: ${p.shot === '디테일' ? (poses[0] ? `'${poses[0][2]}'의 접점` : '핵심 소품') : main ? `${main.name}의 ${p.shot === '클로즈업' || p.shot === '효과 배경' ? '눈' : '얼굴과 손'}` : '공간의 가장 밝은 지점'}`,
       cast.length ? '§' : '', cast.length ? `■ 인물과 연기` : '',
-      ...cast.map((c, n) => `- ${c.name}${look(c) ? ` — 외형: ${look(c)}` : ''}${insert ? ' (화면에는 손·소매·옷자락만 보이니 장갑·소매·옷감으로 누구인지 알아보게)' : cast.length > 1 ? ` · 위치: 화면 ${n === 0 ? sideKo : oppKo}` : ''}`),
+      ...cast.map((c, n) => `- ${c.name}${sheet.has(c.name) ? ` (${refs.indexOf(c) + 1}번 시트)` : ''}${look(c) ? ` — 외형: ${look(c)}` : ''}${insert ? ' (화면에는 손·소매·옷자락만 보이니 장갑·소매·옷감으로 누구인지 알아보게)' : cast.length > 1 ? ` · 위치: 화면 ${n === 0 ? sideKo : oppKo}` : ''}${actOf(c.name).length ? ` · 하는 동작: ${actOf(c.name).join(', ')}` : ''}`),
       faceDir && !insert ? `- 방향·시선: ${faceDir}${oth.length ? `, ${jo(oth.map(c => c.name).join('·'), '은', '는')} ${main.name} 쪽을 봄` : ''}` : '',
       dist && !insert ? `- 거리: ${dist}` : '',
       insert && main ? `- 손의 연기(${p.emo}, ${k[1]}): ${HANDF[p.emo] || '감정이 손의 힘과 각도에 드러나게'}` : '',
       main && !insert ? `- 표정(${p.emo}, ${k[1]})${tiny ? ' — 작게 보이니 표정보다 자세와 실루엣으로' : ''}: ${expr[1]}${dlg[0]?.note ? ` — 연기 지시 "${dlg[0].note}"를 표정과 자세에 담음` : ''}` : '',
-      main && !insert ? `- 몸: ${handPose ? (BODY[p.emo] || BODY['평온']).split(',')[0] + ', 손은 동작에 씀' : (BODY[p.emo] || BODY['평온'])}` : '',
-      ...((ctx.props?.(p) || []).length ? ['§', `■ 소품 (모양 고정 — 모든 컷에서 같은 모양·색·재질·크기)`, ...ctx.props(p).map(x => `- ${x.name}${x.look ? `: ${x.look}` : ''}${x.img ? ' — 함께 올린 소품 이미지와 똑같이' : ''}`)] : []),
+      main && !insert ? `- 몸: ${main && actOf(main.name).length ? `동작(${actOf(main.name).join(', ')})에 맞게, ${p.emo} 느낌은 고개·어깨 각도와 시선으로` : handPose ? (BODY[p.emo] || BODY['평온']).split(',')[0] + ', 손은 동작에 씀' : (BODY[p.emo] || BODY['평온'])}` : '',
+      ...(propsOn.length || (O && (O.propsOff || []).length) ? ['§', `■ 소품 (모양 고정 — 모든 컷에서 같은 모양·색·재질·크기)`, ...propsOn.map(x => `- ${x.name}${x.look ? `: ${x.look}` : ''}${x.tags ? ` (${x.tags})` : ''}${x.img ? ' — 함께 올린 소품 이미지와 똑같이' : ''}`),
+        ...((O && O.propsOff) || []).map(x => `- ${x.name}: 이 컷 화면에는 그리지 말 것${(x.emit || []).length ? ` — 거기서 나온 ${x.emit.join(', ')}만 보이게` : ''}`)] : []),
+      O && O.aiScene ? '§' : '', O && O.aiScene ? `■ 장면 (원문·연출 근거로 정리)` : '', O && O.aiScene ? `- ${O.aiScene}` : '',
       '§',
       `■ 동작`,
       `- ${dot(p.act)}`,
-      poses.length ? `- 자세: ${poses.map(x => x[2]).join(', ')}` : '',
+      poses.length && !O ? `- 자세: ${poses.map(x => x[2]).join(', ')}` : '',
+      together.length ? `- 두 사람의 위치 관계: ${together.join(', ')}` : '',
+      crowd.length ? `- 배경 인물: ${crowd.join(', ')}` : '',
+      ...dropped.map(d => `- 그리지 말 것: ${d.who ? d.who + '의 ' : ''}${d.tags.join(', ')} — 원문에서 ${({ neg: '하지 않은', try: '하려다 만', cond: '가정한', con: '앞 절의' })[d.why] || '하지 않은'} 동작`),
       dlg.length ? `- 대사 맥락(그리지 말 것): ${dlg.map(d => `${d.who ? d.who + ' ' : ''}"${d.text}"`).join(' / ')} — 이 말을 하는 입 모양과 표정으로` : '',
       sfxLine ? `- ${sfxLine}` : '',
-      (place || light || mood) ? '§' : '', (place || light || mood) ? `■ 장소·조명` : '',
-      place ? `- 장소: ${place[2]}` : '',
+      (place || light || mood || (O && (O.place || []).length)) ? '§' : '', (place || light || mood || (O && (O.place || []).length)) ? `■ 장소·조명` : '',
+      place ? `- 장소: ${place[2]}` : O && (O.place || []).length ? `- 장소: ${O.place.join(', ')}` : '',
       light ? `- 빛: ${light[2]}. 주광은 화면 ${oppKo} 위에서 비스듬히 들어와 ${insert ? '손과 소매의 윤곽에 밝은 테두리를 만듦' : main && !tiny ? main.name + '의 얼굴 ' + oppKo + ' 절반을 밝힘' : '공간에 긴 그림자를 만듦'}` : '',
       mood ? `- 분위기: ${mood[1]}` : '',
       '§',

@@ -212,7 +212,9 @@
         });
         // 꾸밈말을 뺀 서술 부분
         const rest = mask(c.ws.filter((_, i) => !owned.has(i)).join(' '));
-        const s0 = subj || lastWho || who;
+        // 사람이 아닌 주어('빛줄기가 쏟아진다', '문이 열린다')면 그 동작은 아무 인물에게도 주지 않음(몸 일부·대명사 주어는 앞 사람)
+        const thing = !subj && c.ws.some((w, i) => !owned.has(i) && /^[가-힣]{1,6}(이|가)$/.test(w) && !nameOf(w.replace(/[.,!?…]+$/, '')) && !/^(그|그녀|그들|두 사람|손|손끝|손가락|주먹|눈|눈동자|입술|입|어깨|발|발끝|얼굴|목소리|몸|다리|팔|고개|볼|뺨|눈물|등|허리|숨|표정|시선|얼굴빛|목)(이|가)$/.test(w));
+        const s0 = thing ? null : subj || lastWho || who;
         const neg = /지\s*(않|못|말)/.test(rest) || /(^|\s)(안|못)\s+\S*(다|요|죠|고|며|어|아|여|해|했|았|었|는|던|ㄴ)[.,!?…]*(\s|$)/.test(rest);
         let ts = tagsOf(rest, POSE);
         const why = neg ? 'neg' : c.kind === 'try' ? 'try' : c.kind === 'cond' ? 'cond' : ci <= conAt ? 'con' : c.kind === 'seq' ? 'seq' : '';
@@ -660,7 +662,7 @@
       const identity = splitTags(c.prompt).filter(tag => COUNT_TAG.test(tag));
       return { ...c, prompt: joinTags([...identity, ...splitTags(next.prompt).filter(tag => !COUNT_TAG.test(tagName(tag)) && !/^no humans$/i.test(tagName(tag)))]) };
     });
-    return { ...draft, base, chars, layerCast, ai: true, missAct: '' };
+    return { ...draft, base, chars, layerCast, ai: true, missAct: '', aiScene: typeof result.scene === 'string' ? result.scene.trim() : '' };
   }
   function text(o, i, total, head) {
     const L = [`[컷 ${i + 1} / ${total}] ${head || ''}`.trim(),
@@ -754,5 +756,12 @@
   const SHOT_ALL = new Set(Object.values(SHOT).flat().concat(['wide shot', 'very wide shot']).map(t => t.toLowerCase()));
   // 칸 이름(A1~E5) → 좌표
   const cellPos = cell => { const c = COLS.indexOf(String(cell)[0]), r = +String(cell).slice(1) - 1; return c < 0 || !(r >= 0 && r < 5) ? null : pos(+(0.1 + c * 0.2).toFixed(1), +(0.1 + r * 0.2).toFixed(1)); };
-  Object.assign(N, { audit, poseTags: t => tagsOf(String(t || ''), POSE), interactTags: t => tagsOf(String(t || ''), INTERACT), cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
+  // 캐릭터 시트(NovelAI로 인물만 뽑음): 흰 배경 전신 정면·옆·뒤 + 외형 전부 — 이 그림을 GPT 컷 생성의 참고 이미지로
+  function sheetPrompt(c, look, style) {
+    const app = splitTags(look || '').filter(t => !COUNT_TAG.test(tagName(t)) && !/^no humans$/i.test(tagName(t)));
+    const n = c.body === 'male' ? '1boy' : c.body === 'female' ? '1girl' : '1other';
+    return { base: joinTags([n, 'solo', 'character sheet', 'multiple views', 'full body', 'standing', 'front view', 'side view', 'back view', 'expressionless', 'white background', 'simple background', ...app, ...splitTags(style || ''), 'no text']),
+      uc: 'cropped, out of frame, multiple characters, busy background, scenery, text, watermark' };
+  }
+  Object.assign(N, { sheetPrompt, audit, poseTags: t => tagsOf(String(t || ''), POSE), interactTags: t => tagsOf(String(t || ''), INTERACT), cut, refine, layers, propPresence, sceneMood, SCENE_MOOD, text, lookTags, size, cellPos, FOCUS, SHOT, ANG, EXPR });
 })(typeof module !== 'undefined' ? module.exports : (window.RoughNAI = {}));

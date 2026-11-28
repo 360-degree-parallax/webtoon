@@ -145,6 +145,12 @@ const SYSTEM_NAI = `너는 NovelAI Diffusion V4.5 Full로 한국 웹툰을 한 �
 - 한국어·따옴표·대사·효과음 글자는 태그에 쓰지 않는다. 같은 태그를 두 번 쓰지 않는다. 물체 배치나 빛 방향에 꼭 필요할 때만 짧은 영문 구절.
 - world/lore는 화면에 드러나는 요소만. 사용자가 정한 화풍은 base 뒤쪽에 둔다.
 
+# GPT 이미지용 장면 지시(scene)
+- 컷마다 scene에 한국어 2~5문장. 이 컷은 GPT 이미지로 그리고, 캐릭터 얼굴·옷·화풍은 함께 올린 캐릭터 시트가 정한다. 그래서 scene에는 외형을 쓰지 않고 상황만 쓴다.
+- 쓰는 것: 누가 화면 어디에(왼쪽·가운데·오른쪽, 앞·뒤) 있고, 무엇을 하고(실제로 한 동작만), 몸 방향·손·시선이 어디를 향하는지, 두 사람이 어떻게 닿아 있는지, 보이는 소품이 어디에 어떻게 있는지, 배경·빛이 어떤지.
+- ruleDropped의 동작은 "~하지 않는다"로 분명히 적는다(예: 달리지 않고 멈춰 서 있다). offscreen 소품은 쓰지 않고 show만 쓴다. 인물이 없는 focus면 사람을 쓰지 않는다.
+- 카메라(샷·앵글)와 출력 규격·금지 사항은 프로그램이 따로 붙이므로 scene에는 쓰지 않는다.
+
 # 내기 전 점검(컷마다)
 1. 원문에서 실제로 한 동작이 그 사람 칸에 있는가, ruleDropped 태그는 없는가.
 2. draft.chars에 없는 인물을 넣지 않았는가, 인물이 없는 focus에서 chars가 비었는가.
@@ -161,6 +167,7 @@ const SCHEMA_NAI = {
         properties: {
           n: { type: 'integer' },
           base: { type: 'string' },
+          scene: { type: 'string' },
           chars: {
             type: 'array',
             items: {
@@ -171,7 +178,7 @@ const SCHEMA_NAI = {
             },
           },
         },
-        required: ['n', 'base', 'chars'],
+        required: ['n', 'base', 'scene', 'chars'],
         additionalProperties: false,
       },
     },
