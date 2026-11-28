@@ -112,6 +112,28 @@ test('콘티 GPT(기본): 캐릭터 시트 참고 · 인물 없는 컷 · 컷마
   assert(await ev(() => genOf(1) === 'nai' && genOf(0) === 'gpt' && document.querySelectorAll('#conti .ccard')[1].querySelectorAll('.ct-prompt pre').length >= 2), '그 컷만 NovelAI');
   assert(/\[컷 1 · GPT\][\s\S]*\[컷 2 · NovelAI\]/.test(await ev(() => naiText())), '저장 파일에 컷마다 방식');
 });
+test('NovelAI 연결: 캐릭터 시트·NovelAI 컷을 바로 생성해 칸에 넣음', async ({p, ev}) => {
+  const zip = require('zlib'); const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  // ZIP(저장 방식) 한 파일
+  const name = Buffer.from('image_0.png'), crc = (b => { let c, t = []; for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } let x = 0xFFFFFFFF; for (const v of b) x = t[(x ^ v) & 0xFF] ^ (x >>> 8); return (x ^ 0xFFFFFFFF) >>> 0; })(png);
+  const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt32LE(crc, 14); lh.writeUInt32LE(png.length, 18); lh.writeUInt32LE(png.length, 22); lh.writeUInt16LE(name.length, 26);
+  const body = Buffer.concat([lh, name, png]); const sent = [];
+  await p.route('https://image.novelai.net/**', route => { const r = route.request(); const h = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST' };
+    if (r.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: h });
+    sent.push({ auth: r.headers()['authorization'], body: JSON.parse(r.postData()) }); return route.fulfill({ status: 200, headers: { ...h, 'content-type': 'application/zip' }, body }); });
+  await ev(() => { CUTS.splice(0, CUTS.length, '@준이 창가에 선다. {중경}'); delete SCENES[SCUR].gen; SCENES[SCUR].pageEdits = []; delete IMG.char['준']; compute(false); showView('layout'); });
+  await p.locator('#conti .ct-sheet').first().waitFor();
+  await p.click('#conti [data-naigensheet="준"]'); await p.waitForSelector('#naikeydlg[open]');
+  await p.fill('#naikin', 'pst-test'); await p.click('#naikeydlg [data-r=go]');
+  await p.waitForFunction(() => !!IMG.char['준'], null, { timeout: 8000 });
+  assert(sent.length === 1 && sent[0].auth === 'Bearer pst-test' && /character sheet/.test(sent[0].body.input) && sent[0].body.model === 'nai-diffusion-4-5-full', '시트 요청');
+  await p.click('#conti [data-ctgen="0"][data-v="nai"]'); await p.waitForTimeout(300);
+  await p.click('#conti [data-naigencut="0"]');
+  await p.waitForFunction(() => !!cutImg(SCUR, 0, state.panels[0]), null, { timeout: 8000 });
+  const b2 = sent[1].body.parameters;
+  assert(b2.v4_prompt.caption.char_captions.length === 1 && /^girl/.test(b2.v4_prompt.caption.char_captions[0].char_caption) && (b2.director_reference_images || []).length === 1, '컷 요청: 인물 칸 + 캐릭터 시트 참고');
+  assert(b2.width % 64 === 0 && b2.height % 64 === 0, '64 배수 크기');
+});
 test('레퍼런스 필터(인물 수·시선)', async ({p, ev}) => {
   await ev(() => showView('webtoon')); await p.waitForTimeout(1200);
   await ev(() => selectPageCut([...document.querySelectorAll('#reader [data-slot-index]')][0])); await ev(() => document.querySelector('[data-at="ref"]')?.click()); await p.waitForTimeout(600);

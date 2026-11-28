@@ -1311,3 +1311,10 @@ main에 모두 합쳐진 원격 브랜치 8개 — 지울 대상. 이 작업 환
 - 프롬프트 저장 txt는 컷마다 `[컷 n · GPT]`/`[컷 n · NovelAI]`로
 - NovelAI API: 공식 문서로 정리된 공개 API는 확인되지 않음. 웹사이트가 쓰는 이미지 생성 주소(image.novelai.net)를 계정의 영구 API 토큰으로 부르는 비공식 라이브러리가 여럿 있음 — 붙인다면 3단계 선택 사항
 - (추가) 콘티 맨 위 「캐릭터 시트 (NovelAI)」: GPT로 만드는 컷에 나오는 인물마다 시트 프롬프트(기본·제외 태그)와 시트 그림 칸. 시트가 없는 인물이 있으면 펼쳐져 있고 경고. 그림은 눌러서 고르기·끌어다 놓기·「시트 프롬프트 복사」 뒤 Ctrl+V. 넣으면 그 인물 캐릭터 이미지가 되고 GPT 컷 프롬프트에 「n번 이미지」로 연결
+
+## 151. NovelAI API 연결(2026-11-28)
+- `rough/nai-api.js`(`window.RoughNaiApi`): NovelAI 영구 API 토큰(pst-…)으로 `https://image.novelai.net/ai/generate-image`에 V4.5(`nai-diffusion-4-5-full`) 요청 → ZIP 안 PNG를 꺼내 Blob. 공식 문서가 공개된 API가 아니라 웹사이트가 쓰는 주소(커뮤니티 라이브러리 nekoai-js와 같은 요청 형식: `input/model/action/parameters`, `v4_prompt`·`v4_negative_prompt`의 인물 칸과 위치, 캐릭터 참고 `director_reference_*`)
+  - 크기는 64 배수·약 1024×1024 픽셀 안으로 · 화질 태그와 가벼운 제외 프리셋(캐릭터 시트를 위해 multiple views 뺌) · 예상 Anlas 표시(캐릭터 참고 +5)
+  - 브라우저가 막으면(CORS) 로컬 서버(`python3 rough/serve.py`)의 `/nai-proxy/ai/generate-image`로 다시 보냄(토큰은 헤더를 넘기기만, 저장 안 함). 페이지 CSP connect-src에 image.novelai.net 추가
+- 콘티: 머리 「NovelAI 연결」(토큰 · 기억 여부 · 캐릭터 시트를 캐릭터 참고로 붙이기) · 캐릭터 시트마다 「NovelAI로 생성」→ 그 인물 캐릭터 이미지로 · NovelAI 방식 컷마다 「NovelAI로 생성」→ 그 컷 그림 칸으로(기본·인물 칸·위치·제외 태그·컷 설정값, 시트가 있으면 주인공 시트를 캐릭터 참고로)
+- 시험: Node에서 요청 만들기·Anlas·ZIP(저장/deflate) 풀기, e2e는 NovelAI 응답을 흉내 내 시트·컷이 칸에 들어가는지와 요청 내용. 실제 NovelAI로는 돌려 보지 않음(이 환경에서 그 주소가 막혀 있고 토큰도 없음)

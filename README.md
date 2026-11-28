@@ -44,6 +44,7 @@ git clone --recurse-submodules https://github.com/360-degree-parallax/webtoon
 - 설정집(캐릭터·세계관)·구성·씬 화면마다 작은 **초기화** 버튼(8초 안에 되돌리기 가능)
 
 Claude 기능은 내 Anthropic API 키를 넣으면 켜집니다. 키와 첨부 이미지는 브라우저에만 저장됩니다.
+NovelAI로 캐릭터 시트·컷을 툴에서 바로 만들려면 콘티의 「NovelAI 연결」에 NovelAI 영구 API 토큰(pst-…)을 넣습니다(비공식 경로, 그림마다 Anlas 사용). 배포 페이지에서 브라우저가 막으면 `python3 rough/serve.py`로 열면 로컬 서버를 거쳐 보냅니다.
 
 ### 개발
 화면 코드는 `rough/src/`를 고치고 빌드합니다(`rough/app.js`를 직접 고치지 않음).
