@@ -627,7 +627,7 @@ slotsEl.forEach(el=>{
     if(s.dataset.slot==='scene'&&s.dataset.key==='__new')files.forEach((f,k)=>setTimeout(()=>attach(f,{kind:'scene',key:'__new'}),k*30));else attach(files[0],{kind:s.dataset.slot,key:s.dataset.key})});
   el.addEventListener('change',e=>{const r=e.target.closest('[data-rename]');if(!r)return;const o=IMG.scene.find(x=>x.id===r.dataset.rename);if(o){o.name=r.value.trim()||o.name;idb.put(o);render()}});
 });
-document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(VIEW==='layout'&&!(target&&target.kind==='cut')&&CT_CUR>=0)target={kind:'cut',key:String(CT_CUR)};if(VIEW==='layout'&&!(target&&target.kind==='cut')){toast('그림을 넣을 컷의 \'전체 복사\'를 먼저 누르거나 컷을 골라 주세요');return}if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
+document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(!f)return;e.preventDefault();if(VIEW==='layout'&&!(target&&(target.kind==='cut'||target.kind==='char'))&&CT_CUR>=0)target={kind:'cut',key:String(CT_CUR)};if(VIEW==='layout'&&!(target&&(target.kind==='cut'||target.kind==='char'))){toast('그림을 넣을 컷의 \'전체 복사\'를 먼저 누르거나 컷을 골라 주세요');return}if(target&&target.kind==='cut'){attachCuts([f],+target.key);return}attach(f,target||{kind:'scene',key:'__new'})});
 try{showUnder=localStorage.getItem('rough-under')!=='0'}catch(_){}$('#under').setAttribute('aria-pressed',showUnder);
 $('#under').onclick=()=>{showUnder=!showUnder;$('#under').setAttribute('aria-pressed',showUnder);try{localStorage.setItem('rough-under',showUnder?'1':'0')}catch(_){}render()};
 idb.all().then(rows=>{for(const r of rows){if(r.kind==='char')IMG.char[r.name]=r;else if(r.kind==='layerbg')IMG.lybg[r.id]=r;
@@ -2460,12 +2460,15 @@ renderKey();
 const rerenderCuts=()=>{renderNai();if(VIEW==='layout'){renderTable();renderReading()}if(typeof edRecord==='function')edRecord()};
 for(const el of [$('#ncards'),$('#tbl'),$('#conti')]){
   el.addEventListener('click',e=>{const d=e.target.closest('[data-delcut]');if(d){e.stopPropagation();const id=cutId(SCENES[SCUR].id,+d.dataset.delcut);delete IMG.cut[id];idb.del(id);rerenderCuts();return}
+    const sh=e.target.closest('[data-sheetslot]');if(sh){e.stopPropagation();target={kind:'char',key:sh.dataset.sheetslot};$('#file').click();return}
     const s=e.target.closest('[data-cutslot]');if(s){target={kind:'cut',key:s.dataset.cutslot};$('#filem').click()}});
   el.addEventListener('keydown',e=>{const s=e.target.closest('[data-cutslot]');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();s.click()}});
-  el.addEventListener('focusin',e=>{const s=e.target.closest('[data-cutslot]');if(s)target={kind:'cut',key:s.dataset.cutslot}});
+  el.addEventListener('focusin',e=>{const sh=e.target.closest('[data-sheetslot]');if(sh){target={kind:'char',key:sh.dataset.sheetslot};return}const s=e.target.closest('[data-cutslot]');if(s)target={kind:'cut',key:s.dataset.cutslot}});
   el.addEventListener('dragover',e=>{const s=e.target.closest('[data-cutslot]');if(s){e.preventDefault();s.classList.add('over')}});
   el.addEventListener('dragleave',e=>{e.target.closest('[data-cutslot]')?.classList.remove('over')});
-  el.addEventListener('drop',e=>{const s=e.target.closest('[data-cutslot]');if(!s)return;e.preventDefault();s.classList.remove('over');attachCuts(e.dataTransfer.files,+s.dataset.cutslot)})}
+  el.addEventListener('dragover',e=>{const s=e.target.closest('[data-sheetslot]');if(s){e.preventDefault();s.classList.add('over')}});
+  el.addEventListener('drop',e=>{const sh=e.target.closest('[data-sheetslot]');if(sh){e.preventDefault();e.stopPropagation();sh.classList.remove('over');const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/'));if(f)attach(f,{kind:'char',key:sh.dataset.sheetslot});return}
+    const s=e.target.closest('[data-cutslot]');if(!s)return;e.preventDefault();s.classList.remove('over');attachCuts(e.dataTransfer.files,+s.dataset.cutslot)})}
 // ---------- 작화 (NovelAI V4.5) ----------
 const NAI=window.RoughNAI;
 const NAI_STYLE_DEF='webtoon, korean webtoon, soft shading, flat color, thin lineart, muted colors, watercolor (medium)';
@@ -2609,6 +2612,14 @@ var CT_EMPTY=false,CT_CUR=-1,CT_COPIED=new Set();
 function ctClearCopied(){CT_COPIED.clear();if(target&&target.kind==='cut')target=null}
 // 프롬프트 칸: 모든 컷에 똑같이 붙는 화풍 태그는 흐리게(복사에는 그대로 들어감)
 // 프롬프트 칸: 모든 컷에 똑같이 붙는 화풍 태그는 흐리게(복사에는 그대로 들어감)
+// 콘티 맨 위 캐릭터 시트(NovelAI): GPT로 만드는 컷에 나오는 인물마다 시트 프롬프트 + 시트 그림 칸(넣으면 그 인물 캐릭터 이미지 = GPT 참고 이미지)
+function sheetSection(L){const names=[...new Set(L.filter(x=>genOf(x.i)==='gpt').flatMap(x=>(x.o.layerCast||[]).map(c=>c.name)))];if(!names.length)return '';
+  const chars=naiChars(),miss=names.filter(n=>!IMG.char[n]);
+  return `<details class="ct-sheets"${miss.length?' open':''}><summary><b>캐릭터 시트 (NovelAI)</b> <span>${miss.length?`<span class="ct-warn">${miss.length}명 시트 없음 — GPT 컷 전에 먼저 만들어 넣어 주세요</span>`:`${names.length}명 모두 시트 있음 · GPT 컷에 참고 이미지로 함께 올려요`}</span></summary>
+    <p class="hint">NovelAI에 아래 프롬프트를 넣어 인물마다 시트(흰 배경·전신 정면·옆·뒤)를 뽑고, 그 그림을 칸에 넣거나(Ctrl+V도 됨) 끌어다 놓으세요. 넣은 시트는 이 인물이 나오는 모든 GPT 컷 프롬프트에 「n번 이미지」로 연결돼요.</p>
+    <div class="ct-sheetl">${names.map(n=>{const c=chars.find(x=>x.name===n)||{name:n},sp=NAI.sheetPrompt(c,NAITAGS[n]??NAI.lookTags(c.look).join(', '),NAISTYLE),im=IMG.char[n];
+      return `<div class="ct-sheet" data-sheet="${esc(n)}"><div class="drop ct-sheetimg${im?' has':''}" data-sheetslot="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)} 캐릭터 시트 ${im?'바꾸기':'넣기'}">${im?`<img src="${im.src}" alt="${esc(n)} 시트">`:'<span class="ct-plus"><b>+</b>시트 넣기</span>'}</div>
+        <div class="ct-sheetp"><div class="ct-ph"><b>${esc(n)}</b>${im?'<span class="tag">시트 있음</span>':''}<button class="tpill" data-act="sheetcopy" data-n="${esc(n)}">시트 프롬프트 복사</button></div>${ctBlk('기본 프롬프트',sp.base)}${ctBlk('제외 태그 <small>Undesired Content</small>',sp.uc)}</div></div>`}).join('')}</div></details>`}
 function ctBlk(title,txt,dim){const tags=String(txt||'').split(/,\s*/);
   const html=tags.map((t,k)=>{const sep=k<tags.length-1?', ':'';return dim&&dim.has(t.trim().toLowerCase())?`<span class="ct-dim">${esc(t)}${sep}</span>`:esc(t)+sep}).join('');
   return `<div class="nf"><header><h4>${title}</h4><button class="btn" data-act="ncopy">복사</button></header><pre>${html}</pre></div>`}
@@ -2627,7 +2638,7 @@ function renderConti(){const el=$('#conti');if(!el)return;const ps=state.panels,
       <label class="ct-filter"><span>빈 컷만</span><input type="checkbox" role="switch" data-ctempty${CT_EMPTY?' checked':''}><i aria-hidden="true"></i></label>
       <span class="ct-keys" title="J·K 다음·이전 컷 · C 지금 컷 프롬프트 복사 · Ctrl+V 복사한 컷에 그림 붙여 넣기"><span><kbd>J</kbd><kbd>K</kbd>이동</span><span><kbd>C</kbd>복사</span><span><kbd>Ctrl</kbd><kbd>V</kbd>붙여 넣기</span></span></nav>`;
   const LP=LAYER_MODE?layerPlan(SCUR):null;
-  el.innerHTML=head+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
+  el.innerHTML=head+sheetSection(L)+L.map(({p,i,o})=>{const im=cutImg(SCUR,i,p),ref=p.ref;
     return `<article class="ccard${CT_COPIED.has(i)?' copied':''}${i===CT_CUR?' cur':''}" data-ct="${i}"${CT_EMPTY&&im?' hidden':''}>
       <header><b class="ct-no">컷 ${i+1}</b><div class="ct-beat"><p data-work>${esc(p.act)}</p>${(o.props||[]).length||(o.propsOff||[]).length?`<span class="ct-props">${(o.props||[]).map(x=>`<button type="button" class="ct-prop${x.tags?'':' notag'}" data-propvis="${i}" data-name="${esc(x.name)}" title="고정 소품 · 화면에 보임${x.forced?'(직접 정함)':''} · ${esc(x.look||'형태 미정')}${x.tags?' · '+esc(x.tags):' · 태그는 컷 프롬프트 생성 때 Claude가 한 번 정해 고정해요'} · 누르면 화면 밖으로">◆${esc(x.name)}</button>`).join('')}${(o.propsOff||[]).map(x=>`<button type="button" class="ct-prop off" data-propvis="${i}" data-name="${esc(x.name)}" title="${x.why==='source'?'글에서 이 소품은 나온 것(빛·연기 등)의 출처로만 나와 화면에서 뺐어요':x.why==='absent'?'글에서 언급만 돼 화면에서 뺐어요':x.why==='said'?'대사·식자에만 나오고 행동 글에는 없어서 화면에서 뺐어요':'직접 화면 밖으로 정했어요'} · 누르면 화면에 보이게">◆${esc(x.name)} <small>화면 밖${x.emit.length?' · '+esc(x.emit[0])+'만':''}</small></button>`).join('')}</span>`:''}${o.missAct?`<span class="ct-miss" title="동작 사전에 없는 동작이에요 · 「컷 프롬프트 생성」을 누르면 Claude가 동작을 태그로 옮겨요 · 또는 이 컷 수정에서 요청을 적어 이 컷만 다시 만들 수 있어요">동작 태그를 못 찾았어요 · 컷 프롬프트 생성으로 채워요</span>`:''}<small>${esc([o.focus,p.shot,p.ang,p.emo].filter(Boolean).join(' · '))} · ${o.size.w}×${o.size.h}${o.size.exact?'':` <span class="ct-crop" title="생성 후 ${esc(o.size.crop)}">자르기</span>`}</small></div>${o.ai?'<span class="tag">Claude</span>':''}${o.ai&&(o.fixes||[]).length?`<span class="tag fix" title="Claude 결과에서 규칙과 어긋난 부분을 고쳤어요:&#10;${esc(o.fixes.join('\n'))}">자동 보정 ${o.fixes.length}</span>`:''}<button type="button" class="ct-edbtn" data-ctedit="${i}" aria-expanded="${CT_EDIT.has(i)}" title="이 컷의 구도·감정·길이를 고치고 프롬프트를 이 컷만 다시 만들어요">${CT_EDIT.has(i)?'수정 닫기':'이 컷 수정'+(ctNote(i).trim()||['shot','ang','emo','h'].some(f=>p.dir&&p.dir[f]!=null)?' •':'')}</button><button type="button" class="ct-del" data-ctdel="${i}" title="이 컷을 씬에서 지워요 · 씬·편집에도 반영 · Ctrl+Z로 되돌리기" aria-label="${i+1}번 컷 지우기">지우기</button></header>
       ${CT_EDIT.has(i)?ctEditor(p,i):''}
@@ -2730,7 +2741,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
   if(a==='nprompt'){const c=el.closest('.pcard'),b=c.querySelector('.nprompt');b.hidden=!b.hidden;el.setAttribute('aria-expanded',!b.hidden);el.textContent=b.hidden?'프롬프트':'프롬프트 접기';return}
   if(a==='ncopy')copyText(el.closest('.nf').querySelector('pre').textContent);
   else if(a==='ncopyall'){const i=+(el.dataset.i??el.closest('.pcard').querySelector('[data-cutslot]').dataset.cutslot);copyText(cutCopy(naiCuts()[i]))}
-  else if(a==='sheetcopy'){const c=naiChars().find(x=>x.name===el.dataset.n);if(c){const sp=NAI.sheetPrompt(c,NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),NAISTYLE);copyText(sp.base+'\n\n제외 태그: '+sp.uc);toast(`${c.name} 캐릭터 시트 프롬프트를 복사했어요 · NovelAI로 뽑은 그림을 캐릭터 이미지로 넣으면 GPT 컷에 참고로 붙어요`,2800)}}
+  else if(a==='sheetcopy'){const c=naiChars().find(x=>x.name===el.dataset.n);if(c){target={kind:'char',key:c.name};const sp=NAI.sheetPrompt(c,NAITAGS[c.name]??NAI.lookTags(c.look).join(', '),NAISTYLE);copyText(sp.base+'\n\n제외 태그: '+sp.uc);toast(`${c.name} 캐릭터 시트 프롬프트를 복사했어요 · NovelAI로 뽑은 그림을 캐릭터 이미지로 넣으면 GPT 컷에 참고로 붙어요`,2800)}}
   else if(a==='artgen')artGen();
   else if(a==='naidown'){download(`${sceneLabel(SCENES[SCUR],SCUR)}-prompts.txt`,URL.createObjectURL(new Blob([naiText()],{type:'text/plain'})));toast('txt로 저장했어요')}
   else if(a==='naimulti'){target=null;$('#filem').click()}

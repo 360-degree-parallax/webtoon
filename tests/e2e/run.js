@@ -101,6 +101,13 @@ test('콘티 GPT(기본): 캐릭터 시트 참고 · 인물 없는 컷 · 컷마
   const hasImg = await ev(() => ['에드가', '준'].map(n => !!IMG.char[n]));
   assert(hasImg.every((h, k) => h ? g[1].refs.includes(['에드가', '준'][k]) && /함께 올릴 캐릭터 시트/.test(g[1].refs) : /시트 없음/.test(g[1].refs)), '캐릭터 시트 안내: ' + g[1].refs);
   assert(!hasImg.some(Boolean) || /■ 참고 이미지/.test(g[1].pre[0]), '시트가 있으면 참고 이미지 지시');
+  const sh = await ev(() => [...document.querySelectorAll('#conti .ct-sheet')].map(x => [x.dataset.sheet, x.querySelector('pre').textContent]));
+  assert(sh.map(x => x[0]).sort().join() === '에드가,준' && sh.every(x => /character sheet/.test(x[1]) && /white background/.test(x[1])), '콘티 위 캐릭터 시트 프롬프트(나오는 인물만)');
+  await ev(() => { delete IMG.char['준']; renderConti(); });
+  await p.click('#conti [data-sheetslot="준"]').catch(() => {});
+  await p.setInputFiles('#file', { name: 'jun.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64') });
+  await p.waitForTimeout(900);
+  assert(await ev(() => !!IMG.char['준'] && /번 이미지 = 준/.test(gptOf(naiCuts()[1]))), '시트를 넣으면 GPT 컷에 참고 이미지로 연결');
   await p.click('#conti .ccard:nth-of-type(2) [data-ctgen="1"][data-v="nai"]'); await p.waitForTimeout(400);
   assert(await ev(() => genOf(1) === 'nai' && genOf(0) === 'gpt' && document.querySelectorAll('#conti .ccard')[1].querySelectorAll('.ct-prompt pre').length >= 2), '그 컷만 NovelAI');
   assert(/\[컷 1 · GPT\][\s\S]*\[컷 2 · NovelAI\]/.test(await ev(() => naiText())), '저장 파일에 컷마다 방식');

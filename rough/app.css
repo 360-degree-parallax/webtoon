@@ -1469,3 +1469,14 @@ button.ct-prop{border:0;cursor:pointer;font:inherit;font-size:11px}.ct-prop.off{
 #conti .ct-gen button[aria-pressed="true"]{background:var(--accent-ink,#333);color:var(--bg,#fff)}
 #conti .ct-refs{margin:4px 0 6px;font-size:12px;color:var(--t2)}
 #conti .ct-refs b{font-weight:600;margin-right:4px}
+/* 콘티 맨 위 캐릭터 시트(NovelAI) */
+#conti .ct-sheets{margin:0 0 16px;padding:10px 14px;border:1px solid var(--line2);border-radius:10px;background:var(--surface)}
+#conti .ct-sheets>summary{cursor:pointer;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#conti .ct-sheets .hint{font-size:12px;color:var(--t2);margin:6px 0 10px}
+#conti .ct-sheetl{display:grid;gap:12px}
+#conti .ct-sheet{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:start}
+#conti .ct-sheetimg{aspect-ratio:3/4;border:1px dashed var(--line2);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;background:var(--bg)}
+#conti .ct-sheetimg img{width:100%;height:100%;object-fit:contain}
+#conti .ct-sheetimg.over{outline:2px solid var(--accent-ink,#333)}
+#conti .ct-sheetp .ct-ph{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+@media (max-width:640px){#conti .ct-sheet{grid-template-columns:80px 1fr}}
